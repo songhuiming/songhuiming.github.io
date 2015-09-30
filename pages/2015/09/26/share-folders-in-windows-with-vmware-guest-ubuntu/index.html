@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 
-        <title>Static github pages with Pelican</title>
+        <title>share folders in windows with vmware guest ubuntu</title>
         <meta charset="utf-8" />
 
 
@@ -52,80 +52,53 @@
 
             <header>
               <h2 class="entry-title">
-                <a href="/pages/2015/08/01/static-github-pages-with-pelican/" rel="bookmark"
-                   title="Permalink to Static github pages with Pelican">Static github pages with Pelican</a></h2>
+                <a href="/pages/2015/09/26/share-folders-in-windows-with-vmware-guest-ubuntu/" rel="bookmark"
+                   title="Permalink to share folders in windows with vmware guest ubuntu">share folders in windows with vmware guest ubuntu</a></h2>
            
             </header>
             <footer class="post-info">
-              <abbr class="published" title="2015-08-01T00:00:00-05:00">
-                Sat 01 August 2015
+              <abbr class="published" title="2015-09-26T00:00:00-05:00">
+                Sat 26 September 2015
               </abbr>
               <address class="vcard author">By 
                 <a class="url fn" href="/author/huiming-song.html"> Huiming Song</a>
               </address>
             </footer><!-- /.post-info -->
             <div class="entry-content">
-              <ol>
-<li>安装 git, pelican, markdown, typogrify（增强排版）</li>
-<li>建立blog文件夹</li>
-<li>markdown / ipynb 的源文件放在./blog/content下面</li>
-<li>在blog下面运行 make html,如果要local查看，再运行make serve</li>
-<li>主题：在blog下面下载themes，然后到pelicanconf.py里面修改主题</li>
-<li>插件：在blog下面建立plugins文件夹，然后下载插件到这儿。然后到pelicanconf.py里面修改主题</li>
-<li>到./blog/output目录下面 push到github</li>
-</ol>
-<p>重新设置</p>
-<ol>
-<li>把blog/content文件夹下面的文件拷出来备用</li>
-<li>删除blog文件夹</li>
-<li>到git上删除songhuiming.github.io这个repositary，在setting最下面可以删除</li>
-<li>重复上面的步骤</li>
-</ol>
-<p>添加plugins</p>
-<ol>
-<li>git clone plugins主题到./blog/pelican-plugins</li>
-<li>选择需要采用的plugins，新的plugins base不支持tag cloud，所以要自己添加，要不然那儿总是空白  </li>
-</ol>
-<p>怎么更改页面设计</p>
-<ol>
-<li>更改页首的menu</li>
-</ol>
-<p>在pelicanconf.py里面更改menuitems，让它链接到你想要得页面。通常categories，archives这些都是模板自带的。</p>
-<div class="highlight"><pre><span class="nx">MENUITEMS</span> <span class="o">=</span> <span class="p">(</span>
-    <span class="p">(</span><span class="s1">&#39;Categories&#39;</span><span class="p">,</span> <span class="s1">&#39;/functions/categories.html&#39;</span><span class="p">),</span>
-    <span class="p">(</span><span class="s1">&#39;Archives&#39;</span><span class="p">,</span> <span class="s1">&#39;/functions/archives.html&#39;</span><span class="p">),</span>
-    <span class="p">(</span><span class="s1">&#39;About Me&#39;</span><span class="p">,</span> <span class="s1">&#39;/functions/aboutMe.html&#39;</span><span class="p">)</span>
-<span class="p">)</span>
+              <h2>虚拟机跟主机共享文件夹</h2>
+<p>主机是win7，虚拟机是vmware，上面装的ubuntu 14. 刚开始的时候给ubuntu分配的硬盘小了，所以这时候只能做两件事：一是给虚拟机增加磁盘空间，这个回头再说；二就是虚拟机跟主机共享文件夹，这样文件存放在主机上，虚拟机也可以用。这比第一种方法节省空间。</p>
+<h3>步骤</h3>
+<p>1: 首先在虚拟机点击右键，选择设置</p>
+<p><img alt="alt text" src="figures\vmware_sharefolder_01.png" /></p>
+<p>2: 然后如下图，点击选项，共享文件夹，一步步设置，这都没有问题</p>
+<p><img alt="alt text" src="figures\vmware_sharefolder_02.jpg" /></p>
+<p>完成上面的步骤以后，进入guest系统，/mnt/hgfs下面应该会出现要共享的文件夹。</p>
+<p>可是很傻B的是/mnt下面什么都没有。网上什么说法都有，试了好几个都没搞好。最后得到的解决办法是：<strong>重新安装 vmware-tools</strong></p>
+<p><strong>安装 vmware-tools步骤</strong></p>
+<p>1: 在guest系统（ubuntu）下面，点击虚拟机，然后点击 "安装 vmware tools"</p>
+<p><img alt="alt text" src="figures\vmware_sharefolder_03.png" /> </p>
+<p>2: 这个时候的vmware tools在虚拟光驱下面，是tar.gz文件。需要解压。比如下图解压到Downloads/vmtool文件夹下面</p>
+<p><img alt="alt text" src="figures\vmware_sharefolder_04.jpg" /> </p>
+<p>3: 还有一个办法就是把虚拟光驱加载到某个文件夹，比如下面把它加载到/mnt下面</p>
+<div class="highlight"><pre>mount /dev/cdrom /mnt
+
+cd /tmp
+
+tar zxf /mnt/vmware-linux-tools.tar.gz
+
+umount /mnt
 </pre></div>
 
 
-<ol>
-<li>更改右边的sidebar</li>
-</ol>
-<p>需要到主题里面去修改(比如我选的gum主题)。进入pelican-themes/gum/template/sidebar.html，然后修改下面的（下面例子里面把原来的categories改为分类）</p>
-<div class="highlight"><pre><span class="nt">&lt;h4&gt;</span>分类<span class="nt">&lt;/h4&gt;</span>
-<span class="cp">{%</span> <span class="k">if</span> <span class="nv">categories</span> <span class="cp">%}</span>
-<span class="nt">&lt;ul&gt;</span>
-        <span class="cp">{%</span> <span class="k">for</span> <span class="nv">cat</span><span class="o">,</span> <span class="nv">null</span> <span class="k">in</span> <span class="nv">categories</span> <span class="cp">%}</span>
-                <span class="nt">&lt;li&gt;&lt;a</span> <span class="na">href=</span><span class="s">&quot;</span><span class="cp">{{</span> <span class="nv">SITEURL</span> <span class="cp">}}</span><span class="s">/</span><span class="cp">{{</span> <span class="nv">cat.url</span><span class="o">|</span><span class="nf">e</span> <span class="cp">}}</span><span class="s">&quot;</span><span class="nt">&gt;</span><span class="cp">{{</span> <span class="nv">cat</span> <span class="cp">}}</span><span class="nt">&lt;/a&gt;&lt;/li&gt;</span>
-        <span class="cp">{%</span> <span class="k">endfor</span> <span class="cp">%}</span>
-<span class="nt">&lt;/ul&gt;</span>
-<span class="cp">{%</span> <span class="k">endif</span> <span class="cp">%}</span>
-</pre></div>
-
-
-<p>Reference</p>
-<ol>
-<li><a href="http://pelican-docs-zh-cn.readthedocs.org/en/latest/">pelican官网翻译</a></li>
-<li><a href="http://nafiulis.me/making-a-static-blog-with-pelican.html">一个实例</a></li>
-<li><a href="http://farseerfc.me/zhs/redesign-pelican-theme.html">很漂亮的设计</a> </li>
-</ol>
+<p>4：假如在Downloads/vmtool下面，则进入vmware-tools-distrib文件夹，然后运行 <strong>./vmware-install.pl</strong> </p>
+<p><img alt="alt text" src="figures\vmware_sharefolder_05.jpg" /> </p>
+<p>5: 一路点击下去，结束以后在查看/mnt/hgfs下面，终于可以看见需要的共享文件夹了。</p>
             </div><!-- /.entry-content -->
             <div class="comments">
               <h3>Comments</h3>
               <div id="disqus_thread"></div>
               <script type="text/javascript">
-                var disqus_identifier = "pages/2015/08/01/static-github-pages-with-pelican/";
+                var disqus_identifier = "pages/2015/09/26/share-folders-in-windows-with-vmware-guest-ubuntu/";
                 (function() {
                 var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
                 dsq.src = 'http://songhuiming.disqus.com/embed.js';
