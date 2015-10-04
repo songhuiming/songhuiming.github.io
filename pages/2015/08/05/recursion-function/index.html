@@ -4,7 +4,7 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>*args and **kvargs in python &mdash; pydata</title>
+  <title>Recursion Function &mdash; pydata</title>
   <meta name="author" content="shm">
 
   <link href="/atom.xml" type="application/atom+xml" rel="alternate"
@@ -62,9 +62,9 @@
 <div>
   <article class="hentry" role="article">
 <header>
-      <h1 class="entry-title">*args and **kvargs in python</h1>
+      <h1 class="entry-title">Recursion Function</h1>
     <p class="meta">
-<time datetime="2015-09-25T00:00:00-05:00" pubdate>Fri 25 September 2015</time>    </p>
+<time datetime="2015-08-05T00:00:00-05:00" pubdate>Wed 05 August 2015</time>    </p>
 </header>
 
   <div class="entry-content"><style type="text/css">/*!
@@ -139,27 +139,46 @@
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>今天在写Jimmy的calc engine的时候发现的一个问题：第一遍draft code的时候没有使用函数，而是直接一行行的写，每一个变量都有一个名字。写完以后需要整理成python的function，这样可以通用化。</p>
-<p>但是一个问题是：当把新的data传进函数的时候，比如新的data是pandas dataframe的每一行，这个时候要么把每一行的不同列都分别赋值给函数的参数，能不能把这一行当作一个整体，比如是一个list传递进去？答案是肯定的。就是需要用</p>
-<p><strong>*args</strong></p>
-<p>（顺便说一下    <strong>**kvargs</strong>）</p>
+<h4 id="好多地方都会用到recursion-function，特别是在构造decision-tree的时候">好多地方都会用到recursion function，特别是在构造decision tree的时候<a class="anchor-link" href="#好多地方都会用到recursion-function，特别是在构造decision-tree的时候">¶</a></h4><h4 id="recursion-function就是函数调用自身。recursion-function通常需要下面两个过程：">recursion function就是函数调用自身。recursion function通常需要下面两个过程：<a class="anchor-link" href="#recursion-function就是函数调用自身。recursion-function通常需要下面两个过程：">¶</a></h4><ol>
+<li><p><strong>Base case</strong>: 就是不需要调用自身就能给出答案的部分，通常是递归初始的时候。比如求阶乘 $n=1$ 和 $n=0$ 的时候</p>
+</li>
+<li><p><strong>Recursive case</strong>: 函数调用自身进行计算的部分. 比如阶乘里面  $f(n) = f(n - 1) \times n = (n - 1)! \times n$ 部分</p>
+</li>
+</ol>
+<h5 id="下面是几个例子，用来说明recursion怎么构造，怎么使用">下面是几个例子，用来说明recursion怎么构造，怎么使用<a class="anchor-link" href="#下面是几个例子，用来说明recursion怎么构造，怎么使用">¶</a></h5>
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In [21]:</div>
+<div class="prompt input_prompt">In [1]:</div>
 <div class="inner_cell">
 <div class="input_area">
-<div class=" highlight hl-ipython2"><pre><span class="kn">import</span> <span class="nn">pandas</span> <span class="kn">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<div class=" highlight hl-ipython2"><pre><span class="sd">''' </span>
+<span class="sd">第一个问题是构造pascal 三角。下一行最两边是1， 生下来的元素是上一行两两元素的和。所以这么构造：</span>
+<span class="sd">1： 只有一行或者两行，那就是1</span>
+<span class="sd">2： 从第三行开始，两边是1，中间是上一行从第一个元素开始，第一个元素与第二个元素的和。</span>
 
-<span class="k">def</span> <span class="nf">test</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">e</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">a</span>
+<span class="sd">Question 1. Pascal's Triangle:</span>
 
-<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">9999</span><span class="p">)</span>
-<span class="n">np_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
-<span class="k">print</span> <span class="n">df</span>
+<span class="sd">              1</span>
+<span class="sd">           1     1</span>
+<span class="sd">        1     2    1</span>
+<span class="sd">      1    3     3    1</span>
+<span class="sd">   1    4     6     4    1</span>
+<span class="sd">1    5    10     10    5    1</span>
+<span class="sd">'''</span>
+
+<span class="k">def</span> <span class="nf">pascal_t</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">po</span> <span class="o">=</span> <span class="n">pascal_t</span><span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">po</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">po</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">po</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)]</span> <span class="o">+</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+<span class="k">print</span> <span class="n">pascal_t</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -168,51 +187,42 @@
 <div class="output">
 <div class="output_area"><div class="prompt"></div>
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>[[6 1 6 5]
- [5 9 6 8]
- [0 8 1 5]
- [3 1 0 6]
- [4 4 6 8]]
+<pre>[1, 5, 10, 10, 5, 1]
 </pre>
 </div>
 </div>
 </div>
 </div>
 </div>
-<div class="cell border-box-sizing text_cell rendered">
-<div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>test函数有4个参数，它的目的是返回第一个参数</p>
-<p>np_array是一个5*4的array，现在想把每一行都作为test的参数传进去。如果直接把np_array的一行放进去肯定不行：一行是一个list，但是test函数需要4个参数。</p>
-<p>这个时候在list前面加个 <strong>*</strong> 就可以解决</p>
-</div>
-</div>
-</div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In [22]:</div>
+<div class="prompt input_prompt">In [2]:</div>
 <div class="inner_cell">
 <div class="input_area">
-<div class=" highlight hl-ipython2"><pre><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np_array</span><span class="p">:</span>
-    <span class="k">print</span> <span class="n">test</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+<div class=" highlight hl-ipython2"><pre><span class="sd">'''</span>
+<span class="sd">Fibonacci数：第n个数是前面两个数的和</span>
+
+<span class="sd">Question 2: Fibonacci numbers from Pascal Triangle</span>
+<span class="sd">'''</span>
+<span class="k">def</span> <span class="nf">fib</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+    <span class="k">pass</span>
+   
+<span class="n">memo</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="mi">1</span><span class="p">}</span>
+<span class="k">def</span> <span class="nf">fibm</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">memo</span><span class="p">:</span>
+        <span class="n">memo</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">fibm</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">fibm</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">memo</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+
+<span class="n">fibm</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span>    
 </pre></div>
 </div>
 </div>
 </div>
 <div class="output_wrapper">
 <div class="output">
-<div class="output_area"><div class="prompt"></div>
-<div class="output_subarea output_text output_error">
-<pre>
-<span class="ansired">---------------------------------------------------------------------------</span>
-<span class="ansired">TypeError</span>                                 Traceback (most recent call last)
-<span class="ansigreen">&lt;ipython-input-22-d2259d52cb20&gt;</span> in <span class="ansicyan">&lt;module&gt;</span><span class="ansiblue">()</span>
-<span class="ansigreen">      1</span> <span class="ansigreen">for</span> i <span class="ansigreen">in</span> np_array<span class="ansiyellow">:</span><span class="ansiyellow"></span>
-<span class="ansigreen">----&gt; 2</span><span class="ansiyellow">     </span><span class="ansigreen">print</span> test<span class="ansiyellow">(</span>i<span class="ansiyellow">)</span><span class="ansiyellow"></span>
-
-<span class="ansired">TypeError</span>: test() takes exactly 4 arguments (1 given)</pre>
+<div class="output_area"><div class="prompt output_prompt">Out[2]:</div>
+<div class="output_text output_subarea output_execute_result">
+<pre>8</pre>
 </div>
 </div>
 </div>
@@ -220,11 +230,46 @@
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In [23]:</div>
+<div class="prompt input_prompt">In [3]:</div>
 <div class="inner_cell">
 <div class="input_area">
-<div class=" highlight hl-ipython2"><pre><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np_array</span><span class="p">:</span>
-    <span class="k">print</span> <span class="n">test</span><span class="p">(</span><span class="o">*</span><span class="n">i</span><span class="p">)</span>
+<div class=" highlight hl-ipython2"><pre><span class="sd">'''</span>
+<span class="sd">列出小于等于n的质数：列出从2到n的所有数，然后对i=2，删去i的2倍，3倍，等等；对i=3，做同样的事情；</span>
+<span class="sd">最后生下来的数字既不是2的倍数，也不是3的倍数，也不是4的倍数，等等。它们就是质数</span>
+
+<span class="sd">Question 3. prime numbers. The sieve of Eratosthenes to find all prime numbers up to n.</span>
+<span class="sd">1. Create a list of integers from two to n: 2, 3, 4, ..., n</span>
+<span class="sd">2. Start with a counter i set to 2, i.e. the first prime number</span>
+<span class="sd">3. Starting from i+i, count up by i and remove those numbers from the list, i.e. 2*i, 3*i, 4*i ... </span>
+<span class="sd">4. Find the first number of the list following i. This is the next prime number.</span>
+<span class="sd">5. Set i to the number found in the previous step</span>
+<span class="sd">6. Repeat steps 3 and 4 until i is greater than n. (As an improvement: It's enough to go to the square root of n)</span>
+<span class="sd">7. All the numbers, which are still in the list, are prime numbers</span>
+<span class="sd">'''</span>
+<span class="k">def</span> <span class="nf">sieve_prime_1</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">lst</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>                                     <span class="c"># step 1</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>                                   <span class="c"># step 2 </span>
+            <span class="n">no_p</span> <span class="o">=</span> <span class="p">[</span><span class="n">j</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="n">i</span><span class="p">,</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">)]</span>          <span class="c"># step 3 </span>
+            <span class="n">rest</span> <span class="o">=</span> <span class="p">[</span><span class="n">j</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">lst</span> <span class="k">if</span> <span class="n">j</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">no_p</span><span class="p">]</span>            <span class="c"># step 3 to remove and step 4</span>
+            <span class="n">lst</span> <span class="o">=</span> <span class="n">rest</span>                                          <span class="c"># step 5, 6</span>
+        <span class="k">return</span> <span class="n">rest</span>
+
+<span class="k">def</span> <span class="nf">sieve_prime_2</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>     <span class="c"># step 1</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">p</span><span class="p">:</span>
+            <span class="n">no_p</span> <span class="o">=</span> <span class="p">[</span><span class="n">j</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">p</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">)]</span>        <span class="c"># step 2, 3   2*i, 3*i, 4*i ...</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="p">[</span><span class="n">j</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">j</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">no_p</span><span class="p">]</span>            <span class="c"># step 4, 5, 6 </span>
+        <span class="k">return</span> <span class="n">p</span>
+
+
+<span class="k">print</span> <span class="n">sieve_prime_1</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span>
+<span class="k">print</span> <span class="n">sieve_prime_2</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -233,48 +278,98 @@
 <div class="output">
 <div class="output_area"><div class="prompt"></div>
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>6
-5
-0
-3
-4
+<pre>[2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47]
+[2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47]
 </pre>
 </div>
 </div>
 </div>
 </div>
 </div>
-<div class="cell border-box-sizing text_cell rendered">
-<div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p><strong>**kvargs</strong> 或者 <strong>**kwargs</strong> 是传入key value的组合。</p>
-</div>
-</div>
-</div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In [31]:</div>
+<div class="prompt input_prompt">In [4]:</div>
 <div class="inner_cell">
 <div class="input_area">
-<div class=" highlight hl-ipython2"><pre><span class="k">def</span> <span class="nf">test</span><span class="p">(</span><span class="o">**</span><span class="n">kvargs</span><span class="p">):</span>
-    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kvargs</span><span class="p">:</span>
-        <span class="k">print</span> <span class="s">"key = </span><span class="si">%s</span><span class="s"> ,  value = </span><span class="si">%s</span><span class="s">"</span> <span class="o">%</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">kvargs</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+<div class=" highlight hl-ipython2"><pre><span class="sd">'''</span>
+<span class="sd">爬n级台阶：每次可以爬一级或者两级。总共有多少爬法。</span>
+<span class="sd">从第n-1到第n：增加了一级台阶，把这一级台阶插到第n-1次的所有办法里面每个办法里每个位置。然后去除重复的办法。</span>
+<span class="sd">如果n是偶数，增加一个办法：每次都爬两级</span>
+
+<span class="sd">Question 4. I want to go up a flight of stairs that has n steps. I can either take 1 or 2 steps each time. </span>
+<span class="sd">How many different ways can I go up this flight of stairs?  </span>
+<span class="sd">'''</span>
+<span class="c"># n=3,  s = [[1,1,1], [1,2], [2,1]]</span>
+
+<span class="kn">import</span> <span class="nn">itertools</span>
+
+<span class="c"># de-dup the duplicated elements in the list while the elements are lists</span>
+<span class="k">def</span> <span class="nf">dedup_list</span><span class="p">(</span><span class="n">ls</span><span class="p">):</span>
+    <span class="n">ls0</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">ls</span><span class="p">)</span>
+    <span class="n">newls</span> <span class="o">=</span> <span class="p">[</span><span class="n">ls0</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ls0</span><span class="p">))</span> <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">ls</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="n">ls</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]]</span>
+    <span class="k">return</span> <span class="n">newls</span>
+
+<span class="c"># from n-1 to n, insert '1' to all the positions in the results of step n-1</span>
+<span class="c"># s is the result in step n-1, it is a list of lists</span>
+<span class="c"># n=3,  s = [[1,1,1], [1,2], [2,1]]</span>
+<span class="k">def</span> <span class="nf">inserts</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+    <span class="n">newls</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">ls0</span> <span class="ow">in</span> <span class="n">s</span><span class="p">:</span>          <span class="c">#e.g. ls0 = [1,1,1]</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">ls0</span><span class="p">))</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">ls0p</span> <span class="o">=</span> <span class="n">ls0</span><span class="p">[:</span><span class="n">p</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">ls0</span><span class="p">[</span><span class="n">p</span><span class="p">:]</span>
+            <span class="n">newls</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ls0p</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">dedup_list</span><span class="p">(</span><span class="n">newls</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">steps</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[[</span><span class="mi">1</span><span class="p">]]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">s0</span> <span class="o">=</span> <span class="n">steps</span><span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">n</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inserts</span><span class="p">(</span><span class="n">s0</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inserts</span><span class="p">(</span><span class="n">s0</span><span class="p">)</span> <span class="o">+</span> <span class="p">[[</span><span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">n</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)]</span>
         
-<span class="n">test</span><span class="p">(</span><span class="n">x</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="mi">8</span><span class="p">)</span>
+<span class="n">steps</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 <div class="output_wrapper">
 <div class="output">
-<div class="output_area"><div class="prompt"></div>
-<div class="output_subarea output_stream output_stdout output_text">
-<pre>key = y ,  value = 5
-key = x ,  value = 3
-key = z ,  value = 8
-</pre>
+<div class="output_area"><div class="prompt output_prompt">Out[4]:</div>
+<div class="output_text output_subarea output_execute_result">
+<pre>[[1, 1, 1], [1, 2], [2, 1]]</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In [5]:</div>
+<div class="inner_cell">
+<div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span class="sd">'''</span>
+<span class="sd">反序一个列表：把最后一个元素拿出来放最前面，然后反序拿出最后一个元素后剩下来的列表</span>
+<span class="sd">'''</span>
+
+<span class="k">def</span> <span class="nf">reverse_iter</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">x</span>
+    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span> <span class="o">+</span> <span class="n">reverse_iter</span><span class="p">(</span><span class="n">x</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+<span class="n">reverse_iter</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="output_wrapper">
+<div class="output">
+<div class="output_area"><div class="prompt output_prompt">Out[5]:</div>
+<div class="output_text output_subarea output_execute_result">
+<pre>[5, 4, 3, 2, 1]</pre>
 </div>
 </div>
 </div>
@@ -285,18 +380,8 @@ key = z ,  value = 8
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>还可以把 <strong>*args</strong> <strong>**kvargs</strong>一起作为函数的参数，但是一定要注意的是：传进真实参数的时候，要跟<strong>*args</strong> <strong>**kvargs</strong>的顺序一致，否则会报错。</p>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In [ ]:</div>
-<div class="inner_cell">
-<div class="input_area">
-<div class=" highlight hl-ipython2"><pre> 
-</pre></div>
-</div>
+<p>reference</p>
+<p>1.: <a href="http://www.python-course.eu/python3_recursive_functions.php">Recursive Functions</a></p>
 </div>
 </div>
 </div>
@@ -332,10 +417,10 @@ key = z ,  value = 8
 <p class="meta">
   <span class="byline author vcard">
     Posted by <span class="fn">
-        Huiming Song
+        <a href="/author/huiming-song.html">Huiming Song</a>
     </span>
   </span>
-<time datetime="2015-09-25T00:00:00-05:00" pubdate>Fri 25 September 2015</time>  <span class="categories">
+<time datetime="2015-08-05T00:00:00-05:00" pubdate>Wed 05 August 2015</time>  <span class="categories">
     <a class='category' href='/category/programming.html'>programming</a>
   </span>
   <span class="categories">
@@ -350,19 +435,19 @@ key = z ,  value = 8
     <h1>Recent Posts</h1>
     <ul id="recent_posts">
       <li class="post">
-          <a href="/pages/2015/09/29/en/">first row partition by var order by the numeric var</a>
+          <a href="/pages/2015/09/29/first-row-partition-by-var-order-by-the-numeric-var/">first row partition by var order by the numeric var</a>
       </li>
       <li class="post">
-          <a href="/pages/2015/09/26/cn/">share folders in windows with vmware guest ubuntu</a>
+          <a href="/pages/2015/09/26/set-up-datacode-between-hostguestdropbox/">Set up data/code between host/guest/dropbox</a>
       </li>
       <li class="post">
-          <a href="/pages/2015/09/26/en/">Set up data/code between host/guest/dropbox</a>
+          <a href="/pages/2015/09/26/share-folders-in-windows-with-vmware-guest-ubuntu/">share folders in windows with vmware guest ubuntu</a>
       </li>
       <li class="post">
-          <a href="/pages/2015/09/25/cn/">*args and **kvargs in python</a>
+          <a href="/pages/2015/09/25/args-and-kvargs-in-python/">*args and **kvargs in python</a>
       </li>
       <li class="post">
-          <a href="/pages/2015/09/25/cn/">Best Subset Regression</a>
+          <a href="/pages/2015/09/25/best-subset-regression/">Best Subset Regression</a>
       </li>
     </ul>
   </section>
@@ -393,9 +478,9 @@ key = z ,  value = 8
   <script src="/theme/js/octopress.js" type="text/javascript"></script>
   <script type="text/javascript">
     var disqus_shortname = 'songhuiming';
-    var disqus_identifier = '/pages/2015/09/25/cn/';
-    var disqus_url = '/pages/2015/09/25/cn/';
-    var disqus_title = '*args and **kvargs in python';
+    var disqus_identifier = '/pages/2015/08/05/recursion-function/';
+    var disqus_url = '/pages/2015/08/05/recursion-function/';
+    var disqus_title = 'Recursion Function';
     (function() {
       var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
       dsq.src = "//" + disqus_shortname + '.disqus.com/embed.js';
