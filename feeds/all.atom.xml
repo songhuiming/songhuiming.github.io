@@ -217,45 +217,38 @@ p.grades = 90
 
 &lt;span class="n"&gt;p&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;Person&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
 &lt;span class="n"&gt;p&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;grades&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;90&lt;/span&gt;  &lt;span class="c"&gt;#报错，因为grades不在许可的属性之列&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;</summary><category term="python"></category></entry><entry><title>python class (5): 使用装饰器`@property`来设定属性</title><link href="/pages/2015/10/01/python-class-5-shi-yong-zhuang-shi-qi-propertylai-she-ding-shu-xing/" rel="alternate"></link><updated>2015-10-01T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:,2015-10-01:pages/2015/10/01/python-class-5-shi-yong-zhuang-shi-qi-propertylai-she-ding-shu-xing/</id><summary type="html">&lt;p&gt;python中有时候需要对定义的属性/方法添加一些限制，或者进行一些运算。比如定义一个圆，给定半径，那么直径和面积都会随之而定。&lt;/p&gt;
+&lt;/pre&gt;&lt;/div&gt;</summary><category term="python"></category></entry><entry><title>python class (5): 使用装饰器@property来设定属性</title><link href="/pages/2015/10/01/python-class-5-shi-yong-zhuang-shi-qi-propertylai-she-ding-shu-xing/" rel="alternate"></link><updated>2015-10-01T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:,2015-10-01:pages/2015/10/01/python-class-5-shi-yong-zhuang-shi-qi-propertylai-she-ding-shu-xing/</id><summary type="html">&lt;p&gt;python中有时候需要对定义的属性/方法添加一些限制，或者进行一些运算。比如定义一个圆，给定半径，那么直径和面积都会随之而定。&lt;/p&gt;
 &lt;p&gt;下面这个例子是在SF python meetup上Simeon Franklin给的一个小作业&lt;/p&gt;
-&lt;p&gt;"""
-Properties let us intercept attribute access, sneaking in a function
-call where it looks like we merely lookup or set an attribute on an
-object.&lt;/p&gt;
-&lt;p&gt;The Circle class below is broken: its constructor takes a radius
-argument&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;blockquote&gt;
-&lt;blockquote&gt;
-&lt;p&gt;c = Circle(10)&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;/blockquote&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;and calculates the diameter&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;blockquote&gt;
-&lt;blockquote&gt;
-&lt;p&gt;c.diameter
-20&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;/blockquote&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;But what if you changed the radius? Now the diameter would be incorrect!&lt;/p&gt;
-&lt;p&gt;Fix the class so that the diameter and radius are kept in sync.&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;blockquote&gt;
-&lt;blockquote&gt;
-&lt;p&gt;c.radius = 5
-c.diameter
-10
-c.diameter = 12
-c.radius
-6&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;/blockquote&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;"""&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="s2"&gt;&amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
+&lt;span class="s2"&gt;Properties let us intercept attribute access, sneaking in a function&lt;/span&gt;
+&lt;span class="s2"&gt;call where it looks like we merely lookup or set an attribute on an&lt;/span&gt;
+&lt;span class="s2"&gt;object.&lt;/span&gt;
+
+&lt;span class="s2"&gt;The Circle class below is broken: its constructor takes a radius&lt;/span&gt;
+&lt;span class="s2"&gt;argument&lt;/span&gt;
+
+&lt;span class="s2"&gt;&amp;gt;&amp;gt;&amp;gt; c = Circle(10)&lt;/span&gt;
+
+&lt;span class="s2"&gt;and calculates the diameter&lt;/span&gt;
+
+&lt;span class="s2"&gt;&amp;gt;&amp;gt;&amp;gt; c.diameter&lt;/span&gt;
+&lt;span class="s2"&gt;20&lt;/span&gt;
+
+&lt;span class="s2"&gt;But what if you changed the radius? Now the diameter would be incorrect!&lt;/span&gt;
+
+&lt;span class="s2"&gt;Fix the class so that the diameter and radius are kept in sync.&lt;/span&gt;
+
+&lt;span class="s2"&gt;&amp;gt;&amp;gt;&amp;gt; c.radius = 5&lt;/span&gt;
+&lt;span class="s2"&gt;&amp;gt;&amp;gt;&amp;gt; c.diameter&lt;/span&gt;
+&lt;span class="s2"&gt;10&lt;/span&gt;
+&lt;span class="s2"&gt;&amp;gt;&amp;gt;&amp;gt; c.diameter = 12&lt;/span&gt;
+&lt;span class="s2"&gt;&amp;gt;&amp;gt;&amp;gt; c.radius&lt;/span&gt;
+&lt;span class="s2"&gt;6&lt;/span&gt;
+
+&lt;span class="s2"&gt;&amp;quot;&amp;quot;&amp;quot;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;math&lt;/span&gt;
 
 &lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;Circle&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;object&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
