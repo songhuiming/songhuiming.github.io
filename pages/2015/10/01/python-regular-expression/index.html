@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>python regular expression &mdash; pydata</title>
+  <meta name="author" content="shm">
+
+  <link href="/atom.xml" type="application/atom+xml" rel="alternate"
+        title="pydata Atom Feed" />
+
+
+
+
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+    <link href="/favicon.png" rel="icon">
+
+  <link href="/theme/css/main.css" media="screen, projection"
+        rel="stylesheet" type="text/css">
+
+  <link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic"
+        rel="stylesheet" type="text/css">
+  <link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic"
+        rel="stylesheet" type="text/css">
+</head>
+
+<body>
+  <header role="banner"><hgroup>
+  <h1><a href="/">pydata</a></h1>
+    <h2>Keep Looking, Don't Settle</h2>
+</hgroup></header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-atom">Atom</a></li>
+</ul>
+
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="sitesearch" value="">
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+
+<ul class="main-navigation">
+    <li><a href="/functions/archives.html">Archives</a></li>
+      <li class="active">
+        <a href="/category/programming.html">Programming</a>
+      </li>
+</ul></nav>
+  <div id="main">
+    <div id="content">
+<div>
+  <article class="hentry" role="article">
+<header>
+      <h1 class="entry-title">python regular expression</h1>
+    <p class="meta">
+<time datetime="2015-10-01T00:00:00-05:00" pubdate>Thu 01 October 2015</time>    </p>
+</header>
+
+  <div class="entry-content"><p>正则表达式因为平时用的不多，每次要用的时候都要google去找怎么用。所以干脆把常用的记录下来，这样以后要用的时候可以快速找到。更多的可以参考这个视频：python正则表达式</p>
+<p>通常python的正则表达式分为这两步：</p>
+<h5>第一步，把想要的pattern编译成re pattern对象</h5>
+<p><code>pattern = re.compile()</code>： 将字符串形式的表达式编译成pattern对象</p>
+<h5>第二步，使用re方法，<code>match，search，split，finditer，sub，subn，findall</code></h5>
+<p>下面记录下几个在<code>text analysis</code>中常用的python的正则表达式。</p>
+<p>1： <code>CountVectorizer</code>中的 <code>re.compile(r"(?u)\b\w\w+\b")</code>，用来搜索text文档中所有的单词，并且单词长度大于<code>1（\w+）</code>。</p>
+<div class="highlight"><pre><span class="n">token_pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s">r&quot;(?u)\b\w\w+\b&quot;</span><span class="p">)</span>
+<span class="n">token_pattern</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s">&quot;this is a good example&quot;</span><span class="p">)</span>
+<span class="n">Out</span><span class="p">[</span><span class="mi">69</span><span class="p">]:</span> <span class="p">[</span><span class="s">&#39;this&#39;</span><span class="p">,</span> <span class="s">&#39;is&#39;</span><span class="p">,</span> <span class="s">&#39;good&#39;</span><span class="p">,</span> <span class="s">&#39;example&#39;</span><span class="p">]</span>
+</pre></div>
+
+
+<p>2： <code>CountVectorizer</code>中的 <code>re.compile(r"(?u)\b\w+\b")</code>，用来搜索text文档中所有的单词，包括长度为1的单词 。</p>
+<div class="highlight"><pre><span class="n">token_pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s">r&#39;(?u)\b\w+\b&#39;</span><span class="p">)</span>
+<span class="n">token_pattern</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s">&quot;this is a good example&quot;</span><span class="p">)</span>
+<span class="n">Out</span><span class="p">[</span><span class="mi">74</span><span class="p">]:</span> <span class="p">[</span><span class="s">&#39;this&#39;</span><span class="p">,</span> <span class="s">&#39;is&#39;</span><span class="p">,</span> <span class="s">&#39;a&#39;</span><span class="p">,</span> <span class="s">&#39;good&#39;</span><span class="p">,</span> <span class="s">&#39;example&#39;</span><span class="p">]</span>
+</pre></div>
+
+
+<p>3： 以", '来分割单词，比如说 ['this is a bus, that is a car']会被分割成['this is a bus', 'that is a car']</p>
+<div class="highlight"><pre><span class="n">reexp</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s">&#39;,\s+&#39;</span><span class="p">)</span>
+<span class="n">In</span> <span class="p">[</span><span class="mi">77</span><span class="p">]:</span> <span class="n">reexp</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;this is a bus, that is a car&#39;</span><span class="p">)</span> 
+<span class="n">Out</span><span class="p">[</span><span class="mi">77</span><span class="p">]:</span> <span class="p">[</span><span class="s">&#39;this is a bus&#39;</span><span class="p">,</span> <span class="s">&#39;that is a car&#39;</span><span class="p">]</span>
+</pre></div>
+
+
+<p>注意 <code>\s+</code> 表示逗号后面有一个空格，所以如果输入 ['this is a bus,that is a car'] 会得到不同的结果，那是因为输入的文字逗号后面没有空格</p>
+<div class="highlight"><pre><span class="n">reexp</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;this is a bus,that is a car&#39;</span><span class="p">)</span>
+<span class="n">Out</span><span class="p">[</span><span class="mi">78</span><span class="p">]:</span> <span class="p">[</span><span class="s">&#39;this is a bus,that is a car&#39;</span><span class="p">]</span>
+</pre></div></div>
+    <footer>
+<p class="meta">
+  <span class="byline author vcard">
+    Posted by <span class="fn">
+        <a href="/author/huiming-song.html">Huiming Song</a>
+    </span>
+  </span>
+<time datetime="2015-10-01T00:00:00-05:00" pubdate>Thu 01 October 2015</time>  <span class="categories">
+    <a class='category' href='/category/programming.html'>programming</a>
+  </span>
+  <span class="categories">
+    <a class="category" href="/tag/python.html">python</a>,    <a class="category" href="/tag/re.html">re</a>  </span>
+</p><div class="sharing">
+</div>    </footer>
+  </article>
+
+</div>
+<aside class="sidebar">
+  <section>
+    <h1>Recent Posts</h1>
+    <ul id="recent_posts">
+      <li class="post">
+          <a href="/pages/2015/10/01/python-class-1-class-object-attribute-and-method/">python class (1): class, object, attribute and method</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2015/10/01/python-regular-expression/">python regular expression</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2015/09/29/first-row-partition-by-var-order-by-the-numeric-var/">first row partition by var order by the numeric var</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2015/09/26/set-up-datacode-between-hostguestdropbox/">Set up data/code between host/guest/dropbox</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2015/09/26/share-folders-in-windows-with-vmware-guest-ubuntu/">share folders in windows with vmware guest ubuntu</a>
+      </li>
+    </ul>
+  </section>
+  <section>
+      
+    <h1>Categories</h1>
+    <ul id="recent_posts">
+        <li><a href="/category/programming.html">Programming</a></li>
+    </ul>
+  </section>
+ 
+
+  <section>
+  <h1>Tags</h1>
+    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/datamining.html">dataMining</a>,    <a href="/tag/python.html">python</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/re.html">re</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/sklearn.html">sklearn</a>  </section>
+
+
+    <section>
+        <h1>Social</h1>
+        <ul>
+            <li><a href="/atom.xml" type="application/atom+xml" rel="alternate">Atom</a></li>
+            <li><a href="https://www.linkedin.com/pub/huiming-song/24/735/349" target="_blank">Linkedin</a></li>
+        </ul>
+    </section>
+    <section>
+        <h1>Blogroll</h1>
+        <ul>
+            <li><a href="http://easysas.blogspot.com/" target="_blank">my old SAS blog</a></li>
+        </ul>
+    </section>
+
+</aside>    </div>
+  </div>
+  <footer role="contentinfo"><p>
+    Copyright &copy;  2015  shm &mdash;
+  <span class="credit">Powered by <a href="http://getpelican.com">Pelican</a></span>
+</p></footer>
+  <script src="/theme/js/modernizr-2.0.js"></script>
+  <script src="/theme/js/ender.js"></script>
+  <script src="/theme/js/octopress.js" type="text/javascript"></script>
+  <script type="text/javascript">
+    var disqus_shortname = 'songhuiming';
+    var disqus_identifier = '/pages/2015/10/01/python-regular-expression/';
+    var disqus_url = '/pages/2015/10/01/python-regular-expression/';
+    var disqus_title = 'python regular expression';
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = "//" + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+     })();
+  </script>
+</body>
+</html>
