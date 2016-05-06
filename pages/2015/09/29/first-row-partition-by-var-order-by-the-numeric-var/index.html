@@ -77,7 +77,7 @@
 <p>2: now for each borrower, row_number = 1, means the earliest fac_auth_eff_dt, row_number = 1 means the second earliest fac_auth_eff_dt and so on.</p>
 <p>3: finally pick the data with row_number = 1 to get the first one</p>
 <p><img alt="alt text" src="/figures/sql_first_row_by_group_2.png" /></p>
-<div class="highlight"><pre><span class="k">with</span> <span class="n">testtable</span> <span class="k">as</span><span class="p">(</span>
+<div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">testtable</span> <span class="k">as</span><span class="p">(</span>
 <span class="k">select</span> <span class="n">borrower_uen</span><span class="p">,</span> <span class="n">fac_auth_eff_dt</span><span class="p">,</span> <span class="n">row_number</span><span class="p">()</span> <span class="n">over</span> <span class="p">(</span><span class="n">partition</span> <span class="k">by</span> <span class="n">borrower_uen</span> <span class="k">order</span> <span class="k">by</span> <span class="n">fac_auth_eff_dt</span><span class="p">)</span> <span class="n">rn</span><span class="p">,</span> <span class="n">risk_rating</span> <span class="k">as</span> <span class="n">origination_risk_rating</span>
 <span class="k">from</span> <span class="n">bslh</span><span class="p">.</span><span class="n">bcs_lending_airb_m</span> 
 <span class="k">where</span> <span class="n">fac_commitment_amt</span> <span class="o">&gt;</span> <span class="mi">1000</span> <span class="k">and</span> <span class="n">borrower_rrs</span> <span class="o">=</span> <span class="s1">&#39;CM1&#39;</span> <span class="k">and</span> <span class="n">fac_auth_eff_dt</span> <span class="k">is</span> <span class="k">not</span> <span class="k">null</span>
