@@ -4,7 +4,7 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>python class (4): 只允许添加给定的属性 __slots__ &mdash; pydata</title>
+  <title>pandas data describe to get summary information &mdash; pydata</title>
   <meta name="author" content="shm">
 
 
@@ -63,36 +63,152 @@
 <div>
   <article class="hentry" role="article">
 <header>
-      <h1 class="entry-title">python class (4): 只允许添加给定的属性 __slots__</h1>
+      <h1 class="entry-title">pandas data describe to get summary information</h1>
     <p class="meta">
-<time datetime="2015-10-01T00:00:00-05:00" pubdate>Thu 01 October 2015</time>    </p>
+<time datetime="2015-09-26T00:00:00-05:00" pubdate>Sat 26 September 2015</time>    </p>
 </header>
 
-  <div class="entry-content"><p>怎么才能限制class的属性，只允许添加被许可的属性 （<strong>slots</strong>）?</p>
-<div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Person</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
- <span class="k">pass</span>
+  <div class="entry-content"><div class="highlight"><pre><span></span><span class="c1"># pandas DataFrame describe for categorical and numeric data</span>
+<span class="c1"># based on dtypes(object or numeric), check the summary info separately</span>
 
-<span class="n">p</span> <span class="o">=</span> <span class="n">Person</span><span class="p">()</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="kn">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+
+<span class="n">iris</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s1">r&#39;H:\python\data\iris.csv&#39;</span><span class="p">)</span>
+<span class="c1"># data info with each column dtype</span>
+<span class="n">iris</span><span class="o">.</span><span class="n">info</span><span class="p">()</span>
 </pre></div>
 
 
-<p>此时可以添加许多属性</p>
-<div class="highlight"><pre><span></span>p.name = &#39;Mike&#39;
-p.age = 20
-p.grades = 90
+<div class="highlight"><pre><span></span>&lt;class &#39;pandas.core.frame.DataFrame&#39;&gt;
+Int64Index: 150 entries, 0 to 149
+Data columns (total 5 columns):
+sepal _length    150 non-null float64
+sepal_width      150 non-null float64
+petal_length     150 non-null float64
+petal_width      150 non-null float64
+iris_class       150 non-null object
+dtypes: float64(4), object(1)
+memory usage: 7.0+ KB
 </pre></div>
 
 
-<p>如果要限制只允许添加给定的属性，那么使用<code>__slots__</code> </p>
-<div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Person</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
- <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-  <span class="k">pass</span>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">check_qual</span><span class="p">(</span><span class="n">indata</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">indata</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">include</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;object&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">describe</span><span class="p">()</span>
 
- <span class="n">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;age&#39;</span><span class="p">)</span>  <span class="c1">#只允许添加name和age两个属性，用tuple来定义</span>
+<span class="k">def</span> <span class="nf">check_quant</span><span class="p">(</span><span class="n">indata</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">indata</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">exclude</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;object&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">describe</span><span class="p">()</span>
 
-<span class="n">p</span> <span class="o">=</span> <span class="n">Person</span><span class="p">()</span>
-<span class="n">p</span><span class="o">.</span><span class="n">grades</span> <span class="o">=</span> <span class="mi">90</span>  <span class="c1">#报错，因为grades不在许可的属性之列</span>
-</pre></div></div>
+
+<span class="n">check_qual</span><span class="p">(</span><span class="n">iris</span><span class="p">)</span>
+</pre></div>
+
+
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>iris_class</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>count</th>
+      <td>150</td>
+    </tr>
+    <tr>
+      <th>unique</th>
+      <td>3</td>
+    </tr>
+    <tr>
+      <th>top</th>
+      <td>Iris-setosa</td>
+    </tr>
+    <tr>
+      <th>freq</th>
+      <td>50</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<div class="highlight"><pre><span></span>check_quant(iris)
+</pre></div>
+
+
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>sepal _length</th>
+      <th>sepal_width</th>
+      <th>petal_length</th>
+      <th>petal_width</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>count</th>
+      <td>150.000000</td>
+      <td>150.000000</td>
+      <td>150.000000</td>
+      <td>150.000000</td>
+    </tr>
+    <tr>
+      <th>mean</th>
+      <td>5.843333</td>
+      <td>3.054000</td>
+      <td>3.758667</td>
+      <td>1.198667</td>
+    </tr>
+    <tr>
+      <th>std</th>
+      <td>0.828066</td>
+      <td>0.433594</td>
+      <td>1.764420</td>
+      <td>0.763161</td>
+    </tr>
+    <tr>
+      <th>min</th>
+      <td>4.300000</td>
+      <td>2.000000</td>
+      <td>1.000000</td>
+      <td>0.100000</td>
+    </tr>
+    <tr>
+      <th>25%</th>
+      <td>5.100000</td>
+      <td>2.800000</td>
+      <td>1.600000</td>
+      <td>0.300000</td>
+    </tr>
+    <tr>
+      <th>50%</th>
+      <td>5.800000</td>
+      <td>3.000000</td>
+      <td>4.350000</td>
+      <td>1.300000</td>
+    </tr>
+    <tr>
+      <th>75%</th>
+      <td>6.400000</td>
+      <td>3.300000</td>
+      <td>5.100000</td>
+      <td>1.800000</td>
+    </tr>
+    <tr>
+      <th>max</th>
+      <td>7.900000</td>
+      <td>4.400000</td>
+      <td>6.900000</td>
+      <td>2.500000</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
     <footer>
 <p class="meta">
   <span class="byline author vcard">
@@ -100,11 +216,11 @@ p.grades = 90
         <a href="/author/huiming-song.html">Huiming Song</a>
     </span>
   </span>
-<time datetime="2015-10-01T00:00:00-05:00" pubdate>Thu 01 October 2015</time>  <span class="categories">
-    <a class='category' href='/category/programming.html'>Programming</a>
+<time datetime="2015-09-26T00:00:00-05:00" pubdate>Sat 26 September 2015</time>  <span class="categories">
+    <a class='category' href='/category/programming.html'>programming</a>
   </span>
   <span class="categories">
-    <a class="category" href="/tag/python.html">python</a>  </span>
+    <a class="category" href="/tag/python.html">python</a>,    <a class="category" href="/tag/data-minging.html">data minging</a>,    <a class="category" href="/tag/pandas.html">pandas</a>  </span>
 </p><div class="sharing">
 </div>    </footer>
   </article>
@@ -170,9 +286,9 @@ p.grades = 90
   <script src="/theme/js/octopress.js" type="text/javascript"></script>
   <script type="text/javascript">
     var disqus_shortname = 'songhuiming';
-    var disqus_identifier = '/pages/2015/10/01/python-class-4-zhi-yun-xu-tian-jia-gei-ding-de-shu-xing-__slots__/';
-    var disqus_url = '/pages/2015/10/01/python-class-4-zhi-yun-xu-tian-jia-gei-ding-de-shu-xing-__slots__/';
-    var disqus_title = 'python class (4): 只允许添加给定的属性 __slots__';
+    var disqus_identifier = '/pages/2015/09/26/pandas-data-describe-to-get-summary-information/';
+    var disqus_url = '/pages/2015/09/26/pandas-data-describe-to-get-summary-information/';
+    var disqus_title = 'pandas data describe to get summary information';
     (function() {
       var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
       dsq.src = "//" + disqus_shortname + '.disqus.com/embed.js';
