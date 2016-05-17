@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Introduction to Tkinter 01: frame and page &mdash; pydata</title>
+  <meta name="author" content="shm">
+
+
+
+
+
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+    <link href="/favicon.png" rel="icon">
+
+  <link href="/theme/css/main.css" media="screen, projection"
+        rel="stylesheet" type="text/css">
+
+  <link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic"
+        rel="stylesheet" type="text/css">
+  <link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic"
+        rel="stylesheet" type="text/css">
+</head>
+
+<body>
+  <header role="banner"><hgroup>
+  <h1><a href="/">pydata</a></h1>
+    <h2>Keep Looking, Don't Settle</h2>
+</hgroup></header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+</ul>
+
+<form class="search" action="/search.html">
+    <input type="text" class="search-query" placeholder="Search" name="q" id="s">
+</form>
+
+<form action="https://www.google.com/search" method="get">
+    <fieldset role="search">
+       <input type="hidden" name="q" value="site:songhuiming.github.io" />
+       <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+    </fieldset>
+</form>
+
+
+<ul class="main-navigation">
+    <li><a href="/functions/archives.html">Archives</a></li>
+      <li >
+        <a href="/category/linux.html">Linux</a>
+      </li>
+      <li >
+        <a href="/category/programming.html">Programming</a>
+      </li>
+      <li class="active">
+        <a href="/category/python-programming.html">Python, programming</a>
+      </li>
+</ul></nav>
+  <div id="main">
+    <div id="content">
+<div>
+  <article class="hentry" role="article">
+<header>
+      <h1 class="entry-title">Introduction to Tkinter 01: frame and page</h1>
+    <p class="meta">
+<time datetime="2016-05-15T00:00:00-05:00" pubdate>Sun 15 May 2016</time>    </p>
+</header>
+
+  <div class="entry-content"><p>tkinter的简单介绍</p>
+<ol>
+<li>
+<p>首先建立一个frame，类似于框架</p>
+</li>
+<li>
+<p>然后把各个page pack到frame上面，也就是下面code的show_frame
+<img alt="test" src="/figures/20160516_tkinter_basic_intro_01_basic_01.PNG" /></p>
+</li>
+<li>
+<p>显示不同的东西通过页面之间的跳转来实现,从startPage到pageOne,再从pageOne回到startPage
+<img alt="test" src="/figures/20160516_tkinter_basic_intro_01_basic_02.PNG" /></p>
+</li>
+</ol>
+<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">Tkinter</span> <span class="kn">as</span> <span class="nn">tk</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">self: self表示当前的对象。</span>
+
+<span class="sd">parent： 表示当前对象的父对象。除了root，tkinter的所有widgets都有一个父widget。</span>
+
+<span class="sd">controller： 用来连接几个不同的page（frame）的公共数据。这样的话，每一个page可以</span>
+<span class="sd">独立的update数据，而不需要调用其他page。如果它需要作用于另一个page（比如通过click</span>
+<span class="sd">一个buttom，使得另一个页面变成top页面从而可视，这时候就可以用controller来让它可视。</span>
+
+
+<span class="sd">container上面有不同的frame（page）.它们被保存在frames里面，而frames属于myFrame，</span>
+<span class="sd">所以show_frame没有办法像prt一样从myFrame里面拿出来。</span>
+
+<span class="sd">startPage其实是继承了container，而不仅仅是tk.Frame. 但是它又要调用show_frame，</span>
+<span class="sd">所以它的__init__需要两个参数，第一个是parent，第二个其实是连接myFrame的self，用来</span>
+<span class="sd">调用show_frame。所以会出现 frame = startPage(container, self)，因为这个，</span>
+<span class="sd">controller.show_frame(startPage) 就变成了self.show_frame(startPage)，</span>
+<span class="sd">这样show_frame才会被调用，startPage才会被显示</span>
+
+<span class="sd">prt函数只是在startPage打印，而且它不需要使用myFrame的任何属性，所以它可以单独放外面，</span>
+<span class="sd">我们也可以把它放到myFrame下面，就像myFrame2里面那样。那样的话就成了myFrame2的属性，</span>
+<span class="sd">所以在startPage里面就要使用controller.prt()</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+
+
+<span class="k">class</span> <span class="nc">myFrame1</span><span class="p">(</span><span class="n">tk</span><span class="o">.</span><span class="n">Tk</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">tk</span><span class="o">.</span><span class="n">Tk</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="n">container</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">Frame</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">container</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">side</span> <span class="o">=</span> <span class="s2">&quot;top&quot;</span><span class="p">,</span> <span class="n">fill</span> <span class="o">=</span> <span class="s2">&quot;both&quot;</span><span class="p">,</span> <span class="n">expand</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span>  <span class="c1">#</span>
+        <span class="n">container</span><span class="o">.</span><span class="n">grid_rowconfigure</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">weight</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">container</span><span class="o">.</span><span class="n">grid_columnconfigure</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">weight</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">frames</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">for</span> <span class="n">F</span> <span class="ow">in</span> <span class="p">(</span><span class="n">startPage</span><span class="p">,</span> <span class="n">pageOne</span><span class="p">):</span>
+            <span class="n">frame</span> <span class="o">=</span> <span class="n">F</span><span class="p">(</span><span class="n">container</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>  <span class="c1">#startPage继承了container</span>
+            <span class="n">frame</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">row</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">column</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">sticky</span><span class="o">=</span><span class="s2">&quot;nsew&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="p">[</span><span class="n">F</span><span class="p">]</span> <span class="o">=</span> <span class="n">frame</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">show_frame</span><span class="p">(</span><span class="n">startPage</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">show_frame</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">page_name</span><span class="p">):</span>
+        <span class="n">frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="p">[</span><span class="n">page_name</span><span class="p">]</span>
+        <span class="n">frame</span><span class="o">.</span><span class="n">tkraise</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">prt</span><span class="p">():</span>
+    <span class="k">print</span> <span class="s2">&quot;this is test&quot;</span>
+
+<span class="k">class</span> <span class="nc">startPage</span><span class="p">(</span><span class="n">tk</span><span class="o">.</span><span class="n">Frame</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">controller</span><span class="p">):</span>
+        <span class="n">tk</span><span class="o">.</span><span class="n">Frame</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">controller</span> <span class="o">=</span> <span class="n">controller</span>
+
+        <span class="n">label</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">Label</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span> <span class="o">=</span> <span class="s2">&quot;Start Page&quot;</span><span class="p">)</span>
+        <span class="n">label</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">pady</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">padx</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span>
+
+        <span class="c1"># 在__init__下面，可以写self.controller或者controller，它们是一样的</span>
+        <span class="c1"># 但是在上面的show_frame（不在__init__下），那么就需要self.frames，要不然找不到frames</span>
+        <span class="n">b1</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">Button</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span> <span class="o">=</span> <span class="s2">&quot;Page One&quot;</span><span class="p">,</span> <span class="n">command</span> <span class="o">=</span> <span class="k">lambda</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">show_frame</span><span class="p">(</span><span class="n">pageOne</span><span class="p">))</span>
+        <span class="n">b1</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
+
+        <span class="n">b2</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">Button</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span> <span class="o">=</span> <span class="s2">&quot;Print&quot;</span><span class="p">,</span> <span class="n">command</span> <span class="o">=</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">prt</span><span class="p">())</span>
+        <span class="n">b2</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
+
+<span class="k">class</span> <span class="nc">pageOne</span><span class="p">(</span><span class="n">tk</span><span class="o">.</span><span class="n">Frame</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">controller</span><span class="p">):</span>
+        <span class="n">tk</span><span class="o">.</span><span class="n">Frame</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">controller</span> <span class="o">=</span> <span class="n">controller</span>
+
+        <span class="n">label</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">Label</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span> <span class="o">=</span> <span class="s2">&quot;Page one&quot;</span><span class="p">)</span>
+        <span class="n">label</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">pady</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">padx</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span>
+
+        <span class="n">b1</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">Button</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span> <span class="o">=</span> <span class="s2">&quot;go home&quot;</span><span class="p">,</span> <span class="n">command</span> <span class="o">=</span> <span class="k">lambda</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">show_frame</span><span class="p">(</span><span class="n">startPage</span><span class="p">))</span>
+        <span class="n">b1</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
+
+
+<span class="n">app1</span> <span class="o">=</span> <span class="n">myFrame1</span><span class="p">()</span>
+<span class="n">app1</span><span class="o">.</span><span class="n">mainloop</span><span class="p">()</span>
+
+
+<span class="c1">##########  This is to show how to put prt inside myFrame, compared with above ###########</span>
+
+
+<span class="kn">import</span> <span class="nn">Tkinter</span> <span class="kn">as</span> <span class="nn">tk</span>
+
+<span class="k">class</span> <span class="nc">myFrame2</span><span class="p">(</span><span class="n">tk</span><span class="o">.</span><span class="n">Tk</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">tk</span><span class="o">.</span><span class="n">Tk</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="n">container</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">Frame</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">container</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">side</span> <span class="o">=</span> <span class="s2">&quot;top&quot;</span><span class="p">,</span> <span class="n">fill</span> <span class="o">=</span> <span class="s2">&quot;both&quot;</span><span class="p">,</span> <span class="n">expand</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span>  <span class="c1">#</span>
+        <span class="n">container</span><span class="o">.</span><span class="n">grid_rowconfigure</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">weight</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">container</span><span class="o">.</span><span class="n">grid_columnconfigure</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">weight</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">frames</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">frame</span> <span class="o">=</span> <span class="n">startPage</span><span class="p">(</span><span class="n">container</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>  <span class="c1">#</span>
+        <span class="n">frame</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">row</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">column</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">sticky</span><span class="o">=</span><span class="s2">&quot;nsew&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="p">[</span><span class="n">startPage</span><span class="p">]</span> <span class="o">=</span> <span class="n">frame</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">show_frame</span><span class="p">(</span><span class="n">startPage</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">show_frame</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cont</span><span class="p">):</span>
+        <span class="n">frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="p">[</span><span class="n">cont</span><span class="p">]</span>
+        <span class="n">frame</span><span class="o">.</span><span class="n">tkraise</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">prt</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">print</span> <span class="s2">&quot;this is test&quot;</span>
+
+<span class="k">class</span> <span class="nc">startPage</span><span class="p">(</span><span class="n">tk</span><span class="o">.</span><span class="n">Frame</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">controller</span><span class="p">):</span>
+        <span class="n">tk</span><span class="o">.</span><span class="n">Frame</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">)</span>
+
+        <span class="n">label</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">Label</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span> <span class="o">=</span> <span class="s2">&quot;Page one&quot;</span><span class="p">)</span>
+        <span class="n">label</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">pady</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">padx</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span>
+
+        <span class="n">b1</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">Button</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span> <span class="o">=</span> <span class="s2">&quot;go home&quot;</span><span class="p">,</span> <span class="n">command</span> <span class="o">=</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">controller</span><span class="o">.</span><span class="n">show_frame</span><span class="p">(</span><span class="n">startPage</span><span class="p">))</span>
+        <span class="n">b1</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
+
+        <span class="n">b2</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">Button</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span> <span class="o">=</span> <span class="s2">&quot;Print&quot;</span><span class="p">,</span> <span class="n">command</span> <span class="o">=</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">controller</span><span class="o">.</span><span class="n">prt</span><span class="p">())</span>
+        <span class="n">b2</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
+
+<span class="n">app2</span> <span class="o">=</span> <span class="n">myFrame2</span><span class="p">()</span>
+<span class="n">app2</span><span class="o">.</span><span class="n">mainloop</span><span class="p">()</span>
+
+
+
+<span class="c1"># ref:</span>
+<span class="c1"># http://stackoverflow.com/questions/7300072/inheriting-from-frame-or-not-in-a-tkinter-application</span>
+<span class="c1"># http://effbot.org/tkinterbook/tkinter-hello-again.htm</span>
+<span class="c1"># http://stackoverflow.com/questions/17466561/best-way-to-structure-a-tkinter-application</span>
+<span class="c1"># http://t1174779123.iteye.com/blog/2051485</span>
+<span class="c1"># http://stackoverflow.com/questions/7546050/switch-between-two-frames-in-tkinter</span>
+<span class="c1"># http://stackoverflow.com/questions/34301300/tkinter-understanding-how-to-switch-frames</span>
+</pre></div></div>
+    <footer>
+<p class="meta">
+  <span class="byline author vcard">
+    Posted by <span class="fn">
+        <a href="/author/huiming-song.html">Huiming song</a>
+    </span>
+  </span>
+<time datetime="2016-05-15T00:00:00-05:00" pubdate>Sun 15 May 2016</time>  <span class="categories">
+    <a class='category' href='/category/python-programming.html'>python, programming</a>
+  </span>
+  <span class="categories">
+    <a class="category" href="/tag/python.html">python</a>,    <a class="category" href="/tag/tkinter.html">tkinter</a>  </span>
+</p><div class="sharing">
+</div>    </footer>
+  </article>
+
+</div>
+<aside class="sidebar">
+  <section>
+    <h1>Recent Posts</h1>
+    <ul id="recent_posts">
+      <li class="post">
+          <a href="/pages/2016/05/15/fuzzy-string-match-in-python/">fuzzy string match in python</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2016/05/15/introduction-to-tkinter-01-frame-and-page/">Introduction to Tkinter 01: frame and page</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2016/05/15/introduction-to-tkinter-02-get-variable-value-from-another-class/">Introduction to Tkinter 02: get variable value from another class</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2016/05/13/tkinter-read-data-dropdown-menu-select-data-and-print-dataframe/">Tkinter read data, dropdown menu, select data and print dataframe</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2016/05/13/tkinter-to-exe-file-with-cx_freeze/">Tkinter to exe file with cx_freeze</a>
+      </li>
+    </ul>
+  </section>
+  <section>
+      
+    <h1>Categories</h1>
+    <ul id="recent_posts">
+        <li><a href="/category/linux.html">linux</a></li>
+        <li><a href="/category/programming.html">Programming</a></li>
+        <li><a href="/category/python-programming.html">python, programming</a></li>
+    </ul>
+  </section>
+ 
+
+  <section>
+  <h1>Tags</h1>
+    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/python.html">python</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/re.html">re</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/sklearn.html">sklearn</a>  </section>
+
+
+    <section>
+        <h1>Social</h1>
+        <ul>
+            <li><a href="https://www.linkedin.com/pub/huiming-song/24/735/349" target="_blank">Linkedin</a></li>
+        </ul>
+    </section>
+    <section>
+        <h1>Blogroll</h1>
+        <ul>
+            <li><a href="http://easysas.blogspot.com/" target="_blank">my old SAS blog</a></li>
+        </ul>
+    </section>
+
+</aside>    </div>
+  </div>
+  <footer role="contentinfo"><p>
+    Copyright &copy;  2015&ndash;2016  shm &mdash;
+  <span class="credit">Powered by <a href="http://getpelican.com">Pelican</a></span>
+</p></footer>
+  <script src="/theme/js/modernizr-2.0.js"></script>
+  <script src="/theme/js/ender.js"></script>
+  <script src="/theme/js/octopress.js" type="text/javascript"></script>
+  <script type="text/javascript">
+    var disqus_shortname = 'songhuiming';
+    var disqus_identifier = '/pages/2016/05/15/introduction-to-tkinter-01-frame-and-page/';
+    var disqus_url = '/pages/2016/05/15/introduction-to-tkinter-01-frame-and-page/';
+    var disqus_title = 'Introduction to Tkinter 01: frame and page';
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = "//" + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+     })();
+  </script>
+</body>
+</html>
