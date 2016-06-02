@@ -4,7 +4,7 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>read in csv and plot with matplotlib in PyQt4 &mdash; pydata</title>
+  <title>read in csv and plot with matplotlib in PyQt4 02 &mdash; pydata</title>
   <meta name="author" content="shm">
 
 
@@ -54,10 +54,10 @@
       <li >
         <a href="/category/linux.html">Linux</a>
       </li>
-      <li class="active">
+      <li >
         <a href="/category/programming.html">Programming</a>
       </li>
-      <li >
+      <li class="active">
         <a href="/category/python.html">Python</a>
       </li>
 </ul></nav>
@@ -66,16 +66,24 @@
 <div>
   <article class="hentry" role="article">
 <header>
-      <h1 class="entry-title">read in csv and plot with matplotlib in PyQt4</h1>
+      <h1 class="entry-title">read in csv and plot with matplotlib in PyQt4 02</h1>
     <p class="meta">
-<time datetime="2016-05-31T00:00:00-05:00" pubdate>Tue 31 May 2016</time>    </p>
+<time datetime="2016-06-01T00:00:00-05:00" pubdate>Wed 01 June 2016</time>    </p>
 </header>
 
-  <div class="entry-content"><p>This is to show how to read in the csv file, create <code>QComboBox</code> from the columns in the read in data, slice data with conditions from the <code>QComboBox</code> and at last, plot the selected subset data to compare.</p>
-<p>A <code>QFileDialog</code> will be poped up to let the user select the csv file to read in. After read the csv file, update the <code>QComboBox</code> of the rating and year_quarter.</p>
-<p>For any <code>currentText</code> in the <code>QComboBox</code>, select the subset data and plot it.</p>
-<p>tip: 读入csv data以后，把它assign给self.df，这样就在class里面变成全局变量，对应的self.rating_list和self.yq_list也是这意思。</p>
+  <div class="entry-content"><p>跟第一版的区别：
+1. 主窗口从<code>QMainWindow</code>继承过来，而不是从<code>QWidget</code>. 所有的控件加载在<code>QWidget</code>上，然后<code>QWidget</code>加载到<code>QMainWindow</code>上</p>
+<ol>
+<li>
+<p>模块化一些产生控件的code. 比如<code>create_menu</code>, <code>create_status_bar</code>, <code>create_main_frame</code>， <code>create_action</code>等等</p>
+</li>
+<li>
+<p>可以再添加<code>QHBoxLayout</code>或者<code>QVBoxLayout</code>来安排更多的widget</p>
+</li>
+</ol>
 <div class="highlight"><pre><span></span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">20160531 in v4: try to re-arrange the widgets with QMainWindow</span>
+
 <span class="sd">20160516: in v3, try to read in the csv file through menu rather than do this in the code, but v3 does not work</span>
 
 <span class="sd">20160516: in v2, try to use dropdown menu to select data</span>
@@ -83,7 +91,7 @@
 <span class="sd">20160515 in this v1, we can input the rating and year_quarter in the first and second cell of the table and then plot the result.</span>
 <span class="sd">&#39;&#39;&#39;</span>
 
-<span class="kn">from</span> <span class="nn">PyQt4</span> <span class="kn">import</span> <span class="n">QtGui</span>
+<span class="kn">from</span> <span class="nn">PyQt4</span> <span class="kn">import</span> <span class="n">QtGui</span><span class="p">,</span> <span class="n">QtCore</span>
 <span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="kn">as</span> <span class="nn">pd</span>
@@ -94,17 +102,20 @@
 <span class="n">style</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s1">&#39;ggplot&#39;</span><span class="p">)</span>
 
 
-<span class="k">class</span> <span class="nc">PrettyWidget</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QWidget</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">PrettyWidget</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QMainWindow</span><span class="p">):</span>
 
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">PrettyWidget</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">initUI</span><span class="p">()</span>
-
-    <span class="k">def</span> <span class="nf">initUI</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">setGeometry</span><span class="p">(</span><span class="mi">600</span><span class="p">,</span><span class="mi">300</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="mi">600</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">center</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">PrettyWidget</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">setWindowTitle</span><span class="p">(</span><span class="s1">&#39;Revision on Plots, Tables and File Browser&#39;</span><span class="p">)</span>     
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">create_menu</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">create_main_frame</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">create_status_bar</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">create_main_frame</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">main_frame</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QWidget</span><span class="p">()</span>
 
         <span class="c1">#Grid Layout</span>
         <span class="n">grid</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGridLayout</span><span class="p">()</span>
@@ -142,13 +153,58 @@
         <span class="n">btn2</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="p">)</span>
         <span class="n">grid</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">btn2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">main_frame</span><span class="o">.</span><span class="n">setLayout</span><span class="p">(</span><span class="n">grid</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setCentralWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">main_frame</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">create_status_bar</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">status_text</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;Please load the csv file: ca_cni_camacro_20160531.csv!!&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">statusBar</span><span class="p">()</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">status_text</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">create_menu</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file_menu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">menuBar</span><span class="p">()</span><span class="o">.</span><span class="n">addMenu</span><span class="p">(</span><span class="s2">&quot;&amp;File&quot;</span><span class="p">)</span>
+        <span class="n">open_action</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_action</span><span class="p">(</span><span class="s2">&quot;&amp;Open File&quot;</span><span class="p">,</span> <span class="n">slot</span> <span class="o">=</span> <span class="k">lambda</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_about</span><span class="p">(</span><span class="s2">&quot;Open CSV&quot;</span><span class="p">,</span> <span class="s2">&quot;Please click Import CSV button&quot;</span><span class="p">))</span>
+        <span class="n">quit_action</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_action</span><span class="p">(</span><span class="s2">&quot;&amp;Quit&quot;</span><span class="p">,</span> <span class="n">slot</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">,</span> <span class="n">shortcut</span> <span class="o">=</span> <span class="s2">&quot;Ctrl+Q&quot;</span><span class="p">,</span> <span class="n">tip</span> <span class="o">=</span> <span class="s2">&quot;Close the App&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_actions</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_menu</span><span class="p">,</span> <span class="p">(</span><span class="n">open_action</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="n">quit_action</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">help_menu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">menuBar</span><span class="p">()</span><span class="o">.</span><span class="n">addMenu</span><span class="p">(</span><span class="s2">&quot;&amp;Help&quot;</span><span class="p">)</span>
+        <span class="n">about_action</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_action</span><span class="p">(</span><span class="s2">&quot;&amp;About&quot;</span><span class="p">,</span> <span class="n">shortcut</span> <span class="o">=</span> <span class="s1">&#39;F1&#39;</span><span class="p">,</span> <span class="n">slot</span> <span class="o">=</span> <span class="k">lambda</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_about</span><span class="p">(</span><span class="s2">&quot;About the App&quot;</span><span class="p">,</span> <span class="s2">&quot;Demo of IFRS9 PD Plot&quot;</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_actions</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">help_menu</span><span class="p">,</span> <span class="p">(</span><span class="n">about_action</span><span class="p">,</span> <span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">on_about</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg_title</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="n">QtGui</span><span class="o">.</span><span class="n">QMessageBox</span><span class="o">.</span><span class="n">about</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg_title</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">add_actions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">actions</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">action</span> <span class="ow">in</span> <span class="n">actions</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">action</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">target</span><span class="o">.</span><span class="n">addSeparator</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">target</span><span class="o">.</span><span class="n">addAction</span><span class="p">(</span><span class="n">action</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">create_action</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">slot</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">shortcut</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">icon</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">tip</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">checkable</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span> <span class="n">signal</span> <span class="o">=</span> <span class="s2">&quot;triggered()&quot;</span><span class="p">):</span>
+        <span class="n">action</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QAction</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">icon</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">action</span><span class="o">.</span><span class="n">setIcon</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">shortcut</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">action</span><span class="o">.</span><span class="n">setShortcut</span><span class="p">(</span><span class="n">shortcut</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">tip</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">action</span><span class="o">.</span><span class="n">setToolTip</span><span class="p">(</span><span class="n">tip</span><span class="p">)</span>
+            <span class="n">action</span><span class="o">.</span><span class="n">setStatusTip</span><span class="p">(</span><span class="n">tip</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">slot</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">action</span><span class="p">,</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">SIGNAL</span><span class="p">(</span><span class="n">signal</span><span class="p">),</span> <span class="n">slot</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">checkable</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">action</span><span class="o">.</span><span class="n">setCheckable</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">action</span>
 
 
     <span class="k">def</span> <span class="nf">getCSV</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">filePath</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QFileDialog</span><span class="o">.</span><span class="n">getOpenFileName</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                                                    <span class="s1">&#39;CSV File&#39;</span><span class="p">,</span>
-                                                    <span class="s1">&#39;~/Desktop/PyQt4&#39;</span><span class="p">,</span>
+                                                    <span class="s1">&#39;Single File&#39;</span><span class="p">,</span>
+                                                    <span class="s1">&#39;~/Desktop/PyRevolution/PyQt4&#39;</span><span class="p">,</span>
                                                     <span class="s1">&#39;*.csv&#39;</span><span class="p">)</span>
         <span class="k">print</span> <span class="n">filePath</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">filePath</span><span class="p">))</span>
@@ -157,6 +213,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">comboBox</span><span class="o">.</span><span class="n">addItems</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rating_list</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">comboBox2</span><span class="o">.</span><span class="n">addItems</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">yq_list</span><span class="p">)</span>
         <span class="k">print</span> <span class="bp">self</span><span class="o">.</span><span class="n">rating_list</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">status_text</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="s2">&quot;Loaded &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">filePath</span><span class="p">))</span>
 
 
     <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -205,11 +262,7 @@
 
 
 <p>Figure 1. ready to read in csv
-<img alt="png" src="/figures/20160531_pyqt_plot_ifrs9_pd_01.PNG" /></p>
-<p>Figure 2. read in csv
-<img alt="png" src="/figures/20160531_pyqt_plot_ifrs9_pd_02.PNG" /></p>
-<p>Figure 3. after read in csv, update comboBox and plot subset data
-<img alt="png" src="/figures/20160531_pyqt_plot_ifrs9_pd_03.PNG" /></p></div>
+<img alt="png" src="/figures/20160601_pyqt_plot_ifrs9_pd_01.PNG" /></p></div>
     <footer>
 <p class="meta">
   <span class="byline author vcard">
@@ -217,8 +270,8 @@
         <a href="/author/huiming-song.html">Huiming Song</a>
     </span>
   </span>
-<time datetime="2016-05-31T00:00:00-05:00" pubdate>Tue 31 May 2016</time>  <span class="categories">
-    <a class='category' href='/category/programming.html'>programming</a>
+<time datetime="2016-06-01T00:00:00-05:00" pubdate>Wed 01 June 2016</time>  <span class="categories">
+    <a class='category' href='/category/python.html'>Python</a>
   </span>
   <span class="categories">
     <a class="category" href="/tag/python.html">python</a>,    <a class="category" href="/tag/pyqt.html">PyQt</a>  </span>
@@ -306,9 +359,9 @@
 </script>
   <script type="text/javascript">
     var disqus_shortname = 'songhuiming';
-    var disqus_identifier = '/pages/2016/05/31/read-in-csv-and-plot-with-matplotlib-in-pyqt4/';
-    var disqus_url = '/pages/2016/05/31/read-in-csv-and-plot-with-matplotlib-in-pyqt4/';
-    var disqus_title = 'read in csv and plot with matplotlib in PyQt4';
+    var disqus_identifier = '/pages/2016/06/01/read-in-csv-and-plot-with-matplotlib-in-pyqt4-02/';
+    var disqus_url = '/pages/2016/06/01/read-in-csv-and-plot-with-matplotlib-in-pyqt4-02/';
+    var disqus_title = 'read in csv and plot with matplotlib in PyQt4 02';
     (function() {
       var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
       dsq.src = "//" + disqus_shortname + '.disqus.com/embed.js';
