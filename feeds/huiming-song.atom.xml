@@ -1,5 +1,247 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata</title><link href="/" rel="alternate"></link><link href="/feeds/huiming-song.atom.xml" rel="self"></link><id>/</id><updated>2016-07-07T00:00:00-05:00</updated><entry><title>python matplotlib: xticks, tight_layout</title><link href="/pages/2016/07/07/python-matplotlib-xticks-tight_layout/" rel="alternate"></link><published>2016-07-07T00:00:00-05:00</published><author><name>Huiming Song</name></author><id>tag:,2016-07-07:pages/2016/07/07/python-matplotlib-xticks-tight_layout/</id><summary type="html">&lt;p&gt;Suppose in the data there is a column called yq, which is the year and quarter. we want to make this yq as the x tick in the plot. if you simply &lt;code&gt;plt.plot(df.yq, df.actual)&lt;/code&gt;, it will not work because of the scale of yq.&lt;/p&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata</title><link href="/" rel="alternate"></link><link href="/feeds/huiming-song.atom.xml" rel="self"></link><id>/</id><updated>2016-07-10T00:00:00-05:00</updated><entry><title>sentiment analysis with twitter 01: twitter analysis with tweepy</title><link href="/pages/2016/07/10/sentiment-analysis-with-twitter-01-twitter-analysis-with-tweepy/" rel="alternate"></link><published>2016-07-10T00:00:00-05:00</published><author><name>Huiming Song</name></author><id>tag:,2016-07-10:pages/2016/07/10/sentiment-analysis-with-twitter-01-twitter-analysis-with-tweepy/</id><summary type="html">&lt;h1&gt;twitter analysis  with tweepy&lt;/h1&gt;
+&lt;h2&gt;1. set up tweeter account&lt;/h2&gt;
+&lt;p&gt;go to &lt;a href="dev.twitter.com"&gt;dev.twitter.com&lt;/a&gt; and register to get the consumer_key, consumer_secret, access_token and access_token_secret&lt;/p&gt;
+&lt;h2&gt;2. install tweepy&lt;/h2&gt;
+&lt;p&gt;run &lt;code&gt;pip install tweepy&lt;/code&gt; to install it&lt;/p&gt;
+&lt;h2&gt;3. usint tweepy to access twitter&lt;/h2&gt;
+&lt;h3&gt;3.1 set up customer key and access token&lt;/h3&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;tweepy&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;time&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;sleep&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;os&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;consumer_key&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;T02YuuCqqqmBQiPOxCUhvlDCc&amp;#39;&lt;/span&gt;
+&lt;span class="n"&gt;consumer_secret&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;IEhuoL3HN1QFK9A0t2fge4wP49I2TxUnguwYS5n7XdrEFXLAFA&amp;#39;&lt;/span&gt;
+&lt;span class="n"&gt;access_token&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;228525243-X36SVOgSJxt63K8Xy4BGcjyFckDxbhL6ES3a9xRc&amp;#39;&lt;/span&gt;
+&lt;span class="n"&gt;access_token_secret&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;lzUVHDmBlBcHuMbKyhPNU7epbm4453Pifq5rjSP7rkWpq&amp;#39;&lt;/span&gt;
+
+&lt;span class="n"&gt;auth&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;tweepy&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;OAuthHandler&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;consumer_key&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;consumer_secret&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;auth&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;set_access_token&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;access_token&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;access_token_secret&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;auth&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;secure&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;
+&lt;span class="n"&gt;api&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;tweepy&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;API&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;auth&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;after it is set up, let's try the first example to verify the set up. Print out the Wall Street Journel '@WSJ' account information.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="c1"&gt;# print out the user information. it is too much, so print first 800 chars.&lt;/span&gt;
+&lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;api&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get_user&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;screen_name&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;@WSJ&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;))[:&lt;/span&gt;&lt;span class="mi"&gt;800&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;User(follow_request_sent=False, has_extended_profile=False, profile_use_background_image=False, _json={u&amp;#39;follow_request_sent&amp;#39;: False, u&amp;#39;has_extended_profile&amp;#39;: False, u&amp;#39;profile_use_background_image&amp;#39;: False, u&amp;#39;profile_text_color&amp;#39;: u&amp;#39;333333&amp;#39;, u&amp;#39;default_profile_image&amp;#39;: False, u&amp;#39;id&amp;#39;: 3108351, u&amp;#39;profile_background_image_url_https&amp;#39;: u&amp;#39;https://pbs.twimg.com/profile_background_images/378800000026078008/c07ad7d60f01c3a836dd701fc3f71233.jpeg&amp;#39;, u&amp;#39;verified&amp;#39;: True, u&amp;#39;profile_location&amp;#39;: None, u&amp;#39;profile_image_url_https&amp;#39;: u&amp;#39;https://pbs.twimg.com/profile_images/685113343204585473/jV72Zljq_normal.jpg&amp;#39;, u&amp;#39;profile_sidebar_fill_color&amp;#39;: u&amp;#39;EFEFEF&amp;#39;, u&amp;#39;entities&amp;#39;: {u&amp;#39;url&amp;#39;: {u&amp;#39;urls&amp;#39;: [{u&amp;#39;url&amp;#39;: u&amp;#39;https://t.co/GhhR6PLfem&amp;#39;, u&amp;#39;indices&amp;#39;: [0, 23], u&amp;#39;expanded_url&amp;#39;: u&amp;#39;http://wsj.com&amp;#39;, u&amp;#39;display_url&amp;#39;: u&amp;#39;wsj.com&amp;#39;}]}, u&amp;#39;descrip
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;3.2 search keywork in twitter, list users and retweet/favorite the twitts; follow the users&lt;/h3&gt;
+&lt;p&gt;This is to show how to search in tweeter through &lt;code&gt;tweepy.Cursor&lt;/code&gt; API &lt;code&gt;api.search&lt;/code&gt;, and print out some sample info. you can set up search language, how many tweets to download, and the timeline. More details please check out the help page of the function.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt; API.search(q[, lang][, locale][, rpp][, page][, since_id][, geocode][, show_user])
+
+    Returns tweets that match a specified query.
+    Parameters:
+
+        q – the search query string
+        lang – Restricts tweets to the given language, given by an ISO 639-1 code.
+        locale – Specify the language of the query you are sending. This is intended for language-specific clients and the default should work in the majority of cases.
+        rpp – The number of tweets to return per page, up to a max of 100.
+        page – The page number (starting at 1) to return, up to a max of roughly 1500 results (based on rpp * page.
+        since_id – Returns only statuses with an ID greater than (that is, more recent than) the specified ID.
+        geocode – Returns tweets by users located within a given radius of the given latitude/longitude. The location is preferentially taking from the Geotagging API, but will fall back to their Twitter profile. The parameter value is specified by “latitide,longitude,radius”, where radius units must be specified as either “mi” (miles) or “km” (kilometers). Note that you cannot use the near operator via the API to geocode arbitrary locations; however you can use this geocode parameter to search near geocodes directly.
+        show_user – When true, prepends “&amp;lt;user&amp;gt;:” to the beginning of the tweet. This is useful for readers that do not display Atom’s author field. The default is false.
+
+    Return type:
+
+    list of SearchResult objects
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Basically, we will do two thing
+1. retweet the tweets if we did not
+2. follow the user&lt;/p&gt;
+&lt;p&gt;The following code will help us to do this. We search the twitts that talks about 'EURO2016' in English and list the first 5 twitts. If we did not retweet these twitts, we will retweet by &lt;code&gt;tweet.retweet()&lt;/code&gt;, and favorite it by &lt;code&gt;tweet.favorite()&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;If we did not follow the users, we can also follow the users by &lt;code&gt;tweet.user.follow()&lt;/code&gt;.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;tweet&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;tweepy&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Cursor&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;api&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;search&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;q&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;#EURO2016&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;lang&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;en&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;items&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;5&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="k"&gt;try&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;fount tweet by @&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;tweet&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;user&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;screen_name&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;tweet&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;retweeted&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;or&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;tweet&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;favorited&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+            &lt;span class="n"&gt;tweet&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;retweet&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+            &lt;span class="n"&gt;tweet&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;favorite&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+            &lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;retweeted and favorited the user&amp;quot;&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;tweet&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;user&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;following&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+            &lt;span class="c1"&gt;# follow the users, it is better to do this with your test account&lt;/span&gt;
+            &lt;span class="c1"&gt;# tweet.user.follow()&lt;/span&gt;
+            &lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;Followed the user @&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;tweet&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;user&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;screen_name&lt;/span&gt;
+    &lt;span class="k"&gt;except&lt;/span&gt; &lt;span class="n"&gt;tweepy&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;TweepError&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;reason&lt;/span&gt;
+        &lt;span class="n"&gt;sleep&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;10&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;continue&lt;/span&gt;
+    &lt;span class="k"&gt;except&lt;/span&gt; &lt;span class="ne"&gt;StopIteration&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;break&lt;/span&gt;
+
+&lt;span class="c1"&gt;# if you see 403 error, most likely it is because permission denied&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;fount tweet by @Brndstr
+retweeted and favorited the user
+Followed the user @Brndstr
+fount tweet by @zoorromoha
+retweeted and favorited the user
+Followed the user @zoorromoha
+fount tweet by @Brndstr
+retweeted and favorited the user
+Followed the user @Brndstr
+fount tweet by @notfirstnoel
+retweeted and favorited the user
+Followed the user @notfirstnoel
+fount tweet by @abed31131
+retweeted and favorited the user
+Followed the user @abed31131
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;However, if the twitter is sent by myself, then we should ignore it rather than retweet it.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;myBot&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;api&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get_user&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;screen_name&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;@rixin008&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;tweet&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;tweepy&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Cursor&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;api&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;search&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;q&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;#EURO2016&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;lang&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;en&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;items&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;5&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="k"&gt;try&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;tweet&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;user&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;id&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;myBot&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;id&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="k"&gt;continue&lt;/span&gt;
+        &lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;fount tweet by @&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;tweet&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;user&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;screen_name&lt;/span&gt;
+        &lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;fount tweet by @&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;tweet&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;user&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;screen_name&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;tweet&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;retweeted&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;or&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;tweet&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;favorited&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+            &lt;span class="n"&gt;tweet&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;retweet&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+            &lt;span class="n"&gt;tweet&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;favorite&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+            &lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;retweeted and favorited the user&amp;quot;&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;tweet&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;user&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;following&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+            &lt;span class="c1"&gt;# follow the users, it is better to do this with your test account&lt;/span&gt;
+            &lt;span class="c1"&gt;# tweet.user.follow()&lt;/span&gt;
+            &lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;Followed the user @&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;tweet&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;user&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;screen_name&lt;/span&gt;
+    &lt;span class="k"&gt;except&lt;/span&gt; &lt;span class="n"&gt;tweepy&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;TweepError&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;reason&lt;/span&gt;
+        &lt;span class="n"&gt;sleep&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;10&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;continue&lt;/span&gt;
+    &lt;span class="k"&gt;except&lt;/span&gt; &lt;span class="ne"&gt;StopIteration&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;break&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;fount tweet by @garysnook
+fount tweet by @garysnook
+retweeted and favorited the user
+Followed the user @garysnook
+fount tweet by @Brndstr
+fount tweet by @Brndstr
+retweeted and favorited the user
+Followed the user @Brndstr
+fount tweet by @WulanRhm
+fount tweet by @WulanRhm
+retweeted and favorited the user
+Followed the user @WulanRhm
+fount tweet by @humashzaadi
+fount tweet by @humashzaadi
+retweeted and favorited the user
+Followed the user @humashzaadi
+fount tweet by @TheAOSNOfficial
+fount tweet by @TheAOSNOfficial
+retweeted and favorited the user
+Followed the user @TheAOSNOfficial
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;3.3 create a list to add a group of users&lt;/h3&gt;
+&lt;p&gt;We can add the users related to a username or screen_name to a list. Create a list to add some members using &lt;code&gt;api.create_list&lt;/code&gt;, after it is created, you can find the list you created in https://twitter.com/rixin008/lists/.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;myBot&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;api&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get_user&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;screen_name&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;@google&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="c1"&gt;# create a list, will comment out after it is created&lt;/span&gt;
+&lt;span class="n"&gt;api&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;create_list&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;google-related-username&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;mode&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;public&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;description&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;I add you, sorry!&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;List(_api=&amp;lt;tweepy.api.API object at 0x7f24e440cdd0&amp;gt;, subscriber_count=0, member_count=0, name=u&amp;#39;google-related-username&amp;#39;, created_at=datetime.datetime(2016, 7, 10, 17, 50, 44), uri=u&amp;#39;/rixin008/lists/google-related-username1&amp;#39;, mode=u&amp;#39;public&amp;#39;, id_str=u&amp;#39;752198382114840576&amp;#39;, id=752198382114840576, user=User(follow_request_sent=False, has_extended_profile=False, profile_use_background_image=True, _json={u&amp;#39;follow_request_sent&amp;#39;: False, u&amp;#39;has_extended_profile&amp;#39;: False, u&amp;#39;profile_use_background_image&amp;#39;: True, u&amp;#39;default_profile_image&amp;#39;: True, u&amp;#39;id&amp;#39;: 228525243, u&amp;#39;profile_background_image_url_https&amp;#39;: u&amp;#39;https://abs.twimg.com/images/themes/theme1/bg.png&amp;#39;, u&amp;#39;verified&amp;#39;: False, u&amp;#39;profile_text_color&amp;#39;: u&amp;#39;333333&amp;#39;, u&amp;#39;profile_image_url_https&amp;#39;: u&amp;#39;https://abs.twimg.com/sticky/default_profile_images/default_profile_2_normal.png&amp;#39;, u&amp;#39;profile_sidebar_fill_color&amp;#39;: u&amp;#39;DDEEF6&amp;#39;, u&amp;#39;entities&amp;#39;: {u&amp;#39;description&amp;#39;: {u&amp;#39;urls&amp;#39;: []}}, u&amp;#39;followers_count&amp;#39;: 0, u&amp;#39;profile_sidebar_border_color&amp;#39;: u&amp;#39;C0DEED&amp;#39;, u&amp;#39;id_str&amp;#39;: u&amp;#39;228525243&amp;#39;, u&amp;#39;profile_background_color&amp;#39;: u&amp;#39;C0DEED&amp;#39;, u&amp;#39;listed_count&amp;#39;: 2, u&amp;#39;is_translation_enabled&amp;#39;: False, u&amp;#39;utc_offset&amp;#39;: None, u&amp;#39;statuses_count&amp;#39;: 113, u&amp;#39;description&amp;#39;: u&amp;#39;&amp;#39;, u&amp;#39;friends_count&amp;#39;: 4, u&amp;#39;location&amp;#39;: u&amp;#39;&amp;#39;, u&amp;#39;profile_link_color&amp;#39;: u&amp;#39;0084B4&amp;#39;, u&amp;#39;profile_image_url&amp;#39;: u&amp;#39;http://abs.twimg.com/sticky/default_profile_images/default_profile_2_normal.png&amp;#39;, u&amp;#39;following&amp;#39;: False, u&amp;#39;geo_enabled&amp;#39;: False, u&amp;#39;profile_background_image_url&amp;#39;: u&amp;#39;http://abs.twimg.com/images/themes/theme1/bg.png&amp;#39;, u&amp;#39;screen_name&amp;#39;: u&amp;#39;rixin008&amp;#39;, u&amp;#39;lang&amp;#39;: u&amp;#39;en&amp;#39;, u&amp;#39;profile_background_tile&amp;#39;: False, u&amp;#39;favourites_count&amp;#39;: 102, u&amp;#39;name&amp;#39;: u&amp;#39;rixin008 song&amp;#39;, u&amp;#39;notifications&amp;#39;: False, u&amp;#39;url&amp;#39;: None, u&amp;#39;created_at&amp;#39;: u&amp;#39;Mon Dec 20 00:10:43 +0000 2010&amp;#39;, u&amp;#39;contributors_enabled&amp;#39;: False, u&amp;#39;time_zone&amp;#39;: None, u&amp;#39;protected&amp;#39;: False, u&amp;#39;default_profile&amp;#39;: True, u&amp;#39;is_translator&amp;#39;: False}, time_zone=None, id=228525243, _api=&amp;lt;tweepy.api.API object at 0x7f24e440cdd0&amp;gt;, verified=False, profile_text_color=u&amp;#39;333333&amp;#39;, profile_image_url_https=u&amp;#39;https://abs.twimg.com/sticky/default_profile_images/default_profile_2_normal.png&amp;#39;, profile_sidebar_fill_color=u&amp;#39;DDEEF6&amp;#39;, is_translator=False, geo_enabled=False, entities={u&amp;#39;description&amp;#39;: {u&amp;#39;urls&amp;#39;: []}}, followers_count=0, protected=False, id_str=u&amp;#39;228525243&amp;#39;, default_profile_image=True, listed_count=2, lang=u&amp;#39;en&amp;#39;, utc_offset=None, statuses_count=113, description=u&amp;#39;&amp;#39;, friends_count=4, profile_link_color=u&amp;#39;0084B4&amp;#39;, profile_image_url=u&amp;#39;http://abs.twimg.com/sticky/default_profile_images/default_profile_2_normal.png&amp;#39;, notifications=False, profile_background_image_url_https=u&amp;#39;https://abs.twimg.com/images/themes/theme1/bg.png&amp;#39;, profile_background_color=u&amp;#39;C0DEED&amp;#39;, profile_background_image_url=u&amp;#39;http://abs.twimg.com/images/themes/theme1/bg.png&amp;#39;, name=u&amp;#39;rixin008 song&amp;#39;, is_translation_enabled=False, profile_background_tile=False, favourites_count=102, screen_name=u&amp;#39;rixin008&amp;#39;, url=None, created_at=datetime.datetime(2010, 12, 20, 0, 10, 43), contributors_enabled=False, location=u&amp;#39;&amp;#39;, profile_sidebar_border_color=u&amp;#39;C0DEED&amp;#39;, default_profile=True, following=False), full_name=u&amp;#39;@rixin008/google-related-username1&amp;#39;, following=False, slug=u&amp;#39;google-related-username1&amp;#39;, description=u&amp;#39;I add you, sorry!&amp;#39;)
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;after the list 'google-related-username' is created, you can add the members to your list by &lt;code&gt;api.add_list_member&lt;/code&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;myList&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;api&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get_list&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;@rixin008&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;slug&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;google-related-username&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;Running bot: @&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;myBot&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;screen_name&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt; using list: &amp;quot;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;myList&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;name&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt; members count:&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;myList&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;member_count&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;; subs count: &amp;quot;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;myList&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;subscriber_count&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nt"&gt;Running&lt;/span&gt; &lt;span class="nt"&gt;bot&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="k"&gt;@google&lt;/span&gt;
+ &lt;span class="nt"&gt;using&lt;/span&gt; &lt;span class="nt"&gt;list&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="nt"&gt;google-related-username&lt;/span&gt;
+ &lt;span class="nt"&gt;members&lt;/span&gt; &lt;span class="nt"&gt;count&lt;/span&gt;&lt;span class="nd"&gt;:0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="nt"&gt;subs&lt;/span&gt; &lt;span class="nt"&gt;count&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="nt"&gt;0&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="c1"&gt;# myList = api.get_list(&amp;quot;@&amp;quot;+myBot.screen_name, slug = &amp;#39;sorry-for-adding-you&amp;#39;)&lt;/span&gt;
+&lt;span class="c1"&gt;# print &amp;quot;Running bot: @&amp;quot; + myBot.screen_name + &amp;quot;\n using list: &amp;quot; + myList.name + &amp;quot;\n members count:&amp;quot; + str(myList.member_count) + &amp;quot;; subs count: &amp;quot; + str(myList.subscriber_count)&lt;/span&gt;
+
+
+&lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;tweet&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;tweepy&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Cursor&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;api&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;search&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;q&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;#EURO2016&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;lang&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;en&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;items&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;5&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="k"&gt;try&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;tweet&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;user&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;id&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;myBot&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;id&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="k"&gt;continue&lt;/span&gt;
+        &lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;fount tweet by @&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;tweet&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;user&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;screen_name&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;tweet&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;retweeted&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;or&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;tweet&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;favorited&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+            &lt;span class="n"&gt;tweet&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;retweet&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+            &lt;span class="n"&gt;tweet&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;favorite&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+            &lt;span class="c1"&gt;# add the user to the list&lt;/span&gt;
+            &lt;span class="n"&gt;api&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;add_list_member&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;screen_name&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;tweet&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;user&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;screen_name&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;owner_screen_name&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;myBot&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;screen_name&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;list_id&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;myList&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;id&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;retweeted and favorited the user, and added the user to the list&amp;quot;&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;tweet&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;user&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;following&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+            &lt;span class="c1"&gt;# follow the users, it is better to do this with your test account&lt;/span&gt;
+            &lt;span class="c1"&gt;# tweet.user.follow()&lt;/span&gt;
+            &lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;Followed the user @&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;tweet&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;user&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;screen_name&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;, not really, just test&amp;quot;&lt;/span&gt;
+    &lt;span class="k"&gt;except&lt;/span&gt; &lt;span class="n"&gt;tweepy&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;TweepError&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;reason&lt;/span&gt;
+        &lt;span class="n"&gt;sleep&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;10&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;continue&lt;/span&gt;
+    &lt;span class="k"&gt;except&lt;/span&gt; &lt;span class="ne"&gt;StopIteration&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;break&lt;/span&gt;
+
+&lt;span class="c1"&gt;# if you see 403 error, most likely it is because permission denied&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;fount tweet by @rosscoeff
+retweeted and favorited the user, and added the user to the list
+Followed the user @rosscoeff, not really, just test
+fount tweet by @Mbuzimawa
+retweeted and favorited the user, and added the user to the list
+Followed the user @Mbuzimawa, not really, just test
+fount tweet by @tugablog
+[{u&amp;#39;message&amp;#39;: u&amp;#39;You have already retweeted this tweet.&amp;#39;, u&amp;#39;code&amp;#39;: 327}]
+fount tweet by @biggi_abdul
+retweeted and favorited the user, and added the user to the list
+Followed the user @biggi_abdul, not really, just test
+fount tweet by @minyokmarquez91
+retweeted and favorited the user, and added the user to the list
+Followed the user @minyokmarquez91, not really, just test
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;3.4 create a list to add a group of users&lt;/h3&gt;
+&lt;p&gt;As we can follow a bunch of users, we can unfollow an friend or all the friends from &lt;code&gt;api.friends&lt;/code&gt; with &lt;code&gt;follower.unfollow()&lt;/code&gt;.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;follower&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;tweepy&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Cursor&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;api&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;friends&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;items&lt;/span&gt;&lt;span class="p"&gt;():&lt;/span&gt;
+    &lt;span class="k"&gt;try&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="c1"&gt;# not really unfollow, so I comment it out&lt;/span&gt;
+        &lt;span class="c1"&gt;# follower.unfollow()&lt;/span&gt;
+        &lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;unfollowed: &amp;quot;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;follower&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;screen_name&lt;/span&gt;
+    &lt;span class="k"&gt;except&lt;/span&gt; &lt;span class="n"&gt;tweepy&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;TweepError&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;
+        &lt;span class="n"&gt;sleep&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;10&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;continue&lt;/span&gt;
+    &lt;span class="k"&gt;except&lt;/span&gt; &lt;span class="ne"&gt;StopIteration&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;break&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;unfollowed&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;agile_toolsmith&lt;/span&gt;
+&lt;span class="n"&gt;unfollowed&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;EmanuelDerman&lt;/span&gt;
+&lt;span class="n"&gt;unfollowed&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;Dropbox&lt;/span&gt;
+&lt;span class="n"&gt;unfollowed&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;iphone_dev&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;</summary><category term="python"></category><category term="tweepy"></category><category term="data mining"></category><category term="sentiment analysis"></category></entry><entry><title>python matplotlib: xticks, tight_layout</title><link href="/pages/2016/07/07/python-matplotlib-xticks-tight_layout/" rel="alternate"></link><published>2016-07-07T00:00:00-05:00</published><author><name>Huiming Song</name></author><id>tag:,2016-07-07:pages/2016/07/07/python-matplotlib-xticks-tight_layout/</id><summary type="html">&lt;p&gt;Suppose in the data there is a column called yq, which is the year and quarter. we want to make this yq as the x tick in the plot. if you simply &lt;code&gt;plt.plot(df.yq, df.actual)&lt;/code&gt;, it will not work because of the scale of yq.&lt;/p&gt;
 &lt;p&gt;The solution is to set the size of the data as x in the plot, and then reset the tick by the yq value.&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="c1"&gt;# carete the sample data&lt;/span&gt;
 &lt;span class="n"&gt;df&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;pd&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;DataFrame&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;columns&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;yq&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;actual&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;pred&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
