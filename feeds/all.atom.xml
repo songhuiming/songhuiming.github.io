@@ -1,5 +1,298 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata</title><link href="/" rel="alternate"></link><link href="/feeds/all.atom.xml" rel="self"></link><id>/</id><updated>2016-07-11T00:00:00-05:00</updated><entry><title>change the working directory of ipython in windows</title><link href="/pages/2016/07/11/change-the-working-directory-of-ipython-in-windows/" rel="alternate"></link><published>2016-07-11T00:00:00-05:00</published><author><name>Huiming Song</name></author><id>tag:,2016-07-11:pages/2016/07/11/change-the-working-directory-of-ipython-in-windows/</id><summary type="html">&lt;p&gt;A simpler modification to the Windows Trick above - without the need to hard-code the directory.&lt;/p&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata</title><link href="/" rel="alternate"></link><link href="/feeds/all.atom.xml" rel="self"></link><id>/</id><updated>2016-07-12T00:00:00-05:00</updated><entry><title>python v.s. SAS</title><link href="/pages/2016/07/12/python-vs-sas/" rel="alternate"></link><published>2016-07-12T00:00:00-05:00</published><author><name>Huiming Song</name></author><id>tag:,2016-07-12:pages/2016/07/12/python-vs-sas/</id><summary type="html">&lt;hr /&gt;
+&lt;h1&gt;python v.s. SAS&lt;/h1&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Tables&lt;/th&gt;
+&lt;th align="left"&gt;python&lt;/th&gt;
+&lt;th&gt;SAS&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;frequency&lt;/td&gt;
+&lt;td align="left"&gt;&lt;ul&gt;&lt;li&gt;&lt;code&gt;x.value_counts(dropna = False).sort_index()&lt;/code&gt;&lt;/li&gt; &lt;li&gt;&lt;code&gt;pd.crosstab(df.A, df.B).apply(lambda r: r/r.sum(), axis = 1)&lt;/code&gt;&lt;/li&gt; &lt;/ul&gt;&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;proc freq;&lt;/code&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;drop/deep&lt;/td&gt;
+&lt;td align="left"&gt;&lt;ul&gt;&lt;li&gt; &lt;code&gt;df.drop(['d1', 'd2', 'd3'], axis = 1)&lt;/code&gt;&lt;/li&gt; &lt;li&gt;&lt;code&gt;df.loc[:, ['k1', 'k2'])&lt;/code&gt;&lt;/li&gt; &lt;/ul&gt;&lt;/td&gt;
+&lt;td&gt;&lt;ul&gt;&lt;li&gt;&lt;code&gt;data a(drop=d1 d2 d2);&lt;/code&gt;&lt;/li&gt; &lt;li&gt;&lt;code&gt;data a(keep=k1 k2 k3);&lt;/code&gt;&lt;/li&gt; &lt;/ul&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;rename&lt;/td&gt;
+&lt;td align="left"&gt;&lt;ul&gt;&lt;li&gt;&lt;code&gt;df.columns = ['a1', 'a2', 'a3']&lt;/code&gt; &lt;/li&gt; &lt;li&gt;&lt;code&gt;df.rename(columns={'orig1':'new1', 'orig1':'new2'})&lt;/code&gt;&lt;/li&gt; &lt;/ul&gt;&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;data a(rename=(orig1=new1 orig2=new2));&lt;/code&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;summarize&lt;/td&gt;
+&lt;td align="left"&gt;&lt;ul&gt;&lt;li&gt;&lt;code&gt;df.x.describe()&lt;/code&gt;&lt;/li&gt;&lt;/ul&gt;&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;proc summary;&lt;/code&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;bin&lt;/td&gt;
+&lt;td align="left"&gt;&lt;ul&gt;&lt;li&gt;&lt;code&gt;pd.cut(x, [min, cut1, …, cutk, max])&lt;/code&gt; &lt;/li&gt; &lt;li&gt;&lt;code&gt;np.digitize(x, [cut1, cut2, …, cutk])&lt;/code&gt;&lt;/li&gt; &lt;/ul&gt;&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;proc rank;&lt;/code&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;row select&lt;/td&gt;
+&lt;td align="left"&gt;&lt;ul&gt;&lt;li&gt;&lt;code&gt;df.loc[(cond1) &amp;amp; (cond2), :]&lt;/code&gt; &lt;/li&gt; &lt;li&gt;&lt;code&gt;df.iloc[:, [1, 3, 5]]&lt;/code&gt;&lt;/li&gt; &lt;/ul&gt;&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;where cond1 and cond2;&lt;/code&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;merge&lt;/td&gt;
+&lt;td align="left"&gt;&lt;ul&gt;&lt;li&gt;&lt;code&gt;pd.merge(df1, df2, on = , how= )&lt;/code&gt;&lt;/li&gt; &lt;li&gt;&lt;code&gt;pd.concat([df1, df2, df3], axis = 0, ignore_index = True)&lt;/code&gt; &lt;/li&gt; &lt;li&gt; &lt;code&gt;df1.join(df1, how = )&lt;/code&gt; &lt;/li&gt; &lt;/ul&gt;&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;merge df1 df2; by col1;&lt;/code&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;sort&lt;/td&gt;
+&lt;td align="left"&gt;&lt;ul&gt;&lt;li&gt;&lt;code&gt;df.sort(['sort_by1',  'sort_by2'], ascending = [True, False])&lt;/code&gt;&lt;/li&gt;&lt;/ul&gt;&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;proc sort; by sortby1 descending sort_by2;&lt;/code&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;count missing&lt;/td&gt;
+&lt;td align="left"&gt;&lt;ul&gt;&lt;li&gt;&lt;code&gt;df.count()&lt;/code&gt;&lt;/li&gt; &lt;li&gt;&lt;code&gt;df.isnull().sum()&lt;/code&gt;&lt;/li&gt; &lt;/ul&gt;&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;proc means n nmiss min mean median max;&lt;/code&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;format&lt;/td&gt;
+&lt;td align="left"&gt;&lt;ul&gt;&lt;li&gt;1 &amp;lt;-&amp;gt; 1 mapping: &amp;nbsp;&amp;nbsp;&amp;nbsp;   &lt;code&gt;df.column1.replace(zip(old_value, new_value))&lt;/code&gt;&lt;/li&gt;&lt;li&gt;&lt;code&gt;hgc2012.sic_code.replace(dict(zip(sic_indust.sic, sic_indust.indust)))&lt;/code&gt;&lt;/li&gt; &lt;li&gt; interval bin/mapping, like from PD to risk ranking:&amp;nbsp;&amp;nbsp;&amp;nbsp; &lt;code&gt;[ranking[j] for j in np.digitize(x, intervals)]&lt;/code&gt; &lt;/li&gt; &lt;li&gt; &lt;code&gt;pd.cut(vectorx, [-np.inf, .25, .5, 1, 1.5, 2, 3, 3.6, 4.2, np.inf], labels = range(9))&lt;/code&gt; &lt;/li&gt; &lt;/ul&gt;&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;proc format;&lt;/code&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;columns start with&lt;/td&gt;
+&lt;td align="left"&gt;&lt;ul&gt;&lt;li&gt;&lt;code&gt;[x for x in list(df) if x.startswith('score')]&lt;/code&gt;&lt;/li&gt;&lt;/ul&gt;&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;var scores: ;&lt;/code&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;index&lt;/td&gt;
+&lt;td align="left"&gt;&lt;ul&gt;&lt;li&gt;&lt;code&gt;df.reset_index(inplace = True)&lt;/code&gt;&lt;/li&gt; &lt;li&gt;&lt;code&gt;df.set_index(‘Column_name’, inplace = True)&lt;/code&gt;&lt;/li&gt; &lt;/ul&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;apply / map / applymap&lt;/td&gt;
+&lt;td align="left"&gt;&lt;ul&gt;&lt;li&gt;&lt;code&gt;pd.Series.map(func, dict, Series)&lt;/code&gt;&lt;/li&gt; &lt;li&gt;&lt;code&gt;pd.Series.apply()&lt;/code&gt;&lt;/li&gt; &lt;li&gt;&lt;code&gt;pd.DataFrame.apply(func, axis = 0)&lt;/code&gt;&lt;/li&gt; &lt;lipd.DataFrame.applymap(func)&gt;&lt;/li&gt;&lt;/ul&gt;&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;data transformation, fotmat, aggregate&lt;/code&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;hr /&gt;
+&lt;h1&gt;python tips&lt;/h1&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Tables&lt;/th&gt;
+&lt;th align="left"&gt;desc&lt;/th&gt;
+&lt;th&gt;code&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;1&lt;/td&gt;
+&lt;td align="left"&gt;replace blanks in var name by "_" and to lower case&lt;/td&gt;
+&lt;td&gt;&lt;ul&gt;&lt;li&gt;&lt;code&gt;hgcallvar = list(hgc)&lt;/code&gt;&lt;/li&gt; &lt;li&gt;&lt;code&gt;[x.replace(' ', '_').lower() for x in hgcallvar]&lt;/code&gt;&lt;/li&gt; &lt;/ul&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;2&lt;/td&gt;
+&lt;td align="left"&gt;string contains method&lt;/td&gt;
+&lt;td&gt;&lt;ul&gt;&lt;li&gt;&lt;code&gt;[x for x in list(hgc2012data) if 'sic' in x]&lt;/code&gt;&lt;/li&gt; &lt;li&gt;&lt;code&gt;[x for x in list(hgc2012data) if 'sic' not in x]&lt;/code&gt;&lt;/li&gt; &lt;li&gt;&lt;code&gt;[x for x in list(hgc2012data) if x.find('sic') &amp;gt;= 0]&lt;/code&gt;&lt;/li&gt; &lt;/ul&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;3&lt;/td&gt;
+&lt;td align="left"&gt;search history in ipython&lt;/td&gt;
+&lt;td&gt;&lt;ul&gt;&lt;li&gt;&lt;code&gt;%hist -g median&lt;/code&gt;&lt;/li&gt; &lt;/ul&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;4&lt;/td&gt;
+&lt;td align="left"&gt;history in a list in ipython&lt;/td&gt;
+&lt;td&gt;&lt;ul&gt;&lt;li&gt;&lt;code&gt;_ih&lt;/code&gt;&lt;/li&gt;  &lt;/ul&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;5&lt;/td&gt;
+&lt;td align="left"&gt;change string to float and replace '.' by 0&lt;/td&gt;
+&lt;td&gt;&lt;ul&gt;&lt;li&gt;&lt;code&gt;map(lambda x: 0 if x == '.' else float(x), data['col_name'])&lt;/code&gt;&lt;/li&gt;  &lt;/ul&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;6&lt;/td&gt;
+&lt;td align="left"&gt;pandas dataframe column or series null value check&lt;/td&gt;
+&lt;td&gt;&lt;ul&gt;&lt;li&gt;&lt;code&gt;data['col_name'].isnull()&lt;/code&gt;&lt;/li&gt;  &lt;/ul&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;7&lt;/td&gt;
+&lt;td align="left"&gt;matplotlib inline plot, change figure size&lt;/td&gt;
+&lt;td&gt;&lt;ul&gt;&lt;li&gt;&lt;code&gt;plt.style.use('ggplot')&lt;/code&gt;&lt;/li&gt; &lt;li&gt;&lt;code&gt;%matplotlib inline&lt;/code&gt;&lt;/li&gt; &lt;li&gt;&lt;code&gt;plt.rcParams['figure.figsize'] = (10.0, 8.0)&lt;/code&gt;&lt;/li&gt; &lt;/ul&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;8&lt;/td&gt;
+&lt;td align="left"&gt;scatter plot / line plot / bar chart&lt;/td&gt;
+&lt;td&gt;&lt;ul&gt;&lt;li&gt;&lt;code&gt;fig = plt.figure()&lt;/code&gt;&lt;/li&gt; &lt;li&gt;&lt;code&gt;ax = fig.add_subplot(111)&lt;/code&gt;&lt;/li&gt; &lt;li&gt;&lt;/li&gt; &lt;li&gt;&lt;code&gt;plt.scatter(x, y, s = 5, color = u'b', marker = '.', label = 'scatter plt')&lt;/code&gt;&lt;/li&gt; &lt;li&gt;&lt;code&gt;ax.plot(x, y, linestyle = '', linewidth = 0.25, markeredgecolor='none', marker = 'o', label = r'label')&lt;/code&gt;&lt;/li&gt; &lt;li&gt;&lt;/li&gt; &lt;li&gt;&lt;code&gt;ax.plot(x, f2_pred, linestyle = ':', linewidth = 0.25, markeredgecolor='none', marker = '', label = r'label')&lt;/code&gt;&lt;/li&gt; &lt;/ul&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;9&lt;/td&gt;
+&lt;td align="left"&gt;sort a dict by key or by value&lt;/td&gt;
+&lt;td&gt;&lt;ul&gt;&lt;li&gt;&lt;code&gt;import operator&lt;/code&gt; &lt;/li&gt; &lt;li&gt; &lt;code&gt;x = {1: 2, 3: 4, 4: 3, 2: 1, 0: 0}&lt;/code&gt; &lt;/li&gt; &lt;li&gt; &lt;code&gt;sorted_x = sorted(x.items(), key=operator.itemgetter(1), reverse = True)  # sort by values, output is list of tuples&lt;/code&gt;&lt;/li&gt; &lt;li&gt;&lt;/li&gt; &lt;li&gt;&lt;code&gt;import operator&lt;/code&gt;&lt;/li&gt; &lt;li&gt;&lt;code&gt;x = {1: 2, 3: 4, 4: 3, 2: 1, 0: 0}&lt;/code&gt;&lt;/li&gt; &lt;li&gt;&lt;code&gt;sorted_x = sorted(x.items(), key=operator.itemgetter(0))    # sort by keys, output is list of tuples&lt;/code&gt;&lt;/li&gt; &lt;/ul&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;10&lt;/td&gt;
+&lt;td align="left"&gt;numpy sort array by a column: easier to do in pandas&lt;/td&gt;
+&lt;td&gt;&lt;ul&gt;&lt;li&gt;&lt;code&gt;testarray = np.array(np.random.randn(5, 3))&lt;/code&gt;&lt;/li&gt; &lt;li&gt;&lt;code&gt;testarray[testarray[:, 1].argsort()]&lt;/code&gt;&lt;/li&gt;  &lt;li&gt; &lt;code&gt;a[a[:,1].argsort()[::-1]]    #reverse order&lt;/code&gt; &lt;/li&gt; &lt;/ul&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;11&lt;/td&gt;
+&lt;td align="left"&gt;numpy sort array by muptiple columns (using lexsort)&lt;/td&gt;
+&lt;td&gt;&lt;ul&gt;&lt;li&gt;&lt;code&gt;a = np.random.randint(3, size = (5, 3))&lt;/code&gt; &lt;/li&gt; &lt;li&gt;&lt;code&gt;ind = a_sort = np.lexsort((a[:, 1], a[: 0]))&lt;/code&gt;&lt;/li&gt; &lt;li&gt; &lt;code&gt;a[ind]&lt;/code&gt; &lt;/li&gt; &lt;/ul&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;12&lt;/td&gt;
+&lt;td align="left"&gt;&lt;/td&gt;
+&lt;td&gt;&lt;ul&gt;&lt;li&gt;&lt;/li&gt; &lt;li&gt;&lt;/li&gt; &lt;/ul&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;</summary><category term="python"></category><category term="data mining"></category></entry><entry><title>statsmodels regression examples</title><link href="/pages/2016/07/12/statsmodels-regression-examples/" rel="alternate"></link><published>2016-07-12T00:00:00-05:00</published><author><name>Huiming Song</name></author><id>tag:,2016-07-12:pages/2016/07/12/statsmodels-regression-examples/</id><summary type="html">&lt;h1&gt;regression models in statsmodels&lt;/h1&gt;
+&lt;p&gt;In &lt;code&gt;statsmodels&lt;/code&gt; it supports the basic regression models like linear regression and logistic regression.&lt;/p&gt;
+&lt;p&gt;It also supports to write the regression function similar to &lt;code&gt;R&lt;/code&gt; formula.&lt;/p&gt;
+&lt;h2&gt;1. regression with R-style formula&lt;/h2&gt;
+&lt;p&gt;if the independent variables x are numeric data, then you can write in the formula directly. However, if the independent variable x is categorical variable, then you need to include it in the &lt;strong&gt;&lt;code&gt;C(x)&lt;/code&gt;&lt;/strong&gt; type formula.&lt;/p&gt;
+&lt;h3&gt;1.1 linear regression&lt;/h3&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;statsmodels.api&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;sm&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;statsmodels.formula.api&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;smf&lt;/span&gt;
+
+&lt;span class="n"&gt;linreg&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;smf&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ols&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;formula&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;Lottery ~ Literacy + Wealth + Region&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;data&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;df&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;fit&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;1.2 logistic regression&lt;/h3&gt;
+&lt;p&gt;each x is numeric, write the formula directly&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;f&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;DF ~ Debt_Service_Coverage + cash_security_to_curLiab + TNW&amp;#39;&lt;/span&gt;
+&lt;span class="n"&gt;logitfit&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;smf&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;logit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;formula&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;f&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="n"&gt;data&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;hgc&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;fit&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;1.3 categorical variable, include it in the &lt;code&gt;C()&lt;/code&gt;&lt;/h3&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;logit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;formula&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;DF ~ TNW + C(seg2)&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;data&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;hgcdev&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;fit&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;if you want to check the output, you can use &lt;font color='red'&gt;&lt;em&gt;&lt;code&gt;dir(logitfit)&lt;/code&gt;&lt;/em&gt;&lt;/font&gt;  or &lt;font color='red'&gt;&lt;em&gt;&lt;code&gt;dir(linreg)&lt;/code&gt;&lt;/em&gt;&lt;/font&gt;  to check the attributes of the fitted model.&lt;/p&gt;
+&lt;p&gt;generally, the following most used will be useful:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;for linear regression&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;linreg.summary()&lt;/code&gt;           &amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp; # summary of the model&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;linreg.fittedvalues&lt;/code&gt;        &amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp; # fitted value from the model&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;linreg.predict()&lt;/code&gt;           &amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp; # predict&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;linreg.rsquared_adj&lt;/code&gt;        &amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp; # adjusted r-square&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;for logistic regression&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;logitreg.summary()&lt;/code&gt;       &amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp; # summary of the model&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;logitreg.fittedvalues&lt;/code&gt;    &amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp; # fitted value from the model&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;logitreg.predict()&lt;/code&gt;       &amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp; # predict&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;logfitreg.pred_table()&lt;/code&gt;   &amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp; # confusion matrix&lt;/li&gt;
+&lt;/ol&gt;
+&lt;hr /&gt;
+&lt;h2&gt;2. Operators&lt;/h2&gt;
+&lt;p&gt;We have already seen that &lt;strong&gt;&lt;code&gt;“~”&lt;/code&gt;&lt;/strong&gt; separates the left-hand side of the model from the right-hand side, and that &lt;strong&gt;&lt;code&gt;“+”&lt;/code&gt;&lt;/strong&gt; adds new columns to the design matrix.&lt;/p&gt;
+&lt;p&gt;The &lt;strong&gt;&lt;code&gt;“-”&lt;/code&gt;&lt;/strong&gt; sign can be used to remove columns/variables.  &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;df&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;sm&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;datasets&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get_rdataset&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;Guerry&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;HistData&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;data&lt;/span&gt;
+&lt;span class="n"&gt;df&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;df&lt;/span&gt;&lt;span class="p"&gt;[[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;Lottery&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;Literacy&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;Wealth&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;Region&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;dropna&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;span class="n"&gt;df&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;head&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+
+&lt;span class="n"&gt;res&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;smf&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ols&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;formula&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;Lottery ~ Literacy + Wealth + C(Region) -1 &amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;data&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;df&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;fit&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="n"&gt;res&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;params&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;strong&gt;&lt;code&gt;”:”&lt;/code&gt;&lt;/strong&gt; adds a new column to the design matrix with the product of the other two columns.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;&lt;code&gt;“*”&lt;/code&gt;&lt;/strong&gt; will also include the individual columns that were multiplied together&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;res1&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;smf&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ols&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;formula&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;Lottery ~ Literacy : Wealth - 1&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;data&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;df&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;fit&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;span class="n"&gt;res2&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;smf&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ols&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;formula&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;Lottery ~ Literacy * Wealth - 1&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;data&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;df&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;fit&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="n"&gt;res1&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;params&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;&lt;/span&gt;
+&lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="n"&gt;res2&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;params&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;hr /&gt;
+&lt;h2&gt;3. regression without formula&lt;/h2&gt;
+&lt;p&gt;in this type, you need to indicate your &lt;code&gt;y&lt;/code&gt; and &lt;code&gt;X&lt;/code&gt; separately in the model.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;important&lt;/strong&gt;: by default, this regression will &lt;strong&gt;not include intercept&lt;/strong&gt;. if you want to add intercept in the regression, you need to use &lt;code&gt;statsmodels.tools.add_constant&lt;/code&gt; to add constant in the &lt;code&gt;X&lt;/code&gt; matrix&lt;/p&gt;
+&lt;h3&gt;3.1. linear regression&lt;/h3&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;statsmodels.api&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;sm&lt;/span&gt;
+&lt;span class="n"&gt;sm&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;OLS&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;y&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;X&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;fit&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;3.2. logistic regression&lt;/h3&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;sm&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Logit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;y&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;X&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;fit&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;3.3. GLM, states the family clearly in the regression&lt;/h3&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;sm&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;GLM&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;data&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;endog&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;data&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;exog&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;family&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;sm&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;families&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Binomial&lt;/span&gt;&lt;span class="p"&gt;())&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;ref&lt;/p&gt;
+&lt;p&gt;http://nbviewer.ipython.org/urls/umich.box.com/shared/static/aouhn2mci77opm3v89vc.ipynb&lt;/p&gt;
+&lt;p&gt;http://dept.stat.lsa.umich.edu/~kshedden/Python-Workshop/nhanes_logistic_regression.html&lt;/p&gt;
+&lt;p&gt;http://statsmodels.sourceforge.net/devel/example_formulas.html&lt;/p&gt;
+&lt;p&gt;http://statsmodels.sourceforge.net/devel/contrasts.html&lt;/p&gt;</summary><category term="python"></category><category term="data mining"></category><category term="statsmodels"></category></entry><entry><title>variable selection in python</title><link href="/pages/2016/07/12/variable-selection-in-python/" rel="alternate"></link><published>2016-07-12T00:00:00-05:00</published><author><name>Huiming Song</name></author><id>tag:,2016-07-12:pages/2016/07/12/variable-selection-in-python/</id><summary type="html">&lt;h1&gt;variable selection in linear regression&lt;/h1&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="#id-section1"&gt;decision tree to pick top predictable factors&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="#id-section2"&gt;single factor analysis: by rsquared_adj&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="#id-section3"&gt;this is to mimic the SAS forward variable selection&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="#id-section4"&gt;best subset regression&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="#id-section5"&gt;one variable transformation for all variables&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div id='id-section1'/&gt;
+## 1. decision tree to pick top predictable factors
+
+this is to run the regression decision tree first, then get the feature importance. The __feature importances__. The higher, the more important the feature. The importance of a feature _is computed as the (normalized) total reduction of the criterion_ brought by that feature. It is also known as the Gini importance. For regression, it is the mean square error.
+
+
+wzxhzdk:0
+
+
+&lt;div id='id-section2'/&gt;
+## 2. single factor analysis: by rsquared_adj
+
+
+wzxhzdk:1
+
+
+&lt;div id='id-section3'/&gt;
+## 3. this is to mimic the SAS forward variable selection
+
+each step, the variable is selected by their f-test value.
+
+
+wzxhzdk:2
+
+
+&lt;div id='id-section4'/&gt;
+## 4. best subset regression
+
+it will loop through all the variables combination of the Xs. So this will be very time consuming: in you have n variables, then you will run `n!` regressions.
+
+
+wzxhzdk:3
+
+
+&lt;div id='id-section5'/&gt;
+## 5. one variable transformation for all variables
+
+if you have 10 variables, and each variable has different transformation with the same starting prefix name. then you can force one of these transformed variable in the model. The reason to include one kind of transform is to avoid multicollinearity. if you include gdp and ln(gdp) then it is very likely they are high correlated.
+
+
+wzxhzdk:4</summary><category term="python"></category><category term="data mining"></category><category term="statsmodels"></category></entry><entry><title>change the working directory of ipython in windows</title><link href="/pages/2016/07/11/change-the-working-directory-of-ipython-in-windows/" rel="alternate"></link><published>2016-07-11T00:00:00-05:00</published><author><name>Huiming Song</name></author><id>tag:,2016-07-11:pages/2016/07/11/change-the-working-directory-of-ipython-in-windows/</id><summary type="html">&lt;p&gt;A simpler modification to the Windows Trick above - without the need to hard-code the directory.&lt;/p&gt;
 &lt;p&gt;A) Create a batch file with the following contents: (Note: A batch file is a simple text file containing commands that can be run in the cmd window. It must have a '.bat' extension, therefore ... you'll need to disable the folder setting which hides extensions of known types)&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;rem -- start_ipython_notebook_here.bat ---
 
