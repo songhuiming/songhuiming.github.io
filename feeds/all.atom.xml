@@ -1,5 +1,60 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata</title><link href="/" rel="alternate"></link><link href="/feeds/all.atom.xml" rel="self"></link><id>/</id><updated>2016-07-26T00:00:00-05:00</updated><entry><title>mysql db and python MySQLdb</title><link href="/pages/2016/07/26/mysql-db-and-python-mysqldb/" rel="alternate"></link><published>2016-07-26T00:00:00-05:00</published><author><name>Huiming Song</name></author><id>tag:,2016-07-26:pages/2016/07/26/mysql-db-and-python-mysqldb/</id><summary type="html">&lt;h2&gt;mysql db&lt;/h2&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata</title><link href="/" rel="alternate"></link><link href="/feeds/all.atom.xml" rel="self"></link><id>/</id><updated>2016-07-26T00:00:00-05:00</updated><entry><title>linux function find, grep, locate, which and dkpg</title><link href="/pages/2016/07/26/linux-function-find-grep-locate-which-and-dkpg/" rel="alternate"></link><published>2016-07-26T00:00:00-05:00</published><author><name>Huiming Song</name></author><id>tag:,2016-07-26:pages/2016/07/26/linux-function-find-grep-locate-which-and-dkpg/</id><summary type="html">&lt;p&gt;The question comes from an issue I got: I have installed MySQLdb but when I try to &lt;code&gt;import MySQLdb&lt;/code&gt;,
+it fails with error message that &lt;code&gt;MySQLdb&lt;/code&gt; cannot be found. The steps to check:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;make sure the package is installed&lt;/li&gt;
+&lt;li&gt;check where it is installed&lt;/li&gt;
+&lt;li&gt;add the path to &lt;code&gt;PYTHONPATH&lt;/code&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;Then import it again, it works.&lt;/p&gt;
+&lt;p&gt;All these will be very easy if you are familiar with linux commands. It will be very convenitent and helpful in job if you master some linux functions. This blog is to list the useful function and its usage&lt;/p&gt;
+&lt;h2&gt;1. &lt;code&gt;find&lt;/code&gt; function and its usage&lt;/h2&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="c1"&gt;# search multiple dirs&lt;/span&gt;
+find /opt /usr /var -name foo.scala -type f     
+
+&lt;span class="c1"&gt;# fina all cache, xml and html files&lt;/span&gt;
+find . -type f &lt;span class="se"&gt;\(&lt;/span&gt; -name &lt;span class="s2"&gt;&amp;quot;*cache&amp;quot;&lt;/span&gt; -o -name &lt;span class="s2"&gt;&amp;quot;*xml&amp;quot;&lt;/span&gt; -o -name &lt;span class="s2"&gt;&amp;quot;*html&amp;quot;&lt;/span&gt; &lt;span class="se"&gt;\)&lt;/span&gt;   
+
+&lt;span class="c1"&gt;# find and search, ignore case with -i option&lt;/span&gt;
+find . -type f -name &lt;span class="s2"&gt;&amp;quot;*.java&amp;quot;&lt;/span&gt; -exec grep -il string &lt;span class="o"&gt;{}&lt;/span&gt; &lt;span class="se"&gt;\;&lt;/span&gt;
+
+&lt;span class="c1"&gt;# find and copy, cp *.mp3 files to /tmp/MusicFiles&lt;/span&gt;
+find . -type f -name &lt;span class="s2"&gt;&amp;quot;*.mp3&amp;quot;&lt;/span&gt; -exec cp &lt;span class="o"&gt;{}&lt;/span&gt; /tmp/MusicFiles &lt;span class="se"&gt;\;&lt;/span&gt;     
+
+&lt;span class="c1"&gt;# list user and corresponding disk usage&lt;/span&gt;
+find /data01/saswork -printf &lt;span class="s2"&gt;&amp;quot;%u  %s\n&amp;quot;&lt;/span&gt; &lt;span class="p"&gt;|&lt;/span&gt; awk &lt;span class="s1"&gt;&amp;#39;{user[$1]+=$2}; END{ for( i in user) print i &amp;quot; &amp;quot; user[i]}&amp;#39;&lt;/span&gt;   
+
+&lt;span class="c1"&gt;# how to list all my files, and size &amp;gt; than a limit, in the given directory&lt;/span&gt;
+&lt;span class="k"&gt;for&lt;/span&gt; r in &lt;span class="k"&gt;$(&lt;/span&gt;find /data01/ -type f -user hsong&lt;span class="p"&gt;|&lt;/span&gt; grep &lt;span class="s2"&gt;&amp;quot;^\/data01&amp;quot;&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt; ls -la &lt;span class="nv"&gt;$r&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;&lt;span class="k"&gt;done&lt;/span&gt;&lt;span class="p"&gt;|&lt;/span&gt;cut -d &lt;span class="s2"&gt;&amp;quot; &amp;quot;&lt;/span&gt; -f 3,5,10
+&lt;span class="k"&gt;for&lt;/span&gt; r in &lt;span class="k"&gt;$(&lt;/span&gt;find /data02/temp/temp_sasprod/ -type f -user hsong&lt;span class="p"&gt;|&lt;/span&gt; grep &lt;span class="s2"&gt;&amp;quot;^\/data02&amp;quot;&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt; ls -la &lt;span class="nv"&gt;$r&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;&lt;span class="k"&gt;done&lt;/span&gt;&lt;span class="p"&gt;|&lt;/span&gt;cut -d &lt;span class="s2"&gt;&amp;quot; &amp;quot;&lt;/span&gt; -f 3,5,10
+&lt;span class="k"&gt;for&lt;/span&gt; r in &lt;span class="k"&gt;$(&lt;/span&gt;find /data02/temp/temp_sasprod/ -type f -size +500k -user hsong&lt;span class="p"&gt;|&lt;/span&gt; grep &lt;span class="s2"&gt;&amp;quot;^\/data02&amp;quot;&lt;/span&gt;&lt;span class="k"&gt;)&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt; ls -lSR &lt;span class="nv"&gt;$r&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;&lt;span class="k"&gt;done&lt;/span&gt; &lt;span class="p"&gt;|&lt;/span&gt; less
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h2&gt;2. &lt;code&gt;locate&lt;/code&gt; to find where the function is&lt;/h2&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;locate python
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h2&gt;3. &lt;code&gt;dpkg&lt;/code&gt; to check packages installed or not, and the path&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;code&gt;dpkg -L PackageName&lt;/code&gt; to find where the package is&lt;/li&gt;
+&lt;/ol&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;dpkg –L MySQLdb
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;ol&gt;
+&lt;li&gt;check if the package is installed or not&lt;/li&gt;
+&lt;/ol&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;dpkg --get-selections | grep mysql
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;ref&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;a href="http://alvinalexander.com/unix/edu/examples/find.shtml"&gt;A collection of Unix/Linux find command examples&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;</summary><category term="python"></category><category term="linux"></category></entry><entry><title>mysql db and python MySQLdb</title><link href="/pages/2016/07/26/mysql-db-and-python-mysqldb/" rel="alternate"></link><published>2016-07-26T00:00:00-05:00</published><author><name>Huiming Song</name></author><id>tag:,2016-07-26:pages/2016/07/26/mysql-db-and-python-mysqldb/</id><summary type="html">&lt;h2&gt;mysql db&lt;/h2&gt;
 &lt;ol&gt;
 &lt;li&gt;install&lt;/li&gt;
 &lt;/ol&gt;
