@@ -139,19 +139,44 @@ find /data01/saswork -printf &lt;span class="s2"&gt;&amp;quot;%u  %s\n&amp;quot;
 &lt;/ol&gt;
 &lt;h2&gt;python MySQLdb&lt;/h2&gt;
 &lt;ol&gt;
-&lt;li&gt;
-&lt;p&gt;install 
-&lt;code&gt;sudo apt-get install python-MySQLdb&lt;/code&gt;&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;import module and create a connection function&lt;/p&gt;
-&lt;/li&gt;
+&lt;li&gt;install 
+&lt;code&gt;sudo apt install python-mysqldb&lt;/code&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;after install, there might be some errors like "cannot find MySQLdb". usually it is because the path is not added. To solve this, first check where it is installed &lt;code&gt;dpkg --get-selections | grep mysql&lt;/code&gt; then add the path to system&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;import sys
+sys.path.append&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;/usr/lib/python2.7/dist-packages&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;there might be some other errors. like I got "cannot find _mysql".&lt;/p&gt;
+&lt;p&gt;Then I tried to install in another way: use &lt;code&gt;easy_install MySQL-python&lt;/code&gt; and it issues error 'EnvironmentError: mysql_config not found'. To solve this, I need ro install &lt;code&gt;sudo apt-get install libmysqlclient-dev&lt;/code&gt; first.&lt;/p&gt;
+&lt;p&gt;So the second way to install is:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;sudo apt-get install libmysqlclient-dev
+easy_install MySQL-python
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;ol&gt;
+&lt;li&gt;import module and create a connection function&lt;/li&gt;
 &lt;/ol&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;MySQLdb&lt;/span&gt;
 &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;connection&lt;/span&gt;&lt;span class="p"&gt;():&lt;/span&gt;
     &lt;span class="n"&gt;conn&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;MySQLdb&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;connect&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;host&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;localhost&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;user&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;root&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;password&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;password&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;db&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;tweets_raw&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
     &lt;span class="n"&gt;c&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;conn&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;cursor&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
     &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;c&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;conn&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;ol&gt;
+&lt;li&gt;uninstall &lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;Uninstall just python-mysqldb&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;sudo apt-get remove python-mysqldb
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Uninstall python-mysqldb and it's dependencies&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;sudo apt-get remove --auto-remove python-mysqldb
 &lt;/pre&gt;&lt;/div&gt;</summary><category term="python"></category><category term="sql"></category></entry><entry><title>plot with online web show: plot in bokeh</title><link href="/pages/2016/07/14/plot-with-online-web-show-plot-in-bokeh/" rel="alternate"></link><published>2016-07-14T00:00:00-05:00</published><author><name>Huiming Song</name></author><id>tag:,2016-07-14:pages/2016/07/14/plot-with-online-web-show-plot-in-bokeh/</id><summary type="html">&lt;p&gt;It is very easy and convenient to plot in &lt;code&gt;matplotlib&lt;/code&gt; which is very powerful for plotting. however, if it is mainly for plotting on the local machine. if want to plot online, then other tools should be utilized.&lt;/p&gt;
 &lt;p&gt;If you want to show your graph online, you need to do these things:&lt;/p&gt;
 &lt;ol&gt;
