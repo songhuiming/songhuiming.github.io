@@ -4,8 +4,10 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Tag: flask &mdash; pydata</title>
+  <title>deploy flask on heroku &mdash; pydata</title>
   <meta name="author" content="shm">
+
+
 
 
 
@@ -55,58 +57,141 @@
       <li >
         <a href="/category/programming.html">Programming</a>
       </li>
-      <li >
+      <li class="active">
         <a href="/category/python.html">Python</a>
       </li>
 </ul></nav>
   <div id="main">
     <div id="content">
 <div>
-	<article role="article">
-    	<header>
-    		<h1 class="entry-title">Tag: flask</h1>
-    	</header>
+  <article class="hentry" role="article">
+<header>
+      <h1 class="entry-title">deploy flask on heroku</h1>
+    <p class="meta">
+<time datetime="2016-06-25T00:00:00-05:00" pubdate>Sat 25 June 2016</time>    </p>
+</header>
 
-    	<div id="blog-archives">
-            <h2>2016</h2>
-                    <article>
-                        <h1><a href="/pages/2016/07/14/plot-with-online-web-show-plot-in-bokeh/">plot with online web show: plot in bokeh</a></h1>
-                        <time datetime="2016-07-14 00:00:00-05:00" pubdate>
-                            <span class="month">Jul</span>
-                            <span class="day">14</span>
-                            <span class="year">2016</span>
-                        </time>
-                        <footer>
-                            <span class="categories">posted in
-                                <a class='category' href='/category/python.html'>Python</a>
-                            </span>
-                        </footer>
-                    </article>
-                    <article>
-                        <h1><a href="/pages/2016/06/25/deploy-flask-on-heroku/">deploy flask on heroku</a></h1>
-                        <time datetime="2016-06-25 00:00:00-05:00" pubdate>
-                            <span class="month">Jun</span>
-                            <span class="day">25</span>
-                            <span class="year">2016</span>
-                        </time>
-                        <footer>
-                            <span class="categories">posted in
-                                <a class='category' href='/category/python.html'>Python</a>
-                            </span>
-                        </footer>
-                    </article>
-	    </div>
-    </article>
+  <div class="entry-content"><ol>
+<li>
+<p>安装git，如果已经有git，可以忽略 
+    <code>sudo apt-get install git</code></p>
+</li>
+<li>
+<p>建立一个文件夹，比如叫flask_heroku，专门用来放flask的东西
+    到这个文件夹下   <code>cd flask_heroku</code></p>
+</li>
+<li>
+<p>install pip on ubuntu if don't have it
+    <code>sudo apt-get install python-pip</code></p>
+</li>
+<li>
+<p>install virtualenv in ubuntu
+    <code>sudo apt-get install python-virtualenv</code>
+    on windows, you can do
+    <code>pip install virtualenv</code></p>
+</li>
+<li>
+<p>run to create temperorary enviroment called venv
+    <code>sudo virtualenv venv</code>
+    这时候你的flask_heroku下面会多了一个文件夹venc，下面安装所有的东西都要使用<code>venv/bin/pip</code>，不能使用系统自带的pip</p>
+</li>
+<li>
+<p>activate the virtual enviroment
+    <code>source venv/bin/activate</code>
+    deactivate the virtual enviroment
+    <code>deactivate</code> 
+    下面用venv/bin/pip安装flask，flask-wtf和其他所有东西的时候，都要在virtual enviroment下面安装，否则requirements.txt会有问题</p>
+</li>
+<li>
+<p>install flask(确认已经激活virtual enviroment)
+    <code>venv/bin/pip install Flask</code> 
+    use <code>venv/bin/pip list</code> or <code>venv/bin/pip show flask</code> to check if you have flask installed.</p>
+</li>
+<li>
+<p>install useful packages if you want(确认已经激活virtual enviroment)
+    <code>venv/bin/pip install flask-wtf
+    venv/bin/pip install flask-mail</code></p>
+</li>
+<li>
+<p>register on heroku.com to get username/password </p>
+</li>
+<li>
+<p>download heroku toolbelt on ubuntu
+    <code>wget -O- https://toolbelt.heroku.com/install-ubuntu.sh | sh</code></p>
+</li>
+<li>
+<p>log on to heroku from your command line
+    <code>heroku login</code></p>
+</li>
+<li>
+<p>create heroku app from your command line or from the heroku.com
+    from comman line  <code>heroku create my-heroku-name</code>
+    from heroku.com  do it directly in https://dashboard.heroku.com/apps
+    可以更改你的app的名字  https://dashboard.heroku.com/apps/pydata/settings</p>
+</li>
+<li>
+<p>配置postgres数据库<br />
+<code>heroku create my-heroku-app-cn</code></p>
+</li>
+<li>
+<p>install prodcution web server gunicorn(确认已经激活virtual enviroment)
+    <code>venv/bin/pip install gunicorn</code></p>
+</li>
+<li>
+<p>产生必要的两个文件requirements.txt和Procfile
+    产生requirements.txt    <code>venv/bin/pip freeze &gt; requirements.txt</code>
+    产生Procfile    用任意文本编辑器建立一个名字为Procfile的文件，在里面输入<code>web: gunicorn app:app</code></p>
+</li>
+<li>
+<p>git部署
+    去掉不必要的文件，只留下必要的文件和文件夹
+    <code>git
+    git add .
+    git commit -m "first flask app test"
+    git push heroku master</code></p>
+</li>
+</ol>
+<h3>Reference</h3>
+<ol>
+<li><a href="http://blog.miguelgrinberg.com/post/the-flask-mega-tutorial-part-i-hello-world">The Flask Mega-Tutorial, Part I: Hello, World!</a></li>
+<li><a href="http://blog.miguelgrinberg.com/post/the-flask-mega-tutorial-part-xviii-deployment-on-the-heroku-cloud">The Flask Mega-Tutorial, Part XVIII: Deployment on the Heroku Cloud</a></li>
+<li><a href="http://xpleaf.blog.51cto.com/9315560/1739940">如何部署Python Web应用：记录一次Heroku部署完整过程</a></li>
+</ol></div>
+    <footer>
+<p class="meta">
+  <span class="byline author vcard">
+    Posted by <span class="fn">
+        <a href="/author/huiming-song.html">Huiming Song</a>
+    </span>
+  </span>
+<time datetime="2016-06-25T00:00:00-05:00" pubdate>Sat 25 June 2016</time>  <span class="categories">
+    <a class='category' href='/category/python.html'>Python</a>
+  </span>
+  <span class="categories">
+    <a class="category" href="/tag/python.html">python</a>,    <a class="category" href="/tag/flask.html">flask</a>  </span>
+</p><div class="sharing">
+</div>    </footer>
+  </article>
+
 </div>
 <aside class="sidebar">
   <section>
     <h1>Recent Posts</h1>
     <ul id="recent_posts">
       <li class="post">
+          <a href="/pages/2016/07/31/replace-tab-by-space-or-replace-spaces-by-tab-in-linux/">replace tab by space or replace spaces by tab in linux</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2016/07/26/linux-function-find-grep-locate-which-and-dkpg/">linux function find, grep, locate, which and dkpg</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2016/07/26/mysql-db-and-python-mysqldb/">mysql db and python MySQLdb</a>
+      </li>
+      <li class="post">
           <a href="/pages/2016/07/14/plot-with-online-web-show-plot-in-bokeh/">plot with online web show: plot in bokeh</a>
       </li>
       <li class="post">
-          <a href="/pages/2016/06/25/deploy-flask-on-heroku/">deploy flask on heroku</a>
+          <a href="/pages/2016/07/12/python-vs-sas/">python v.s. SAS</a>
       </li>
     </ul>
   </section>
@@ -142,7 +227,7 @@
 </aside>    </div>
   </div>
   <footer role="contentinfo"><p>
-    Copyright &copy;  2016  shm &mdash;
+    Copyright &copy;  2015&ndash;2016  shm &mdash;
   <span class="credit">Powered by <a href="http://getpelican.com">Pelican</a></span>
 </p></footer>
   <script src="/theme/js/modernizr-2.0.js"></script>
@@ -168,6 +253,9 @@
 </script>
   <script type="text/javascript">
     var disqus_shortname = 'songhuiming';
+    var disqus_identifier = '/pages/2016/06/25/deploy-flask-on-heroku/';
+    var disqus_url = '/pages/2016/06/25/deploy-flask-on-heroku/';
+    var disqus_title = 'deploy flask on heroku';
     (function() {
       var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
       dsq.src = "//" + disqus_shortname + '.disqus.com/embed.js';
