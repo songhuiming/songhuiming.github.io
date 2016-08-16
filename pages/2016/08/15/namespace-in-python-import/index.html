@@ -4,7 +4,7 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Set up data/code between host/guest/dropbox &mdash; pydata</title>
+  <title>namespace in python import &mdash; pydata</title>
   <meta name="author" content="shm">
 
 
@@ -54,10 +54,10 @@
       <li >
         <a href="/category/linux.html">Linux</a>
       </li>
-      <li class="active">
+      <li >
         <a href="/category/programming.html">Programming</a>
       </li>
-      <li >
+      <li class="active">
         <a href="/category/python.html">Python</a>
       </li>
 </ul></nav>
@@ -66,16 +66,77 @@
 <div>
   <article class="hentry" role="article">
 <header>
-      <h1 class="entry-title">Set up data/code between host/guest/dropbox</h1>
+      <h1 class="entry-title">namespace in python import</h1>
     <p class="meta">
-<time datetime="2015-09-26T00:00:00-05:00" pubdate>Sat 26 September 2015</time>    </p>
+<time datetime="2016-08-15T00:00:00-05:00" pubdate>Mon 15 August 2016</time>    </p>
 </header>
 
-  <div class="entry-content"><h2>share folders between host and vmware guest machine</h2>
-<p>This will refer to <a href="http://songhuiming.github.io/pages/2015/09/26/share-folders-in-windows-with-vmware-guest-ubuntu/">share folders in windows with vmware guest ubuntu</a> </p>
-<h2>plan:</h2>
-<p>1: data will be saved in E:\kaggle_data folder, this folder will be shared with guest machine. so it does not need to download data in ubuntu machine.</p>
-<p>2: code can be saved on the same place. but to share with the other machine, it is better to save in dropbox. so they are saved in Dropbox/kaggle_code/</p></div>
+  <div class="entry-content"><h2>Introduction</h2>
+<p>I prepated a piece of code to calculate the lifetime expected loss for IFRS9 purpose. However, the calculation has to be modified from time to time for testing purpose. To make it simple, I put the calculation engine function in separate file to be imported into the main function. In this way, if I need to modify the calc engine, I dont need to modify every calculation files.</p>
+<p>The structure will be like
+<em> calc_engine.py: which is the calculation function called calc_engine
+</em> main.py: include read in saved predicted pd/lgd/ead/prepayment and the snapshot data for calculation. It also use the multiple processing to call the calc_engine to do the calculation.</p>
+<p>The issue is:
+data and pd/lgd/data are imported in main.py and are passed into calc_engine for calculation. In this way, python will issue error: <em>NameError: global name 'pd_lgd' is not defined</em>.</p>
+<h2>Answer</h2>
+<p>Globals in Python are <em>global</em> to a module, not across all modules. (Many people are confused by this, because in, say, C, a global is the same across all implementation files unless you explicitly make it <code>static</code>.)</p>
+<hr />
+<p>There are different ways to solve this, depending on your actual use case.</p>
+<ul>
+<li>write a class rather than a function in calc_engine.py and let the data to be used as the parameter in the class. </li>
+</ul>
+<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">calc_engine</span>
+<span class="n">mycalc</span> <span class="o">=</span> <span class="n">module1</span><span class="o">.</span><span class="n">ClacEngine</span><span class="p">(</span><span class="n">pd</span> <span class="o">=</span> <span class="n">pd_data</span><span class="p">,</span> <span class="n">lgd</span> <span class="o">=</span> <span class="n">lgd_data</span><span class="p">)</span>
+<span class="n">mycalc</span><span class="o">.</span><span class="n">calc_function</span><span class="p">()</span>
+</pre></div>
+
+
+<ul>
+<li>If you really do want a global, but it's just there to be used by module1, set it in that module.</li>
+</ul>
+<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">calc_engine</span>
+<span class="n">calc_engine</span><span class="o">.</span><span class="n">pd</span> <span class="o">=</span> <span class="n">pd_data</span>
+<span class="n">calc_engine</span><span class="o">.</span><span class="n">snapshot_data</span> <span class="o">=</span> <span class="n">snapshot_data</span>
+
+<span class="nb">map</span><span class="p">(</span><span class="n">calc_engine</span><span class="o">.</span><span class="n">calc_function</span><span class="p">,</span> <span class="n">snapshot_data</span><span class="p">)</span>
+</pre></div>
+
+
+<ul>
+<li>On the other hand, if it is shared by a whole lot of modules, put it somewhere else, and have everyone import it:</li>
+</ul>
+<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">shared_stuff</span>
+<span class="kn">import</span> <span class="nn">calc_engine</span>
+
+<span class="n">shared_stuff</span><span class="o">.</span><span class="n">pd</span> <span class="o">=</span> <span class="n">pd_data</span>
+<span class="n">shared_stuff</span><span class="o">.</span><span class="n">snapshot_data</span> <span class="o">=</span> <span class="n">snapshot_data</span>
+
+<span class="nb">map</span><span class="p">(</span><span class="n">calc_engine</span><span class="o">.</span><span class="n">calc_function</span><span class="p">,</span> <span class="n">snapshot_data</span><span class="p">)</span>
+</pre></div>
+
+
+<p>and, in calc_engine.py:</p>
+<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">shared_stuff</span>
+<span class="k">def</span> <span class="nf">fcalc_function</span><span class="p">():</span>
+    <span class="n">f</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+</pre></div>
+
+
+<ul>
+<li>Finall, Or, in the rare case that you really do need it to be truly global everywhere, like a builtin, add it to the builtin module. The exact details differ between Python 2.x and 3.x. In 3.x, it works like this:</li>
+</ul>
+<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">builtins</span>
+<span class="kn">import</span> <span class="nn">calc_engine</span>
+<span class="n">builtins</span><span class="o">.</span><span class="n">snapshot_data</span> <span class="o">=</span> <span class="n">snapshot_data</span>
+
+<span class="nb">map</span><span class="p">(</span><span class="n">calc_engine</span><span class="o">.</span><span class="n">calc_function</span><span class="p">,</span> <span class="n">snapshot_data</span><span class="p">)</span>
+</pre></div>
+
+
+<h4>Reference</h4>
+<ol>
+<li><a href="http://stackoverflow.com/questions/15959534/python-visibility-of-global-variables-in-imported-modules">Python - Visibility of global variables in imported modules</a></li>
+</ol></div>
     <footer>
 <p class="meta">
   <span class="byline author vcard">
@@ -83,11 +144,11 @@
         <a href="/author/huiming-song.html">Huiming Song</a>
     </span>
   </span>
-<time datetime="2015-09-26T00:00:00-05:00" pubdate>Sat 26 September 2015</time>  <span class="categories">
-    <a class='category' href='/category/programming.html'>programming</a>
+<time datetime="2016-08-15T00:00:00-05:00" pubdate>Mon 15 August 2016</time>  <span class="categories">
+    <a class='category' href='/category/python.html'>Python</a>
   </span>
   <span class="categories">
-    <a class="category" href="/tag/linux.html">linux</a>  </span>
+    <a class="category" href="/tag/python.html">python</a>,    <a class="category" href="/tag/base.html">base</a>  </span>
 </p><div class="sharing">
 </div>    </footer>
   </article>
@@ -172,9 +233,9 @@
 </script>
   <script type="text/javascript">
     var disqus_shortname = 'songhuiming';
-    var disqus_identifier = '/pages/2015/09/26/set-up-datacode-between-hostguestdropbox/';
-    var disqus_url = '/pages/2015/09/26/set-up-datacode-between-hostguestdropbox/';
-    var disqus_title = 'Set up data/code between host/guest/dropbox';
+    var disqus_identifier = '/pages/2016/08/15/namespace-in-python-import/';
+    var disqus_url = '/pages/2016/08/15/namespace-in-python-import/';
+    var disqus_title = 'namespace in python import';
     (function() {
       var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
       dsq.src = "//" + disqus_shortname + '.disqus.com/embed.js';
