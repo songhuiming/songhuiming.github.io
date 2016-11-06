@@ -80,9 +80,12 @@ sudo apt-get upgrade
 
 
 <h3>2. Install <code>mysql-server</code> on vps. It is not necessary to install <code>mysql-client</code>.</h3>
-<p><code>sudo apt-get install mysql-server</code></p>
+<div class="highlight"><pre><span></span>sudo apt-get install mysql-server
+</pre></div>
+
+
 <h3>3. install python mysql interface, which is called <code>mysqldb</code>.</h3>
-<p>This usually will cause multiple errors such as <em>"cannot find MySQLdb"</em> or __mysql_ error. like <a href="http://songhuiming.github.io/pages/2016/07/26/mysql-db-and-python-mysqldb/">this blog</a>. My experience is run all these command and then append the path to the system.</p>
+<p>This usually will cause multiple errors such as <em>"cannot find MySQLdb"</em> or <em>"_mysql is not found"</em> . like <a href="http://songhuiming.github.io/pages/2016/07/26/mysql-db-and-python-mysqldb/">this blog</a>. My experience is run all these command and then append the path to the system.</p>
 <div class="highlight"><pre><span></span>sudo apt install python-mysqldb
 sudo apt-get install libmysqlclient-dev
 easy_install MySQL-python
@@ -110,7 +113,8 @@ sudo a2enmod wsgi
 </pre></div>
 
 
-<h2>Folder Structure</h2>
+<p>Now the basic set up is done. Create the folder structure like the following:</p>
+<h2>Folder Structure in /var/www/</h2>
 <pre>|----<span style="color:blue">elec2016</span>
 |---------<span style="color:blue">elec2016</span>
 |--------------static
@@ -121,26 +125,51 @@ sudo a2enmod wsgi
 <p>Setting up a virtual environment will keep the application and its dependencies isolated from the main system. Changes to it will not affect the cloud server's system configurations.</p>
 <p>In this step, we will create a virtual environment for our flask application.</p>
 <h5>8.1 We will use pip to install virtualenv and Flask. If pip is not installed, install it on Ubuntu through apt-get.</h5>
-<p><code>sudo apt-get install python-pip</code></p>
+<div class="highlight"><pre><span></span>sudo apt-get install python-pip
+</pre></div>
+
+
 <h5>8.2 If virtualenv is not installed, use pip to install it using following command:</h5>
-<p><code>sudo pip install virtualenv</code></p>
+<div class="highlight"><pre><span></span>sudo pip install virtualenv
+</pre></div>
+
+
 <h5>8.3 Give the following command (where venv is the name you would like to give your temporary environment):</h5>
-<p><code>sudo virtualenv venv</code></p>
+<div class="highlight"><pre><span></span>sudo virtualenv venv
+</pre></div>
+
+
 <p>it will create a folder <em>venv</em> in <em>/var/www/elec2016/elec2016</em>, so you will see <em>/var/www/elec2016/elec2016/venv</em></p>
 <h5>8.4 Now, install Flask in that environment by activating the virtual environment with the following command:</h5>
-<p><code>source venv/bin/activate</code></p>
+<div class="highlight"><pre><span></span>source venv/bin/activate
+</pre></div>
+
+
 <h5>8.5 Give this command to install Flask inside:</h5>
-<p><code>sudo pip install Flask</code></p>
+<div class="highlight"><pre><span></span>sudo pip install Flask
+</pre></div>
+
+
+<p>To install the other packages, do the same thing like install Flask. Sometimes need to use <code>sudo apt-get</code> to install the packages. Make sure to start with <strong>sudo</strong> to aviod using other enviroment <code>pip</code> or <code>apt-set</code>. </p>
 <h5>8.6 install pandas or other necessary packages to run the project</h5>
-<p><code>sudo apt-get install python-pandas</code></p>
+<div class="highlight"><pre><span></span>sudo apt-get install python-pandas
+</pre></div>
+
+
 <h5>8.7 Next, run the following command to test if the installation is successful and the app is running:</h5>
-<p><code>sudo python __init__.py</code></p>
+<div class="highlight"><pre><span></span>sudo python __init__.py
+</pre></div>
+
+
 <p>It should display “Running on http://localhost:5000/” or "Running on http://127.0.0.1:5000/". If you see this message, you have successfully configured the app.</p>
 <h5>8.8 To deactivate the environment, give the following command:</h5>
-<p><code>deactivate</code></p>
-<h1>Configure and Enable a New Virtual Host</h1>
+<div class="highlight"><pre><span></span>deactivate
+</pre></div>
+
+
+<h1>3. Configure and Enable a New Virtual Host</h1>
 <h3>9.  add  /etc/apache2/sites-available/elec2016.conf</h3>
-<p>Ubuntu request the '.conf' file for virtual host.</p>
+<p>Ubuntu request the <strong>.conf</strong> file for virtual host.</p>
 <pre>&lt;VirtualHost *:80&gt;
                 ServerName <span style="color:blue">yourdomain.com</span>
                 ServerAdmin <span style="color:blue">youemail@email.com</span>
@@ -160,13 +189,19 @@ sudo a2enmod wsgi
 &lt;/VirtualHost&gt;</pre>
 
 <p>enable the virtual host by</p>
-<p><code>sudo a2ensite elec2016</code></p>
-<h1>Create the .wsgi File</h1>
+<div class="highlight"><pre><span></span>sudo a2ensite elec2016
+</pre></div>
+
+
+<h1>4. Create the .wsgi File</h1>
 <h3>10. create the wsgi file</h3>
-<p>Apache uses the <strong>.wsgi</strong> file to serve the Flask app. Move to the <em>/var/www/FlaskApp</em> directory and create a file named <em>flaskapp.wsgi</em> with following commands:</p>
-<p><code>cd /var/www/elec2016
-sudo nano flaskapp.wsgi</code></p>
-<p>Add the following lines of code to the <em>flaskapp.wsgi</em> file:</p>
+<p>Apache uses the <strong>.wsgi</strong> file to serve the Flask app. Move to the <strong>/var/www/FlaskApp</strong> directory and create a file named <strong>flaskapp.wsgi</strong> with following commands:</p>
+<div class="highlight"><pre><span></span>cd /var/www/elec2016
+sudo vi flaskapp.wsgi
+</pre></div>
+
+
+<p>Add the following lines of code to the <strong>flaskapp.wsgi</strong> file:</p>
 <pre>#!/usr/bin/python
 import sys
 import logging
@@ -176,35 +211,8 @@ sys.path.insert(0,"/var/www/<span style="color:blue">elec2016</span>/")
 from <span style="color:blue">elec2016</span> import app as application
 application.secret_key = 'Add your secret key'</pre>
 
-<p>and the folder structure is like</p>
-<pre>|--------<span style="color:blue">elec2016</span>
-|----------------<span style="color:blue">elec2016</span>
-|-----------------------static
-|-----------------------templates
-|-----------------------<span style="color:blue">venv</span>
-|-----------------------__init__.py
-|----------------<span style="color:blue">flaskapp</span>.wsgi</pre>
-
-<h1>enable virtual host / start apache / reload apache</h1>
-<h3>10.  run</h3>
-<div class="highlight"><pre><span></span>sudo a2ensite elec2016
-
-service apache2 reload
-
-sudo service apache2 restart
-</pre></div>
-
-
-<h3>11 . cd /var/www/elec2016</h3>
-<p>vi flaskapp.wsgi to add the following</p>
-<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre>1
-2
-3
-4
-5
-6
-7
-8</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/python</span>
+<p>a better look of the file is</p>
+<div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/python</span>
 <span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">stream</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
@@ -213,14 +221,66 @@ sudo service apache2 restart
 <span class="kn">from</span> <span class="nn">elec2016</span> <span class="kn">import</span> <span class="n">app</span> <span class="k">as</span> <span class="n">application</span>
 <span class="n">application</span><span class="o">.</span><span class="n">secret_key</span> <span class="o">=</span> <span class="s1">&#39;elec2016test&#39;</span>
 </pre></div>
-</td></tr></table>
 
-<h3>4. install anaconda. this is more likely for data processing/data mining purpose.</h3>
-<p><code>bash Anaconda.sh</code></p>
-<h3>5. install tweepy since I need to download tweets</h3>
-<p><code>pip install tweepy</code></p>
-<div class="highlight"><pre><span></span>
-</pre></div></div>
+
+<p>Until now the folder structure is like</p>
+<pre>|--------<span style="color:blue">elec2016</span>
+|----------------<span style="color:blue">elec2016</span>
+|-----------------------static
+|-----------------------templates
+|-----------------------<span style="color:blue">venv</span>
+|-----------------------__init__.py
+|----------------<span style="color:blue">flaskapp</span>.wsgi</pre>
+
+<h1>5. enable virtual host / start apache / reload apache</h1>
+<h3>11.  run</h3>
+<div class="highlight"><pre><span></span>sudo a2ensite elec2016
+
+service apache2 reload
+</pre></div>
+
+
+<p>or to restart apache service with</p>
+<div class="highlight"><pre><span></span>sudo service apache2 restart
+</pre></div>
+
+
+<h1>6. Others &amp; debug</h1>
+<h3>12. install anaconda. this is more likely for data processing/data mining purpose.</h3>
+<div class="highlight"><pre><span></span>bash Anaconda.sh
+</pre></div>
+
+
+<h3>13. install tweepy since I need to download tweets</h3>
+<div class="highlight"><pre><span></span>pip install tweepy
+</pre></div>
+
+
+<h3>14. reboot and restart all service</h3>
+<h5>14.1. reboot</h5>
+<div class="highlight"><pre><span></span>reboot
+</pre></div>
+
+
+<h5>14.2. restart mysql:</h5>
+<div class="highlight"><pre><span></span>sudo service mysql restart
+</pre></div>
+
+
+<h5>14.3. kick-off download job</h5>
+<div class="highlight"><pre><span></span>cd develop/elec_2016_static_v2/
+python 20160808_twitter_download_t2.py &amp;
+</pre></div>
+
+
+<h5>14.4. restart apache service:</h5>
+<div class="highlight"><pre><span></span>sudo service apache2 restart
+</pre></div>
+
+
+<h3>15. errors</h3>
+<h5>15.1. the most common error is mysql crashed</h5>
+<h5>15.2. errors from tweepy</h5></div>
     <footer>
 <p class="meta">
   <span class="byline author vcard">
