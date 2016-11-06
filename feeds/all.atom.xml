@@ -1,5 +1,154 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata</title><link href="/" rel="alternate"></link><link href="/feeds/all.atom.xml" rel="self"></link><id>/</id><updated>2016-09-09T00:00:00-05:00</updated><entry><title>install markdown preview packages in sublime text</title><link href="/pages/2016/09/09/install-markdown-preview-packages-in-sublime-text/" rel="alternate"></link><published>2016-09-09T00:00:00-05:00</published><author><name>Huiming Song</name></author><id>tag:,2016-09-09:pages/2016/09/09/install-markdown-preview-packages-in-sublime-text/</id><summary type="html">&lt;p&gt;there are tons of reviews to compare the editors. notepad++ is very good for windows enviroment. Atom is good, especially for markdown preview to keep the same format as the final show on github. However, Atom is pretty slow. &lt;/p&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata</title><link href="/" rel="alternate"></link><link href="/feeds/all.atom.xml" rel="self"></link><id>/</id><updated>2016-10-30T00:00:00-05:00</updated><entry><title>Set up flask web host on digitalocean vps</title><link href="/pages/2016/10/30/set-up-flask-web-host-on-digitalocean-vps/" rel="alternate"></link><published>2016-10-30T00:00:00-05:00</published><author><name>Huiming Song</name></author><id>tag:,2016-10-30:pages/2016/10/30/set-up-flask-web-host-on-digitalocean-vps/</id><summary type="html">&lt;p&gt;The pre-requirement is to set up the &lt;strong&gt;&lt;a href="https://m.do.co/c/03f39a524956"&gt;digitalocean&lt;/a&gt;&lt;/strong&gt; droplets. After it is set up, ssh to the vps, change the password.&lt;/p&gt;
+&lt;h1&gt;1. install packages&lt;/h1&gt;
+&lt;h3&gt;1. update the packages&lt;/h3&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;sudo apt-get update
+sudo apt-get upgrade
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;2. Install &lt;code&gt;mysql-server&lt;/code&gt; on vps. It is not necessary to install &lt;code&gt;mysql-client&lt;/code&gt;.&lt;/h3&gt;
+&lt;p&gt;&lt;code&gt;sudo apt-get install mysql-server&lt;/code&gt;&lt;/p&gt;
+&lt;h3&gt;3. install python mysql interface, which is called &lt;code&gt;mysqldb&lt;/code&gt;.&lt;/h3&gt;
+&lt;p&gt;This usually will cause multiple errors such as &lt;em&gt;"cannot find MySQLdb"&lt;/em&gt; or __mysql_ error. like &lt;a href="http://songhuiming.github.io/pages/2016/07/26/mysql-db-and-python-mysqldb/"&gt;this blog&lt;/a&gt;. My experience is run all these command and then append the path to the system.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;sudo apt install python-mysqldb
+sudo apt-get install libmysqlclient-dev
+easy_install MySQL-python
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;6. digitalocean will kick you out. To stay connected, do these changes:&lt;/h3&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;cd /etc/ssh
+sudo vi sshd_config
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;search for the keyword &lt;em&gt;TCPKeepAlive&lt;/em&gt; and then add in the following below the &lt;em&gt;TCPKeepAlive yes&lt;/em&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;ClientAliveInterval 30
+ClientAliveCountMax 99999
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;7. Install Apache and wsgi, and enable wsgi&lt;/h3&gt;
+&lt;p&gt;&lt;em&gt;WSGI (Web Server Gateway Interface)&lt;/em&gt; is an interface between web servers and web apps for python. &lt;em&gt;Mod_wsgi&lt;/em&gt; is an Apache HTTP server mod that enables Apache to serve Flask applications.&lt;/p&gt;
+&lt;p&gt;Open terminal and type the following command to install mod_wsgi:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;sudo apt-get install apache2
+sudo apt-get install libapache2-mod-wsgi
+sudo a2enmod wsgi
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h2&gt;Folder Structure&lt;/h2&gt;
+&lt;pre&gt;|----&lt;span style="color:blue"&gt;elec2016&lt;/span&gt;
+|---------&lt;span style="color:blue"&gt;elec2016&lt;/span&gt;
+|--------------static
+|--------------templates&lt;/pre&gt;
+
+&lt;h1&gt;2. set up virtual environment&lt;/h1&gt;
+&lt;h3&gt;8. Set up &lt;em&gt;virtualenv&lt;/em&gt; and install Flask/pandas or the other necessary packages&lt;/h3&gt;
+&lt;p&gt;Setting up a virtual environment will keep the application and its dependencies isolated from the main system. Changes to it will not affect the cloud server's system configurations.&lt;/p&gt;
+&lt;p&gt;In this step, we will create a virtual environment for our flask application.&lt;/p&gt;
+&lt;h5&gt;8.1 We will use pip to install virtualenv and Flask. If pip is not installed, install it on Ubuntu through apt-get.&lt;/h5&gt;
+&lt;p&gt;&lt;code&gt;sudo apt-get install python-pip&lt;/code&gt;&lt;/p&gt;
+&lt;h5&gt;8.2 If virtualenv is not installed, use pip to install it using following command:&lt;/h5&gt;
+&lt;p&gt;&lt;code&gt;sudo pip install virtualenv&lt;/code&gt;&lt;/p&gt;
+&lt;h5&gt;8.3 Give the following command (where venv is the name you would like to give your temporary environment):&lt;/h5&gt;
+&lt;p&gt;&lt;code&gt;sudo virtualenv venv&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;it will create a folder &lt;em&gt;venv&lt;/em&gt; in &lt;em&gt;/var/www/elec2016/elec2016&lt;/em&gt;, so you will see &lt;em&gt;/var/www/elec2016/elec2016/venv&lt;/em&gt;&lt;/p&gt;
+&lt;h5&gt;8.4 Now, install Flask in that environment by activating the virtual environment with the following command:&lt;/h5&gt;
+&lt;p&gt;&lt;code&gt;source venv/bin/activate&lt;/code&gt;&lt;/p&gt;
+&lt;h5&gt;8.5 Give this command to install Flask inside:&lt;/h5&gt;
+&lt;p&gt;&lt;code&gt;sudo pip install Flask&lt;/code&gt;&lt;/p&gt;
+&lt;h5&gt;8.6 install pandas or other necessary packages to run the project&lt;/h5&gt;
+&lt;p&gt;&lt;code&gt;sudo apt-get install python-pandas&lt;/code&gt;&lt;/p&gt;
+&lt;h5&gt;8.7 Next, run the following command to test if the installation is successful and the app is running:&lt;/h5&gt;
+&lt;p&gt;&lt;code&gt;sudo python __init__.py&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;It should display “Running on http://localhost:5000/” or "Running on http://127.0.0.1:5000/". If you see this message, you have successfully configured the app.&lt;/p&gt;
+&lt;h5&gt;8.8 To deactivate the environment, give the following command:&lt;/h5&gt;
+&lt;p&gt;&lt;code&gt;deactivate&lt;/code&gt;&lt;/p&gt;
+&lt;h1&gt;Configure and Enable a New Virtual Host&lt;/h1&gt;
+&lt;h3&gt;9.  add  /etc/apache2/sites-available/elec2016.conf&lt;/h3&gt;
+&lt;p&gt;Ubuntu request the '.conf' file for virtual host.&lt;/p&gt;
+&lt;pre&gt;&amp;lt;VirtualHost *:80&amp;gt;
+                ServerName &lt;span style="color:blue"&gt;yourdomain.com&lt;/span&gt;
+                ServerAdmin &lt;span style="color:blue"&gt;youemail@email.com&lt;/span&gt;
+                WSGIScriptAlias / /var/www/&lt;span style="color:blue"&gt;elec2016&lt;/span&gt;/flaskapp.wsgi
+                &amp;lt;Directory /var/www/&lt;span style="color:blue"&gt;elec2016&lt;/span&gt;/&lt;span style="color:blue"&gt;elec2016&lt;/span&gt;/&amp;gt;
+                        Order allow,deny
+                        Allow from all
+                &amp;lt;/Directory&amp;gt;
+                Alias /static /var/www/&lt;span style="color:blue"&gt;elec2016&lt;/span&gt;/&lt;span style="color:blue"&gt;elec2016&lt;/span&gt;/static
+                &amp;lt;Directory /var/www/elec2016/elec2016/static/&amp;gt;
+                        Order allow,deny
+                        Allow from all
+                &amp;lt;/Directory&amp;gt;
+                ErrorLog ${APACHE_LOG_DIR}/error.log
+                LogLevel warn
+                CustomLog ${APACHE_LOG_DIR}/access.log combined
+&amp;lt;/VirtualHost&amp;gt;&lt;/pre&gt;
+
+&lt;p&gt;enable the virtual host by&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;sudo a2ensite elec2016&lt;/code&gt;&lt;/p&gt;
+&lt;h1&gt;Create the .wsgi File&lt;/h1&gt;
+&lt;h3&gt;10. create the wsgi file&lt;/h3&gt;
+&lt;p&gt;Apache uses the &lt;strong&gt;.wsgi&lt;/strong&gt; file to serve the Flask app. Move to the &lt;em&gt;/var/www/FlaskApp&lt;/em&gt; directory and create a file named &lt;em&gt;flaskapp.wsgi&lt;/em&gt; with following commands:&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;cd /var/www/elec2016
+sudo nano flaskapp.wsgi&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;Add the following lines of code to the &lt;em&gt;flaskapp.wsgi&lt;/em&gt; file:&lt;/p&gt;
+&lt;pre&gt;#!/usr/bin/python
+import sys
+import logging
+logging.basicConfig(stream=sys.stderr)
+sys.path.insert(0,"/var/www/&lt;span style="color:blue"&gt;elec2016&lt;/span&gt;/")
+
+from &lt;span style="color:blue"&gt;elec2016&lt;/span&gt; import app as application
+application.secret_key = 'Add your secret key'&lt;/pre&gt;
+
+&lt;p&gt;and the folder structure is like&lt;/p&gt;
+&lt;pre&gt;|--------&lt;span style="color:blue"&gt;elec2016&lt;/span&gt;
+|----------------&lt;span style="color:blue"&gt;elec2016&lt;/span&gt;
+|-----------------------static
+|-----------------------templates
+|-----------------------&lt;span style="color:blue"&gt;venv&lt;/span&gt;
+|-----------------------__init__.py
+|----------------&lt;span style="color:blue"&gt;flaskapp&lt;/span&gt;.wsgi&lt;/pre&gt;
+
+&lt;h1&gt;enable virtual host / start apache / reload apache&lt;/h1&gt;
+&lt;h3&gt;10.  run&lt;/h3&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;sudo a2ensite elec2016
+
+service apache2 reload
+
+sudo service apache2 restart
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;11 . cd /var/www/elec2016&lt;/h3&gt;
+&lt;p&gt;vi flaskapp.wsgi to add the following&lt;/p&gt;
+&lt;table class="highlighttable"&gt;&lt;tr&gt;&lt;td class="linenos"&gt;&lt;div class="linenodiv"&gt;&lt;pre&gt;1
+2
+3
+4
+5
+6
+7
+8&lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;td class="code"&gt;&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="ch"&gt;#!/usr/bin/python&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;sys&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;logging&lt;/span&gt;
+&lt;span class="n"&gt;logging&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;basicConfig&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;stream&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;sys&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;stderr&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;sys&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;path&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;insert&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;/var/www/elec2016/&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;elec2016&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;app&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;application&lt;/span&gt;
+&lt;span class="n"&gt;application&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;secret_key&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;elec2016test&amp;#39;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+
+&lt;h3&gt;4. install anaconda. this is more likely for data processing/data mining purpose.&lt;/h3&gt;
+&lt;p&gt;&lt;code&gt;bash Anaconda.sh&lt;/code&gt;&lt;/p&gt;
+&lt;h3&gt;5. install tweepy since I need to download tweets&lt;/h3&gt;
+&lt;p&gt;&lt;code&gt;pip install tweepy&lt;/code&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;</summary><category term="python"></category><category term="flask"></category></entry><entry><title>install markdown preview packages in sublime text</title><link href="/pages/2016/09/09/install-markdown-preview-packages-in-sublime-text/" rel="alternate"></link><published>2016-09-09T00:00:00-05:00</published><author><name>Huiming Song</name></author><id>tag:,2016-09-09:pages/2016/09/09/install-markdown-preview-packages-in-sublime-text/</id><summary type="html">&lt;p&gt;there are tons of reviews to compare the editors. notepad++ is very good for windows enviroment. Atom is good, especially for markdown preview to keep the same format as the final show on github. However, Atom is pretty slow. &lt;/p&gt;
 &lt;p&gt;sublime text is light, and fast. This is a notes about how to install packages in sublime text 3.&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;
