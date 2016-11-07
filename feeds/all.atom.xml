@@ -1,5 +1,57 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata</title><link href="/" rel="alternate"></link><link href="/feeds/all.atom.xml" rel="self"></link><id>/</id><updated>2016-10-30T00:00:00-05:00</updated><entry><title>Set up flask web host on digitalocean vps</title><link href="/pages/2016/10/30/set-up-flask-web-host-on-digitalocean-vps/" rel="alternate"></link><published>2016-10-30T00:00:00-05:00</published><author><name>Huiming Song</name></author><id>tag:,2016-10-30:pages/2016/10/30/set-up-flask-web-host-on-digitalocean-vps/</id><summary type="html">&lt;p&gt;The pre-requirement is to set up the &lt;strong&gt;&lt;a href="https://m.do.co/c/03f39a524956"&gt;digitalocean&lt;/a&gt;&lt;/strong&gt; droplets. After it is set up, ssh to the vps, change the password.&lt;/p&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata</title><link href="/" rel="alternate"></link><link href="/feeds/all.atom.xml" rel="self"></link><id>/</id><updated>2016-11-06T00:00:00-05:00</updated><entry><title>mysql 2006 error: Sign up MySQL Server has gone away when importing large sql file</title><link href="/pages/2016/11/06/mysql-2006-error-sign-up-mysql-server-has-gone-away-when-importing-large-sql-file/" rel="alternate"></link><published>2016-11-06T00:00:00-05:00</published><author><name>Huiming Song</name></author><id>tag:,2016-11-06:pages/2016/11/06/mysql-2006-error-sign-up-mysql-server-has-gone-away-when-importing-large-sql-file/</id><summary type="html">&lt;p&gt;Recently I build a webpage to apply sentiment analysis for the tweets about Trump and Hillary. The real time tweets were pulled and saved to mysql. There are lots of tweets every second to save so I got the mysql crashed again and again.&lt;/p&gt;
+&lt;p&gt;The following are some of the errors I got:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;MySQL error 2006: mysql server has gone away&lt;/strong&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;after the system run for several hours, this error will pop out in the terminal. I google and got some help like &lt;a href="http://stackoverflow.com/questions/7942154/mysql-error-2006-mysql-server-has-gone-away"&gt;this&lt;/a&gt; and &lt;a href="http://stackoverflow.com/questions/12425287/mysql-server-has-gone-away-when-importing-large-sql-file"&gt;MySQL Server has gone away when importing large sql file&lt;/a&gt;. &lt;/p&gt;
+&lt;p&gt;They think the error is because of &lt;code&gt;max_allowed_packet&lt;/code&gt;. I have changed my size to 256M but it did not help me a lot. I still get some errors.&lt;/p&gt;
+&lt;p&gt;this is how I did it:&lt;/p&gt;
+&lt;p&gt;1.1. find the file that contains &lt;code&gt;max_allowed_packet&lt;/code&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;find /etc/* -type f  -exec grep -il max_allowed_packet {} \;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;the file is &lt;em&gt;/etc/mysql/mysql.conf.d/mysqld.cnf&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;Figure 1. find max_allowed_packet
+&lt;img alt="png" src="/figures/20161106_find_max_allowed_packet.PNG" /&gt;&lt;/p&gt;
+&lt;p&gt;1.2. backup that file&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;cp  /etc/mysql/mysql.conf.d/mysqld.cnf /etc/mysql/mysql.conf.d/mysqld.cnf.orig
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;1.3. change the size and save it&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;vi /etc/mysql/mysql.conf.d/mysqld.cnf
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Figure 2. change max_allowed_packet &lt;/p&gt;
+&lt;p&gt;&lt;img alt="png" src="/figures/20161106_change_max_allowed_packet.PNG" /&gt;&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;ERROR 2002 (HY000): Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)&lt;/strong&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;This error is also related to writting to mysql. I tried the methos on &lt;a href="http://stackoverflow.com/questions/19658891/error-2002-hy000-cant-connect-to-local-mysql-server-through-socket-var-run"&gt;this help&lt;/a&gt; but it does not help me.&lt;/p&gt;
+&lt;p&gt;2.1. check if mysql is run&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;ps aux | grep mysql
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;2.2. start the mysql service&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;sudo service mysql start
+or
+sudo /etc/init.d/mysql start
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;Reference&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;a href="http://stackoverflow.com/questions/19658891/error-2002-hy000-cant-connect-to-local-mysql-server-through-socket-var-run"&gt;2ROR 2002 (HY000): Can't connect to local MySQL server through socket '/var/run/mysqld/mysql.sock' (2)ls/how-to-deploy-a-flask-application-on-an-ubuntu-vps)&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;a href="http://stackoverflow.com/questions/7942154/mysql-error-2006-mysql-server-has-gone-away"&gt;MySQL error 2006: mysql server has gone away&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;</summary><category term="python"></category><category term="mysql"></category></entry><entry><title>Set up flask web host on digitalocean vps</title><link href="/pages/2016/10/30/set-up-flask-web-host-on-digitalocean-vps/" rel="alternate"></link><published>2016-10-30T00:00:00-05:00</published><author><name>Huiming Song</name></author><id>tag:,2016-10-30:pages/2016/10/30/set-up-flask-web-host-on-digitalocean-vps/</id><summary type="html">&lt;p&gt;The pre-requirement is to set up the &lt;strong&gt;&lt;a href="https://m.do.co/c/03f39a524956"&gt;digitalocean&lt;/a&gt;&lt;/strong&gt; droplets. After it is set up, ssh to the vps, change the password.&lt;/p&gt;
 &lt;h1&gt;1. install packages&lt;/h1&gt;
 &lt;h3&gt;1. update the packages&lt;/h3&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;sudo apt-get update
@@ -208,7 +260,19 @@ python 20160808_twitter_download_t2.py &amp;amp;
 
 &lt;h3&gt;15. errors&lt;/h3&gt;
 &lt;h5&gt;15.1. the most common error is mysql crashed&lt;/h5&gt;
-&lt;h5&gt;15.2. errors from tweepy&lt;/h5&gt;</summary><category term="python"></category><category term="flask"></category></entry><entry><title>install markdown preview packages in sublime text</title><link href="/pages/2016/09/09/install-markdown-preview-packages-in-sublime-text/" rel="alternate"></link><published>2016-09-09T00:00:00-05:00</published><author><name>Huiming Song</name></author><id>tag:,2016-09-09:pages/2016/09/09/install-markdown-preview-packages-in-sublime-text/</id><summary type="html">&lt;p&gt;there are tons of reviews to compare the editors. notepad++ is very good for windows enviroment. Atom is good, especially for markdown preview to keep the same format as the final show on github. However, Atom is pretty slow. &lt;/p&gt;
+&lt;h5&gt;15.2. errors from tweepy&lt;/h5&gt;
+&lt;h3&gt;Reference&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;a href="http://stackoverflow.com/questions/33059287/how-to-run-a-flask-app-on-apache2-digital-ocean"&gt;how to run a flask app on apache2 (digital ocean)&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;a href="https://www.digitalocean.com/community/tutorials/how-to-deploy-a-flask-application-on-an-ubuntu-vps"&gt;How To Deploy a Flask Application on an Ubuntu VPS&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;a href="http://songhuiming.github.io/pages/2016/07/26/mysql-db-and-python-mysqldb/"&gt;mysql db and python MySQLdb&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;</summary><category term="python"></category><category term="flask"></category></entry><entry><title>install markdown preview packages in sublime text</title><link href="/pages/2016/09/09/install-markdown-preview-packages-in-sublime-text/" rel="alternate"></link><published>2016-09-09T00:00:00-05:00</published><author><name>Huiming Song</name></author><id>tag:,2016-09-09:pages/2016/09/09/install-markdown-preview-packages-in-sublime-text/</id><summary type="html">&lt;p&gt;there are tons of reviews to compare the editors. notepad++ is very good for windows enviroment. Atom is good, especially for markdown preview to keep the same format as the final show on github. However, Atom is pretty slow. &lt;/p&gt;
 &lt;p&gt;sublime text is light, and fast. This is a notes about how to install packages in sublime text 3.&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;
