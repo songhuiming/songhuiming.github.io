@@ -1,5 +1,411 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata</title><link href="/" rel="alternate"></link><link href="/feeds/huiming-song.atom.xml" rel="self"></link><id>/</id><updated>2016-11-06T00:00:00-05:00</updated><entry><title>mysql 2006 error: Sign up MySQL Server has gone away when importing large sql file</title><link href="/pages/2016/11/06/mysql-2006-error-sign-up-mysql-server-has-gone-away-when-importing-large-sql-file/" rel="alternate"></link><published>2016-11-06T00:00:00-05:00</published><author><name>Huiming Song</name></author><id>tag:,2016-11-06:pages/2016/11/06/mysql-2006-error-sign-up-mysql-server-has-gone-away-when-importing-large-sql-file/</id><summary type="html">&lt;p&gt;Recently I build a webpage to apply sentiment analysis for the tweets about Trump and Hillary. The real time tweets were pulled and saved to mysql. There are lots of tweets every second to save so I got the mysql crashed again and again.&lt;/p&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata</title><link href="/" rel="alternate"></link><link href="/feeds/huiming-song.atom.xml" rel="self"></link><id>/</id><updated>2016-11-27T00:00:00-06:00</updated><entry><title>linear regression in python, Chapter 1</title><link href="/pages/2016/11/27/linear-regression-in-python-chapter-1/" rel="alternate"></link><published>2016-11-27T00:00:00-06:00</published><author><name>Huiming Song</name></author><id>tag:,2016-11-27:pages/2016/11/27/linear-regression-in-python-chapter-1/</id><summary type="html">&lt;h2&gt;1 - Simple and Multiple Regression&lt;/h2&gt;
+&lt;h3&gt;Outline&lt;/h3&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;1.0 Introduction
+1.1 A First Regression Analysis
+1.2 Multiple regression
+1.3 Data Analysis / Examining Data 
+1.4 Summary
+1.5 For more information / Reference
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;1.0 Introduction&lt;/h3&gt;
+&lt;p&gt;This first Chapter will cover topics in simple and multiple regression, as well as the supporting tasks that are important in preparing to analyze your data, e.g., data checking, getting familiar with your data file, and examining the distribution of your variables.  We will illustrate the basics of simple and multiple regression and demonstrate the importance of inspecting, checking and verifying your data before accepting the results of your analysis. &lt;/p&gt;
+&lt;p&gt;In this chapter, and in subsequent chapters, I will be using a data file called elemapi from the California Department of Education's API 2000 dataset.  This data file contains a measure of school academic performance as well as other attributes of the elementary schools, such as, class size, enrollment, poverty, etc.&lt;/p&gt;
+&lt;h3&gt;1.1 A First Regression Analysis&lt;/h3&gt;
+&lt;p&gt;Let's dive right in and perform a regression analysis using the variables api00, acs_k3, meals and full. These measure the academic performance of the school (api00), the average class size in kindergarten through 3rd grade (acs_k3), the percentage of students receiving free meals (meals) - which is an indicator of poverty, and the percentage of teachers who have full teaching credentials (full). We expect that better academic performance would be associated with lower class size, fewer students receiving free meals, and a higher percentage of teachers having full teaching credentials.  &lt;/p&gt;
+&lt;p&gt;First I will import some of the necessary modules in python. Typically I will use &lt;code&gt;statsmodels&lt;/code&gt; here whose result is the same as &lt;code&gt;lm&lt;/code&gt; in R. &lt;code&gt;sklearn&lt;/code&gt; is very popular in data mining considering speed but its result will be different from R or SAS. &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;pandas&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;pd&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;numpy&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;np&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;itertools&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;itertools&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;chain&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;combinations&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;statsmodels.formula.api&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;smf&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;scipy.stats&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;scipystats&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;statsmodels.api&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;sm&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;statsmodels.stats.stattools&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;stools&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;statsmodels.stats&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;stats&lt;/span&gt; 
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;statsmodels.graphics.regressionplots&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;matplotlib.pyplot&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;plt&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;seaborn&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;sns&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;copy&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;sklearn.cross_validation&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;train_test_split&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;math&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;time&lt;/span&gt;
+
+&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="n"&gt;matplotlib&lt;/span&gt; &lt;span class="n"&gt;inline&lt;/span&gt; 
+&lt;span class="n"&gt;plt&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;rcParams&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;figure.figsize&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;16&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;12&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="n"&gt;mypath&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;  &lt;span class="s1"&gt;r&amp;#39;D:\Dropbox\ipynb_download\ipynb_blog&lt;/span&gt;&lt;span class="se"&gt;\\&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;&lt;/span&gt;
+
+&lt;span class="n"&gt;elemapi&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;pd&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;read_pickle&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;mypath&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s1"&gt;r&amp;#39;elemapi.pkl&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;   
+
+&lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="n"&gt;elemapi&lt;/span&gt;&lt;span class="p"&gt;[[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;api00&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;acs_k3&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;meals&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;  &lt;span class="s1"&gt;&amp;#39;full&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;head&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;   api00  acs_k3  meals  full
+0    693    16.0   67.0  76.0
+1    570    15.0   92.0  79.0
+2    546    17.0   97.0  68.0
+3    571    20.0   90.0  87.0
+4    478    18.0   89.0  87.0
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;There are different way to run linear regression in statsmodels. One is using formula as R did. Another one is input the data directly. I will show them both here. And both of them will give the same result.&lt;/p&gt;
+&lt;p&gt;Personally I prefer the first way, the reasons are:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;If we use the second way(&lt;code&gt;sm.OLS&lt;/code&gt;) to run the model, by default, it does not include intercept part in the model. To include intercept, we need to manually add constant to the data by &lt;code&gt;sm.add_constant&lt;/code&gt;.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;the first way will take care of the missing data while the second will not.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="sd"&gt;&amp;#39;&amp;#39;&amp;#39;&lt;/span&gt;
+&lt;span class="sd"&gt;1. using formula as R did&lt;/span&gt;
+&lt;span class="sd"&gt;&amp;#39;&amp;#39;&amp;#39;&lt;/span&gt;
+&lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;-&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="mi"&gt;40&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39; smf.ols in R formula &amp;#39;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;-&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="mi"&gt;40&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;&lt;/span&gt;
+&lt;span class="n"&gt;lm&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;smf&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ols&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;formula&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;api00 ~ ell&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;data&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;elemapi&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;fit&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="n"&gt;lm&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;summary&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+
+&lt;span class="n"&gt;plt&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;figure&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;span class="n"&gt;plt&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;scatter&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;elemapi&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ell&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;elemapi&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;api00&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;c&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;g&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;plt&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;plot&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;elemapi&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ell&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;lm&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;params&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;lm&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;params&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;elemapi&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ell&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;plt&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;xlabel&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;ell&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;plt&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ylabel&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;api00&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;plt&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;title&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;Linear Regression Plot&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;---------------------------------------- smf.ols in R formula ----------------------------------------
+
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:                  api00   R-squared:                       0.604
+Model:                            OLS   Adj. R-squared:                  0.603
+Method:                 Least Squares   F-statistic:                     582.3
+Date:                Tue, 27 Dec 2016   Prob (F-statistic):           8.06e-79
+Time:                        15:10:45   Log-Likelihood:                -2272.4
+No. Observations:                 384   AIC:                             4549.
+Df Residuals:                     382   BIC:                             4557.
+Df Model:                           1                                         
+Covariance Type:            nonrobust                                         
+==============================================================================
+                 coef    std err          t      P&amp;gt;|t|      [95.0% Conf. Int.]
+------------------------------------------------------------------------------
+Intercept    790.1777      7.428    106.375      0.000       775.572   804.783
+ell           -4.4213      0.183    -24.132      0.000        -4.782    -4.061
+==============================================================================
+Omnibus:                        7.163   Durbin-Watson:                   1.505
+Prob(Omnibus):                  0.028   Jarque-Bera (JB):                7.192
+Skew:                          -0.308   Prob(JB):                       0.0274
+Kurtosis:                       2.737   Cond. No.                         65.5
+==============================================================================
+
+Warnings:
+[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+
+
+
+
+
+&amp;lt;matplotlib.text.Text at 0x25792668&amp;gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;img alt="png" src="/figures/ucla_ats_linreg_1_01.png" /&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="sd"&gt;&amp;#39;&amp;#39;&amp;#39;&lt;/span&gt;
+&lt;span class="sd"&gt;2. using data input directly&lt;/span&gt;
+&lt;span class="sd"&gt;&amp;#39;&amp;#39;&amp;#39;&lt;/span&gt;
+&lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;-&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="mi"&gt;40&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39; sm.OLS with direct input data &amp;#39;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;-&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="mi"&gt;40&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;&lt;/span&gt;
+&lt;span class="n"&gt;lm2&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;sm&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;OLS&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;elemapi&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;api00&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="n"&gt;sm&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;add_constant&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;elemapi&lt;/span&gt;&lt;span class="p"&gt;[[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;ell&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]]))&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;fit&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="n"&gt;lm2&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;summary&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;---------------------------------------- sm.OLS with direct input data ----------------------------------------
+
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:                  api00   R-squared:                       0.604
+Model:                            OLS   Adj. R-squared:                  0.603
+Method:                 Least Squares   F-statistic:                     582.3
+Date:                Tue, 20 Dec 2016   Prob (F-statistic):           8.06e-79
+Time:                        21:13:43   Log-Likelihood:                -2272.4
+No. Observations:                 384   AIC:                             4549.
+Df Residuals:                     382   BIC:                             4557.
+Df Model:                           1                                         
+Covariance Type:            nonrobust                                         
+==============================================================================
+                 coef    std err          t      P&amp;gt;|t|      [95.0% Conf. Int.]
+------------------------------------------------------------------------------
+const        790.1777      7.428    106.375      0.000       775.572   804.783
+ell           -4.4213      0.183    -24.132      0.000        -4.782    -4.061
+==============================================================================
+Omnibus:                        7.163   Durbin-Watson:                   1.505
+Prob(Omnibus):                  0.028   Jarque-Bera (JB):                7.192
+Skew:                          -0.308   Prob(JB):                       0.0274
+Kurtosis:                       2.737   Cond. No.                         65.5
+==============================================================================
+
+Warnings:
+[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;1.2 Multiple variable regression&lt;/h3&gt;
+&lt;p&gt;Most of the time one variable in the model will not give us enough power to use. Usually multiple variables will be used in the model. As described about, let's try 3 variables in the model.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="sd"&gt;&amp;#39;&amp;#39;&amp;#39;&lt;/span&gt;
+&lt;span class="sd"&gt;1. using formula as R did&lt;/span&gt;
+&lt;span class="sd"&gt;&amp;#39;&amp;#39;&amp;#39;&lt;/span&gt;
+&lt;span class="n"&gt;lm&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;smf&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ols&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;formula&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;api00 ~ acs_k3 + meals + full&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;data&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;elemapi&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;fit&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="n"&gt;lm&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;summary&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:                  api00   R-squared:                       0.669
+Model:                            OLS   Adj. R-squared:                  0.666
+Method:                 Least Squares   F-statistic:                     198.7
+Date:                Tue, 20 Dec 2016   Prob (F-statistic):           1.76e-70
+Time:                        17:07:12   Log-Likelihood:                -1670.8
+No. Observations:                 299   AIC:                             3350.
+Df Residuals:                     295   BIC:                             3364.
+Df Model:                           3                                         
+&lt;span class="gh"&gt;Covariance Type:            nonrobust                                         &lt;/span&gt;
+&lt;span class="gh"&gt;==============================================================================&lt;/span&gt;
+                 coef    std err          t      P&amp;gt;|t|      [95.0% Conf. Int.]
+------------------------------------------------------------------------------
+Intercept    908.5016     28.887     31.451      0.000       851.652   965.351
+acs_k3        -2.7820      1.420     -1.959      0.051        -5.577     0.013
+meals         -3.7020      0.160    -23.090      0.000        -4.018    -3.386
+&lt;span class="gh"&gt;full           0.1214      0.093      1.299      0.195        -0.063     0.305&lt;/span&gt;
+&lt;span class="gh"&gt;==============================================================================&lt;/span&gt;
+Omnibus:                        1.986   Durbin-Watson:                   1.463
+Prob(Omnibus):                  0.370   Jarque-Bera (JB):                1.971
+Skew:                           0.141   Prob(JB):                        0.373
+&lt;span class="gh"&gt;Kurtosis:                       2.719   Cond. No.                         750.&lt;/span&gt;
+&lt;span class="gh"&gt;==============================================================================&lt;/span&gt;
+
+Warnings:
+[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;however, if I rum &lt;code&gt;sm.OLS(elemapi['api00'], sm.add_constant(elemapi[['acs_k3', 'meals',  'full']])).fit()&lt;/code&gt; I will get errors like "LinAlgError: SVD did not converge". The reason is there are missing data in 'acs_k3' and 'meals'. Thus results in the singular value decomposition of the hat matrix failed. To fix it, I need to drop any row with missing data first. After that, it will run successfully and the result is exactly the same as above.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="sd"&gt;&amp;#39;&amp;#39;&amp;#39;&lt;/span&gt;
+&lt;span class="sd"&gt;2. using data input directly&lt;/span&gt;
+&lt;span class="sd"&gt;&amp;#39;&amp;#39;&amp;#39;&lt;/span&gt;
+&lt;span class="n"&gt;data&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;elemapi&lt;/span&gt;&lt;span class="p"&gt;[[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;api00&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;acs_k3&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;meals&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;  &lt;span class="s1"&gt;&amp;#39;full&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]]&lt;/span&gt;
+&lt;span class="n"&gt;data&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;data&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;dropna&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;axis&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;how&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;any&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="n"&gt;lm2&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;sm&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;OLS&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;data&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;api00&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="n"&gt;sm&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;add_constant&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;data&lt;/span&gt;&lt;span class="p"&gt;[[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;acs_k3&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;meals&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;  &lt;span class="s1"&gt;&amp;#39;full&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]]))&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;fit&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="n"&gt;lm2&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;summary&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:                  api00   R-squared:                       0.669
+Model:                            OLS   Adj. R-squared:                  0.666
+Method:                 Least Squares   F-statistic:                     198.7
+Date:                Tue, 20 Dec 2016   Prob (F-statistic):           1.76e-70
+Time:                        17:10:47   Log-Likelihood:                -1670.8
+No. Observations:                 299   AIC:                             3350.
+Df Residuals:                     295   BIC:                             3364.
+Df Model:                           3                                         
+&lt;span class="gh"&gt;Covariance Type:            nonrobust                                         &lt;/span&gt;
+&lt;span class="gh"&gt;==============================================================================&lt;/span&gt;
+                 coef    std err          t      P&amp;gt;|t|      [95.0% Conf. Int.]
+------------------------------------------------------------------------------
+const        908.5016     28.887     31.451      0.000       851.652   965.351
+acs_k3        -2.7820      1.420     -1.959      0.051        -5.577     0.013
+meals         -3.7020      0.160    -23.090      0.000        -4.018    -3.386
+&lt;span class="gh"&gt;full           0.1214      0.093      1.299      0.195        -0.063     0.305&lt;/span&gt;
+&lt;span class="gh"&gt;==============================================================================&lt;/span&gt;
+Omnibus:                        1.986   Durbin-Watson:                   1.463
+Prob(Omnibus):                  0.370   Jarque-Bera (JB):                1.971
+Skew:                           0.141   Prob(JB):                        0.373
+&lt;span class="gh"&gt;Kurtosis:                       2.719   Cond. No.                         750.&lt;/span&gt;
+&lt;span class="gh"&gt;==============================================================================&lt;/span&gt;
+
+Warnings:
+[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;1.3 Data Analysis&lt;/h3&gt;
+&lt;p&gt;Generally, when we get the data we will do some analysis of the data. &lt;/p&gt;
+&lt;p&gt;For numeric data, we will usualy do:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;if there is any missing data&lt;/li&gt;
+&lt;li&gt;what is the distribution of the data, and its visualization like histogram and box-plot&lt;/li&gt;
+&lt;li&gt;what is the five numbers: min, 25 percentile, median, 75 percentile, and the max&lt;/li&gt;
+&lt;li&gt;mean, stdev, length&lt;/li&gt;
+&lt;li&gt;the correlation between the data&lt;/li&gt;
+&lt;li&gt;futuremore, is there any outliers in the data?&lt;/li&gt;
+&lt;li&gt;other plots: pairwise scatter plot, kernal density plot &lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;For categorical data, we will usually do:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;is there any missing data?&lt;/li&gt;
+&lt;li&gt;how many unique values of the data? what is their frequency?&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;Next we will answer these questions.&lt;/p&gt;
+&lt;p&gt;we will pick 4 variables from the elemapi data as an example. &lt;/p&gt;
+&lt;h4&gt;1.3.1. The &lt;code&gt;df.describe()&lt;/code&gt; will gives the summary information like how many non-missing values there, mean, stdev, and the five number summary.&lt;/h4&gt;
+&lt;p&gt;As we can see, api00 and full does not have missing values and their length is 384. acs_k3 has 382 non-missing values, so it has two missing data. meals has 301 non-missing values so it has 83 missings.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;sample_data&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;elemapi&lt;/span&gt;&lt;span class="p"&gt;[[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;api00&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;acs_k3&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;meals&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;  &lt;span class="s1"&gt;&amp;#39;full&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]]&lt;/span&gt;
+&lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="n"&gt;sample_data&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;describe&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;            api00      acs_k3       meals        full
+count  384.000000  382.000000  301.000000  384.000000
+mean   649.421875   18.534031   71.890365   65.124271
+std    143.020564    5.104436   24.367696   40.823987
+min    369.000000  -21.000000    6.000000    0.420000
+25%    525.000000         NaN         NaN    0.927500
+50%    646.500000         NaN         NaN   87.000000
+75%    763.500000         NaN         NaN   97.000000
+max    940.000000   25.000000  100.000000  100.000000
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h4&gt;1.3.2. plot the histogram and the density plot&lt;/h4&gt;
+&lt;p&gt;From the hist plot, the data api00 is pretty even. There is no special concentration.&lt;/p&gt;
+&lt;p&gt;From the box plot below, we did not see there is any outliers.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;scipy.stats&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;gaussian_kde&lt;/span&gt;
+
+&lt;span class="n"&gt;plt&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;hist&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;elemapi&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;api00&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;20&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;normed&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;facecolor&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;g&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;alpha&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mf"&gt;0.5&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="c1"&gt;# add density plot&lt;/span&gt;
+&lt;span class="n"&gt;density&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;gaussian_kde&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;elemapi&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;api00&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;xs&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;linspace&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;300&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;1000&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;500&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;density&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;covariance_factor&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;lambda&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;
+&lt;span class="n"&gt;density&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;_compute_covariance&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;span class="n"&gt;plt&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;plot&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;xs&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;density&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;xs&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="n"&gt;color&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;b&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;plt&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;show&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;img alt="png" src="/figures/ucla_ats_linreg_1_02.png" /&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;plt&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;boxplot&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;elemapi&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;api00&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;gD&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;{&amp;#39;boxes&amp;#39;: [&amp;lt;matplotlib.lines.Line2D at 0x18adfb00&amp;gt;],
+ &amp;#39;caps&amp;#39;: [&amp;lt;matplotlib.lines.Line2D at 0x18af37b8&amp;gt;,
+  &amp;lt;matplotlib.lines.Line2D at 0x18af3d30&amp;gt;],
+ &amp;#39;fliers&amp;#39;: [&amp;lt;matplotlib.lines.Line2D at 0x18aff860&amp;gt;],
+ &amp;#39;means&amp;#39;: [],
+ &amp;#39;medians&amp;#39;: [&amp;lt;matplotlib.lines.Line2D at 0x18aff2e8&amp;gt;],
+ &amp;#39;whiskers&amp;#39;: [&amp;lt;matplotlib.lines.Line2D at 0x18adfc18&amp;gt;,
+  &amp;lt;matplotlib.lines.Line2D at 0x18af3240&amp;gt;]}
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;img alt="png" src="/figures/ucla_ats_linreg_1_03.png" /&gt;&lt;/p&gt;
+&lt;h4&gt;1.3.3. The correlation of the data&lt;/h4&gt;
+&lt;p&gt;&lt;code&gt;df.corr()&lt;/code&gt; will give the correlation matrix of all the variables. Pick the corresponding row or column will give us the correlation between that variables with all the other variables.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="c1"&gt;# check correlation between each variable and api00&lt;/span&gt;
+&lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="n"&gt;elemapi&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;corr&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ix&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;api00&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;:]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sort_values&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;mealcat    -0.865752
+meals      -0.815576
+ell        -0.777091
+not_hsg    -0.681712
+emer       -0.596273
+yr_rnd     -0.487599
+hsg        -0.361842
+enroll     -0.329078
+mobility   -0.191732
+growth     -0.102593
+acs_k3     -0.095982
+dnum        0.007991
+acs_46      0.223256
+some_col    0.258125
+snum        0.259491
+full        0.424186
+col_grad    0.529277
+grad_sch    0.632367
+avg_ed      0.793012
+api99       0.985950
+api00       1.000000
+Name: api00, dtype: float64
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h4&gt;1.3.4. scatter plot of all the variables in the data&lt;/h4&gt;
+&lt;p&gt;This will scatter plot all the pairs of the data so that we can easily find their relations. If there is too many variables, this is not a good way because there are too many graphs to display. In that case, the correlation will be easier to check.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;sns&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;pairplot&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;elemapi&lt;/span&gt;&lt;span class="p"&gt;[[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;api00&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;acs_k3&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;meals&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;  &lt;span class="s1"&gt;&amp;#39;full&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;ell&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;dropna&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;how&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;any&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;axis&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&amp;lt;seaborn.axisgrid.PairGrid at 0x1d83e6d8&amp;gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;img alt="png" src="/figures/ucla_ats_linreg_1_04.png" /&gt;&lt;/p&gt;
+&lt;h4&gt;1.3.5. keneral density plot&lt;/h4&gt;
+&lt;p&gt;R has a very friendly function &lt;code&gt;plot(density(data, bw=0.5))&lt;/code&gt; to let us plot the kernal density function. Here is try to mimic that in python. From the plot we can observe that the ell variable skewed to the right.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;sns&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;kdeplot&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;array&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;elemapi&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ell&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="n"&gt;bw&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mf"&gt;0.5&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&amp;lt;matplotlib.axes._subplots.AxesSubplot at 0x25336f98&amp;gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;img alt="png" src="/figures/ucla_ats_linreg_1_05.png" /&gt;&lt;/p&gt;
+&lt;h4&gt;1.3.6. categorical variable frequency&lt;/h4&gt;
+&lt;p&gt;For categorical variable, most of the time we care about if there is any missing data, and what is the frequency of the values. We can see for acs_k3, there are about 137 data points equal to 19.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;elemapi&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;acs_k3&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;value_counts&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;dropna&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sort_index&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;-21.0      3
+-20.0      2
+-19.0      1
+ 14.0      2
+ 15.0      1
+ 16.0     14
+ 17.0     19
+ 18.0     59
+ 19.0    137
+ 20.0     94
+ 21.0     39
+ 22.0      7
+ 23.0      3
+ 25.0      1
+NaN        2
+Name: acs_k3, dtype: int64
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;1.4 Summary&lt;/h3&gt;
+&lt;p&gt;Most of the time, when I get the data, I will do single variable analysis to check the distribution of my data and missing information. If data is not big, I will check the pairwise relations by pairwise scatter plot or the correlations.&lt;/p&gt;
+&lt;p&gt;If there is missing, how to do? Drop the data or consider of any way to impute the missingt data?&lt;/p&gt;
+&lt;p&gt;If the relation is not linear, what shall we do?&lt;/p&gt;
+&lt;h3&gt;1.5 For more information&lt;/h3&gt;
+&lt;p&gt;If you have any suggestions, please contact me.&lt;/p&gt;
+&lt;p&gt;Some references that I think may help:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;a href="https://www.amazon.com/Applied-Linear-Statistical-Models-Michael/dp/007310874X"&gt;Applied Linear Statistical Models&lt;/a&gt;. I have a hard copy of this book which I bought in XJTU library. It only costs about two US Dollars&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;a href="http://www.ats.ucla.edu/stat/sas/webbooks/reg/chapter1/sasreg1.htm"&gt;UCLA ATS: regression with SAS&lt;/a&gt;. Although it uses SAS, it gives very detailed introduction about linear models. I will follow the structure of this web book.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;a href="http://statsmodels.sourceforge.net/"&gt;statsmodels&lt;/a&gt; A python package to run statistical models and tests.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;</summary><category term="python"></category><category term="data minging"></category><category term="statsmodels"></category></entry><entry><title>mysql 2006 error: Sign up MySQL Server has gone away when importing large sql file</title><link href="/pages/2016/11/06/mysql-2006-error-sign-up-mysql-server-has-gone-away-when-importing-large-sql-file/" rel="alternate"></link><published>2016-11-06T00:00:00-05:00</published><author><name>Huiming Song</name></author><id>tag:,2016-11-06:pages/2016/11/06/mysql-2006-error-sign-up-mysql-server-has-gone-away-when-importing-large-sql-file/</id><summary type="html">&lt;p&gt;Recently I build a webpage to apply sentiment analysis for the tweets about Trump and Hillary. The real time tweets were pulled and saved to mysql. There are lots of tweets every second to save so I got the mysql crashed again and again.&lt;/p&gt;
 &lt;p&gt;The following are some of the errors I got:&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;&lt;strong&gt;MySQL error 2006: mysql server has gone away&lt;/strong&gt;&lt;/li&gt;
