@@ -4,7 +4,7 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>python closure &mdash; pydata</title>
+  <title>increase disk space on vmware for ubuntu &mdash; pydata</title>
   <meta name="author" content="shm">
 
 
@@ -66,50 +66,37 @@
 <div>
   <article class="hentry" role="article">
 <header>
-      <h1 class="entry-title">python closure</h1>
+      <h1 class="entry-title">increase disk space on vmware for ubuntu</h1>
     <p class="meta">
-<time datetime="2016-06-14T00:00:00-05:00" pubdate>Tue 14 June 2016</time>    </p>
+<time datetime="2017-01-22T00:00:00-06:00" pubdate>Sun 22 January 2017</time>    </p>
 </header>
 
-  <div class="entry-content"><p>如果一个函数里面定义了另一个函数，这样的函数叫<code>nested function</code>, <code>nested function</code>可以访问它的封闭区域内的变量。比如</p>
-<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">add_function</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">add_value</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="n">value</span>
-    <span class="k">return</span> <span class="n">add_value</span>
-
-<span class="n">add3</span> <span class="o">=</span> <span class="n">add_function</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
-
-<span class="k">print</span> <span class="n">add3</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>  <span class="c1"># output is 13</span>
+  <div class="entry-content"><h1>increase disk space for vmware ubuntu</h1>
+<p>Because of more data downloaded, I need to increase the vmware ubuntu disk space from 100Gb to 350Gb. This is the experience how to do it.</p>
+<h3>1. increase the disk space from vmware</h3>
+<div class="highlight"><pre><span></span>-- power off the machine
+-- On hard disk drive, select `Extend`
+-- input the size(350Gb)
 </pre></div>
 
 
-<p>now if we delete the function <code>add_function</code>. we can still run <code>add3</code> function and <code>3</code> will be remembered.</p>
-<p>这种数据<code>3</code>和code捆绑在一起的方法叫闭包<code>closure</code></p>
-<h5>什么时候会出现<code>closure</code>?</h5>
-<p>以下三个条件必须满足:
-1. 有一个<code>nested function</code>(function inside a function)
-2. <code>nested function</code>会涉及一个定义在封闭函数内部的值
-3. 最终要返回<code>nested function</code></p>
-<h5>什么时候使用<code>closure</code></h5>
-<p><code>closure</code>避免了使用全局变量。如果一个类(<code>class</code>)只有很少的<code>methods</code>的时候，使用<code>closure</code>会更方便简洁。比如上面的例子，我们可以很快的定义不同的加法函数</p>
-<div class="highlight"><pre><span></span><span class="n">add5</span> <span class="o">=</span> <span class="n">add_function</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
-<span class="n">add10</span> <span class="o">=</span> <span class="n">add_function</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
-
-<span class="k">print</span> <span class="n">add5</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
-<span class="k">print</span> <span class="n">add10</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<h3>2. goes to ubuntu</h3>
+<div class="highlight"><pre><span></span>2.1. `sudo fdisk -l` to check, you will see the disk is increased, but you cannot use it
+2.2. `sudo fdisk /dev/sda` and then
+2.2.1. input `m` to get help
+2.2.2. input `n` to add new partition
+2.2.3. input `p` to select primary
+2.3.4. input partion number, mine is 3(so it will be sda3)
+2.3.5. input start and end. use default number
+2.3.5. input `w` to save and exit
+2.3.6. set up file system, run `mkfs.ext4 /dev/sda3`
+2.3.7. mount to the dir, like `mount /dev/sda3 /home/shm/project`
+2.3.7. edit /dev/fstab to let it auto mount next time when re-start, add `/dev/sda3 /home/shm/project ext4 defaults 1 2`
 </pre></div>
 
 
-<p>所有的python函数都有一个<code>__closure__</code>属性。</p>
-<div class="highlight"><pre><span></span><span class="n">add_function</span><span class="o">.</span><span class="n">__closure__</span>
-<span class="n">add5</span><span class="o">.</span><span class="n">__closure__</span>        <span class="c1"># Out[18]: (&lt;cell at 0x00000000040A09A8: int object at 0x0000000001D58758&gt;,)</span>
-
-<span class="n">add5</span><span class="o">.</span><span class="n">__closure__</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">cell_contents</span>
-</pre></div>
-
-
-<p>Figure 1. tab1: show the plot</p>
-<p><img alt="png" src="/figures/20160614_python_closure_01.PNG" /></p></div>
+<h3>3. or install gparted and then do it in graphical window</h3>
+<p><a href="https://lzw.me/a/vmware-ubuntu-disk-space.html">Reference</a></p></div>
     <footer>
 <p class="meta">
   <span class="byline author vcard">
@@ -117,11 +104,11 @@
         <a href="/author/huiming-song.html">Huiming Song</a>
     </span>
   </span>
-<time datetime="2016-06-14T00:00:00-05:00" pubdate>Tue 14 June 2016</time>  <span class="categories">
+<time datetime="2017-01-22T00:00:00-06:00" pubdate>Sun 22 January 2017</time>  <span class="categories">
     <a class='category' href='/category/python.html'>Python</a>
   </span>
   <span class="categories">
-    <a class="category" href="/tag/python.html">python</a>,    <a class="category" href="/tag/base.html">base</a>  </span>
+    <a class="category" href="/tag/linux.html">Linux</a>  </span>
 </p><div class="sharing">
 </div>    </footer>
   </article>
@@ -206,9 +193,9 @@
 </script>
   <script type="text/javascript">
     var disqus_shortname = 'songhuiming';
-    var disqus_identifier = '/pages/2016/06/14/python-closure/';
-    var disqus_url = '/pages/2016/06/14/python-closure/';
-    var disqus_title = 'python closure';
+    var disqus_identifier = '/pages/2017/01/22/increase-disk-space-on-vmware-for-ubuntu/';
+    var disqus_url = '/pages/2017/01/22/increase-disk-space-on-vmware-for-ubuntu/';
+    var disqus_title = 'increase disk space on vmware for ubuntu';
     (function() {
       var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
       dsq.src = "//" + disqus_shortname + '.disqus.com/embed.js';
