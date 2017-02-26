@@ -1,5 +1,301 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata</title><link href="/" rel="alternate"></link><link href="/feeds/all.atom.xml" rel="self"></link><id>/</id><updated>2017-02-19T00:00:00-06:00</updated><entry><title>Exploratory analysis of Two Sigma Financial Modeling Challenge</title><link href="/pages/2017/02/19/exploratory-analysis-of-two-sigma-financial-modeling-challenge/" rel="alternate"></link><published>2017-02-19T00:00:00-06:00</published><author><name>Huiming Song</name></author><id>tag:,2017-02-19:pages/2017/02/19/exploratory-analysis-of-two-sigma-financial-modeling-challenge/</id><summary type="html">&lt;p&gt;The data is time-varying value for each instrument. Each instrument has id, and timestamp. y is the response value to be predicted. All the others are the anonymized features.&lt;/p&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata</title><link href="/" rel="alternate"></link><link href="/feeds/all.atom.xml" rel="self"></link><id>/</id><updated>2017-02-25T00:00:00-06:00</updated><entry><title>安装docker和tensorflow</title><link href="/pages/2017/02/25/an-zhuang-dockerhe-tensorflow/" rel="alternate"></link><published>2017-02-25T00:00:00-06:00</published><author><name>Huiming Song</name></author><id>tag:,2017-02-25:pages/2017/02/25/an-zhuang-dockerhe-tensorflow/</id><summary type="html">&lt;h2&gt;0. 为什么用docker&lt;/h2&gt;
+&lt;p&gt;作为一种新兴的虚拟化方式，Docker 跟传统的虚拟化方式相比具有众多的优势。&lt;/p&gt;
+&lt;p&gt;更高效的利用系统资源： 由于容器不需要进行硬件虚拟以及运行完整操作系统等额外开销，Docker 对系统资源的利用率更高。&lt;/p&gt;
+&lt;p&gt;更快速的启动时间： 传统的虚拟机技术启动应用服务往往需要数分钟，而 Docker 容器应用，由于直接运行于宿主内核，无需启动完整的操作系统，因此可以做到秒级、甚至毫秒级的启动时间。大大的节约了开发、测试、部署的时间。&lt;/p&gt;
+&lt;p&gt;一致的运行环境： 开发过程中一个常见的问题是环境一致性问题。由于开发环境、测试环境、生产环境不一致，导致有些 bug 并未在开发过程中被发现。而 Docker 的镜像提供了除内核外完整的运行时环境，确保了应用运行环境一致性，从而不会再出现 “这段代码在我机器上没问题啊” 这类问题。&lt;/p&gt;
+&lt;p&gt;对运维更方便： 持续交付和部署  更轻松的迁移  更轻松的维护和扩展&lt;/p&gt;
+&lt;p&gt;对比传统虚拟机总结&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;特性&lt;/th&gt;
+&lt;th&gt;容器&lt;/th&gt;
+&lt;th&gt;虚拟机&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;启动&lt;/td&gt;
+&lt;td&gt;秒级&lt;/td&gt;
+&lt;td&gt;分钟级&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;硬盘使用&lt;/td&gt;
+&lt;td&gt;一般为 MB&lt;/td&gt;
+&lt;td&gt;一般为 GB&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;性能&lt;/td&gt;
+&lt;td&gt;接近原生&lt;/td&gt;
+&lt;td&gt;弱于&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;系统支持量&lt;/td&gt;
+&lt;td&gt;单机支持上千个容器&lt;/td&gt;
+&lt;td&gt;一般几十个&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h2&gt;1. 安装&lt;/h2&gt;
+&lt;p&gt;有两种方法可以安装docker.第一种是设置docker repository,然后安装,升级都是从repository.第二种是直接下载需要的版本的deb文件安装&lt;/p&gt;
+&lt;h2&gt;第一种办法&lt;/h2&gt;
+&lt;h3&gt;1. 设置repository&lt;/h3&gt;
+&lt;p&gt;1.1. 安装package让apt可以使用HTTPS的repository&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;sudo apt-get install -y --no-install-recommends \
+apt-transport-https \
+ca-certificates \
+curl \
+software-properties-common
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;1.2. 添加docker的官网GPG key&lt;/p&gt;
+&lt;p&gt;docker官网给的办法是 &lt;code&gt;curl -fsSL https://apt.dockerproject.org/gpg | sudo apt-key add -&lt;/code&gt;. 但是我每次都报错，找到另一个办法&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;wget https://yum.dockerproject.org/gpg2
+sudo apt-key add gpg
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;验证添加的key id：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;apt-key fingerprint 58118E89F3A912897C070ADBF76221572C52609D
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;1.3. 设置稳定版本的repository&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;sudo add-apt-repository \
+   &amp;quot;deb https://apt.dockerproject.org/repo/ \
+   ubuntu-$(lsb_release -cs) \
+   main&amp;quot;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;2. 安装docker&lt;/h3&gt;
+&lt;p&gt;2.1. 更新apt的索引&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;sudo apt-get update
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;2.2. 安装最新版本docker&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;sudo apt-get -y install docker-engine
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;2.3. (可选)如果要安装指定版本docker&lt;/p&gt;
+&lt;p&gt;首先要知道需要的版本的版本信息&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;apt-cache madison docker-engine
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;然后再安装&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;sudo apt-get -y install docker-engine=&amp;lt;VERSION_STRING&amp;gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;2.4. 确认安装成功--执行hello-world镜像&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;sudo docker run hello-world
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h2&gt;第二种办法，下载安装&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;到 &lt;a href="https://apt.dockerproject.org/repo/pool/main/d/docker-engine/"&gt;https://apt.dockerproject.org/repo/pool/main/d/docker-engine/&lt;/a&gt;下载需要版本的deb文件&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;安装, 把路径替换成下载deb文件的路径&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;sudo dpkg -i /path/to/package.deb
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;ol&gt;
+&lt;li&gt;确认安装成功&lt;/li&gt;
+&lt;/ol&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;sudo docker run hello-world
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h2&gt;卸载docker&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;卸载docker包&lt;/li&gt;
+&lt;/ol&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;sudo apt-get purge docker-engine
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;ol&gt;
+&lt;li&gt;删除所有镜像，容器等等&lt;/li&gt;
+&lt;/ol&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;sudo rm -rf /var/lib/docker
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h2&gt;添加docker group&lt;/h2&gt;
+&lt;p&gt;docker需要root权限.为了避免每次都需要sudo,可以建立一个docker group并且把用户添加进去. -- 要注意的是,用户会有root权限&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;建立docker group&lt;/li&gt;
+&lt;/ol&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;sudo groupadd docker
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;ol&gt;
+&lt;li&gt;添加用户到group&lt;/li&gt;
+&lt;/ol&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="x"&gt;sudo usermod -aG docker &lt;/span&gt;&lt;span class="p"&gt;$&lt;/span&gt;&lt;span class="nv"&gt;USER&lt;/span&gt;&lt;span class="x"&gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;log out and log in&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;确认成功&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;docker run hello-world
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h2&gt;3. 获取镜像&lt;/h2&gt;
+&lt;p&gt;&lt;a href="https://hub.docker.com/explore/"&gt;Docker Hub&lt;/a&gt; 上有大量的高质量的镜像可以用,下面说明怎么获取这些镜像并运行.&lt;/p&gt;
+&lt;p&gt;从 Docker Registry 获取镜像的命令是 docker pull。其命令格式为：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;docker pull [选项] [Docker Registry地址]&amp;lt;仓库名&amp;gt;:&amp;lt;标签&amp;gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h2&gt;4. 镜像管理&lt;/h2&gt;
+&lt;p&gt;4.0. 下载镜像&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;docker pull image-name
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;4.1. 查看本地镜像&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;docker images
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;4.2. 查看运行的容器&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;查看active镜像：  docker ps
+查看所有镜像：    docker ps -a
+查看最近的镜像：   docker ps -l
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;4.3. 删除镜像&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;docker rmi image-name
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;4.4. 在repo里搜索镜像&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;docker search [image-name]
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;4.5. 停止镜像&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;docker stop container-id
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h2&gt;5. 生成新镜像(pull一个干净ubuntu镜像，安装anaconda，提交保存)&lt;/h2&gt;
+&lt;p&gt;5.0. pull一个ubuntu镜像&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;docker pull ubuntu
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;5.1. 启动镜像(ubuntu 镜像)，进入bash&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;docker run -it ubuntu /bin/bash
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;5.3. 更新ubuntu，安装vim, 安装wget&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;apt-get update
+apt-get install vim
+apt-get install wget
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;5.4. 退出&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;exit
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;5.5. 向docker image提交container change&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;docker commit -m &amp;quot;install vim wget on ubuntu&amp;quot; -a &amp;quot;author: shm&amp;quot; 7de2c97f7a85 shm/ubuntu_custom
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;这里7de2c97f7a85是image id.也就是在bash下面看到的root@后面的id: &lt;code&gt;root@7de2c97f7a85&lt;/code&gt;. 这时候比较前后的镜像，就会发现commit以后多了一个镜像 &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;shm@ubuntu:~$ docker images
+REPOSITORY              TAG                 IMAGE ID            CREATED             SIZE
+tensorflow/tensorflow   latest              ea40dcc45724        2 weeks ago         1.03 GB
+ubuntu                  latest              f49eec89601e        5 weeks ago         129 MB
+
+shm@ubuntu:~$ docker commit -m &amp;quot;install vim wget on ubuntu&amp;quot; -a &amp;quot;author: shm&amp;quot; 7de2c97f7a85 shm/ubuntu_custom
+sha256:5ed742f690e11c65db83936847c7c5659c5834f6b2c93b52d110455936e6a224
+
+shm@ubuntu:~$ docker images
+REPOSITORY              TAG                 IMAGE ID            CREATED             SIZE
+shm/ubuntu_custom       latest              5ed742f690e1        12 seconds ago      647 MB
+tensorflow/tensorflow   latest              ea40dcc45724        2 weeks ago         1.03 GB
+ubuntu                  latest              f49eec89601e        5 weeks ago         129 MB
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;5.6. 向仓库提交镜像&lt;/p&gt;
+&lt;p&gt;首先登陆&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;docker login -u docker-username
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;然后push&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;docker push docker-username/docker-image-name
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h2&gt;一个例子，安装tensorflow&lt;/h2&gt;
+&lt;p&gt;tensorflow提供了好几种安装办法，其中一种是提供的docker镜像.非常简单可以拉下来&lt;code&gt;docker pull tensorflow/tensorflow&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;运行cpu版本的tensorflow, &lt;code&gt;docker run -it -p 8888:8888 tensorflow/tensorflow&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;然后浏览器打开jupyter notebook  http://localhost:8888/&lt;/p&gt;
+&lt;p&gt;&lt;img alt="png" src="/figures/20170225_install_docker_01.PNG" /&gt;&lt;/p&gt;
+&lt;h3&gt;安装其他软件(非Dockerfile安装，不推荐)&lt;/h3&gt;
+&lt;p&gt;首先进入bash&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;docker run -it tensorflow/tensorflow /bin/bash
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;其次输入命令安装&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;apt-get install python-pandas
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;然后退出&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;exit
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;退出docker容器，再给docker commit传递一个json来提交新的镜像&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;docker commit -m &amp;quot;test&amp;quot; -a&amp;quot;autho name&amp;quot; ea40dcc45724 tensorflow-pandas
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;好方便！&lt;/p&gt;
+&lt;h2&gt;后续的问题&lt;/h2&gt;
+&lt;h4&gt;1. docker跟主机共享文件&lt;/h4&gt;
+&lt;h4&gt;2. 相互copy文件&lt;/h4&gt;
+&lt;h4&gt;3. 不同的docker之间交互(一个tf,一个Theano,怎么交互)&lt;/h4&gt;
+&lt;h4&gt;4. 用Dockerfile创建镜像&lt;/h4&gt;
+&lt;h2&gt;Reference&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;a href="https://docs.docker.com/engine/installation/linux/ubuntu/"&gt;Get Docker for Ubuntu&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://docs.docker.com/engine/installation/linux/linux-postinstall/"&gt;Manage Docker as a non-root user&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://forums.docker.com/t/error-gpg-no-valid-openpgp-data-found/3857/4"&gt;Error gpg: no valid OpenPGP data found&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://yeasy.gitbooks.io/docker_practice/content/"&gt;Docker — 从入门到实践&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://hub.docker.com/r/tensorflow/tensorflow/"&gt;docker tensorflow repository&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;</summary><category term="python"></category><category term="docker"></category><category term="tensorflow"></category><category term="deep learning"></category></entry><entry><title>Exploratory analysis of Two Sigma Financial Modeling Challenge</title><link href="/pages/2017/02/19/exploratory-analysis-of-two-sigma-financial-modeling-challenge/" rel="alternate"></link><published>2017-02-19T00:00:00-06:00</published><author><name>Huiming Song</name></author><id>tag:,2017-02-19:pages/2017/02/19/exploratory-analysis-of-two-sigma-financial-modeling-challenge/</id><summary type="html">&lt;p&gt;The data is time-varying value for each instrument. Each instrument has id, and timestamp. y is the response value to be predicted. All the others are the anonymized features.&lt;/p&gt;
 &lt;h2&gt;0. Introduction&lt;/h2&gt;
 &lt;p&gt;This dataset contains anonymized features pertaining to a time-varying value for a financial instrument. Each instrument has an id. Time is represented by the 'timestamp' feature and the variable to predict is 'y'. No further information will be provided on the meaning of the features, the transformations that were applied to them, the timescale, or the type of instruments that are included in the data. Moreover, in accordance with competition rules, participants must not use data other than the data linked from the competition website for the purpose of use in this competition to develop and test their models and submissions.&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;numpy&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;np&lt;/span&gt;
