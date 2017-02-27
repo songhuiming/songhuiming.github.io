@@ -1,5 +1,111 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata</title><link href="/" rel="alternate"></link><link href="/feeds/huiming-song.atom.xml" rel="self"></link><id>/</id><updated>2017-02-25T00:00:00-06:00</updated><entry><title>安装docker和tensorflow</title><link href="/pages/2017/02/25/an-zhuang-dockerhe-tensorflow/" rel="alternate"></link><published>2017-02-25T00:00:00-06:00</published><author><name>Huiming Song</name></author><id>tag:,2017-02-25:pages/2017/02/25/an-zhuang-dockerhe-tensorflow/</id><summary type="html">&lt;h2&gt;0. 为什么用docker&lt;/h2&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata</title><link href="/" rel="alternate"></link><link href="/feeds/huiming-song.atom.xml" rel="self"></link><id>/</id><updated>2017-02-26T00:00:00-06:00</updated><entry><title>tensorflow简介--01</title><link href="/pages/2017/02/26/tensorflowjian-jie-01/" rel="alternate"></link><published>2017-02-26T00:00:00-06:00</published><author><name>Huiming Song</name></author><id>tag:,2017-02-26:pages/2017/02/26/tensorflowjian-jie-01/</id><summary type="html">&lt;h2&gt;介绍&lt;/h2&gt;
+&lt;p&gt;我们将会用一个非常简单非实际的问题来帮助理解机器学习和tensorflow(TF)。我们使用一个feature(变量)房屋面积来预测房屋价格。这样将避免讨论高维数据，让我们可以集中理解TF中定义模型，应用模型和训练模型。&lt;/p&gt;
+&lt;p&gt;(原文中都写的是machine learning，机器学习。尽管现在大家都管TF为深度学习框架，我仍然翻译成机器学习。)&lt;/p&gt;
+&lt;h2&gt;机器学习简介&lt;/h2&gt;
+&lt;p&gt;我们从下面收集的一组数据开始。下图每一个点表示两个值--一个&lt;strong&gt;outcome&lt;/strong&gt;（房屋价格）和一个影响&lt;strong&gt;feature&lt;/strong&gt;(房屋面积)。
+&lt;img alt="png" src="/figures/20170225_tensorflow_intro_01.png" /&gt;&lt;/p&gt;
+&lt;p&gt;然而，我们不知道那些不在图上的features点对应的价格。
+&lt;img alt="png" src="/figures/20170225_tensorflow_intro_02.png" /&gt;&lt;/p&gt;
+&lt;p&gt;我们可以使用机器学习来发现两个之间的关系，这样的话给定一个feature点，我们可以精确的预测出结果。
+&lt;img alt="png" src="/figures/20170225_tensorflow_intro_03.png" /&gt;&lt;/p&gt;
+&lt;h2&gt;第一步，选择模型&lt;/h2&gt;
+&lt;h3&gt;模型类型&lt;/h3&gt;
+&lt;p&gt;要进行预测，我们需要选择一个模拟可以最好的拟合我们上面收集的数据。&lt;/p&gt;
+&lt;p&gt;我们可以选择一个线性模型，然后通过调整斜率和截距来拟合那些点。
+&lt;img alt="png" src="/figures/20170225_tensorflow_intro_04.png" /&gt;&lt;/p&gt;
+&lt;p&gt;我们也可以选择一个指数模型，然后通过调整曲率和位置来拟合那些点。
+&lt;img alt="png" src="/figures/20170225_tensorflow_intro_05.png" /&gt;&lt;/p&gt;
+&lt;h3&gt;损失函数&lt;/h3&gt;
+&lt;p&gt;要比较哪个模型拟合更好，我们定义最佳拟合为损失函数，我们要最小化这个损失函数。一个损失函数的例子是真实值和预测值的差的绝对值的和（数学上也叫L1）。也就是下图中那些蓝色线的和就是。
+&lt;img alt="png" src="/figures/20170225_tensorflow_intro_06.png" /&gt;&lt;/p&gt;
+&lt;p&gt;注意：更通常的损失函数是距离的平方和，也就是最小二乘。&lt;/p&gt;
+&lt;h3&gt;线性模型简介&lt;/h3&gt;
+&lt;p&gt;为了简单化问题，我们用线性模型来拟合数据。一个线性模型何以数学的表达为&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;y = W.x + b
+Where:
+x: house size, in sqm
+y: predicted house price, in $
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;要调整参数来拟合数据，我们可以&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;调整&lt;code&gt;W&lt;/code&gt;来改变线性模型的梯度
+&lt;img alt="png" src="/figures/20170225_tensorflow_intro_07.png" /&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;调整&lt;code&gt;b&lt;/code&gt;来改变位置
+&lt;img alt="png" src="/figures/20170225_tensorflow_intro_08.png" /&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;通过选择不同的&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;，我们可以最终选者一个最合适的模型来最小化损失函数。除了随机的选择&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;，我们有没有更好的办法来尝试&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;？&lt;/p&gt;
+&lt;h3&gt;梯度下降&lt;/h3&gt;
+&lt;p&gt;如果你在山上的一个平台上，当你想下降到最低点的时候，你的视野是这样的
+&lt;img alt="png" src="/figures/20170225_tensorflow_intro_09.png" /&gt;&lt;/p&gt;
+&lt;p&gt;下降的方向是不明了的！这样最好的办法就是梯度下降(gradient descent)：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;在当前位置找到最陡峭的方向最为梯度方向&lt;/li&gt;
+&lt;li&gt;沿着选择的方向走一步，步长为&lt;code&gt;X&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;重复上面的办法，这就是&lt;strong&gt;training&lt;/strong&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;最小化损失函数也相似。下图中，损失函数就像那个山一样起伏，我们的目的是找到最低点。通过梯度下降，我们可以做到这一点。
+&lt;img alt="png" src="/figures/20170225_tensorflow_intro_10.png" /&gt;&lt;/p&gt;
+&lt;p&gt;有了线性模型，损失函数，和梯度下降这些概念，我们可以进一步学习TF了。&lt;/p&gt;
+&lt;h2&gt;第二步：TF中建模&lt;/h2&gt;
+&lt;h3&gt;TF中线性模型&lt;/h3&gt;
+&lt;p&gt;TF的两个基本概念是：&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;1. placeholder&lt;/strong&gt;: 表示进行梯度下降算法的时候，输入模型中的实际值。在上面的例子中，也就是房屋面积(x)和房屋价格(y_)。&lt;/p&gt;
+&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_11.png" /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;2. variable&lt;/strong&gt;：表示损失函数中我们要寻找最佳值的那些变量，也就是上例中的&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;。
+&lt;img alt="png" src="/figures/20170225_tensorflow_intro_12.png" /&gt;&lt;/p&gt;
+&lt;p&gt;在TF中线性模型&lt;code&gt;y = W.x + b&lt;/code&gt;表示为
+&lt;img alt="png" src="/figures/20170225_tensorflow_intro_13.png" /&gt;&lt;/p&gt;
+&lt;h3&gt;TF中的损失函数&lt;/h3&gt;
+&lt;p&gt;类似于把真实房屋价格输入到模型中，我们建立一个placeholder:
+&lt;img alt="png" src="/figures/20170225_tensorflow_intro_14.png" /&gt;&lt;/p&gt;
+&lt;p&gt;我们的最小二乘损失函数可以表示为
+&lt;img alt="png" src="/figures/20170225_tensorflow_intro_15.png" /&gt;&lt;/p&gt;
+&lt;h3&gt;数据&lt;/h3&gt;
+&lt;p&gt;因为我们没有实际的房屋价格(y_)和房屋面积(x)，我们模拟出它们的值
+&lt;img alt="png" src="/figures/20170225_tensorflow_intro_16.png" /&gt;&lt;/p&gt;
+&lt;p&gt;模拟的时候，我们假设房屋价格是房屋面积的2倍。&lt;/p&gt;
+&lt;h3&gt;梯度下降&lt;/h3&gt;
+&lt;p&gt;有了线性模型，损失函数，数据，我们就可以用梯度下降来最小化损失函数，寻找到最优的W和b。&lt;/p&gt;
+&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_17.png" /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;0.00001&lt;/code&gt;就是梯度下降中的沿着最陡峭方向的步长，也叫&lt;strong&gt;learning rate&lt;/strong&gt;。&lt;/p&gt;
+&lt;h2&gt;第三步：训练模型&lt;/h2&gt;
+&lt;p&gt;训练模型包括按照预先设置的迭代次数进行梯度下降，或者直到损失函数小于一个预先给定的值。&lt;/p&gt;
+&lt;h3&gt;TF Quirks&lt;/h3&gt;
+&lt;p&gt;所有的variable都要给定初始值，否则的话他们可能保持上次迭代的值
+&lt;img alt="png" src="/figures/20170225_tensorflow_intro_18.png" /&gt;&lt;/p&gt;
+&lt;h3&gt;TF Session&lt;/h3&gt;
+&lt;p&gt;尽管TF是一个python库，python是一个解释型的语言，但是因为性能原因，TF默认却不能执行解释运算。所以上面的&lt;code&gt;init&lt;/code&gt;并没有执行。TF在&lt;strong&gt;session&lt;/strong&gt;里面执行，建立一个session(sess)然后执行的话使用&lt;code&gt;sess.run()&lt;/code&gt;
+&lt;img alt="png" src="/figures/20170225_tensorflow_intro_19.png" /&gt;&lt;/p&gt;
+&lt;p&gt;类似的，我们通过调用&lt;code&gt;sess.run()&lt;/code&gt;里的循环来执行&lt;em&gt;train_step&lt;/em&gt;.
+&lt;img alt="png" src="/figures/20170225_tensorflow_intro_20.png" /&gt;&lt;/p&gt;
+&lt;p&gt;你需要把实际值输入到x，y_组成的&lt;em&gt;feed&lt;/em&gt;里面去，这是因为TF把解出来的&lt;em&gt;train_step&lt;/em&gt;放入他的dependencies里：
+&lt;img alt="png" src="/figures/20170225_tensorflow_intro_21.png" /&gt;&lt;/p&gt;
+&lt;p&gt;dependencies的底部就是x, y_的placeholders.我们已经知道，&lt;strong&gt;tf.placeholders&lt;/strong&gt;是用来输入实际的房屋价格(y_)和房屋面积(x)的。&lt;/p&gt;
+&lt;h3&gt;结果&lt;/h3&gt;
+&lt;p&gt;我们打印出循环里的值来显示TF怎么找到最佳的&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;的。
+&lt;img alt="png" src="/figures/20170225_tensorflow_intro_22.png" /&gt;&lt;/p&gt;
+&lt;h2&gt;总结&lt;/h2&gt;
+&lt;p&gt;我们学习了机器学习的最简单的模型，用一个feature来预测结果。为了简化问题，我们使用了线性模型来拟合数据。然后定义一个损失函数来找到最佳拟合。最后通过梯度下降来找到variable&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;的最佳估计。&lt;/p&gt;
+&lt;h3&gt;下一步&lt;/h3&gt;
+&lt;p&gt;在下一篇文章，我们将会&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;设置Tensor Board来可视化TF的执行，这样可以检测到我们模型，损失函数和梯度下降的问题&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;分批(batches)输入数据来训练模型(而不是每次输入一个数据点)，并且展示这样会怎么影响结果&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;a href="https://medium.com/all-of-us-are-belong-to-machines/the-gentlest-introduction-to-tensorflow-248dc871a224#.7ptf8ybid"&gt;Gentlest Introduction to Tensorflow #1&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;</summary><category term="python"></category><category term="tensorflow"></category><category term="deep learning"></category></entry><entry><title>安装docker和tensorflow</title><link href="/pages/2017/02/25/an-zhuang-dockerhe-tensorflow/" rel="alternate"></link><published>2017-02-25T00:00:00-06:00</published><author><name>Huiming Song</name></author><id>tag:,2017-02-25:pages/2017/02/25/an-zhuang-dockerhe-tensorflow/</id><summary type="html">&lt;h2&gt;0. 为什么用docker&lt;/h2&gt;
 &lt;p&gt;作为一种新兴的虚拟化方式，Docker 跟传统的虚拟化方式相比具有众多的优势。&lt;/p&gt;
 &lt;p&gt;更高效的利用系统资源： 由于容器不需要进行硬件虚拟以及运行完整操作系统等额外开销，Docker 对系统资源的利用率更高。&lt;/p&gt;
 &lt;p&gt;更快速的启动时间： 传统的虚拟机技术启动应用服务往往需要数分钟，而 Docker 容器应用，由于直接运行于宿主内核，无需启动完整的操作系统，因此可以做到秒级、甚至毫秒级的启动时间。大大的节约了开发、测试、部署的时间。&lt;/p&gt;
