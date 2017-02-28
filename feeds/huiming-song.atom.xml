@@ -1,5 +1,251 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata</title><link href="/" rel="alternate"></link><link href="/feeds/huiming-song.atom.xml" rel="self"></link><id>/</id><updated>2017-02-26T00:00:00-06:00</updated><entry><title>tensorflow简介--01</title><link href="/pages/2017/02/26/tensorflowjian-jie-01/" rel="alternate"></link><published>2017-02-26T00:00:00-06:00</published><author><name>Huiming Song</name></author><id>tag:,2017-02-26:pages/2017/02/26/tensorflowjian-jie-01/</id><summary type="html">&lt;h2&gt;介绍&lt;/h2&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata</title><link href="/" rel="alternate"></link><link href="/feeds/huiming-song.atom.xml" rel="self"></link><id>/</id><updated>2017-02-26T22:03:00-06:00</updated><entry><title>tensorflow简介--03</title><link href="/pages/2017/02/26/tensorflowjian-jie-03/" rel="alternate"></link><published>2017-02-26T22:03:00-06:00</published><author><name>Huiming Song</name></author><id>tag:,2017-02-26:pages/2017/02/26/tensorflowjian-jie-03/</id><summary type="html">&lt;h2&gt;快速回顾&lt;/h2&gt;
+&lt;p&gt;前面两章的前提是：给定房屋面积作为feature，我们想预测房屋价格:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;我们找到一条直线(线性回归)来最好的拟合数据点。最好的线性回归拟合的意思是：真实值(灰色点)和预测值(灰色点在回归直线上的插值)的距离最小化。也就是那些蓝色线的值最小化。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;用这条回归直线，对给定的房屋面积，我们可以预测对应的价格&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p3_01.png" /&gt;&lt;/p&gt;
+&lt;h2&gt;多特征(multi-feature)线性回归回顾&lt;/h2&gt;
+&lt;p&gt;实际当中，预测通常依赖于多个特征。所以我们要从单特征模型拓展到多特征模型。不失一般性，我们选择两个特征模型来可视化。这样既能保持简单，又可以推广到更多特征的情形。&lt;/p&gt;
+&lt;p&gt;我们引入一个新的特征，房间的数目(房屋里面房间的数目)。在收集数据的时候，我们需要新的特征房间数目，以及已经存在的特征，房屋面积，还有相应的房屋价格。&lt;/p&gt;
+&lt;p&gt;图形就是3-维的：&lt;/p&gt;
+&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p3_02.png" /&gt;&lt;/p&gt;
+&lt;p&gt;我们的目标是给定房间数目，房屋面积，来预测房屋价格。&lt;/p&gt;
+&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p3_03.png" /&gt;&lt;/p&gt;
+&lt;p&gt;在单特征假设下，我们要用线性回归来产生一条直线来预测房屋面积的结果。在2-维的情形下，我们同样可以做线性回归，只不过变成一个平面（而不是一条直线）。&lt;/p&gt;
+&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p3_04.png" /&gt;&lt;/p&gt;
+&lt;h2&gt;多特征线性回归模型&lt;/h2&gt;
+&lt;p&gt;回忆一下单特征模型（下图左图），线性模型的结果(y)有一个系数(W),一个叫房屋面积的特征的placeholder(x)，以及截距b。&lt;/p&gt;
+&lt;p&gt;对一个2个特征的模型（下图右图），我们有一个新的系数(W2)，以及另外一个placeholder叫x2，用来表示房间的数量这个特征。&lt;/p&gt;
+&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p3_05.png" /&gt;&lt;/p&gt;
+&lt;p&gt;当我们进行线性回归的时候，梯度下降帮助我们知道W2的值。&lt;/p&gt;
+&lt;h2&gt;TF实现多特征线性回归模型&lt;/h2&gt;
+&lt;h3&gt;快速回顾&lt;/h3&gt;
+&lt;p&gt;单特征的TF代码包含三个部分（见下图）：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;建立模型（蓝色部分）&lt;/li&gt;
+&lt;li&gt;构建基于模型的损失函数（红色部分）&lt;/li&gt;
+&lt;li&gt;用梯度下降来最小化损失函数（绿色部分）&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p3_06.png" /&gt;&lt;/p&gt;
+&lt;h3&gt;TF求解两个特征的线性模型&lt;/h3&gt;
+&lt;p&gt;上面解释的两个特征的线性模型的TF代码表示成红色的颜色：&lt;/p&gt;
+&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p3_07.png" /&gt;&lt;/p&gt;
+&lt;p&gt;请注意用这种办法来添加新的feature比较低效。随着特征的数量的增长，变量的数量（W）和placeholder的数量也相应的增长。现实当中的模型会有很多features，导致问题更加严重。我们怎么才能更高效的表示特征？&lt;/p&gt;
+&lt;h2&gt;使用矩阵来表示&lt;/h2&gt;
+&lt;p&gt;首先，我们推广一下从两个feature到n个feature的表示：&lt;/p&gt;
+&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p3_08.png" /&gt;&lt;/p&gt;
+&lt;p&gt;用矩阵可以简化n个feature的表达式，TF内嵌了矩阵：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;数据可以表达成多维，这正好是我们需要的：把一个数据点用n个feature（下图左）和一个有n个系数（下图右，系数矩阵）的模型表达出来。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p3_09.png" /&gt;&lt;/p&gt;
+&lt;p&gt;TF中，它们可以写为&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;x = tf.placeholder(tf.float, [1,n])
+W = tf.Variable(tf.zeros[n,1])
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;注意，我们用&lt;em&gt;tf.zeros&lt;/em&gt;来表示W，也就是说把W=(W1, W2, ..., Wn)全部初始化为0.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;数学上矩阵相乘是对应的向量点的乘积的和。所以自然的，特征（下图中间）和系数（下图右边）的矩阵相乘就是我们想要的结果（下图左边）。这也就是上面描述的n个特征的线性回归表达式的第一部分（缺少了截距）.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p3_10.png" /&gt;&lt;/p&gt;
+&lt;p&gt;TF当中，这个相乘可以表示为&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;y = tf.matmul(x, W)
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;ul&gt;
+&lt;li&gt;一个多行的feature矩阵(每一行表示一个数据点的n个feature)乘以系数矩阵就得到多行的结果(每行表示一个数据点的结果)。所以通过矩阵相乘我们可以把线性回归模型表达成数据点的矩阵乘以系数矩阵。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;注意： feature矩阵的x的表达式会更加复杂，比如我们用x11，x12而不是x1 x2，这是因为feature矩阵(下图中间)已经从一个数据点的n个feature(1行乘以n列)的变成了m个数据点的n个feature(m行乘以n列)。&lt;/p&gt;
+&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p3_11.png" /&gt;&lt;/p&gt;
+&lt;p&gt;TF中的表达形式为&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;x&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;tf&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;placeholder&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;tf&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;float&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;m&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;n&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+&lt;span class="n"&gt;W&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;tf&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Variable&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;tf&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;zeros&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;n&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+&lt;span class="n"&gt;y&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;tf&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;matmul&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;x&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;W&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;ul&gt;
+&lt;li&gt;最后，在矩阵的每一行加一个常数项，就会在结果矩阵中加入常数项&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;在TF中，x和W已经表达成矩阵，不管有多少个feature或者多少个数据点，都可以简化为&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;b&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;tf&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Variable&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;tf&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;zeros&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+&lt;span class="n"&gt;y&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;tf&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;matmul&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;x&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;W&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;b&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h2&gt;Tensorflow多特征备忘录&lt;/h2&gt;
+&lt;p&gt;我们做了一个比较的表格来总结从单feature到多feature的线性回归模型的变化&lt;/p&gt;
+&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p3_12.png" /&gt;&lt;/p&gt;
+&lt;h2&gt;总结&lt;/h2&gt;
+&lt;p&gt;我们演示了多feature线性回归的概念，以及从单feature到多feature的TF代码。最后用一个速查表做了总结来展示怎么在TF中做多feature回归。&lt;/p&gt;
+&lt;h3&gt;下一步&lt;/h3&gt;
+&lt;p&gt;下一章会讨论logtistic回归，交叉熵(cross-entropy)，softmax，这样我们就能更好的明白Tensorflow关于MNIST的&lt;a href="https://www.tensorflow.org/versions/r0.11/tutorials/mnist/beginners/"&gt;官方初级教程&lt;/a&gt;。&lt;/p&gt;
+&lt;h3&gt;Reference&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;a href="https://medium.com/all-of-us-are-belong-to-machines/gentlest-intro-to-tensorflow-part-3-matrices-multi-feature-linear-regression-30a81ebaaa6c#.r0w6hcjn2"&gt;Gentlest Intro to TensorFlow #3: Matrices &amp;amp; Multi-feature Linear Regression&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;</summary><category term="python"></category><category term="tensorflow"></category><category term="deep learning"></category></entry><entry><title>tensorflow简介--02</title><link href="/pages/2017/02/26/tensorflowjian-jie-02/" rel="alternate"></link><published>2017-02-26T21:30:00-06:00</published><author><name>Huiming Song</name></author><id>tag:,2017-02-26:pages/2017/02/26/tensorflowjian-jie-02/</id><summary type="html">&lt;p&gt;上一篇文章，我们使用tensorflow(TF)来建立了一个单feature的线性回归模型。给定feature的值（house size），我们可以预测出房屋价格。&lt;/p&gt;
+&lt;p&gt;我们回顾一下上一章怎么做的：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;我们有房屋面积和房屋价格的数据（图中灰色原点）&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;用线性回归来建模（红色虚线）&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;通过最小化损失函数（图中蓝线的长度的平方和）来找出最优的模型的&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;给定房屋面积，应用建立的线性模型来预测房屋价格（图中蓝色虚线对应的点）&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p2_01.png" /&gt;&lt;/p&gt;
+&lt;p&gt;在机器学习的论文中，我们经常会遇到‘training’这个词。我们首先来看看在TF中它的含义。&lt;/p&gt;
+&lt;h2&gt;线性回归模型&lt;/h2&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;Linear Model (in TF notation): y = tf.matmul(x,W) + b
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;线性回归的目的是找出&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;,对给定的feature值(x),当我们把&lt;code&gt;W&lt;/code&gt;,&lt;code&gt;b&lt;/code&gt;和&lt;code&gt;x&lt;/code&gt;带入模型，我们可以得到&lt;strong&gt;prediction&lt;/strong&gt;(y)。&lt;/p&gt;
+&lt;p&gt;要得到&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;，我们需要用给定的数据(真实的feature值x和真实的结果y_， 注意y_的下划线)来训练(&lt;strong&gt;train&lt;/strong&gt;)模型。&lt;/p&gt;
+&lt;h2&gt;Training Illustrated&lt;/h2&gt;
+&lt;p&gt;要找到最优的&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;，我们需要定义一个损失函数用来衡量对&lt;strong&gt;某一个给定的feature（x）值&lt;/strong&gt;，预测值（y）和真实值(y_)之间的差异。为了简化，我们用最小平方差的和(MSE)作为损失函数。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;Cost function (in TF notation): tf.reduce_mean(tf.square(y_ - y))
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;通过最小化损失函数，我们可以得到好的&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;的值。&lt;/p&gt;
+&lt;p&gt;用来做训练的程序代码非常简单，我们用[A,B,C,D]来标记各个部分。下面将会用到。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;# ... (snip) Variable/Constants declarations (snip) ...
+# [A] TF.Graph
+y = tf.matmul(x,W) + b
+cost = tf.reduce_mean(tf.square(y_-y))
+# [B] Train with fixed &amp;#39;learn_rate&amp;#39;
+learn_rate = 0.1
+train_step =
+    tf.train.GradientDescentOptimizer(learn_rate).minimize(cost)
+for i in range(steps):
+  # [C] Prepare datapoints
+  # ... (snip) Code to prepare datapoint as xs, and ys (snip) ...
+  # [D] Feed Data at each step/epoch into &amp;#39;train_step&amp;#39;
+  feed = { x: xs, y_: ys }
+  sess.run(train_step, feed_dict=feed)
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;A当中的线性模型和损失函数可以被表示成下面的TF流程图&lt;/p&gt;
+&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p2_02.png" /&gt;&lt;/p&gt;
+&lt;p&gt;下一步，我们要选择一个C当中的数据(x, y_)，输入到D当中来得到预测值(y)和损失函数。TF流程图如下：&lt;/p&gt;
+&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p2_03.png" /&gt;&lt;/p&gt;
+&lt;p&gt;要得到更好的&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;，我们在B中通过&lt;em&gt;tf.train.GradientDescentOptimizer&lt;/em&gt;做梯度下降来得到损失函数。更简易的说法是：给定当前的损失值，根据图中别的变量（&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;）所得到的损失函数的值，优化器会对&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;做一个小变化（增加/减少），从而使得对那一个数据点的预测值更好。&lt;/p&gt;
+&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p2_04.png" /&gt;&lt;/p&gt;
+&lt;p&gt;最后一步就是更新调整过的&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;的值。注意这一个周期(cycle)在机器学习的文档中也叫&lt;strong&gt;epoch&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p2_05.png" /&gt;&lt;/p&gt;
+&lt;p&gt;在下一个&lt;strong&gt;epoch&lt;/strong&gt;，重复以上步骤，但是用一个&lt;strong&gt;不同的数据点(x, y_)&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p2_06.png" /&gt;&lt;/p&gt;
+&lt;p&gt;使用不同的数据点来建模，所得到的&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;就可以用来预测任意的feature。注意&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;大部分时候，更多的数据点得到的模型会更好&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;如果你的epochs比你的数据点还多，你可以重复利用数据点，这是没有问题的。梯度下降的优化器总是使用数据点和损失函数(从相应的epoch中的&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;和数据点计算出来)来调整&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;。优化器可能已经用过这个数据点，但是因为损失函数不同，所以它仍然会得到新的信息，也会得到新的调整过的&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;。&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;你可以训练你的模型给定次数的epoch，或者直到损失函数低于某个给定的值。&lt;/p&gt;
+&lt;h2&gt;Training variation&lt;/h2&gt;
+&lt;h3&gt;stochastic，mini-batch, batch&lt;/h3&gt;
+&lt;p&gt;在上面的模型训练中，我们每次输入一个数据点。这叫做随机梯度下降(&lt;em&gt;stochastic gradient descent&lt;/em&gt;)。我们也可以在每个epoch中输入一批数据点，这叫做&lt;em&gt;mini-batch gradient descent&lt;/em&gt;。甚至我们可以在每个epoch中输入所有的数据点，这叫做&lt;em&gt;batch gradient descent&lt;/em&gt;。请看下面的比较图示。注意这三个图有两个不同&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;每个epoch中输入到TF.Graph的数据点(右上角的数据点)不同&lt;/li&gt;
+&lt;li&gt;用来调整&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;的梯度下降优化器所用到的数据点（右下角）也不相同&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p2_07.png" /&gt;
+&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p2_08.png" /&gt;
+&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p2_09.png" /&gt;&lt;/p&gt;
+&lt;p&gt;在每个epoch中使用到的数据点有两层含义。如果每个epoch使用更多的数据点：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;计算损失函数和梯度下降的计算资源(加减乘)会减少&lt;/li&gt;
+&lt;li&gt;模型学习的速度会提高&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;使用stochastic, mini-batch, batch gradient descent 的优缺点见下图&lt;/p&gt;
+&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p2_10.png" /&gt;&lt;/p&gt;
+&lt;p&gt;要在stochastic, mini-batch, batch gradient descent这三个办法中切换，我们只需要在下面的[C]当中设置不同的batch大小，然后根据batch大小把对应的batch的数据点输入到模型训练[D]中。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;# * all_xs: All the feature values
+# * all_ys: All the outcome values
+# datapoint_size: Number of points/entries in all_xs/all_ys
+# batch_size: Configure this to:
+#             1: stochastic mode
+#             integer &amp;lt; datapoint_size: mini-batch mode
+#             datapoint_size: batch mode
+# i: Current epoch number
+if datapoint_size == batch_size:
+  # Batch mode so select all points starting from index 0
+  batch_start_idx = 0
+elif datapoint_size &amp;lt; batch_size:
+  # Not possible
+  raise ValueError(“datapoint_size: %d, must be greater than         
+                    batch_size: %d” % (datapoint_size, batch_size))
+else:
+  # stochastic/mini-batch mode: Select datapoints in batches
+  #                             from all possible datapoints
+  batch_start_idx = (i * batch_size) % (datapoint_size — batch_size)
+  batch_end_idx = batch_start_idx + batch_size
+  batch_xs = all_xs[batch_start_idx:batch_end_idx]
+  batch_ys = all_ys[batch_start_idx:batch_end_idx]
+
+
+# Get batched datapoints into xs, ys, which is fed into
+# &amp;#39;train_step&amp;#39;
+xs = np.array(batch_xs)
+ys = np.array(batch_ys)
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;Learn Rate的变化&lt;/h3&gt;
+&lt;p&gt;学习速度(Learn Rate)指的是梯度下降来调整&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;的这时候，每次增加或者减小的大小。当learn rate比较小的时候，前进速度会很慢，但是会渐渐收敛到最小损失函数值。当learn rate比较大的时候，达到最小损失函数的速度会比较快，但是有可能会走过头，导致找不到最小值。&lt;/p&gt;
+&lt;p&gt;要克服这一点，肯多ML的实际操作是开始的时候用比较大的learn rate（假设初始的损失函数离最小值比较远），然后每个epoch渐渐减小learn rate以防止走过头。&lt;/p&gt;
+&lt;p&gt;TF提供了两个办法。这个&lt;a href="http://stackoverflow.com/questions/33919948/how-to-set-adaptive-learning-rate-for-gradientdescentoptimizer"&gt;StackOverflow thread&lt;/a&gt;讲的非常棒。总结如下:&lt;/p&gt;
+&lt;h3&gt;使用变化的learn rate的梯度下降优化器&lt;/h3&gt;
+&lt;p&gt;TF提供了不同的支持learn rate变化的梯度下降优化器，比如&lt;a href="https://www.tensorflow.org/api_guides/python/train#AdagradOptimizer"&gt;tf.train.AdagradientOptimizer&lt;/a&gt;和&lt;a href="https://www.tensorflow.org/api_guides/python/train#AdamOptimizer"&gt;tf.train.AdamOptimizer&lt;/a&gt;.&lt;/p&gt;
+&lt;h3&gt;使用tf.placeholder建Learn Rate&lt;/h3&gt;
+&lt;p&gt;如前所述，我们在&lt;em&gt;tf.train.GradientDescentOptimizer&lt;/em&gt;当中用&lt;em&gt;tf.placeholder&lt;/em&gt;来申明&lt;em&gt;Learn Rate&lt;/em&gt;的时候，我们可以在每个epoch中输入不同的值。这类似于在每个epoch中我们用&lt;em&gt;tf.placeholders&lt;/em&gt;来输入不同的数据点到x, y_。&lt;/p&gt;
+&lt;p&gt;这样做需要两个小的改动:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;# Modify [B] to make &amp;#39;learn_rate&amp;#39; a &amp;#39;tf.placeholder&amp;#39;
+# and supply it to the &amp;#39;learning_rate&amp;#39; parameter name of
+# tf.train.GradientDescentOptimizer
+learn_rate = tf.placeholder(tf.float32, shape=[])
+train_step = tf.train.GradientDescentOptimizer(
+    learning_rate=learn_rate).minimize(cost)
+# Modify [D] to include feed a &amp;#39;learn_rate&amp;#39; value,
+# which is the &amp;#39;initial_learn_rate&amp;#39; divided by
+# &amp;#39;i&amp;#39; (current epoch number)
+# NOTE: Oversimplified. For example only.
+feed = { x: xs, y_: ys, learn_rate: initial_learn_rate/i }
+sess.run(train_step, feed_dict=feed)
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h2&gt;总结&lt;/h2&gt;
+&lt;p&gt;我们演示了机器学习的训练是什么意思，以及在Tensorflow中怎么定义模型和损失函数。然后通过输入数据点到梯度下降优化器，进行循环来得到&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;的值。我们还讨论了训练过程中两个常见的变化：每个epoch中使用不同的数据集的大小，以及使用不同的learn rate。&lt;/p&gt;
+&lt;h3&gt;下一章&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;设置Tensor Board来可视化TF的执行，这样可以检测到我们模型，损失函数和梯度下降的问题&lt;/li&gt;
+&lt;li&gt;展示一个多特征(features)的线性回归模型&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;Reference&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;a href="https://medium.com/all-of-us-are-belong-to-machines/gentlest-introduction-to-tensorflow-part-2-ed2a0a7a624f#.9cxp5xvf0"&gt;Gentlest Introduction to Tensorflow #2&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;</summary><category term="python"></category><category term="tensorflow"></category><category term="deep learning"></category></entry><entry><title>tensorflow简介--01</title><link href="/pages/2017/02/26/tensorflowjian-jie-01/" rel="alternate"></link><published>2017-02-26T11:36:00-06:00</published><author><name>Huiming Song</name></author><id>tag:,2017-02-26:pages/2017/02/26/tensorflowjian-jie-01/</id><summary type="html">&lt;h2&gt;介绍&lt;/h2&gt;
 &lt;p&gt;我们将会用一个非常简单非实际的问题来帮助理解机器学习和tensorflow(TF)。我们使用一个feature(变量)房屋面积来预测房屋价格。这样将避免讨论高维数据，让我们可以集中理解TF中定义模型，应用模型和训练模型。&lt;/p&gt;
 &lt;p&gt;(原文中都写的是machine learning，机器学习。尽管现在大家都管TF为深度学习框架，我仍然翻译成机器学习。)&lt;/p&gt;
 &lt;h2&gt;机器学习简介&lt;/h2&gt;
@@ -5570,7 +5816,8 @@ python 20160808_twitter_download_t2.py &amp;amp;
 &lt;li&gt;
 &lt;p&gt;restart sublime text&lt;/p&gt;
 &lt;/li&gt;
-&lt;/ol&gt;</summary><category term="python"></category></entry><entry><title>highcharts in python flask</title><link href="/pages/2016/08/18/highcharts-in-python-flask/" rel="alternate"></link><published>2016-08-18T00:00:00-05:00</published><author><name>Huiming Song</name></author><id>tag:,2016-08-18:pages/2016/08/18/highcharts-in-python-flask/</id><summary type="html">&lt;h1&gt;1. pandas-highcharts&lt;/h1&gt;
+&lt;/ol&gt;
+&lt;p&gt;When working on a Markdown file, type &lt;code&gt;alt+m&lt;/code&gt; to generate an HTML preview of your document that will open in your default browser. (You can also call the Markdown Preview command using the Command Palette. You hit &lt;code&gt;control+shift+p&lt;/code&gt; to call up the Command Palette, then type "Preview", select "Markdown Preview: Python Markdown: Preview in Browser", and hit &lt;code&gt;enter&lt;/code&gt;.)&lt;/p&gt;</summary><category term="python"></category></entry><entry><title>highcharts in python flask</title><link href="/pages/2016/08/18/highcharts-in-python-flask/" rel="alternate"></link><published>2016-08-18T00:00:00-05:00</published><author><name>Huiming Song</name></author><id>tag:,2016-08-18:pages/2016/08/18/highcharts-in-python-flask/</id><summary type="html">&lt;h1&gt;1. pandas-highcharts&lt;/h1&gt;
 &lt;p&gt;&lt;a href="https://github.com/gtnx/pandas-highcharts"&gt;pandas-highcharts&lt;/a&gt; is very easy to use. It has some demos showing how to plot. The only con I found is I did not get how to draw dynamic graph through it.&lt;/p&gt;
 &lt;p&gt;The following example is a small modification of the demo code.&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="n"&gt;load_ext&lt;/span&gt; &lt;span class="n"&gt;autoreload&lt;/span&gt;
