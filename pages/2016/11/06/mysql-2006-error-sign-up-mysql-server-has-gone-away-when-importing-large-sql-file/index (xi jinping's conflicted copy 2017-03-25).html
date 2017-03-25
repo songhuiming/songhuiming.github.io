@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>pydata</title>
+        <meta charset="utf-8" />
+        <link href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="pydata Full Atom Feed" />
+        <link href="/feeds/python.atom.xml" type="application/atom+xml" rel="alternate" title="pydata Categories Atom Feed" />
+
+
+
+    <meta name="tags" content="python" />
+    <meta name="tags" content="mysql" />
+
+</head>
+
+<body id="index" class="home">
+        <header id="banner" class="body">
+                <h1><a href="/">pydata <strong>Keep Looking, Don't Settle</strong></a></h1>
+        </header><!-- /#banner -->
+        <nav id="menu"><ul>
+            <li><a href="/functions/archives.html">Archives</a></li>
+        </ul></nav><!-- /#menu -->
+<section id="content" class="body">
+  <header>
+    <h2 class="entry-title">
+      <a href="/pages/2016/11/06/mysql-2006-error-sign-up-mysql-server-has-gone-away-when-importing-large-sql-file/" rel="bookmark"
+         title="Permalink to mysql 2006 error: Sign up MySQL Server has gone away when importing large sql file">mysql 2006 error: Sign up MySQL Server has gone away when importing large sql file</a></h2>
+ 
+  </header>
+  <footer class="post-info">
+    <abbr class="published" title="2016-11-06T00:00:00-05:00">
+      Sun 06 November 2016
+    </abbr>
+    <abbr class="modified" title="2016-11-06T00:00:00-05:00">
+      Sun 06 November 2016
+    </abbr>
+    <address class="vcard author">
+      By           <a class="url fn" href="/author/huiming-song.html">Huiming Song</a>
+    </address>
+  </footer><!-- /.post-info -->
+  <div class="entry-content">
+    <p>Recently I build a webpage to apply sentiment analysis for the tweets about Trump and Hillary. The real time tweets were pulled and saved to mysql. There are lots of tweets every second to save so I got the mysql crashed again and again.</p>
+<p>The following are some of the errors I got:</p>
+<ol>
+<li><strong>MySQL error 2006: mysql server has gone away</strong></li>
+</ol>
+<p>after the system run for several hours, this error will pop out in the terminal. I google and got some help like <a href="http://stackoverflow.com/questions/7942154/mysql-error-2006-mysql-server-has-gone-away">this</a> and <a href="http://stackoverflow.com/questions/12425287/mysql-server-has-gone-away-when-importing-large-sql-file">MySQL Server has gone away when importing large sql file</a>. </p>
+<p>They think the error is because of <code>max_allowed_packet</code>. I have changed my size to 256M but it did not help me a lot. I still get some errors.</p>
+<p>this is how I did it:</p>
+<p>1.1. find the file that contains <code>max_allowed_packet</code></p>
+<div class="highlight"><pre>find /etc/* -type f  -exec grep -il max_allowed_packet {} \;
+</pre></div>
+
+
+<p>the file is <em>/etc/mysql/mysql.conf.d/mysqld.cnf</em></p>
+<p>Figure 1. find max_allowed_packet
+<img alt="png" src="/figures/20161106_find_max_allowed_packet.PNG" /></p>
+<p>1.2. backup that file</p>
+<div class="highlight"><pre>cp  /etc/mysql/mysql.conf.d/mysqld.cnf /etc/mysql/mysql.conf.d/mysqld.cnf.orig
+</pre></div>
+
+
+<p>1.3. change the size and save it</p>
+<div class="highlight"><pre>vi /etc/mysql/mysql.conf.d/mysqld.cnf
+</pre></div>
+
+
+<p>Figure 2. change max_allowed_packet </p>
+<p><img alt="png" src="/figures/20161106_change_max_allowed_packet.PNG" /></p>
+<ol>
+<li><strong>ERROR 2002 (HY000): Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</strong></li>
+</ol>
+<p>This error is also related to writting to mysql. I tried the methos on <a href="http://stackoverflow.com/questions/19658891/error-2002-hy000-cant-connect-to-local-mysql-server-through-socket-var-run">this help</a> but it does not help me.</p>
+<p>2.1. check if mysql is run</p>
+<div class="highlight"><pre>ps aux | grep mysql
+</pre></div>
+
+
+<p>2.2. start the mysql service</p>
+<div class="highlight"><pre>sudo service mysql start
+or
+sudo /etc/init.d/mysql start
+</pre></div>
+
+
+<h3>Reference</h3>
+<ol>
+<li>
+<p><a href="http://stackoverflow.com/questions/19658891/error-2002-hy000-cant-connect-to-local-mysql-server-through-socket-var-run">2ROR 2002 (HY000): Can't connect to local MySQL server through socket '/var/run/mysqld/mysql.sock' (2)ls/how-to-deploy-a-flask-application-on-an-ubuntu-vps)</a></p>
+</li>
+<li>
+<p><a href="http://stackoverflow.com/questions/7942154/mysql-error-2006-mysql-server-has-gone-away">MySQL error 2006: mysql server has gone away</a></p>
+</li>
+</ol>
+  </div><!-- /.entry-content -->
+</section>
+        <footer id="contentinfo" class="body">
+                <address id="about" class="vcard body">
+                Proudly powered by <a href="http://getpelican.com/">Pelican</a>,
+                which takes great advantage of <a href="http://python.org">Python</a>.
+                </address><!-- /#about -->
+        </footer><!-- /#contentinfo -->
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>pydata</title>
+        <meta charset="utf-8" />
+        <link href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="pydata Full Atom Feed" />
+        <link href="/feeds/programming.atom.xml" type="application/atom+xml" rel="alternate" title="pydata Categories Atom Feed" />
+
+
+
+    <meta name="tags" content="sql" />
+
+</head>
+
+<body id="index" class="home">
+        <header id="banner" class="body">
+                <h1><a href="/">pydata <strong>Keep Looking, Don't Settle</strong></a></h1>
+        </header><!-- /#banner -->
+        <nav id="menu"><ul>
+            <li><a href="/functions/archives.html">Archives</a></li>
+        </ul></nav><!-- /#menu -->
+<section id="content" class="body">
+  <header>
+    <h2 class="entry-title">
+      <a href="/pages/2015/09/29/first-row-partition-by-var-order-by-the-numeric-var/" rel="bookmark"
+         title="Permalink to first row partition by var order by the numeric var">first row partition by var order by the numeric var</a></h2>
+ 
+  </header>
+  <footer class="post-info">
+    <abbr class="published" title="2015-09-29T00:00:00-05:00">
+      Tue 29 September 2015
+    </abbr>
+    <address class="vcard author">
+      By           <a class="url fn" href="/author/huiming-song.html">Huiming Song</a>
+    </address>
+  </footer><!-- /.post-info -->
+  <div class="entry-content">
+    <p>purpose: in sql, try to get first row group by a group variable order by the value of a numeric variable. </p>
+<p>for example, the data is like: for each business_month, for each borrower, there are multiple date(fac_auth_eff_dt) and different rating.</p>
+<p>What I want: for each borrower, I want to get the rating at the first date.</p>
+<p>How: </p>
+<p>1: for each borrower, add a column called row_number(like order) by their date [<strong>row_number() over (partition by borrower_uen order by fac_auth_eff_dt) rn</strong>] </p>
+<div class="highlight"><pre>![png](/figures/sql_first_row_by_group_1.png)
+</pre></div>
+
+
+<p>2: now for each borrower, row_number = 1, means the earliest fac_auth_eff_dt, row_number = 1 means the second earliest fac_auth_eff_dt and so on.</p>
+<p>3: finally pick the data with row_number = 1 to get the first one</p>
+<div class="highlight"><pre>![png](/figures/sql_first_row_by_group_2.png)
+</pre></div>
+
+
+<div class="highlight"><pre><span class="k">with</span> <span class="n">testtable</span> <span class="k">as</span><span class="p">(</span>
+<span class="k">select</span> <span class="n">borrower_uen</span><span class="p">,</span> <span class="n">fac_auth_eff_dt</span><span class="p">,</span> <span class="n">row_number</span><span class="p">()</span> <span class="n">over</span> <span class="p">(</span><span class="n">partition</span> <span class="k">by</span> <span class="n">borrower_uen</span> <span class="k">order</span> <span class="k">by</span> <span class="n">fac_auth_eff_dt</span><span class="p">)</span> <span class="n">rn</span><span class="p">,</span> <span class="n">risk_rating</span> <span class="k">as</span> <span class="n">origination_risk_rating</span>
+<span class="k">from</span> <span class="n">bslh</span><span class="p">.</span><span class="n">bcs_lending_airb_m</span> 
+<span class="k">where</span> <span class="n">fac_commitment_amt</span> <span class="o">&gt;</span> <span class="mi">1000</span> <span class="k">and</span> <span class="n">borrower_rrs</span> <span class="o">=</span> <span class="s1">&#39;CM1&#39;</span> <span class="k">and</span> <span class="n">fac_auth_eff_dt</span> <span class="k">is</span> <span class="k">not</span> <span class="k">null</span>
+<span class="k">order</span> <span class="k">by</span> <span class="n">borrower_uen</span>
+<span class="p">)</span> 
+<span class="k">select</span> <span class="o">*</span> 
+<span class="k">from</span> <span class="n">testtable</span>
+<span class="k">where</span> <span class="n">rn</span> <span class="o">=</span> <span class="mi">1</span>
+</pre></div>
+  </div><!-- /.entry-content -->
+</section>
+        <footer id="contentinfo" class="body">
+                <address id="about" class="vcard body">
+                Proudly powered by <a href="http://getpelican.com/">Pelican</a>,
+                which takes great advantage of <a href="http://python.org">Python</a>.
+                </address><!-- /#about -->
+        </footer><!-- /#contentinfo -->
+</body>
+</html>

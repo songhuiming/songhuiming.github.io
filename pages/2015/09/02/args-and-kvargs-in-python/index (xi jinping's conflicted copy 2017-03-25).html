@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>pydata</title>
+        <meta charset="utf-8" />
+        <link href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="pydata Full Atom Feed" />
+        <link href="/feeds/programming.atom.xml" type="application/atom+xml" rel="alternate" title="pydata Categories Atom Feed" />
+
+
+
+    <meta name="tags" content="python" />
+
+</head>
+
+<body id="index" class="home">
+        <header id="banner" class="body">
+                <h1><a href="/">pydata <strong>Keep Looking, Don't Settle</strong></a></h1>
+        </header><!-- /#banner -->
+        <nav id="menu"><ul>
+            <li><a href="/functions/archives.html">Archives</a></li>
+        </ul></nav><!-- /#menu -->
+<section id="content" class="body">
+  <header>
+    <h2 class="entry-title">
+      <a href="/pages/2015/09/02/args-and-kvargs-in-python/" rel="bookmark"
+         title="Permalink to *args and **kvargs in python">*args and **kvargs in python</a></h2>
+ 
+  </header>
+  <footer class="post-info">
+    <abbr class="published" title="2015-09-02T00:00:00-05:00">
+      Wed 02 September 2015
+    </abbr>
+    <address class="vcard author">
+      By           <a class="url fn" href="/author/huiming-song.html">Huiming Song</a>
+    </address>
+  </footer><!-- /.post-info -->
+  <div class="entry-content">
+    <p>今天在写Jimmy的calc engine的时候发现的一个问题：第一遍draft code的时候没有使用函数，而是直接一行行的写，每一个变量都有一个名字。写完以后需要整理成python的function，这样可以通用化。</p>
+<p>但是一个问题是：当把新的data传进函数的时候，比如新的data是pandas dataframe的每一行，这个时候要么把每一行的不同列都分别赋值给函数的参数，能不能把这一行当作一个整体，比如是一个list传递进去？答案是肯定的。就是需要用__<em>args__（顺便说一下    __</em>*kvargs__）</p>
+<div class="highlight"><pre><span class="kn">import</span> <span class="nn">pandas</span> <span class="kn">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="k">def</span> <span class="nf">test</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">e</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">a</span>
+
+<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">9999</span><span class="p">)</span>
+<span class="n">np_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="k">print</span> <span class="n">df</span>
+</pre></div>
+
+
+<div class="highlight"><pre><span class="k">[[6 1 6 5]</span>
+ <span class="k">[5 9 6 8]</span>
+ <span class="k">[0 8 1 5]</span>
+ <span class="k">[3 1 0 6]</span>
+ <span class="k">[4 4 6 8]]</span>
+</pre></div>
+
+
+<p>test函数有4个参数，它的目的是返回第一个参数</p>
+<p>np_array是一个5*4的array，现在想把每一行都作为test的参数传进去。如果直接把np_array的一行放进去肯定不行：一行是一个list，但是test函数需要4个参数。</p>
+<p>这个时候在list前面加个 <strong>*</strong> 就可以解决</p>
+<div class="highlight"><pre><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np_array</span><span class="p">:</span>
+    <span class="k">print</span> <span class="n">test</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre>---------------------------------------------------------------------------
+
+TypeError                                 Traceback (most recent call last)
+
+&lt;ipython-input-22-d2259d52cb20&gt; in &lt;module&gt;()
+      1 for i in np_array:
+----&gt; 2     print test(i)
+
+
+TypeError: test() takes exactly 4 arguments (1 given)
+</pre></div>
+
+
+<div class="highlight"><pre><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np_array</span><span class="p">:</span>
+    <span class="k">print</span> <span class="n">test</span><span class="p">(</span><span class="o">*</span><span class="n">i</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre>6
+5
+0
+3
+4
+</pre></div>
+
+
+<p><strong><strong>kvargs__ 或者 __</strong>kwargs</strong> 是传入key value的组合。</p>
+<div class="highlight"><pre><span class="k">def</span> <span class="nf">test</span><span class="p">(</span><span class="o">**</span><span class="n">kvargs</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">kvargs</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s2">&quot;key = </span><span class="si">%s</span><span class="s2"> ,  value = </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">kvargs</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+
+<span class="n">test</span><span class="p">(</span><span class="n">x</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="mi">8</span><span class="p">)</span>
+
+<span class="n">key</span> <span class="o">=</span> <span class="n">y</span> <span class="p">,</span>  <span class="n">value</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">key</span> <span class="o">=</span> <span class="n">x</span> <span class="p">,</span>  <span class="n">value</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="n">key</span> <span class="o">=</span> <span class="n">z</span> <span class="p">,</span>  <span class="n">value</span> <span class="o">=</span> <span class="mi">8</span>
+</pre></div>
+
+
+<p>还可以把 <strong>*args</strong> ，  __<strong>kvargs__一起作为函数的参数，但是一定要注意的是：传进真实参数的时候，要跟__*args__ __</strong>kvargs__的顺序一致，否则会报错。</p>
+  </div><!-- /.entry-content -->
+</section>
+        <footer id="contentinfo" class="body">
+                <address id="about" class="vcard body">
+                Proudly powered by <a href="http://getpelican.com/">Pelican</a>,
+                which takes great advantage of <a href="http://python.org">Python</a>.
+                </address><!-- /#about -->
+        </footer><!-- /#contentinfo -->
+</body>
+</html>
