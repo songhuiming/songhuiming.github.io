@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>weighted avarage, aggrefated function with apply and agg &mdash; pydata</title>
+  <meta name="author" content="shm">
+
+
+
+
+
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+    <link href="/favicon.png" rel="icon">
+
+  <link href="/theme/css/main.css" media="screen, projection"
+        rel="stylesheet" type="text/css">
+
+  <link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic"
+        rel="stylesheet" type="text/css">
+  <link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic"
+        rel="stylesheet" type="text/css">
+</head>
+
+<body>
+  <header role="banner"><hgroup>
+  <h1><a href="/">pydata</a></h1>
+    <h2>Keep Looking, Don't Settle</h2>
+</hgroup></header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+</ul>
+
+<form class="search" action="/search.html">
+    <input type="text" class="search-query" placeholder="Search" name="q" id="s">
+</form>
+
+<form action="https://www.google.com/search" method="get">
+    <fieldset role="search">
+       <input type="hidden" name="q" value="site:songhuiming.github.io" />
+       <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+    </fieldset>
+</form>
+
+
+<ul class="main-navigation">
+    <li><a href="/functions/archives.html">Archives</a></li>
+      <li >
+        <a href="/category/linux.html">Linux</a>
+      </li>
+      <li >
+        <a href="/category/programming.html">Programming</a>
+      </li>
+      <li class="active">
+        <a href="/category/python.html">Python</a>
+      </li>
+</ul></nav>
+  <div id="main">
+    <div id="content">
+<div>
+  <article class="hentry" role="article">
+<header>
+      <h1 class="entry-title">weighted avarage, aggrefated function with apply and agg</h1>
+    <p class="meta">
+<time datetime="2017-03-18T00:00:00-05:00" pubdate>Sat 18 March 2017</time>    </p>
+</header>
+
+  <div class="entry-content"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="kn">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">IPython.display</span> <span class="kn">import</span> <span class="n">display</span>
+</pre></div>
+
+
+<h3>1. weighted average</h3>
+<p>Let's denote <code>x = [x_1, ..., x_n]</code>. The weight <code>w</code> is denoted as <code>w = [w_1, ..., w_n]</code>. The weighted average of <code>x</code> by <code>w</code> is $\frac{ \sum_{i=1}^{n} x_i * w_i } { \sum_{i=1}^{n} w_i}$</p>
+<p><code>numpy</code> provides a function called <code>np.average()</code> to calculate the weighted average. An example of calculate by hand and by the <code>np.average</code> is given below:</p>
+<div class="highlight"><pre><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">9999</span><span class="p">)</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;val1&#39;</span><span class="p">,</span> <span class="s1">&#39;wt&#39;</span><span class="p">])</span>
+
+<span class="c1"># if we want to calcuate the weighted average of val1 weighted by wt, that is:</span>
+<span class="nb">sum</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">val1</span> <span class="o">*</span> <span class="n">df</span><span class="o">.</span><span class="n">wt</span><span class="p">)</span> <span class="o">/</span> <span class="nb">sum</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">wt</span><span class="p">)</span>    <span class="c1"># 0.42105022244260254</span>
+
+<span class="c1"># np.average() function</span>
+<span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">val1</span><span class="p">,</span> <span class="n">weights</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">wt</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>    <span class="c1"># 0.42105022244260254</span>
+</pre></div>
+
+
+<div class="highlight"><pre>0.42105022244260254
+</pre></div>
+
+
+<h3>2. calculate weighted average within each group</h3>
+<p>The above example is very simple. A more common situation is there are different groups, and we need to calculate the weighted average within each group. The following is an example:</p>
+<ol>
+<li>there are two groups, called 'id'</li>
+<li>we want to calculate the weighted average for data in group 1(id == 1) and group 2(id == 2)</li>
+<li>calculate the weighted average of var1 and var2 by wt in group 1, and group 2 seperately</li>
+</ol>
+<p>so,  <code>0.339688030253 = sum(df1.val1 * df1.wt) / df1.wt.sum()</code></p>
+<div class="highlight"><pre><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">9999</span><span class="p">)</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;val1&#39;</span><span class="p">,</span> <span class="s1">&#39;val2&#39;</span><span class="p">])</span>
+<span class="n">df</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="mi">5</span><span class="p">)</span>
+<span class="n">df</span><span class="p">[</span><span class="s1">&#39;wt&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="mi">5</span>
+
+<span class="k">print</span> <span class="n">df</span>
+
+<span class="k">print</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">20</span> <span class="o">+</span> <span class="s1">&#39; weighted average of val1 and val2 by wt in each group &#39;</span> <span class="o">+</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">20</span>
+
+<span class="n">wtavg</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">ix</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">2</span><span class="p">],</span> <span class="n">weights</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">wt</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">dfwavg</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">wtavg</span><span class="p">)</span>
+<span class="n">display</span><span class="p">(</span><span class="n">dfwavg</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre>       val1      val2  id  wt
+0  0.823389  0.218603   1   1
+1  0.031461  0.545926   1   2
+2  0.154456  0.186963   1   1
+3  0.422348  0.605552   1   2
+4  0.492354  0.644119   1   1
+5  0.913049  0.771104   2   2
+6  0.288361  0.415441   2   1
+7  0.331490  0.366327   2   2
+8  0.312195  0.580446   2   1
+9  0.112952  0.325875   2   2
+
+-------------------- weighted average of val1 and val2 by wt in each group --------------------
+
+
+
+id
+1    [0.339688030253, 0.478948919665]
+2     [0.41444248036, 0.490312314239]
+dtype: object
+</pre></div>
+
+
+<div class="highlight"><pre><span class="c1">## verified by manual calculation</span>
+<span class="n">df1</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;id == 1&#39;</span><span class="p">)</span>
+<span class="nb">sum</span><span class="p">(</span><span class="n">df1</span><span class="o">.</span><span class="n">val1</span> <span class="o">*</span> <span class="n">df1</span><span class="o">.</span><span class="n">wt</span><span class="p">)</span> <span class="o">/</span> <span class="n">df1</span><span class="o">.</span><span class="n">wt</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>    <span class="c1">## 0.33968803025301908</span>
+</pre></div>
+
+
+<div class="highlight"><pre>0.33968803025301908
+</pre></div>
+
+
+<p>Difference between <code>apply</code> and <code>agg</code>: <code>apply</code> will apply the funciton on the data frame of each group, while <code>agg</code> will aggregate each column of each group. So the arguments in the apply function is a dataframe.</p>
+<p>The following is an example from pandas docs. The arguments in function f0 is a dataframe in each id group.</p>
+<div class="highlight"><pre><span class="k">def</span> <span class="nf">f0</span><span class="p">(</span><span class="n">group</span><span class="p">):</span> 
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;original&#39;</span><span class="p">:</span> <span class="n">group</span><span class="p">,</span> <span class="s1">&#39;group - mean&#39;</span><span class="p">:</span> <span class="n">group</span> <span class="o">-</span> <span class="n">group</span><span class="o">.</span><span class="n">mean</span><span class="p">()})</span>
+
+<span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">)[</span><span class="s1">&#39;val1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">f0</span><span class="p">)</span>
+</pre></div>
+
+
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>group - mean</th>
+      <th>original</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>0.438588</td>
+      <td>0.823389</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>-0.353340</td>
+      <td>0.031461</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>-0.230346</td>
+      <td>0.154456</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>0.037546</td>
+      <td>0.422348</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>0.107553</td>
+      <td>0.492354</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>0.521440</td>
+      <td>0.913049</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>-0.103248</td>
+      <td>0.288361</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>-0.060119</td>
+      <td>0.331490</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>-0.079414</td>
+      <td>0.312195</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>-0.278658</td>
+      <td>0.112952</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h3>multiple functions</h3>
+<h4>1. different function for different column</h4>
+<p>One condition is you want to apply different function on different columns in the dataframe. For example, you want to apply sum on one column, and stdev on another column. </p>
+<p>if you want to apply multiple functions to aggregate, then you need to put them in the <strong>list</strong> or <strong>dict</strong>.</p>
+<div class="highlight"><pre><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">9999</span><span class="p">)</span>
+<span class="n">snapdf</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="mi">3000</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> \
+           <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;wt_var&#39;</span><span class="p">,</span> <span class="s1">&#39;var_to_sum&#39;</span><span class="p">,</span> <span class="s2">&quot;var_to_stdev&quot;</span><span class="p">])</span>
+<span class="n">snapdf</span><span class="p">[</span><span class="s1">&#39;stage&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="mi">500</span><span class="p">)</span>
+
+<span class="n">f</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;var_to_sum&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">,</span> <span class="s2">&quot;var_to_stdev&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">}</span>
+<span class="n">stage_s1</span> <span class="o">=</span> <span class="n">snapdf</span><span class="o">.</span><span class="n">ix</span><span class="p">[:,</span> <span class="p">[</span><span class="s1">&#39;stage&#39;</span><span class="p">,</span> <span class="s1">&#39;var_to_sum&#39;</span><span class="p">,</span> <span class="s1">&#39;var_to_stdev&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;stage&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">agg</span><span class="p">(</span><span class="n">f</span><span class="p">)</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+
+<span class="n">stage_s1</span>
+</pre></div>
+
+
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>stage</th>
+      <th>var_to_sum</th>
+      <th>var_to_stdev</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>1</td>
+      <td>245.666111</td>
+      <td>0.288775</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2</td>
+      <td>247.715539</td>
+      <td>0.284739</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h4>2. multiple functions on one column</h4>
+<p>Another condition is you want to apply multiple functions on each column. For example, you want to calcualte both mean and stdev for eachc column. Then your function is a dict of dicts: first key is the column(variable) to be applied by the functions. second key is the functions.</p>
+<p>An example is like:</p>
+<div class="highlight"><pre><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">9999</span><span class="p">)</span>
+<span class="n">snapdf</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="mi">3000</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> \
+           <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;wt_var&#39;</span><span class="p">,</span> <span class="s1">&#39;var1&#39;</span><span class="p">,</span> <span class="s2">&quot;var2&quot;</span><span class="p">])</span>
+<span class="n">snapdf</span><span class="p">[</span><span class="s1">&#39;stage&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="mi">500</span><span class="p">)</span>
+
+<span class="n">snapdf</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;stage&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">agg</span><span class="p">({</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">})</span>
+</pre></div>
+
+
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th colspan="3" halign="left">wt_var</th>
+      <th colspan="3" halign="left">var1</th>
+      <th colspan="3" halign="left">var2</th>
+    </tr>
+    <tr>
+      <th></th>
+      <th>std</th>
+      <th>mean</th>
+      <th>sum</th>
+      <th>std</th>
+      <th>mean</th>
+      <th>sum</th>
+      <th>std</th>
+      <th>mean</th>
+      <th>sum</th>
+    </tr>
+    <tr>
+      <th>stage</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>1</th>
+      <td>0.27400</td>
+      <td>0.484682</td>
+      <td>242.341116</td>
+      <td>0.287491</td>
+      <td>0.491332</td>
+      <td>245.666111</td>
+      <td>0.288775</td>
+      <td>0.506056</td>
+      <td>253.028070</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>0.29702</td>
+      <td>0.507317</td>
+      <td>253.658370</td>
+      <td>0.282293</td>
+      <td>0.495431</td>
+      <td>247.715539</td>
+      <td>0.284739</td>
+      <td>0.501093</td>
+      <td>250.546638</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<div class="highlight"><pre><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">9999</span><span class="p">)</span>
+<span class="n">snapdf</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="mi">3000</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> \
+           <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;wt_var&#39;</span><span class="p">,</span> <span class="s1">&#39;var_to_wt_avg_1&#39;</span><span class="p">,</span> <span class="s1">&#39;var_to_wt_avg_2&#39;</span><span class="p">])</span>
+<span class="n">snapdf</span><span class="p">[</span><span class="s1">&#39;stage&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="mi">500</span><span class="p">)</span>
+
+<span class="n">wtavg</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">weights</span> <span class="o">=</span> <span class="n">snapdf</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="s2">&quot;wt_var&quot;</span><span class="p">])</span>
+
+<span class="n">f2</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;var_to_wt_avg_1&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;mean&#39;</span><span class="p">:</span><span class="s1">&#39;mean&#39;</span><span class="p">,</span> <span class="s1">&#39;wt_avg&#39;</span><span class="p">:</span> <span class="n">wtavg</span><span class="p">},</span> <span class="s1">&#39;var_to_wt_avg_2&#39;</span><span class="p">:{</span><span class="s1">&#39;mean&#39;</span><span class="p">:</span><span class="s1">&#39;mean&#39;</span><span class="p">,</span> <span class="s1">&#39;wt_avg&#39;</span><span class="p">:</span><span class="n">wtavg</span><span class="p">}}</span>
+<span class="n">stage_s2</span> <span class="o">=</span> <span class="n">snapdf</span><span class="o">.</span><span class="n">ix</span><span class="p">[:,</span> <span class="p">[</span><span class="s1">&#39;stage&#39;</span><span class="p">,</span> <span class="s1">&#39;var_to_wt_avg_1&#39;</span><span class="p">,</span> <span class="s1">&#39;var_to_wt_avg_2&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;stage&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">agg</span><span class="p">(</span><span class="n">f2</span><span class="p">)</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+
+<span class="c1"># stage_s2.columns = stage_s2.columns.droplevel(0)</span>
+
+<span class="n">stage_s2</span>
+</pre></div>
+
+
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>stage</th>
+      <th colspan="2" halign="left">var_to_wt_avg_2</th>
+      <th colspan="2" halign="left">var_to_wt_avg_1</th>
+    </tr>
+    <tr>
+      <th></th>
+      <th></th>
+      <th>wt_avg</th>
+      <th>mean</th>
+      <th>wt_avg</th>
+      <th>mean</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>1</td>
+      <td>0.498908</td>
+      <td>0.506056</td>
+      <td>0.486139</td>
+      <td>0.491332</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2</td>
+      <td>0.517657</td>
+      <td>0.501093</td>
+      <td>0.499796</td>
+      <td>0.495431</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h3>3. weighted from stacked data: unstack data</h3>
+<p>Data in the previous are stored in horizontial way: variables are in different columns. But sometimes data are in vertical way: in the following example, the 3 ratings(I/S/P) are stacked in vertical  line. We want to get the weighted average of I/S/P. So, the first step is to unstak the data. Then calculate the weighted average.</p>
+<div class="highlight"><pre><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">9999</span><span class="p">)</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="mi">72</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">36</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;var1&quot;</span><span class="p">,</span> <span class="s2">&quot;var2&quot;</span><span class="p">])</span>
+<span class="n">df</span><span class="p">[</span><span class="s2">&quot;rating&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">([</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="s1">&#39;S&#39;</span><span class="p">,</span> <span class="s1">&#39;P&#39;</span><span class="p">],</span> <span class="mi">12</span><span class="p">)</span>
+<span class="n">df</span><span class="p">[</span><span class="s1">&#39;qtrs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">13</span><span class="p">)</span> <span class="o">*</span> <span class="mi">3</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">set_index</span><span class="p">([</span><span class="s1">&#39;rating&#39;</span><span class="p">,</span> <span class="s1">&#39;qtrs&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">unstack</span><span class="p">(</span><span class="n">level</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">df</span><span class="p">[</span><span class="s1">&#39;cnts&#39;</span><span class="p">,</span> <span class="s1">&#39;I&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">100</span>
+<span class="n">df</span><span class="p">[</span><span class="s1">&#39;cnts&#39;</span><span class="p">,</span> <span class="s1">&#39;P&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">200</span>
+<span class="n">df</span><span class="p">[</span><span class="s1">&#39;cnts&#39;</span><span class="p">,</span> <span class="s2">&quot;S&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">300</span>
+
+<span class="n">display</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
+
+<span class="n">df</span><span class="p">[</span><span class="s1">&#39;wt_var_1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">var1</span><span class="p">,</span> <span class="n">weights</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">cnts</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">df</span><span class="p">[</span><span class="s1">&#39;wt_var_2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">var2</span><span class="p">,</span> <span class="n">weights</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">cnts</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="n">df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span><span class="o">.</span><span class="n">ix</span><span class="p">[:,</span> <span class="p">[</span><span class="s2">&quot;qtrs&quot;</span><span class="p">,</span> <span class="s2">&quot;wt_var_1&quot;</span><span class="p">,</span> <span class="s2">&quot;wt_var_2&quot;</span><span class="p">]]</span>
+</pre></div>
+
+
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th colspan="3" halign="left">var1</th>
+      <th colspan="3" halign="left">var2</th>
+      <th colspan="3" halign="left">cnts</th>
+    </tr>
+    <tr>
+      <th>rating</th>
+      <th>I</th>
+      <th>P</th>
+      <th>S</th>
+      <th>I</th>
+      <th>P</th>
+      <th>S</th>
+      <th>I</th>
+      <th>P</th>
+      <th>S</th>
+    </tr>
+    <tr>
+      <th>qtrs</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>1</th>
+      <td>0.823389</td>
+      <td>0.154764</td>
+      <td>0.602518</td>
+      <td>0.218603</td>
+      <td>0.904529</td>
+      <td>0.435665</td>
+      <td>100</td>
+      <td>200</td>
+      <td>300</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>0.031461</td>
+      <td>0.365481</td>
+      <td>0.472321</td>
+      <td>0.545926</td>
+      <td>0.580417</td>
+      <td>0.866001</td>
+      <td>100</td>
+      <td>200</td>
+      <td>300</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>0.154456</td>
+      <td>0.494557</td>
+      <td>0.537686</td>
+      <td>0.186963</td>
+      <td>0.824609</td>
+      <td>0.484590</td>
+      <td>100</td>
+      <td>200</td>
+      <td>300</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>0.422348</td>
+      <td>0.503091</td>
+      <td>0.333305</td>
+      <td>0.605552</td>
+      <td>0.670854</td>
+      <td>0.582543</td>
+      <td>100</td>
+      <td>200</td>
+      <td>300</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>0.492354</td>
+      <td>0.446044</td>
+      <td>0.679368</td>
+      <td>0.644119</td>
+      <td>0.050341</td>
+      <td>0.544653</td>
+      <td>100</td>
+      <td>200</td>
+      <td>300</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>qtrs</th>
+      <th>wt_var_1</th>
+      <th>wt_var_2</th>
+    </tr>
+    <tr>
+      <th>rating</th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>1</td>
+      <td>0.490078</td>
+      <td>0.555776</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2</td>
+      <td>0.363231</td>
+      <td>0.717461</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>3</td>
+      <td>0.459438</td>
+      <td>0.548325</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>4</td>
+      <td>0.404741</td>
+      <td>0.615815</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>5</td>
+      <td>0.570425</td>
+      <td>0.396460</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>6</td>
+      <td>0.870236</td>
+      <td>0.845366</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>7</td>
+      <td>0.446611</td>
+      <td>0.123709</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>8</td>
+      <td>0.735676</td>
+      <td>0.185098</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>9</td>
+      <td>0.378114</td>
+      <td>0.435725</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>10</td>
+      <td>0.533662</td>
+      <td>0.248189</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>11</td>
+      <td>0.529564</td>
+      <td>0.565223</td>
+    </tr>
+    <tr>
+      <th>11</th>
+      <td>12</td>
+      <td>0.536358</td>
+      <td>0.297243</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+    <footer>
+<p class="meta">
+  <span class="byline author vcard">
+    Posted by <span class="fn">
+        <a href="/author/huiming-song.html">Huiming Song</a>
+    </span>
+  </span>
+<time datetime="2017-03-18T00:00:00-05:00" pubdate>Sat 18 March 2017</time>  <span class="categories">
+    <a class='category' href='/category/python.html'>Python</a>
+  </span>
+  <span class="categories">
+    <a class="category" href="/tag/python.html">python</a>,    <a class="category" href="/tag/pandas.html">pandas</a>  </span>
+</p><div class="sharing">
+</div>    </footer>
+  </article>
+
+</div>
+<aside class="sidebar">
+  <section>
+    <h1>Recent Posts</h1>
+    <ul id="recent_posts">
+      <li class="post">
+          <a href="/pages/2017/04/02/jupyter-and-pandas-display/">jupyter and pandas display</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2017/03/18/weighted-avarage-aggrefated-function-with-apply-and-agg/">weighted avarage, aggrefated function with apply and agg</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2017/03/05/tensorflowjian-jie-04/">tensorflow简介--04</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2017/02/26/tensorflowjian-jie-03/">tensorflow简介--03</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2017/02/26/tensorflowjian-jie-02/">tensorflow简介--02</a>
+      </li>
+    </ul>
+  </section>
+  <section>
+      
+    <h1>Categories</h1>
+    <ul id="recent_posts">
+        <li><a href="/category/linux.html">Linux</a></li>
+        <li><a href="/category/programming.html">Programming</a></li>
+        <li><a href="/category/python.html">Python</a></li>
+    </ul>
+  </section>
+ 
+
+  <section>
+  <h1>Tags</h1>
+    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/re.html">re</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/python.html">python</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/sklearn.html">sklearn</a>  </section>
+
+
+    <section>
+        <h1>Social</h1>
+        <ul>
+            <li><a href="https://www.linkedin.com/pub/huiming-song/24/735/349" target="_blank">Linkedin</a></li>
+        </ul>
+    </section>
+    <section>
+        <h1>Blogroll</h1>
+        <ul>
+            <li><a href="http://easysas.blogspot.com/" target="_blank">my old SAS blog</a></li>
+        </ul>
+    </section>
+
+</aside>    </div>
+  </div>
+  <footer role="contentinfo"><p>
+    Copyright &copy;  2015&ndash;2017  shm &mdash;
+  <span class="credit">Powered by <a href="http://getpelican.com">Pelican</a></span>
+</p></footer>
+  <script src="/theme/js/modernizr-2.0.js"></script>
+  <script src="/theme/js/ender.js"></script>
+  <script src="/theme/js/octopress.js" type="text/javascript"></script>
+    <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-65938411-1']);
+    _gaq.push(['_trackPageview']);
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-65938411-1');
+    ga('send', 'pageview');
+</script>
+  <script type="text/javascript">
+    var disqus_shortname = 'songhuiming';
+    var disqus_identifier = '/pages/2017/03/18/weighted-avarage-aggrefated-function-with-apply-and-agg/';
+    var disqus_url = '/pages/2017/03/18/weighted-avarage-aggrefated-function-with-apply-and-agg/';
+    var disqus_title = 'weighted avarage, aggrefated function with apply and agg';
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = "//" + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+     })();
+  </script>
+</body>
+</html>
