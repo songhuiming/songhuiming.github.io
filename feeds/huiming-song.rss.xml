@@ -1,5 +1,2234 @@
 <?xml version="1.0" encoding="utf-8"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>pydata</title><link>/</link><description>Keep Looking, Don't Settle</description><atom:link href="/feeds/huiming-song.rss.xml" rel="self"></atom:link><lastBuildDate>Sun, 02 Apr 2017 00:00:00 -0500</lastBuildDate><item><title>jupyter and pandas display</title><link>/pages/2017/04/02/jupyter-and-pandas-display/</link><description>&lt;h3&gt;1. show all the rows or columns from a DataFrame in Jupyter QTConcole&lt;/h3&gt;
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>pydata</title><link>/</link><description>Keep Looking, Don't Settle</description><atom:link href="/feeds/huiming-song.rss.xml" rel="self"></atom:link><lastBuildDate>Sat, 15 Apr 2017 22:03:00 -0500</lastBuildDate><item><title>variable selection in linear regression: 2</title><link>/pages/2017/04/15/variable-selection-in-linear-regression-2/</link><description>&lt;style type="text/css"&gt;/*!
+*
+* IPython notebook
+*
+*/
+/* CSS font colors for translated ANSI colors. */
+.ansibold {
+  font-weight: bold;
+}
+/* use dark versions for foreground, to improve visibility */
+.ansiblack {
+  color: black;
+}
+.ansired {
+  color: darkred;
+}
+.ansigreen {
+  color: darkgreen;
+}
+.ansiyellow {
+  color: #c4a000;
+}
+.ansiblue {
+  color: darkblue;
+}
+.ansipurple {
+  color: darkviolet;
+}
+.ansicyan {
+  color: steelblue;
+}
+.ansigray {
+  color: gray;
+}
+/* and light for background, for the same reason */
+.ansibgblack {
+  background-color: black;
+}
+.ansibgred {
+  background-color: red;
+}
+.ansibggreen {
+  background-color: green;
+}
+.ansibgyellow {
+  background-color: yellow;
+}
+.ansibgblue {
+  background-color: blue;
+}
+.ansibgpurple {
+  background-color: magenta;
+}
+.ansibgcyan {
+  background-color: cyan;
+}
+.ansibggray {
+  background-color: gray;
+}
+div.cell {
+  /* Old browsers */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-box-align: stretch;
+  display: -moz-box;
+  -moz-box-orient: vertical;
+  -moz-box-align: stretch;
+  display: box;
+  box-orient: vertical;
+  box-align: stretch;
+  /* Modern browsers */
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  border-radius: 2px;
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  border-width: 1px;
+  border-style: solid;
+  border-color: transparent;
+  width: 100%;
+  padding: 5px;
+  /* This acts as a spacer between cells, that is outside the border */
+  margin: 0px;
+  outline: none;
+  border-left-width: 1px;
+  padding-left: 5px;
+  background: linear-gradient(to right, transparent -40px, transparent 1px, transparent 1px, transparent 100%);
+}
+div.cell.jupyter-soft-selected {
+  border-left-color: #90CAF9;
+  border-left-color: #E3F2FD;
+  border-left-width: 1px;
+  padding-left: 5px;
+  border-right-color: #E3F2FD;
+  border-right-width: 1px;
+  background: #E3F2FD;
+}
+@media print {
+  div.cell.jupyter-soft-selected {
+    border-color: transparent;
+  }
+}
+div.cell.selected {
+  border-color: #ababab;
+  border-left-width: 0px;
+  padding-left: 6px;
+  background: linear-gradient(to right, #42A5F5 -40px, #42A5F5 5px, transparent 5px, transparent 100%);
+}
+@media print {
+  div.cell.selected {
+    border-color: transparent;
+  }
+}
+div.cell.selected.jupyter-soft-selected {
+  border-left-width: 0;
+  padding-left: 6px;
+  background: linear-gradient(to right, #42A5F5 -40px, #42A5F5 7px, #E3F2FD 7px, #E3F2FD 100%);
+}
+.edit_mode div.cell.selected {
+  border-color: #66BB6A;
+  border-left-width: 0px;
+  padding-left: 6px;
+  background: linear-gradient(to right, #66BB6A -40px, #66BB6A 5px, transparent 5px, transparent 100%);
+}
+@media print {
+  .edit_mode div.cell.selected {
+    border-color: transparent;
+  }
+}
+.prompt {
+  /* This needs to be wide enough for 3 digit prompt numbers: In[100]: */
+  min-width: 14ex;
+  /* This padding is tuned to match the padding on the CodeMirror editor. */
+  padding: 0.4em;
+  margin: 0px;
+  font-family: monospace;
+  text-align: right;
+  /* This has to match that of the the CodeMirror class line-height below */
+  line-height: 1.21429em;
+  /* Don't highlight prompt number selection */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  /* Use default cursor */
+  cursor: default;
+}
+@media (max-width: 540px) {
+  .prompt {
+    text-align: left;
+  }
+}
+div.inner_cell {
+  /* Old browsers */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-box-align: stretch;
+  display: -moz-box;
+  -moz-box-orient: vertical;
+  -moz-box-align: stretch;
+  display: box;
+  box-orient: vertical;
+  box-align: stretch;
+  /* Modern browsers */
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  /* Old browsers */
+  -webkit-box-flex: 1;
+  -moz-box-flex: 1;
+  box-flex: 1;
+  /* Modern browsers */
+  flex: 1;
+}
+@-moz-document url-prefix() {
+  div.inner_cell {
+    overflow-x: hidden;
+  }
+}
+/* input_area and input_prompt must match in top border and margin for alignment */
+div.input_area {
+  border: 1px solid #cfcfcf;
+  border-radius: 2px;
+  background: #f7f7f7;
+  line-height: 1.21429em;
+}
+/* This is needed so that empty prompt areas can collapse to zero height when there
+   is no content in the output_subarea and the prompt. The main purpose of this is
+   to make sure that empty JavaScript output_subareas have no height. */
+div.prompt:empty {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+div.unrecognized_cell {
+  padding: 5px 5px 5px 0px;
+  /* Old browsers */
+  display: -webkit-box;
+  -webkit-box-orient: horizontal;
+  -webkit-box-align: stretch;
+  display: -moz-box;
+  -moz-box-orient: horizontal;
+  -moz-box-align: stretch;
+  display: box;
+  box-orient: horizontal;
+  box-align: stretch;
+  /* Modern browsers */
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+}
+div.unrecognized_cell .inner_cell {
+  border-radius: 2px;
+  padding: 5px;
+  font-weight: bold;
+  color: red;
+  border: 1px solid #cfcfcf;
+  background: #eaeaea;
+}
+div.unrecognized_cell .inner_cell a {
+  color: inherit;
+  text-decoration: none;
+}
+div.unrecognized_cell .inner_cell a:hover {
+  color: inherit;
+  text-decoration: none;
+}
+@media (max-width: 540px) {
+  div.unrecognized_cell &gt; div.prompt {
+    display: none;
+  }
+}
+div.code_cell {
+  /* avoid page breaking on code cells when printing */
+}
+@media print {
+  div.code_cell {
+    page-break-inside: avoid;
+  }
+}
+/* any special styling for code cells that are currently running goes here */
+div.input {
+  page-break-inside: avoid;
+  /* Old browsers */
+  display: -webkit-box;
+  -webkit-box-orient: horizontal;
+  -webkit-box-align: stretch;
+  display: -moz-box;
+  -moz-box-orient: horizontal;
+  -moz-box-align: stretch;
+  display: box;
+  box-orient: horizontal;
+  box-align: stretch;
+  /* Modern browsers */
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+}
+@media (max-width: 540px) {
+  div.input {
+    /* Old browsers */
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-box-align: stretch;
+    display: -moz-box;
+    -moz-box-orient: vertical;
+    -moz-box-align: stretch;
+    display: box;
+    box-orient: vertical;
+    box-align: stretch;
+    /* Modern browsers */
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+/* input_area and input_prompt must match in top border and margin for alignment */
+div.input_prompt {
+  color: #303F9F;
+  border-top: 1px solid transparent;
+}
+div.input_area &gt; div.highlight {
+  margin: 0.4em;
+  border: none;
+  padding: 0px;
+  background-color: transparent;
+}
+div.input_area &gt; div.highlight &gt; pre {
+  margin: 0px;
+  border: none;
+  padding: 0px;
+  background-color: transparent;
+}
+/* The following gets added to the &lt;head&gt; if it is detected that the user has a
+ * monospace font with inconsistent normal/bold/italic height.  See
+ * notebookmain.js.  Such fonts will have keywords vertically offset with
+ * respect to the rest of the text.  The user should select a better font.
+ * See: https://github.com/ipython/ipython/issues/1503
+ *
+ * .CodeMirror span {
+ *      vertical-align: bottom;
+ * }
+ */
+.CodeMirror {
+  line-height: 1.21429em;
+  /* Changed from 1em to our global default */
+  font-size: 14px;
+  height: auto;
+  /* Changed to auto to autogrow */
+  background: none;
+  /* Changed from white to allow our bg to show through */
+}
+.CodeMirror-scroll {
+  /*  The CodeMirror docs are a bit fuzzy on if overflow-y should be hidden or visible.*/
+  /*  We have found that if it is visible, vertical scrollbars appear with font size changes.*/
+  overflow-y: hidden;
+  overflow-x: auto;
+}
+.CodeMirror-lines {
+  /* In CM2, this used to be 0.4em, but in CM3 it went to 4px. We need the em value because */
+  /* we have set a different line-height and want this to scale with that. */
+  padding: 0.4em;
+}
+.CodeMirror-linenumber {
+  padding: 0 8px 0 4px;
+}
+.CodeMirror-gutters {
+  border-bottom-left-radius: 2px;
+  border-top-left-radius: 2px;
+}
+.CodeMirror pre {
+  /* In CM3 this went to 4px from 0 in CM2. We need the 0 value because of how we size */
+  /* .CodeMirror-lines */
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+}
+/*
+
+Original style from softwaremaniacs.org (c) Ivan Sagalaev &lt;Maniac@SoftwareManiacs.Org&gt;
+Adapted from GitHub theme
+
+*/
+.highlight-base {
+  color: #000;
+}
+.highlight-variable {
+  color: #000;
+}
+.highlight-variable-2 {
+  color: #1a1a1a;
+}
+.highlight-variable-3 {
+  color: #333333;
+}
+.highlight-string {
+  color: #BA2121;
+}
+.highlight-comment {
+  color: #408080;
+  font-style: italic;
+}
+.highlight-number {
+  color: #080;
+}
+.highlight-atom {
+  color: #88F;
+}
+.highlight-keyword {
+  color: #008000;
+  font-weight: bold;
+}
+.highlight-builtin {
+  color: #008000;
+}
+.highlight-error {
+  color: #f00;
+}
+.highlight-operator {
+  color: #AA22FF;
+  font-weight: bold;
+}
+.highlight-meta {
+  color: #AA22FF;
+}
+/* previously not defined, copying from default codemirror */
+.highlight-def {
+  color: #00f;
+}
+.highlight-string-2 {
+  color: #f50;
+}
+.highlight-qualifier {
+  color: #555;
+}
+.highlight-bracket {
+  color: #997;
+}
+.highlight-tag {
+  color: #170;
+}
+.highlight-attribute {
+  color: #00c;
+}
+.highlight-header {
+  color: blue;
+}
+.highlight-quote {
+  color: #090;
+}
+.highlight-link {
+  color: #00c;
+}
+/* apply the same style to codemirror */
+.cm-s-ipython span.cm-keyword {
+  color: #008000;
+  font-weight: bold;
+}
+.cm-s-ipython span.cm-atom {
+  color: #88F;
+}
+.cm-s-ipython span.cm-number {
+  color: #080;
+}
+.cm-s-ipython span.cm-def {
+  color: #00f;
+}
+.cm-s-ipython span.cm-variable {
+  color: #000;
+}
+.cm-s-ipython span.cm-operator {
+  color: #AA22FF;
+  font-weight: bold;
+}
+.cm-s-ipython span.cm-variable-2 {
+  color: #1a1a1a;
+}
+.cm-s-ipython span.cm-variable-3 {
+  color: #333333;
+}
+.cm-s-ipython span.cm-comment {
+  color: #408080;
+  font-style: italic;
+}
+.cm-s-ipython span.cm-string {
+  color: #BA2121;
+}
+.cm-s-ipython span.cm-string-2 {
+  color: #f50;
+}
+.cm-s-ipython span.cm-meta {
+  color: #AA22FF;
+}
+.cm-s-ipython span.cm-qualifier {
+  color: #555;
+}
+.cm-s-ipython span.cm-builtin {
+  color: #008000;
+}
+.cm-s-ipython span.cm-bracket {
+  color: #997;
+}
+.cm-s-ipython span.cm-tag {
+  color: #170;
+}
+.cm-s-ipython span.cm-attribute {
+  color: #00c;
+}
+.cm-s-ipython span.cm-header {
+  color: blue;
+}
+.cm-s-ipython span.cm-quote {
+  color: #090;
+}
+.cm-s-ipython span.cm-link {
+  color: #00c;
+}
+.cm-s-ipython span.cm-error {
+  color: #f00;
+}
+.cm-s-ipython span.cm-tab {
+  background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAMCAYAAAAkuj5RAAAAAXNSR0IArs4c6QAAAGFJREFUSMft1LsRQFAQheHPowAKoACx3IgEKtaEHujDjORSgWTH/ZOdnZOcM/sgk/kFFWY0qV8foQwS4MKBCS3qR6ixBJvElOobYAtivseIE120FaowJPN75GMu8j/LfMwNjh4HUpwg4LUAAAAASUVORK5CYII=);
+  background-position: right;
+  background-repeat: no-repeat;
+}
+div.output_wrapper {
+  /* this position must be relative to enable descendents to be absolute within it */
+  position: relative;
+  /* Old browsers */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-box-align: stretch;
+  display: -moz-box;
+  -moz-box-orient: vertical;
+  -moz-box-align: stretch;
+  display: box;
+  box-orient: vertical;
+  box-align: stretch;
+  /* Modern browsers */
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  z-index: 1;
+}
+/* class for the output area when it should be height-limited */
+div.output_scroll {
+  /* ideally, this would be max-height, but FF barfs all over that */
+  height: 24em;
+  /* FF needs this *and the wrapper* to specify full width, or it will shrinkwrap */
+  width: 100%;
+  overflow: auto;
+  border-radius: 2px;
+  -webkit-box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.8);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.8);
+  display: block;
+}
+/* output div while it is collapsed */
+div.output_collapsed {
+  margin: 0px;
+  padding: 0px;
+  /* Old browsers */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-box-align: stretch;
+  display: -moz-box;
+  -moz-box-orient: vertical;
+  -moz-box-align: stretch;
+  display: box;
+  box-orient: vertical;
+  box-align: stretch;
+  /* Modern browsers */
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+div.out_prompt_overlay {
+  height: 100%;
+  padding: 0px 0.4em;
+  position: absolute;
+  border-radius: 2px;
+}
+div.out_prompt_overlay:hover {
+  /* use inner shadow to get border that is computed the same on WebKit/FF */
+  -webkit-box-shadow: inset 0 0 1px #000;
+  box-shadow: inset 0 0 1px #000;
+  background: rgba(240, 240, 240, 0.5);
+}
+div.output_prompt {
+  color: #D84315;
+}
+/* This class is the outer container of all output sections. */
+div.output_area {
+  padding: 0px;
+  page-break-inside: avoid;
+  /* Old browsers */
+  display: -webkit-box;
+  -webkit-box-orient: horizontal;
+  -webkit-box-align: stretch;
+  display: -moz-box;
+  -moz-box-orient: horizontal;
+  -moz-box-align: stretch;
+  display: box;
+  box-orient: horizontal;
+  box-align: stretch;
+  /* Modern browsers */
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+}
+div.output_area .MathJax_Display {
+  text-align: left !important;
+}
+div.output_area 
+div.output_area 
+div.output_area img,
+div.output_area svg {
+  max-width: 100%;
+  height: auto;
+}
+div.output_area img.unconfined,
+div.output_area svg.unconfined {
+  max-width: none;
+}
+/* This is needed to protect the pre formating from global settings such
+   as that of bootstrap */
+.output {
+  /* Old browsers */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-box-align: stretch;
+  display: -moz-box;
+  -moz-box-orient: vertical;
+  -moz-box-align: stretch;
+  display: box;
+  box-orient: vertical;
+  box-align: stretch;
+  /* Modern browsers */
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+@media (max-width: 540px) {
+  div.output_area {
+    /* Old browsers */
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-box-align: stretch;
+    display: -moz-box;
+    -moz-box-orient: vertical;
+    -moz-box-align: stretch;
+    display: box;
+    box-orient: vertical;
+    box-align: stretch;
+    /* Modern browsers */
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+div.output_area pre {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  vertical-align: baseline;
+  color: black;
+  background-color: transparent;
+  border-radius: 0;
+}
+/* This class is for the output subarea inside the output_area and after
+   the prompt div. */
+div.output_subarea {
+  overflow-x: auto;
+  padding: 0.4em;
+  /* Old browsers */
+  -webkit-box-flex: 1;
+  -moz-box-flex: 1;
+  box-flex: 1;
+  /* Modern browsers */
+  flex: 1;
+  max-width: calc(100% - 14ex);
+}
+div.output_scroll div.output_subarea {
+  overflow-x: visible;
+}
+/* The rest of the output_* classes are for special styling of the different
+   output types */
+/* all text output has this class: */
+div.output_text {
+  text-align: left;
+  color: #000;
+  /* This has to match that of the the CodeMirror class line-height below */
+  line-height: 1.21429em;
+}
+/* stdout/stderr are 'text' as well as 'stream', but execute_result/error are *not* streams */
+div.output_stderr {
+  background: #fdd;
+  /* very light red background for stderr */
+}
+div.output_latex {
+  text-align: left;
+}
+/* Empty output_javascript divs should have no height */
+div.output_javascript:empty {
+  padding: 0;
+}
+.js-error {
+  color: darkred;
+}
+/* raw_input styles */
+div.raw_input_container {
+  line-height: 1.21429em;
+  padding-top: 5px;
+}
+pre.raw_input_prompt {
+  /* nothing needed here. */
+}
+input.raw_input {
+  font-family: monospace;
+  font-size: inherit;
+  color: inherit;
+  width: auto;
+  /* make sure input baseline aligns with prompt */
+  vertical-align: baseline;
+  /* padding + margin = 0.5em between prompt and cursor */
+  padding: 0em 0.25em;
+  margin: 0em 0.25em;
+}
+input.raw_input:focus {
+  box-shadow: none;
+}
+p.p-space {
+  margin-bottom: 10px;
+}
+div.output_unrecognized {
+  padding: 5px;
+  font-weight: bold;
+  color: red;
+}
+div.output_unrecognized a {
+  color: inherit;
+  text-decoration: none;
+}
+div.output_unrecognized a:hover {
+  color: inherit;
+  text-decoration: none;
+}
+.rendered_html {
+  color: #000;
+  /* any extras will just be numbers: */
+}
+
+
+
+.rendered_html :link {
+  text-decoration: underline;
+}
+.rendered_html :visited {
+  text-decoration: underline;
+}
+
+
+
+
+
+
+.rendered_html h1:first-child {
+  margin-top: 0.538em;
+}
+.rendered_html h2:first-child {
+  margin-top: 0.636em;
+}
+.rendered_html h3:first-child {
+  margin-top: 0.777em;
+}
+.rendered_html h4:first-child {
+  margin-top: 1em;
+}
+.rendered_html h5:first-child {
+  margin-top: 1em;
+}
+.rendered_html h6:first-child {
+  margin-top: 1em;
+}
+
+
+
+
+
+
+
+
+.rendered_html * + ul {
+  margin-top: 1em;
+}
+.rendered_html * + ol {
+  margin-top: 1em;
+}
+
+
+.rendered_html pre,
+
+
+
+.rendered_html tr,
+.rendered_html th,
+
+.rendered_html td,
+
+
+.rendered_html * + table {
+  margin-top: 1em;
+}
+
+.rendered_html * + p {
+  margin-top: 1em;
+}
+
+.rendered_html * + img {
+  margin-top: 1em;
+}
+.rendered_html img,
+
+.rendered_html img.unconfined,
+
+div.text_cell {
+  /* Old browsers */
+  display: -webkit-box;
+  -webkit-box-orient: horizontal;
+  -webkit-box-align: stretch;
+  display: -moz-box;
+  -moz-box-orient: horizontal;
+  -moz-box-align: stretch;
+  display: box;
+  box-orient: horizontal;
+  box-align: stretch;
+  /* Modern browsers */
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+}
+@media (max-width: 540px) {
+  div.text_cell &gt; div.prompt {
+    display: none;
+  }
+}
+div.text_cell_render {
+  /*font-family: "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;*/
+  outline: none;
+  resize: none;
+  width: inherit;
+  border-style: none;
+  padding: 0.5em 0.5em 0.5em 0.4em;
+  color: #000;
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+}
+a.anchor-link:link {
+  text-decoration: none;
+  padding: 0px 20px;
+  visibility: hidden;
+}
+h1:hover .anchor-link,
+h2:hover .anchor-link,
+h3:hover .anchor-link,
+h4:hover .anchor-link,
+h5:hover .anchor-link,
+h6:hover .anchor-link {
+  visibility: visible;
+}
+.text_cell.rendered .input_area {
+  display: none;
+}
+.text_cell.rendered 
+.text_cell.unrendered .text_cell_render {
+  display: none;
+}
+.cm-header-1,
+.cm-header-2,
+.cm-header-3,
+.cm-header-4,
+.cm-header-5,
+.cm-header-6 {
+  font-weight: bold;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+.cm-header-1 {
+  font-size: 185.7%;
+}
+.cm-header-2 {
+  font-size: 157.1%;
+}
+.cm-header-3 {
+  font-size: 128.6%;
+}
+.cm-header-4 {
+  font-size: 110%;
+}
+.cm-header-5 {
+  font-size: 100%;
+  font-style: italic;
+}
+.cm-header-6 {
+  font-size: 100%;
+  font-style: italic;
+}
+&lt;/style&gt;
+&lt;style type="text/css"&gt;.highlight .hll { background-color: #ffffcc }
+.highlight  { background: #f8f8f8; }
+.highlight .c { color: #408080; font-style: italic } /* Comment */
+.highlight .err { border: 1px solid #FF0000 } /* Error */
+.highlight .k { color: #008000; font-weight: bold } /* Keyword */
+.highlight .o { color: #666666 } /* Operator */
+.highlight .ch { color: #408080; font-style: italic } /* Comment.Hashbang */
+.highlight .cm { color: #408080; font-style: italic } /* Comment.Multiline */
+.highlight .cp { color: #BC7A00 } /* Comment.Preproc */
+.highlight .cpf { color: #408080; font-style: italic } /* Comment.PreprocFile */
+.highlight .c1 { color: #408080; font-style: italic } /* Comment.Single */
+.highlight .cs { color: #408080; font-style: italic } /* Comment.Special */
+.highlight .gd { color: #A00000 } /* Generic.Deleted */
+.highlight .ge { font-style: italic } /* Generic.Emph */
+.highlight .gr { color: #FF0000 } /* Generic.Error */
+.highlight .gh { color: #000080; font-weight: bold } /* Generic.Heading */
+.highlight .gi { color: #00A000 } /* Generic.Inserted */
+.highlight .go { color: #888888 } /* Generic.Output */
+.highlight .gp { color: #000080; font-weight: bold } /* Generic.Prompt */
+.highlight .gs { font-weight: bold } /* Generic.Strong */
+.highlight .gu { color: #800080; font-weight: bold } /* Generic.Subheading */
+.highlight .gt { color: #0044DD } /* Generic.Traceback */
+.highlight .kc { color: #008000; font-weight: bold } /* Keyword.Constant */
+.highlight .kd { color: #008000; font-weight: bold } /* Keyword.Declaration */
+.highlight .kn { color: #008000; font-weight: bold } /* Keyword.Namespace */
+.highlight .kp { color: #008000 } /* Keyword.Pseudo */
+.highlight .kr { color: #008000; font-weight: bold } /* Keyword.Reserved */
+.highlight .kt { color: #B00040 } /* Keyword.Type */
+.highlight .m { color: #666666 } /* Literal.Number */
+.highlight .s { color: #BA2121 } /* Literal.String */
+.highlight .na { color: #7D9029 } /* Name.Attribute */
+.highlight .nb { color: #008000 } /* Name.Builtin */
+.highlight .nc { color: #0000FF; font-weight: bold } /* Name.Class */
+.highlight .no { color: #880000 } /* Name.Constant */
+.highlight .nd { color: #AA22FF } /* Name.Decorator */
+.highlight .ni { color: #999999; font-weight: bold } /* Name.Entity */
+.highlight .ne { color: #D2413A; font-weight: bold } /* Name.Exception */
+.highlight .nf { color: #0000FF } /* Name.Function */
+.highlight .nl { color: #A0A000 } /* Name.Label */
+.highlight .nn { color: #0000FF; font-weight: bold } /* Name.Namespace */
+.highlight .nt { color: #008000; font-weight: bold } /* Name.Tag */
+.highlight .nv { color: #19177C } /* Name.Variable */
+.highlight .ow { color: #AA22FF; font-weight: bold } /* Operator.Word */
+.highlight .w { color: #bbbbbb } /* Text.Whitespace */
+.highlight .mb { color: #666666 } /* Literal.Number.Bin */
+.highlight .mf { color: #666666 } /* Literal.Number.Float */
+.highlight .mh { color: #666666 } /* Literal.Number.Hex */
+.highlight .mi { color: #666666 } /* Literal.Number.Integer */
+.highlight .mo { color: #666666 } /* Literal.Number.Oct */
+.highlight .sb { color: #BA2121 } /* Literal.String.Backtick */
+.highlight .sc { color: #BA2121 } /* Literal.String.Char */
+.highlight .sd { color: #BA2121; font-style: italic } /* Literal.String.Doc */
+.highlight .s2 { color: #BA2121 } /* Literal.String.Double */
+.highlight .se { color: #BB6622; font-weight: bold } /* Literal.String.Escape */
+.highlight .sh { color: #BA2121 } /* Literal.String.Heredoc */
+.highlight .si { color: #BB6688; font-weight: bold } /* Literal.String.Interpol */
+.highlight .sx { color: #008000 } /* Literal.String.Other */
+.highlight .sr { color: #BB6688 } /* Literal.String.Regex */
+.highlight .s1 { color: #BA2121 } /* Literal.String.Single */
+.highlight .ss { color: #19177C } /* Literal.String.Symbol */
+.highlight .bp { color: #008000 } /* Name.Builtin.Pseudo */
+.highlight .vc { color: #19177C } /* Name.Variable.Class */
+.highlight .vg { color: #19177C } /* Name.Variable.Global */
+.highlight .vi { color: #19177C } /* Name.Variable.Instance */
+.highlight .il { color: #666666 } /* Literal.Number.Integer.Long */&lt;/style&gt;
+&lt;style type="text/css"&gt;
+/* Temporary definitions which will become obsolete with Notebook release 5.0 */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-bold { font-weight: bold; }
+&lt;/style&gt;
+&lt;div class="cell border-box-sizing code_cell rendered"&gt;
+&lt;div class="input"&gt;
+&lt;div class="prompt input_prompt"&gt;In [1]:&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+&lt;div class="input_area"&gt;
+&lt;div class=" highlight hl-ipython2"&gt;&lt;pre&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;pandas&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;pd&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;numpy&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;np&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;itertools&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;chain&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;combinations&lt;/span&gt;
+
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;statsmodels.formula.api&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;smf&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;scipy.stats&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;scipystats&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;scipy.stats&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;norm&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;scipy.stats.stats&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;pearsonr&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;statsmodels.api&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;sm&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;statsmodels.stats.stattools&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;stools&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;statsmodels.stats&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;stats&lt;/span&gt; 
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;patsy&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;dmatrices&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;statsmodels.stats.outliers_influence&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;variance_inflation_factor&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;statsmodels.graphics.regressionplots&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;matplotlib.pyplot&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;plt&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;math&lt;/span&gt;
+&lt;span class="n"&gt;mypath&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;  &lt;span class="s1"&gt;r'F:\Dropbox\ipynb_notes\ipynb_blog&lt;/span&gt;&lt;span class="se"&gt;\\&lt;/span&gt;&lt;span class="s1"&gt;'&lt;/span&gt;
+
+&lt;span class="n"&gt;indata&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;pd&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;read_pickle&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;mypath&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;"data.pkl"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="cell border-box-sizing text_cell rendered"&gt;
+&lt;div class="prompt input_prompt"&gt;
+&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+&lt;div class="text_cell_render border-box-sizing rendered_html"&gt;
+&lt;p&gt;set up display options&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="cell border-box-sizing code_cell rendered"&gt;
+&lt;div class="input"&gt;
+&lt;div class="prompt input_prompt"&gt;In [2]:&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+&lt;div class="input_area"&gt;
+&lt;div class=" highlight hl-ipython2"&gt;&lt;pre&gt;&lt;span class="n"&gt;pd&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;options&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;display&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;max_rows&lt;/span&gt;
+&lt;span class="n"&gt;pd&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;set_option&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;'display.max_colwidth'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;IPython.display&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;display&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;HTML&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="cell border-box-sizing text_cell rendered"&gt;
+&lt;div class="prompt input_prompt"&gt;
+&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+&lt;div class="text_cell_render border-box-sizing rendered_html"&gt;
+&lt;h2 id="summary"&gt;summary&lt;a class="anchor-link" href="#summary"&gt;¶&lt;/a&gt;&lt;/h2&gt;&lt;p&gt;This is an example of variable selection in linear regression(and it can be easily applied in logistic regression). It has two steps:&lt;/p&gt;
+&lt;p&gt;The first step is univariate analysis. It checks the pearson correlation between each x and y. This is helpful to reduce the candidate predictors by only selecting the variables has significant correlation. The cutoff point is set p-value no more than 10%. Also the correlation coefficient sign is tested to make sure the correlation should make sense.&lt;/p&gt;
+&lt;p&gt;The second step is multi-variate analysis. For the variables selected in step 1(say there are n variables left), all possible variables combinations will be run in the linear regression. Like all 2 variables combination(C(n, 2) combinations), 3 variables combination(C(n, 3) combinations)... will be tested in the linear regression. If there are duplicated variables(like GDP annual change and GDP quarterly change) in the model, it will de droped. The regression sign of each variable will be checked again. If any sign does not make sense, then the model will be droped. If there is any variable is not significant, then the model will be droped. If there is multicollinearity(checked by VIF), the model will be droped.&lt;/p&gt;
+&lt;p&gt;The output will list the variables in the model, the regression coefficient, the p-value, vif, R2 and RMSE on training data and validation data set.&lt;/p&gt;
+&lt;h3 id="step-1.-univariate-variable-selection"&gt;step 1. univariate variable selection&lt;a class="anchor-link" href="#step-1.-univariate-variable-selection"&gt;¶&lt;/a&gt;&lt;/h3&gt;&lt;h4 id="1.1.-pearson-calculation"&gt;1.1. pearson calculation&lt;a class="anchor-link" href="#1.1.-pearson-calculation"&gt;¶&lt;/a&gt;&lt;/h4&gt;&lt;ol&gt;
+&lt;li&gt;set up the variable sign &lt;/li&gt;
+&lt;li&gt;calculate the pearson correlation&lt;/li&gt;
+&lt;li&gt;keep only significant variables by p-value &lt; 0.1&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="cell border-box-sizing code_cell rendered"&gt;
+&lt;div class="input"&gt;
+&lt;div class="prompt input_prompt"&gt;In [3]:&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+&lt;div class="input_area"&gt;
+&lt;div class=" highlight hl-ipython2"&gt;&lt;pre&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;pearson_corr&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;indata&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;xvar&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;yvar&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="n"&gt;outdf&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;pd&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;DataFrame&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="nb"&gt;range&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;xvar&lt;/span&gt;&lt;span class="p"&gt;)):&lt;/span&gt;
+        &lt;span class="n"&gt;pcorr&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;pearsonr&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;indata&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;xvar&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;]],&lt;/span&gt; &lt;span class="n"&gt;indata&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;yvar&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+        &lt;span class="n"&gt;corrdf&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;pd&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;DataFrame&lt;/span&gt;&lt;span class="p"&gt;({&lt;/span&gt;&lt;span class="s2"&gt;"var_name"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;xvar&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="s2"&gt;"pearson_corr"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="n"&gt;pcorr&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="s2"&gt;"p_value"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="n"&gt;pcorr&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]},&lt;/span&gt; &lt;span class="n"&gt;index&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+        &lt;span class="n"&gt;outdf&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;pd&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;concat&lt;/span&gt;&lt;span class="p"&gt;([&lt;/span&gt;&lt;span class="n"&gt;outdf&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;corrdf&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="n"&gt;axis&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;outdf&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sort_values&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;'p_value'&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;outdf&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;columns&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;corrdf&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;columns&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;outdf&lt;/span&gt;
+
+&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;pearson_calc&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;indata&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;xvar&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;yvar&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="n"&gt;pearsoncorr&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;pearson_corr&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;indata&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;xvar&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;yvar&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;pearsoncorr&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;pearsoncorr&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sort_values&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;by&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;'p_value'&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+    &lt;span class="n"&gt;pearsoncorr&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;pearsoncorr&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;query&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;'p_value &lt;= 0.1'&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;pearsoncorr&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;pearsoncorr&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;reset_index&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;drop&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;pearsoncorr&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="cell border-box-sizing code_cell rendered"&gt;
+&lt;div class="input"&gt;
+&lt;div class="prompt input_prompt"&gt;In [4]:&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+&lt;div class="input_area"&gt;
+&lt;div class=" highlight hl-ipython2"&gt;&lt;pre&gt;&lt;span class="n"&gt;xvarcol&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;indata&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;columns&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;3&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;span class="n"&gt;yvarcol&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;indata&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;columns&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;span class="n"&gt;pearsoncorr&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;pearson_calc&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;indata&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;xvarcol&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;yvarcol&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;pearsoncorr&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;head&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="output_wrapper"&gt;
+&lt;div class="output"&gt;
+&lt;div class="output_area"&gt;&lt;div class="prompt output_prompt"&gt;Out[4]:&lt;/div&gt;
+&lt;div class="output_html rendered_html output_subarea output_execute_result"&gt;
+&lt;div&gt;
+&lt;table border="1" class="dataframe"&gt;
+&lt;thead&gt;
+&lt;tr style="text-align: right;"&gt;
+&lt;th&gt;&lt;/th&gt;
+&lt;th&gt;p_value&lt;/th&gt;
+&lt;th&gt;pearson_corr&lt;/th&gt;
+&lt;th&gt;var_name&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;1.617254e-09&lt;/td&gt;
+&lt;td&gt;0.498257&lt;/td&gt;
+&lt;td&gt;cap_rate_p0&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;1&lt;/th&gt;
+&lt;td&gt;2.287193e-08&lt;/td&gt;
+&lt;td&gt;-0.466109&lt;/td&gt;
+&lt;td&gt;realgpd_yoy_p1&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;2&lt;/th&gt;
+&lt;td&gt;2.615205e-08&lt;/td&gt;
+&lt;td&gt;0.464391&lt;/td&gt;
+&lt;td&gt;ted_spread_p4&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;3&lt;/th&gt;
+&lt;td&gt;8.876455e-08&lt;/td&gt;
+&lt;td&gt;-0.448275&lt;/td&gt;
+&lt;td&gt;realgpd_yoy_p0&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;4&lt;/th&gt;
+&lt;td&gt;2.407472e-07&lt;/td&gt;
+&lt;td&gt;0.434471&lt;/td&gt;
+&lt;td&gt;cap_rate_p1&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="cell border-box-sizing text_cell rendered"&gt;
+&lt;div class="prompt input_prompt"&gt;
+&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+&lt;div class="text_cell_render border-box-sizing rendered_html"&gt;
+&lt;h4 id="1.2.-check-the-sign-of-pearson-correlation"&gt;1.2. check the sign of pearson correlation&lt;a class="anchor-link" href="#1.2.-check-the-sign-of-pearson-correlation"&gt;¶&lt;/a&gt;&lt;/h4&gt;&lt;p&gt;only the correlation that makes sense will be kept. For example, gdp growth should have negative correlation with default rate. If the data shows positive sign, we will drop that data.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="cell border-box-sizing code_cell rendered"&gt;
+&lt;div class="input"&gt;
+&lt;div class="prompt input_prompt"&gt;In [5]:&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+&lt;div class="input_area"&gt;
+&lt;div class=" highlight hl-ipython2"&gt;&lt;pre&gt;&lt;span class="n"&gt;varsign&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s1"&gt;'bbb_spread_p'&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;'ted_spread_p'&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;'unemp_p'&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;'realgpd_yoy_p'&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;'cap_rate_p'&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;'crea_hp_yoy_p'&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;    \
+    &lt;span class="s1"&gt;'corp_profit_p'&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;'com_price_index_yoy_p'&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;'spindex_yoy_p'&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+
+&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;check_sign&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;indata&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;varsign&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="n"&gt;varsign&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;pd&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;DataFrame&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;from_dict&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;varsign&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;orient&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;"index"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;reset_index&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+    &lt;span class="n"&gt;varsign&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;columns&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;"var_name_abb"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"sign"&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+    &lt;span class="n"&gt;indata&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;'var_name_abb'&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;indata&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;var_name&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;map&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;lambda&lt;/span&gt; &lt;span class="n"&gt;x&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;x&lt;/span&gt;&lt;span class="p"&gt;[:&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+    &lt;span class="n"&gt;indata&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;pd&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;merge&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;indata&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;varsign&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;how&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;"left"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;on&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;'var_name_abb'&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+    &lt;span class="n"&gt;indata&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;'sign_true'&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;where&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;indata&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;pearson_corr&lt;/span&gt; &lt;span class="o"&gt;&gt;&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;indata&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sign&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;indata&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;query&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;'sign_true == 1'&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="n"&gt;output&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;check_sign&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;pearsoncorr&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;varsign&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;output&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sort_values&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;'var_name'&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;output&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;head&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="output_wrapper"&gt;
+&lt;div class="output"&gt;
+&lt;div class="output_area"&gt;&lt;div class="prompt output_prompt"&gt;Out[5]:&lt;/div&gt;
+&lt;div class="output_html rendered_html output_subarea output_execute_result"&gt;
+&lt;div&gt;
+&lt;table border="1" class="dataframe"&gt;
+&lt;thead&gt;
+&lt;tr style="text-align: right;"&gt;
+&lt;th&gt;&lt;/th&gt;
+&lt;th&gt;p_value&lt;/th&gt;
+&lt;th&gt;pearson_corr&lt;/th&gt;
+&lt;th&gt;var_name&lt;/th&gt;
+&lt;th&gt;var_name_abb&lt;/th&gt;
+&lt;th&gt;sign&lt;/th&gt;
+&lt;th&gt;sign_true&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;1.617254e-09&lt;/td&gt;
+&lt;td&gt;0.498257&lt;/td&gt;
+&lt;td&gt;cap_rate_p0&lt;/td&gt;
+&lt;td&gt;cap_rate_p&lt;/td&gt;
+&lt;td&gt;1&lt;/td&gt;
+&lt;td&gt;1&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;1&lt;/th&gt;
+&lt;td&gt;2.287193e-08&lt;/td&gt;
+&lt;td&gt;-0.466109&lt;/td&gt;
+&lt;td&gt;realgpd_yoy_p1&lt;/td&gt;
+&lt;td&gt;realgpd_yoy_p&lt;/td&gt;
+&lt;td&gt;-1&lt;/td&gt;
+&lt;td&gt;1&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;2&lt;/th&gt;
+&lt;td&gt;2.615205e-08&lt;/td&gt;
+&lt;td&gt;0.464391&lt;/td&gt;
+&lt;td&gt;ted_spread_p4&lt;/td&gt;
+&lt;td&gt;ted_spread_p&lt;/td&gt;
+&lt;td&gt;1&lt;/td&gt;
+&lt;td&gt;1&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;3&lt;/th&gt;
+&lt;td&gt;8.876455e-08&lt;/td&gt;
+&lt;td&gt;-0.448275&lt;/td&gt;
+&lt;td&gt;realgpd_yoy_p0&lt;/td&gt;
+&lt;td&gt;realgpd_yoy_p&lt;/td&gt;
+&lt;td&gt;-1&lt;/td&gt;
+&lt;td&gt;1&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;4&lt;/th&gt;
+&lt;td&gt;2.407472e-07&lt;/td&gt;
+&lt;td&gt;0.434471&lt;/td&gt;
+&lt;td&gt;cap_rate_p1&lt;/td&gt;
+&lt;td&gt;cap_rate_p&lt;/td&gt;
+&lt;td&gt;1&lt;/td&gt;
+&lt;td&gt;1&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="cell border-box-sizing text_cell rendered"&gt;
+&lt;div class="prompt input_prompt"&gt;
+&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+&lt;div class="text_cell_render border-box-sizing rendered_html"&gt;
+&lt;h3 id="2.-Multi-variate-variable-selection"&gt;2. Multi-variate variable selection&lt;a class="anchor-link" href="#2.-Multi-variate-variable-selection"&gt;¶&lt;/a&gt;&lt;/h3&gt;&lt;p&gt;In this step, we will try all the combinations of the X variables in the data and run the multi-variable regression.&lt;/p&gt;
+&lt;h4 id="2.1-Prepare-data"&gt;2.1 Prepare data&lt;a class="anchor-link" href="#2.1-Prepare-data"&gt;¶&lt;/a&gt;&lt;/h4&gt;&lt;p&gt;From the univariate analysis, we will get the list of X variables(pearson p-vaule is significant, and correlation sign is correct) that should be tested on the multi-variable analysis.&lt;/p&gt;
+&lt;p&gt;We will consider both the training data and the validation data. So the data will be prepared into training and validation.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="cell border-box-sizing code_cell rendered"&gt;
+&lt;div class="input"&gt;
+&lt;div class="prompt input_prompt"&gt;In [6]:&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+&lt;div class="input_area"&gt;
+&lt;div class=" highlight hl-ipython2"&gt;&lt;pre&gt;&lt;span class="n"&gt;xvar&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;output&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;var_name&lt;/span&gt;
+&lt;span class="n"&gt;cniX&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;indata&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ix&lt;/span&gt;&lt;span class="p"&gt;[:,&lt;/span&gt; &lt;span class="n"&gt;xvar&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;span class="n"&gt;cniY&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;indata&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ix&lt;/span&gt;&lt;span class="p"&gt;[:,&lt;/span&gt; &lt;span class="s2"&gt;"cum_pd_num"&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;    
+&lt;span class="n"&gt;train_flag&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;indata&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;train_flag&lt;/span&gt;
+
+&lt;span class="n"&gt;xtrain&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;xtest&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;cniX&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;train_flag&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="n"&gt;cniX&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;train_flag&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; 
+&lt;span class="n"&gt;ytrain&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;ytest&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;cniY&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;train_flag&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="n"&gt;cniY&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;~&lt;/span&gt;&lt;span class="n"&gt;train_flag&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; 
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="cell border-box-sizing code_cell rendered"&gt;
+&lt;div class="input"&gt;
+&lt;div class="prompt input_prompt"&gt;In [7]:&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+&lt;div class="input_area"&gt;
+&lt;div class=" highlight hl-ipython2"&gt;&lt;pre&gt;&lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="n"&gt;xtrain&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;shape&lt;/span&gt;
+&lt;span class="k"&gt;print&lt;/span&gt; &lt;span class="n"&gt;xtest&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;shape&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="output_wrapper"&gt;
+&lt;div class="output"&gt;
+&lt;div class="output_area"&gt;&lt;div class="prompt"&gt;&lt;/div&gt;
+&lt;div class="output_subarea output_stream output_stdout output_text"&gt;
+&lt;pre&gt;(91, 28)
+(39, 28)
+&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="cell border-box-sizing text_cell rendered"&gt;
+&lt;div class="prompt input_prompt"&gt;
+&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+&lt;div class="text_cell_render border-box-sizing rendered_html"&gt;
+&lt;h4 id="2.2.-multi-variable-analysis"&gt;2.2. multi-variable analysis&lt;a class="anchor-link" href="#2.2.-multi-variable-analysis"&gt;¶&lt;/a&gt;&lt;/h4&gt;&lt;ol&gt;
+&lt;li&gt;for all 2/3/4 ... variable combination, run the linear regression&lt;/li&gt;
+&lt;li&gt;calculate the vif and vif_max for the X combination &lt;/li&gt;
+&lt;li&gt;run linear regression&lt;/li&gt;
+&lt;li&gt;if there is variables duplicated, then drop it, otherwise go to next step&lt;/li&gt;
+&lt;li&gt;if the any variables coefficient sign is not intuitive, drop it; otherwise go to next step&lt;/li&gt;
+&lt;li&gt;if new model score is better than the previous model, keep it; otherwise drop it&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="cell border-box-sizing code_cell rendered"&gt;
+&lt;div class="input"&gt;
+&lt;div class="prompt input_prompt"&gt;In [8]:&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+&lt;div class="input_area"&gt;
+&lt;div class=" highlight hl-ipython2"&gt;&lt;pre&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;verify_sign&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;params&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="n"&gt;setsign&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;varsign&lt;/span&gt;
+    &lt;span class="n"&gt;setsign&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;pd&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;DataFrame&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;from_dict&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;setsign&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;orient&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;"index"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;reset_index&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+    &lt;span class="n"&gt;setsign&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;columns&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;'vars'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;'coefsign'&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+    &lt;span class="n"&gt;params&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;params&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;reset_index&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+    &lt;span class="n"&gt;params&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;columns&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;'vars'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;'coefd'&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+    &lt;span class="n"&gt;params&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;'vars'&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;params&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;vars&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;map&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;lambda&lt;/span&gt; &lt;span class="n"&gt;x&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;x&lt;/span&gt;&lt;span class="p"&gt;[:&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+    &lt;span class="n"&gt;combinedata&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;pd&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;merge&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;setsign&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;params&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;how&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;'inner'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;on&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;'vars'&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;combinedata&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;'coefd_'&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;combinedata&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;coefsign&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sign&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;combinedata&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;coefd&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="nb"&gt;sum&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;combinedata&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;'coefd_'&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;&gt;&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;combinedata&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;shape&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]:&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;
+    &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;
+
+
+&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;check_dup_vars&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;xvar&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="n"&gt;xx&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;xvar&lt;/span&gt;
+    &lt;span class="n"&gt;xxx&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;set&lt;/span&gt;&lt;span class="p"&gt;([&lt;/span&gt;&lt;span class="n"&gt;x&lt;/span&gt;&lt;span class="p"&gt;[:&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;x&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;xx&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;xxx&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;xx&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;
+    &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;
+    
+&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;all_combination_withsign2&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;xtrain&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;ytrain&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;xtest&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;ytest&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;k_features&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]):&lt;/span&gt;
+    &lt;span class="n"&gt;outdf&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;pd&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;DataFrame&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+    &lt;span class="n"&gt;features&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;xtrain&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;columns&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;tolist&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+    &lt;span class="n"&gt;n_features&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;xtrain&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;shape&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+    &lt;span class="n"&gt;subsets&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;chain&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;from_iterable&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;combinations&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;xrange&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;n_features&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="n"&gt;k&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;k&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;k_features&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;best_score&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;inf&lt;/span&gt;
+    &lt;span class="n"&gt;all_combination&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
+    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;subset&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;subsets&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;newxtrain&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;xtrain&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;iloc&lt;/span&gt;&lt;span class="p"&gt;[:,&lt;/span&gt; &lt;span class="n"&gt;subset&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+        &lt;span class="n"&gt;newxtrain&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;sm&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;add_constant&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;newxtrain&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;vif&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;dict&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;zip&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;newxtrain&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;columns&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;variance_inflation_factor&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;newxtrain&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;values&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="nb"&gt;range&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;newxtrain&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;shape&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;])]))&lt;/span&gt; 
+        &lt;span class="k"&gt;del&lt;/span&gt; &lt;span class="n"&gt;vif&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;'const'&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+        &lt;span class="n"&gt;vif_max&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;max&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;vif&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;itervalues&lt;/span&gt;&lt;span class="p"&gt;())&lt;/span&gt;
+        &lt;span class="n"&gt;newxtest&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;xtest&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;iloc&lt;/span&gt;&lt;span class="p"&gt;[:,&lt;/span&gt; &lt;span class="n"&gt;subset&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+        &lt;span class="n"&gt;newxtest&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;sm&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;add_constant&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;newxtest&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;        
+        &lt;span class="n"&gt;lin_reg&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;sm&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;OLS&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ytrain&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;newxtrain&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;fit&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;       
+        &lt;span class="c1"&gt;#lin_reg = sm.OLS(ytrain, newxtrain).fit(cov_type='HAC',cov_kwds={'maxlags':1})&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;check_dup_vars&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;lin_reg&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;params&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;index&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;tolist&lt;/span&gt;&lt;span class="p"&gt;()):&lt;/span&gt;        
+            &lt;span class="n"&gt;r2train&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;lin_reg&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;rsquared&lt;/span&gt;
+            &lt;span class="n"&gt;r2test1&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sum&lt;/span&gt;&lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="n"&gt;lin_reg&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;predict&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;newxtest&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;mean&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ytest&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;&lt;span class="o"&gt;**&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;/&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sum&lt;/span&gt;&lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="n"&gt;ytest&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;mean&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ytest&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;&lt;span class="o"&gt;**&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="n"&gt;r2test&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sum&lt;/span&gt;&lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="n"&gt;lin_reg&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;predict&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;newxtest&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;  &lt;span class="n"&gt;ytest&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;**&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;/&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sum&lt;/span&gt;&lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="n"&gt;ytest&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;mean&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ytest&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;&lt;span class="o"&gt;**&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;            
+            &lt;span class="n"&gt;r2test2&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;var&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ytest&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;lin_reg&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;predict&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;newxtest&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt; &lt;span class="o"&gt;/&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;var&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ytest&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;       
+            &lt;span class="n"&gt;rmse_train&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;math&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sqrt&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;sum&lt;/span&gt;&lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="n"&gt;lin_reg&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;predict&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;newxtrain&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;ytrain&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;**&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;/&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ytrain&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;lin_reg&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;params&lt;/span&gt;&lt;span class="p"&gt;)))&lt;/span&gt;
+            &lt;span class="n"&gt;rmse_train2&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;math&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sqrt&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;lin_reg&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;mse_resid&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="n"&gt;pred&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;lin_reg&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;predict&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;newxtest&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;        
+            &lt;span class="n"&gt;rmse_test&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;math&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sqrt&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;sum&lt;/span&gt;&lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="n"&gt;pred&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;ytest&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;**&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ytest&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;lin_reg&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;params&lt;/span&gt;&lt;span class="p"&gt;)))&lt;/span&gt;
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;verify_sign&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;lin_reg&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;params&lt;/span&gt;&lt;span class="p"&gt;)):&lt;/span&gt;
+                &lt;span class="n"&gt;sss&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;" "&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;join&lt;/span&gt;&lt;span class="p"&gt;([&lt;/span&gt;&lt;span class="n"&gt;features&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;subset&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+                &lt;span class="n"&gt;pvalues&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;lin_reg&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;pvalues&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;drop&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;'const'&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;to_dict&lt;/span&gt;&lt;span class="p"&gt;();&lt;/span&gt; &lt;span class="n"&gt;pvalues_max&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;max&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;pvalues&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;itervalues&lt;/span&gt;&lt;span class="p"&gt;())&lt;/span&gt;
+                &lt;span class="n"&gt;dd&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s1"&gt;'vars'&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="n"&gt;sss&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;'r2train'&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="n"&gt;r2train&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;'r2test'&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="n"&gt;r2test&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;'rmse_train'&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="n"&gt;rmse_train&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;  &lt;span class="s1"&gt;'rmse_test'&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="n"&gt;rmse_test&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;'pvalues'&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;pvalues&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; \
+                    &lt;span class="s1"&gt;'pvalues_max'&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;pvalues_max&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"reg_coef"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nb"&gt;dict&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;lin_reg&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;params&lt;/span&gt;&lt;span class="p"&gt;)],&lt;/span&gt; &lt;span class="s2"&gt;"vif"&lt;/span&gt;&lt;span class="p"&gt;:[&lt;/span&gt;&lt;span class="n"&gt;vif&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="s2"&gt;"vif_max"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="n"&gt;vif_max&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+                &lt;span class="n"&gt;df_i&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;pd&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;DataFrame&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;dd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;index&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="n"&gt;columns&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;dd&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;keys&lt;/span&gt;&lt;span class="p"&gt;())&lt;/span&gt;  
+                &lt;span class="n"&gt;outdf&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;pd&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;concat&lt;/span&gt;&lt;span class="p"&gt;([&lt;/span&gt;&lt;span class="n"&gt;df_i&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;outdf&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="n"&gt;axis&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+                &lt;span class="n"&gt;score&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;lin_reg&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;rsquared&lt;/span&gt;
+                &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;score&lt;/span&gt; &lt;span class="o"&gt;&gt;&lt;/span&gt; &lt;span class="n"&gt;best_score&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;&amp;&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;vif_max&lt;/span&gt; &lt;span class="o"&gt;&lt;&lt;/span&gt; &lt;span class="mi"&gt;5&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;&amp;&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;pvalues_max&lt;/span&gt; &lt;span class="o"&gt;&lt;&lt;/span&gt; &lt;span class="mf"&gt;0.1&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;                  
+                    &lt;span class="n"&gt;best_score&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;all_combination&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;score&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;subset&lt;/span&gt;
+                    &lt;span class="n"&gt;best_reg_result&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;lin_reg&lt;/span&gt;
+
+    &lt;span class="n"&gt;outdf&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;outdf&lt;/span&gt;&lt;span class="p"&gt;[[&lt;/span&gt;&lt;span class="s2"&gt;"vars"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"reg_coef"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"pvalues"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"pvalues_max"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"vif"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"vif_max"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"r2train"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"r2test"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"rmse_train"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"rmse_test"&lt;/span&gt;&lt;span class="p"&gt;]]&lt;/span&gt;                                       
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;all_combination&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;best_score&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;best_reg_result&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;outdf&lt;/span&gt;
+
+&lt;span class="n"&gt;all_combination&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;best_score&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;best_reg_result&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;outdf&lt;/span&gt;  &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;all_combination_withsign2&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;xtrain&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;ytrain&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;xtest&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;ytest&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;k_features&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;3&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="cell border-box-sizing text_cell rendered"&gt;
+&lt;div class="prompt input_prompt"&gt;
+&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+&lt;div class="text_cell_render border-box-sizing rendered_html"&gt;
+&lt;p&gt;List all the candidate models and sort them by the R2 on training data.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="cell border-box-sizing code_cell rendered"&gt;
+&lt;div class="input"&gt;
+&lt;div class="prompt input_prompt"&gt;In [9]:&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+&lt;div class="input_area"&gt;
+&lt;div class=" highlight hl-ipython2"&gt;&lt;pre&gt;&lt;span class="n"&gt;outdf&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sort_values&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;'r2train'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;ascending&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;query&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;'r2train &gt; 0.5'&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="output_wrapper"&gt;
+&lt;div class="output"&gt;
+&lt;div class="output_area"&gt;&lt;div class="prompt output_prompt"&gt;Out[9]:&lt;/div&gt;
+&lt;div class="output_html rendered_html output_subarea output_execute_result"&gt;
+&lt;div&gt;
+&lt;table border="1" class="dataframe"&gt;
+&lt;thead&gt;
+&lt;tr style="text-align: right;"&gt;
+&lt;th&gt;&lt;/th&gt;
+&lt;th&gt;vars&lt;/th&gt;
+&lt;th&gt;reg_coef&lt;/th&gt;
+&lt;th&gt;pvalues&lt;/th&gt;
+&lt;th&gt;pvalues_max&lt;/th&gt;
+&lt;th&gt;vif&lt;/th&gt;
+&lt;th&gt;vif_max&lt;/th&gt;
+&lt;th&gt;r2train&lt;/th&gt;
+&lt;th&gt;r2test&lt;/th&gt;
+&lt;th&gt;rmse_train&lt;/th&gt;
+&lt;th&gt;rmse_test&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;ted_spread_p0 cap_rate_p3 crea_hp_yoy_p3&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p3': 0.844407825413, u'crea_hp_yoy_p3': -9.75552407688, u'const': -5.82475185843, u'ted_spread_p0': 2.9978370395}&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p3': 3.94306563611e-10, u'crea_hp_yoy_p3': 1.24108359437e-13, u'ted_spread_p0': 1.12453478033e-13}&lt;/td&gt;
+&lt;td&gt;3.943066e-10&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p3': 1.0291090023, u'crea_hp_yoy_p3': 1.26682457883, u'ted_spread_p0': 1.29763514744}&lt;/td&gt;
+&lt;td&gt;1.297635&lt;/td&gt;
+&lt;td&gt;0.614574&lt;/td&gt;
+&lt;td&gt;0.478290&lt;/td&gt;
+&lt;td&gt;0.633015&lt;/td&gt;
+&lt;td&gt;0.767676&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;ted_spread_p0 cap_rate_p2 crea_hp_yoy_p3&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p2': 0.811141476444, u'crea_hp_yoy_p3': -8.88100839499, u'const': -5.58527727789, u'ted_spread_p0': 2.83870388981}&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p2': 5.84092070233e-10, u'crea_hp_yoy_p3': 5.64924235802e-12, u'ted_spread_p0': 8.5084006685e-13}&lt;/td&gt;
+&lt;td&gt;5.840921e-10&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p2': 1.02146127586, u'crea_hp_yoy_p3': 1.26361213133, u'ted_spread_p0': 1.27468501164}&lt;/td&gt;
+&lt;td&gt;1.274685&lt;/td&gt;
+&lt;td&gt;0.611142&lt;/td&gt;
+&lt;td&gt;0.509502&lt;/td&gt;
+&lt;td&gt;0.635827&lt;/td&gt;
+&lt;td&gt;0.744358&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;ted_spread_p0 cap_rate_p3 corp_profit_p1&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p3': 1.02088758198, u'corp_profit_p1': -0.0194663514096, u'const': -7.15607863379, u'ted_spread_p0': 2.49614318727}&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p3': 1.48967861708e-12, u'corp_profit_p1': 2.36587341489e-13, u'ted_spread_p0': 1.39564236076e-11}&lt;/td&gt;
+&lt;td&gt;1.395642e-11&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p3': 1.08231697692, u'corp_profit_p1': 1.14482598717, u'ted_spread_p0': 1.13625413757}&lt;/td&gt;
+&lt;td&gt;1.144826&lt;/td&gt;
+&lt;td&gt;0.608887&lt;/td&gt;
+&lt;td&gt;0.414865&lt;/td&gt;
+&lt;td&gt;0.637668&lt;/td&gt;
+&lt;td&gt;0.813001&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;cap_rate_p1 ted_spread_p0 crea_hp_yoy_p3&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p1': 0.789251206651, u'const': -5.40588738423, u'crea_hp_yoy_p3': -8.3294013128, u'ted_spread_p0': 2.69331735652}&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p1': 1.01807994814e-09, u'crea_hp_yoy_p3': 8.57212928459e-11, u'ted_spread_p0': 6.79453180355e-12}&lt;/td&gt;
+&lt;td&gt;1.018080e-09&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p1': 1.02530776004, u'crea_hp_yoy_p3': 1.27841193373, u'ted_spread_p0': 1.26335700212}&lt;/td&gt;
+&lt;td&gt;1.278412&lt;/td&gt;
+&lt;td&gt;0.606241&lt;/td&gt;
+&lt;td&gt;0.549077&lt;/td&gt;
+&lt;td&gt;0.639821&lt;/td&gt;
+&lt;td&gt;0.713698&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;ted_spread_p0 crea_hp_yoy_p3 cap_rate_p4&lt;/td&gt;
+&lt;td&gt;{u'crea_hp_yoy_p3': -10.9366916932, u'cap_rate_p4': 0.873672209208, u'const': -5.99301833528, u'ted_spread_p0': 3.0785031203}&lt;/td&gt;
+&lt;td&gt;{u'crea_hp_yoy_p3': 4.03277792628e-15, u'cap_rate_p4': 1.21300198442e-09, u'ted_spread_p0': 8.47813573869e-14}&lt;/td&gt;
+&lt;td&gt;1.213002e-09&lt;/td&gt;
+&lt;td&gt;{u'crea_hp_yoy_p3': 1.32415796614, u'cap_rate_p4': 1.06453290377, u'ted_spread_p0': 1.31619929247}&lt;/td&gt;
+&lt;td&gt;1.324158&lt;/td&gt;
+&lt;td&gt;0.604684&lt;/td&gt;
+&lt;td&gt;0.434813&lt;/td&gt;
+&lt;td&gt;0.641085&lt;/td&gt;
+&lt;td&gt;0.799023&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;ted_spread_p0 cap_rate_p2 corp_profit_p1&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p2': 0.961038613195, u'corp_profit_p1': -0.0172934378291, u'const': -6.71919753298, u'ted_spread_p0': 2.35603497118}&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p2': 2.71762604741e-12, u'corp_profit_p1': 1.33144749492e-11, u'ted_spread_p0': 9.53692120781e-11}&lt;/td&gt;
+&lt;td&gt;9.536921e-11&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p2': 1.03374482226, u'corp_profit_p1': 1.09884169943, u'ted_spread_p0': 1.11410042186}&lt;/td&gt;
+&lt;td&gt;1.114100&lt;/td&gt;
+&lt;td&gt;0.603520&lt;/td&gt;
+&lt;td&gt;0.423553&lt;/td&gt;
+&lt;td&gt;0.642028&lt;/td&gt;
+&lt;td&gt;0.806943&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;cap_rate_p1 ted_spread_p0 corp_profit_p1&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p1': 0.920991926182, u'corp_profit_p1': -0.0158660128406, u'const': -6.4030489504, u'ted_spread_p0': 2.21313727996}&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p1': 7.0585880264e-12, u'corp_profit_p1': 3.02949988624e-10, u'ted_spread_p0': 8.21215334728e-10}&lt;/td&gt;
+&lt;td&gt;8.212153e-10&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p1': 1.01298762173, u'corp_profit_p1': 1.08530202926, u'ted_spread_p0': 1.09761360937}&lt;/td&gt;
+&lt;td&gt;1.097614&lt;/td&gt;
+&lt;td&gt;0.594854&lt;/td&gt;
+&lt;td&gt;0.457804&lt;/td&gt;
+&lt;td&gt;0.649007&lt;/td&gt;
+&lt;td&gt;0.782603&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;ted_spread_p0 corp_profit_p1 cap_rate_p4&lt;/td&gt;
+&lt;td&gt;{u'corp_profit_p1': -0.0223204781179, u'const': -7.56469914659, u'cap_rate_p4': 1.08379220206, u'ted_spread_p0': 2.51812630047}&lt;/td&gt;
+&lt;td&gt;{u'corp_profit_p1': 1.1949152689e-14, u'cap_rate_p4': 7.10244169808e-12, u'ted_spread_p0': 2.14516288708e-11}&lt;/td&gt;
+&lt;td&gt;2.145163e-11&lt;/td&gt;
+&lt;td&gt;{u'corp_profit_p1': 1.2612989854, u'cap_rate_p4': 1.18006908653, u'ted_spread_p0': 1.1431268946}&lt;/td&gt;
+&lt;td&gt;1.261299&lt;/td&gt;
+&lt;td&gt;0.594797&lt;/td&gt;
+&lt;td&gt;0.388572&lt;/td&gt;
+&lt;td&gt;0.649052&lt;/td&gt;
+&lt;td&gt;0.831067&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;cap_rate_p0 ted_spread_p0 crea_hp_yoy_p3&lt;/td&gt;
+&lt;td&gt;{u'crea_hp_yoy_p3': -7.8525157607, u'cap_rate_p0': 0.737744628637, u'const': -4.98396736099, u'ted_spread_p0': 2.38727745306}&lt;/td&gt;
+&lt;td&gt;{u'crea_hp_yoy_p3': 1.75576444313e-09, u'cap_rate_p0': 8.69348819727e-09, u'ted_spread_p0': 1.05148081701e-09}&lt;/td&gt;
+&lt;td&gt;8.693488e-09&lt;/td&gt;
+&lt;td&gt;{u'crea_hp_yoy_p3': 1.30577823981, u'cap_rate_p0': 1.03552221083, u'ted_spread_p0': 1.27216361003}&lt;/td&gt;
+&lt;td&gt;1.305778&lt;/td&gt;
+&lt;td&gt;0.586771&lt;/td&gt;
+&lt;td&gt;0.550868&lt;/td&gt;
+&lt;td&gt;0.655449&lt;/td&gt;
+&lt;td&gt;0.712279&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;cap_rate_p0 ted_spread_p0 corp_profit_p1&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p0': 0.872842905445, u'const': -5.97367379688, u'corp_profit_p1': -0.0149625516801, u'ted_spread_p0': 1.89650848195}&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p0': 2.90085948633e-11, u'corp_profit_p1': 3.02326631849e-09, u'ted_spread_p0': 8.42420292381e-08}&lt;/td&gt;
+&lt;td&gt;8.424203e-08&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p0': 1.00022202315, u'corp_profit_p1': 1.08376800619, u'ted_spread_p0': 1.08376614561}&lt;/td&gt;
+&lt;td&gt;1.083768&lt;/td&gt;
+&lt;td&gt;0.581685&lt;/td&gt;
+&lt;td&gt;0.465779&lt;/td&gt;
+&lt;td&gt;0.659471&lt;/td&gt;
+&lt;td&gt;0.776826&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;realgpd_yoy_p1 ted_spread_p0 cap_rate_p4&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p4': 0.459310529281, u'const': -3.19209503322, u'realgpd_yoy_p1': -0.317694979609, u'ted_spread_p0': 2.24499133704}&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p4': 0.000880252388483, u'realgpd_yoy_p1': 4.64502170524e-13, u'ted_spread_p0': 1.71481655757e-09}&lt;/td&gt;
+&lt;td&gt;8.802524e-04&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p4': 1.03139580039, u'realgpd_yoy_p1': 1.10223254627, u'ted_spread_p0': 1.08994866485}&lt;/td&gt;
+&lt;td&gt;1.102233&lt;/td&gt;
+&lt;td&gt;0.559669&lt;/td&gt;
+&lt;td&gt;0.461177&lt;/td&gt;
+&lt;td&gt;0.676602&lt;/td&gt;
+&lt;td&gt;0.780165&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;realgpd_yoy_p1 ted_spread_p0 cap_rate_p3&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p3': 0.441726138975, u'const': -3.10473119229, u'realgpd_yoy_p1': -0.292255362611, u'ted_spread_p0': 2.22392026902}&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p3': 0.0016672139689, u'realgpd_yoy_p1': 8.08991799692e-11, u'ted_spread_p0': 2.71002168046e-09}&lt;/td&gt;
+&lt;td&gt;1.667214e-03&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p3': 1.14924858178, u'realgpd_yoy_p1': 1.21544761004, u'ted_spread_p0': 1.08765234604}&lt;/td&gt;
+&lt;td&gt;1.215448&lt;/td&gt;
+&lt;td&gt;0.553622&lt;/td&gt;
+&lt;td&gt;0.462181&lt;/td&gt;
+&lt;td&gt;0.681231&lt;/td&gt;
+&lt;td&gt;0.779438&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;realgpd_yoy_p1 ted_spread_p0 cap_rate_p2&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p2': 0.43466635192, u'const': -3.05451545084, u'realgpd_yoy_p1': -0.275385243575, u'ted_spread_p0': 2.16541214241}&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p2': 0.00266629601475, u'realgpd_yoy_p1': 3.95110812196e-09, u'ted_spread_p0': 6.47022044576e-09}&lt;/td&gt;
+&lt;td&gt;2.666296e-03&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p2': 1.28453682239, u'realgpd_yoy_p1': 1.36522930468, u'ted_spread_p0': 1.08353965769}&lt;/td&gt;
+&lt;td&gt;1.365229&lt;/td&gt;
+&lt;td&gt;0.549157&lt;/td&gt;
+&lt;td&gt;0.458911&lt;/td&gt;
+&lt;td&gt;0.684631&lt;/td&gt;
+&lt;td&gt;0.781804&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;cap_rate_p0 ted_spread_p0 corp_profit_p2&lt;/td&gt;
+&lt;td&gt;{u'corp_profit_p2': -0.013387541678, u'cap_rate_p0': 0.866163613446, u'const': -5.84769476189, u'ted_spread_p0': 1.66498201142}&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p0': 1.4478538301e-10, u'corp_profit_p2': 9.61024512588e-08, u'ted_spread_p0': 2.40214450834e-06}&lt;/td&gt;
+&lt;td&gt;2.402145e-06&lt;/td&gt;
+&lt;td&gt;{u'corp_profit_p2': 1.03765625407, u'cap_rate_p0': 1.00059373935, u'ted_spread_p0': 1.03729905889}&lt;/td&gt;
+&lt;td&gt;1.037656&lt;/td&gt;
+&lt;td&gt;0.547915&lt;/td&gt;
+&lt;td&gt;0.428487&lt;/td&gt;
+&lt;td&gt;0.685573&lt;/td&gt;
+&lt;td&gt;0.803482&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;realgpd_yoy_p1 cap_rate_p1 ted_spread_p0&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p1': 0.42522657551, u'const': -2.97879289237, u'realgpd_yoy_p1': -0.264924269333, u'ted_spread_p0': 2.10282371324}&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p1': 0.00449937414885, u'realgpd_yoy_p1': 5.72394243797e-08, u'ted_spread_p0': 1.78714604679e-08}&lt;/td&gt;
+&lt;td&gt;4.499374e-03&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p1': 1.41658994804, u'realgpd_yoy_p1': 1.51749717529, u'ted_spread_p0': 1.08664051545}&lt;/td&gt;
+&lt;td&gt;1.517497&lt;/td&gt;
+&lt;td&gt;0.544166&lt;/td&gt;
+&lt;td&gt;0.475067&lt;/td&gt;
+&lt;td&gt;0.688410&lt;/td&gt;
+&lt;td&gt;0.770043&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;ted_spread_p0 bbb_spread_p3 corp_profit_p1&lt;/td&gt;
+&lt;td&gt;{u'bbb_spread_p3': 0.554595648355, u'corp_profit_p1': -0.0076010199434, u'const': -2.38704628717, u'ted_spread_p0': 2.85607944113}&lt;/td&gt;
+&lt;td&gt;{u'bbb_spread_p3': 1.8523928591e-09, u'corp_profit_p1': 0.00482637840243, u'ted_spread_p0': 1.3484537929e-11}&lt;/td&gt;
+&lt;td&gt;4.826378e-03&lt;/td&gt;
+&lt;td&gt;{u'bbb_spread_p3': 1.54114854916, u'corp_profit_p1': 1.32791416339, u'ted_spread_p0': 1.26387542399}&lt;/td&gt;
+&lt;td&gt;1.541149&lt;/td&gt;
+&lt;td&gt;0.540536&lt;/td&gt;
+&lt;td&gt;0.425760&lt;/td&gt;
+&lt;td&gt;0.691145&lt;/td&gt;
+&lt;td&gt;0.805397&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;cap_rate_p1 ted_spread_p0 corp_profit_p2&lt;/td&gt;
+&lt;td&gt;{u'corp_profit_p2': -0.0135243557809, u'cap_rate_p1': 0.877749475261, u'const': -6.03948102864, u'ted_spread_p0': 1.93705865732}&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p1': 3.44329193716e-10, u'corp_profit_p2': 9.48169185403e-08, u'ted_spread_p0': 1.09945034371e-07}&lt;/td&gt;
+&lt;td&gt;1.099450e-07&lt;/td&gt;
+&lt;td&gt;{u'corp_profit_p2': 1.03734814056, u'cap_rate_p1': 1.01163126479, u'ted_spread_p0': 1.04793790581}&lt;/td&gt;
+&lt;td&gt;1.047938&lt;/td&gt;
+&lt;td&gt;0.538986&lt;/td&gt;
+&lt;td&gt;0.407210&lt;/td&gt;
+&lt;td&gt;0.692310&lt;/td&gt;
+&lt;td&gt;0.818302&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;cap_rate_p0 realgpd_yoy_p1 ted_spread_p0&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p0': 0.399969892292, u'const': -2.76856127445, u'realgpd_yoy_p1': -0.261163454589, u'ted_spread_p0': 1.96391841957}&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p0': 0.00823171721478, u'realgpd_yoy_p1': 2.44100020902e-07, u'ted_spread_p0': 2.02057150048e-07}&lt;/td&gt;
+&lt;td&gt;8.231717e-03&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p0': 1.51138715628, u'realgpd_yoy_p1': 1.63739288792, u'ted_spread_p0': 1.13076824898}&lt;/td&gt;
+&lt;td&gt;1.637393&lt;/td&gt;
+&lt;td&gt;0.538396&lt;/td&gt;
+&lt;td&gt;0.479249&lt;/td&gt;
+&lt;td&gt;0.692753&lt;/td&gt;
+&lt;td&gt;0.766970&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;cap_rate_p1 ted_spread_p0 spindex_yoy_p3&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p1': 0.65706188261, u'spindex_yoy_p3': -0.0278317743804, u'const': -4.80448757293, u'ted_spread_p0': 2.33803685851}&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p1': 2.74601006446e-06, u'spindex_yoy_p3': 1.52047871931e-07, u'ted_spread_p0': 3.75314669611e-09}&lt;/td&gt;
+&lt;td&gt;2.746010e-06&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p1': 1.11830677895, u'spindex_yoy_p3': 1.30113118522, u'ted_spread_p0': 1.17735336332}&lt;/td&gt;
+&lt;td&gt;1.301131&lt;/td&gt;
+&lt;td&gt;0.534091&lt;/td&gt;
+&lt;td&gt;0.467292&lt;/td&gt;
+&lt;td&gt;0.695975&lt;/td&gt;
+&lt;td&gt;0.775725&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;ted_spread_p0 bbb_spread_p3 crea_hp_yoy_p3&lt;/td&gt;
+&lt;td&gt;{u'bbb_spread_p3': 0.496427591994, u'crea_hp_yoy_p3': -4.04408099734, u'const': -2.11272790298, u'ted_spread_p0': 2.98218905816}&lt;/td&gt;
+&lt;td&gt;{u'bbb_spread_p3': 2.53868889258e-06, u'crea_hp_yoy_p3': 0.013182986019, u'ted_spread_p0': 8.44964879018e-12}&lt;/td&gt;
+&lt;td&gt;1.318299e-02&lt;/td&gt;
+&lt;td&gt;{u'bbb_spread_p3': 2.14915809275, u'crea_hp_yoy_p3': 2.15508279604, u'ted_spread_p0': 1.31551155593}&lt;/td&gt;
+&lt;td&gt;2.155083&lt;/td&gt;
+&lt;td&gt;0.530881&lt;/td&gt;
+&lt;td&gt;0.487799&lt;/td&gt;
+&lt;td&gt;0.698369&lt;/td&gt;
+&lt;td&gt;0.760648&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;cap_rate_p0 ted_spread_p0 spindex_yoy_p3&lt;/td&gt;
+&lt;td&gt;{u'spindex_yoy_p3': -0.0268613344048, u'cap_rate_p0': 0.637203038203, u'const': -4.58585413988, u'ted_spread_p0': 2.10847588993}&lt;/td&gt;
+&lt;td&gt;{u'spindex_yoy_p3': 5.48924336311e-07, u'cap_rate_p0': 4.08336221776e-06, u'ted_spread_p0': 9.57175247542e-08}&lt;/td&gt;
+&lt;td&gt;4.083362e-06&lt;/td&gt;
+&lt;td&gt;{u'spindex_yoy_p3': 1.34011381199, u'cap_rate_p0': 1.13890662152, u'ted_spread_p0': 1.20436511897}&lt;/td&gt;
+&lt;td&gt;1.340114&lt;/td&gt;
+&lt;td&gt;0.529975&lt;/td&gt;
+&lt;td&gt;0.481577&lt;/td&gt;
+&lt;td&gt;0.699043&lt;/td&gt;
+&lt;td&gt;0.765254&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;ted_spread_p0 realgpd_yoy_p2 crea_hp_yoy_p2&lt;/td&gt;
+&lt;td&gt;{u'crea_hp_yoy_p2': -5.23054020025, u'const': -0.213910926506, u'realgpd_yoy_p2': -0.300526775383, u'ted_spread_p0': 2.54263066825}&lt;/td&gt;
+&lt;td&gt;{u'crea_hp_yoy_p2': 4.73746805923e-05, u'realgpd_yoy_p2': 2.90405468424e-11, u'ted_spread_p0': 4.65498962823e-10}&lt;/td&gt;
+&lt;td&gt;4.737468e-05&lt;/td&gt;
+&lt;td&gt;{u'crea_hp_yoy_p2': 1.14885263493, u'realgpd_yoy_p2': 1.07915752568, u'ted_spread_p0': 1.20209011854}&lt;/td&gt;
+&lt;td&gt;1.202090&lt;/td&gt;
+&lt;td&gt;0.528894&lt;/td&gt;
+&lt;td&gt;0.490617&lt;/td&gt;
+&lt;td&gt;0.699847&lt;/td&gt;
+&lt;td&gt;0.758552&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;realgpd_yoy_p1 ted_spread_p0 bbb_spread_p3&lt;/td&gt;
+&lt;td&gt;{u'bbb_spread_p3': 0.3392041554, u'const': -1.48765136041, u'realgpd_yoy_p1': -0.183029785519, u'ted_spread_p0': 2.53186775198}&lt;/td&gt;
+&lt;td&gt;{u'bbb_spread_p3': 0.0371576508071, u'realgpd_yoy_p1': 0.0268215589596, u'ted_spread_p0': 4.5194564047e-09}&lt;/td&gt;
+&lt;td&gt;3.715765e-02&lt;/td&gt;
+&lt;td&gt;{u'bbb_spread_p3': 5.6016017398, u'realgpd_yoy_p1': 4.82586299937, u'ted_spread_p0': 1.36892246555}&lt;/td&gt;
+&lt;td&gt;5.601602&lt;/td&gt;
+&lt;td&gt;0.524097&lt;/td&gt;
+&lt;td&gt;0.448446&lt;/td&gt;
+&lt;td&gt;0.703401&lt;/td&gt;
+&lt;td&gt;0.789328&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;ted_spread_p0 corp_profit_p1 bbb_spread_p4&lt;/td&gt;
+&lt;td&gt;{u'corp_profit_p1': -0.0137172688584, u'const': -2.37417449176, u'bbb_spread_p4': 0.524233697796, u'ted_spread_p0': 3.14985768412}&lt;/td&gt;
+&lt;td&gt;{u'corp_profit_p1': 2.02303842995e-07, u'bbb_spread_p4': 9.78700091729e-09, u'ted_spread_p0': 6.29018807036e-12}&lt;/td&gt;
+&lt;td&gt;2.023038e-07&lt;/td&gt;
+&lt;td&gt;{u'corp_profit_p1': 1.09331461883, u'bbb_spread_p4': 1.37836343887, u'ted_spread_p0': 1.42051444169}&lt;/td&gt;
+&lt;td&gt;1.420514&lt;/td&gt;
+&lt;td&gt;0.523007&lt;/td&gt;
+&lt;td&gt;0.343924&lt;/td&gt;
+&lt;td&gt;0.704206&lt;/td&gt;
+&lt;td&gt;0.860876&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;ted_spread_p0 cap_rate_p2 corp_profit_p2&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p2': 0.861897957176, u'corp_profit_p2': -0.0139592553872, u'const': -5.98901672449, u'ted_spread_p0': 2.01153180982}&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p2': 2.3561392043e-09, u'corp_profit_p2': 7.3640978496e-08, u'ted_spread_p0': 8.20990655485e-08}&lt;/td&gt;
+&lt;td&gt;8.209907e-08&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p2': 1.01956965532, u'corp_profit_p2': 1.03727640573, u'ted_spread_p0': 1.05720340499}&lt;/td&gt;
+&lt;td&gt;1.057203&lt;/td&gt;
+&lt;td&gt;0.518564&lt;/td&gt;
+&lt;td&gt;0.346343&lt;/td&gt;
+&lt;td&gt;0.707478&lt;/td&gt;
+&lt;td&gt;0.859287&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;ted_spread_p0 cap_rate_p2 spindex_yoy_p3&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p2': 0.623635734378, u'spindex_yoy_p3': -0.0288247874575, u'const': -4.63667583576, u'ted_spread_p0': 2.40681253901}&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p2': 1.38801807046e-05, u'spindex_yoy_p3': 8.44057937049e-08, u'ted_spread_p0': 2.69534162048e-09}&lt;/td&gt;
+&lt;td&gt;1.388018e-05&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p2': 1.11243360337, u'spindex_yoy_p3': 1.28413160743, u'ted_spread_p0': 1.17710523955}&lt;/td&gt;
+&lt;td&gt;1.284132&lt;/td&gt;
+&lt;td&gt;0.517091&lt;/td&gt;
+&lt;td&gt;0.428256&lt;/td&gt;
+&lt;td&gt;0.708559&lt;/td&gt;
+&lt;td&gt;0.803645&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;ted_spread_p0 bbb_spread_p3 crea_hp_yoy_p2&lt;/td&gt;
+&lt;td&gt;{u'bbb_spread_p3': 0.60361226282, u'crea_hp_yoy_p2': -2.36021166288, u'const': -2.44208114633, u'ted_spread_p0': 2.90459106331}&lt;/td&gt;
+&lt;td&gt;{u'bbb_spread_p3': 1.15389476089e-10, u'crea_hp_yoy_p2': 0.0792156318557, u'ted_spread_p0': 3.35277155454e-11}&lt;/td&gt;
+&lt;td&gt;7.921563e-02&lt;/td&gt;
+&lt;td&gt;{u'bbb_spread_p3': 1.45111260067, u'crea_hp_yoy_p2': 1.31847516127, u'ted_spread_p0': 1.30031898369}&lt;/td&gt;
+&lt;td&gt;1.451113&lt;/td&gt;
+&lt;td&gt;0.513970&lt;/td&gt;
+&lt;td&gt;0.494352&lt;/td&gt;
+&lt;td&gt;0.710845&lt;/td&gt;
+&lt;td&gt;0.755766&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;ted_spread_p0 bbb_spread_p3 corp_profit_p2&lt;/td&gt;
+&lt;td&gt;{u'bbb_spread_p3': 0.582278194028, u'corp_profit_p2': -0.00457269604228, u'const': -2.42447060517, u'ted_spread_p0': 2.73939873183}&lt;/td&gt;
+&lt;td&gt;{u'bbb_spread_p3': 4.46517244848e-09, u'corp_profit_p2': 0.103032476656, u'ted_spread_p0': 1.65472591821e-10}&lt;/td&gt;
+&lt;td&gt;1.030325e-01&lt;/td&gt;
+&lt;td&gt;{u'bbb_spread_p3': 1.69554846895, u'corp_profit_p2': 1.39827155759, u'ted_spread_p0': 1.26336327403}&lt;/td&gt;
+&lt;td&gt;1.695548&lt;/td&gt;
+&lt;td&gt;0.511588&lt;/td&gt;
+&lt;td&gt;0.404442&lt;/td&gt;
+&lt;td&gt;0.712585&lt;/td&gt;
+&lt;td&gt;0.820210&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;ted_spread_p0 crea_hp_yoy_p2 bbb_spread_p4&lt;/td&gt;
+&lt;td&gt;{u'crea_hp_yoy_p2': -6.70808022288, u'const': -2.42877868756, u'bbb_spread_p4': 0.607734054772, u'ted_spread_p0': 3.4961201786}&lt;/td&gt;
+&lt;td&gt;{u'crea_hp_yoy_p2': 6.05151670014e-07, u'bbb_spread_p4': 1.48369689826e-10, u'ted_spread_p0': 1.03002090634e-12}&lt;/td&gt;
+&lt;td&gt;6.051517e-07&lt;/td&gt;
+&lt;td&gt;{u'crea_hp_yoy_p2': 1.15154216378, u'bbb_spread_p4': 1.37674369466, u'ted_spread_p0': 1.55319251249}&lt;/td&gt;
+&lt;td&gt;1.553193&lt;/td&gt;
+&lt;td&gt;0.511203&lt;/td&gt;
+&lt;td&gt;0.561489&lt;/td&gt;
+&lt;td&gt;0.712866&lt;/td&gt;
+&lt;td&gt;0.703807&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;realgpd_yoy_p1 ted_spread_p0 crea_hp_yoy_p3&lt;/td&gt;
+&lt;td&gt;{u'crea_hp_yoy_p3': -2.69122158056, u'const': -0.311597133369, u'realgpd_yoy_p1': -0.271003198186, u'ted_spread_p0': 2.36903437474}&lt;/td&gt;
+&lt;td&gt;{u'crea_hp_yoy_p3': 0.160540939231, u'realgpd_yoy_p1': 1.68115665371e-05, u'ted_spread_p0': 1.73940931661e-08}&lt;/td&gt;
+&lt;td&gt;1.605409e-01&lt;/td&gt;
+&lt;td&gt;{u'crea_hp_yoy_p3': 2.92635266698, u'realgpd_yoy_p1': 2.51416529656, u'ted_spread_p0': 1.28272242148}&lt;/td&gt;
+&lt;td&gt;2.926353&lt;/td&gt;
+&lt;td&gt;0.510855&lt;/td&gt;
+&lt;td&gt;0.496386&lt;/td&gt;
+&lt;td&gt;0.713120&lt;/td&gt;
+&lt;td&gt;0.754245&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;realgpd_yoy_p1 ted_spread_p0 bbb_spread_p4&lt;/td&gt;
+&lt;td&gt;{u'const': -0.833411322829, u'realgpd_yoy_p1': -0.284642070828, u'bbb_spread_p4': 0.157377817458, u'ted_spread_p0': 2.41688117752}&lt;/td&gt;
+&lt;td&gt;{u'realgpd_yoy_p1': 6.46698989093e-07, u'bbb_spread_p4': 0.167778133568, u'ted_spread_p0': 3.11105712134e-08}&lt;/td&gt;
+&lt;td&gt;1.677781e-01&lt;/td&gt;
+&lt;td&gt;{u'realgpd_yoy_p1': 1.99595132113, u'bbb_spread_p4': 2.51669899622, u'ted_spread_p0': 1.392766576}&lt;/td&gt;
+&lt;td&gt;2.516699&lt;/td&gt;
+&lt;td&gt;0.510479&lt;/td&gt;
+&lt;td&gt;0.431894&lt;/td&gt;
+&lt;td&gt;0.713393&lt;/td&gt;
+&lt;td&gt;0.801084&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;cap_rate_p1 ted_spread_p0 bbb_spread_p3&lt;/td&gt;
+&lt;td&gt;{u'bbb_spread_p3': 0.544850450153, u'cap_rate_p1': 0.272985200716, u'const': -3.98664801529, u'ted_spread_p0': 2.60924536243}&lt;/td&gt;
+&lt;td&gt;{u'bbb_spread_p3': 1.44198483922e-06, u'cap_rate_p1': 0.121325501399, u'ted_spread_p0': 2.7102689375e-09}&lt;/td&gt;
+&lt;td&gt;1.213255e-01&lt;/td&gt;
+&lt;td&gt;{u'bbb_spread_p3': 2.34776209124, u'cap_rate_p1': 1.88813529519, u'ted_spread_p0': 1.36428733329}&lt;/td&gt;
+&lt;td&gt;2.347762&lt;/td&gt;
+&lt;td&gt;0.510130&lt;/td&gt;
+&lt;td&gt;0.428608&lt;/td&gt;
+&lt;td&gt;0.713648&lt;/td&gt;
+&lt;td&gt;0.803397&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;ted_spread_p0 realgpd_yoy_p2 crea_hp_yoy_p3&lt;/td&gt;
+&lt;td&gt;{u'crea_hp_yoy_p3': -5.59792480702, u'const': -0.330017028638, u'realgpd_yoy_p2': -0.215888553711, u'ted_spread_p0': 2.58561014684}&lt;/td&gt;
+&lt;td&gt;{u'crea_hp_yoy_p3': 0.000296441873851, u'realgpd_yoy_p2': 1.87381427588e-05, u'ted_spread_p0': 1.09664873088e-09}&lt;/td&gt;
+&lt;td&gt;2.964419e-04&lt;/td&gt;
+&lt;td&gt;{u'crea_hp_yoy_p3': 1.77986311362, u'realgpd_yoy_p2': 1.51489441528, u'ted_spread_p0': 1.26112101248}&lt;/td&gt;
+&lt;td&gt;1.779863&lt;/td&gt;
+&lt;td&gt;0.509685&lt;/td&gt;
+&lt;td&gt;0.447184&lt;/td&gt;
+&lt;td&gt;0.713972&lt;/td&gt;
+&lt;td&gt;0.790230&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;cap_rate_p0 ted_spread_p0 bbb_spread_p3&lt;/td&gt;
+&lt;td&gt;{u'bbb_spread_p3': 0.538791932676, u'cap_rate_p0': 0.269149311217, u'const': -3.90589431381, u'ted_spread_p0': 2.51233917448}&lt;/td&gt;
+&lt;td&gt;{u'bbb_spread_p3': 3.69381353544e-06, u'cap_rate_p0': 0.128373725201, u'ted_spread_p0': 3.88957741361e-08}&lt;/td&gt;
+&lt;td&gt;1.283737e-01&lt;/td&gt;
+&lt;td&gt;{u'bbb_spread_p3': 2.51413269277, u'cap_rate_p0': 1.99928074526, u'ted_spread_p0': 1.52794519095}&lt;/td&gt;
+&lt;td&gt;2.514133&lt;/td&gt;
+&lt;td&gt;0.509631&lt;/td&gt;
+&lt;td&gt;0.434051&lt;/td&gt;
+&lt;td&gt;0.714011&lt;/td&gt;
+&lt;td&gt;0.799561&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;ted_spread_p0 crea_hp_yoy_p3 bbb_spread_p4&lt;/td&gt;
+&lt;td&gt;{u'crea_hp_yoy_p3': -7.124071928, u'const': -1.81674640673, u'bbb_spread_p4': 0.402048103596, u'ted_spread_p0': 3.28772335045}&lt;/td&gt;
+&lt;td&gt;{u'crea_hp_yoy_p3': 7.40618262123e-07, u'bbb_spread_p4': 1.99672792352e-05, u'ted_spread_p0': 4.0450297686e-12}&lt;/td&gt;
+&lt;td&gt;1.996728e-05&lt;/td&gt;
+&lt;td&gt;{u'crea_hp_yoy_p3': 1.43640456697, u'bbb_spread_p4': 1.55605617691, u'ted_spread_p0': 1.46835089361}&lt;/td&gt;
+&lt;td&gt;1.556056&lt;/td&gt;
+&lt;td&gt;0.508998&lt;/td&gt;
+&lt;td&gt;0.470157&lt;/td&gt;
+&lt;td&gt;0.714472&lt;/td&gt;
+&lt;td&gt;0.773637&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;ted_spread_p0 crea_hp_yoy_p2 realgpd_yoy_p3&lt;/td&gt;
+&lt;td&gt;{u'realgpd_yoy_p3': -0.311113715762, u'crea_hp_yoy_p2': -9.309071086, u'const': -0.103457190105, u'ted_spread_p0': 2.84913168832}&lt;/td&gt;
+&lt;td&gt;{u'realgpd_yoy_p3': 1.92976213253e-10, u'crea_hp_yoy_p2': 5.13571840644e-10, u'ted_spread_p0': 6.5891420931e-11}&lt;/td&gt;
+&lt;td&gt;5.135718e-10&lt;/td&gt;
+&lt;td&gt;{u'realgpd_yoy_p3': 1.19851914035, u'crea_hp_yoy_p2': 1.30632930877, u'ted_spread_p0': 1.28561708211}&lt;/td&gt;
+&lt;td&gt;1.306329&lt;/td&gt;
+&lt;td&gt;0.508293&lt;/td&gt;
+&lt;td&gt;0.518727&lt;/td&gt;
+&lt;td&gt;0.714985&lt;/td&gt;
+&lt;td&gt;0.737325&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;ted_spread_p0 bbb_spread_p3 spindex_yoy_p3&lt;/td&gt;
+&lt;td&gt;{u'bbb_spread_p3': 0.525123157535, u'spindex_yoy_p3': -0.0106469798442, u'const': -2.29476615365, u'ted_spread_p0': 2.80601709969}&lt;/td&gt;
+&lt;td&gt;{u'bbb_spread_p3': 3.20465565732e-05, u'spindex_yoy_p3': 0.152675572385, u'ted_spread_p0': 7.93900361033e-11}&lt;/td&gt;
+&lt;td&gt;1.526756e-01&lt;/td&gt;
+&lt;td&gt;{u'bbb_spread_p3': 3.02253841133, u'spindex_yoy_p3': 2.82820562708, u'ted_spread_p0': 1.26016903124}&lt;/td&gt;
+&lt;td&gt;3.022538&lt;/td&gt;
+&lt;td&gt;0.508117&lt;/td&gt;
+&lt;td&gt;0.429300&lt;/td&gt;
+&lt;td&gt;0.715113&lt;/td&gt;
+&lt;td&gt;0.802911&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;realgpd_yoy_p0 ted_spread_p0 bbb_spread_p3&lt;/td&gt;
+&lt;td&gt;{u'realgpd_yoy_p0': -0.0822791822097, u'const': -2.17908597925, u'bbb_spread_p3': 0.540487885674, u'ted_spread_p0': 2.63164243642}&lt;/td&gt;
+&lt;td&gt;{u'bbb_spread_p3': 5.73922047576e-06, u'realgpd_yoy_p0': 0.153193960743, u'ted_spread_p0': 1.95668256146e-09}&lt;/td&gt;
+&lt;td&gt;1.531940e-01&lt;/td&gt;
+&lt;td&gt;{u'realgpd_yoy_p0': 2.14853765757, u'bbb_spread_p3': 2.63888992404, u'ted_spread_p0': 1.35238585586}&lt;/td&gt;
+&lt;td&gt;2.638890&lt;/td&gt;
+&lt;td&gt;0.508087&lt;/td&gt;
+&lt;td&gt;0.458403&lt;/td&gt;
+&lt;td&gt;0.715134&lt;/td&gt;
+&lt;td&gt;0.782170&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;ted_spread_p0 bbb_spread_p3 cap_rate_p4&lt;/td&gt;
+&lt;td&gt;{u'bbb_spread_p3': 0.615821291858, u'cap_rate_p4': 0.208708505931, u'const': -3.8335303104, u'ted_spread_p0': 2.74915454136}&lt;/td&gt;
+&lt;td&gt;{u'bbb_spread_p3': 6.60288226921e-11, u'cap_rate_p4': 0.166847470536, u'ted_spread_p0': 1.67384077652e-10}&lt;/td&gt;
+&lt;td&gt;1.668475e-01&lt;/td&gt;
+&lt;td&gt;{u'bbb_spread_p3': 1.44211057025, u'cap_rate_p4': 1.16255484012, u'ted_spread_p0': 1.26230863366}&lt;/td&gt;
+&lt;td&gt;1.442111&lt;/td&gt;
+&lt;td&gt;0.507353&lt;/td&gt;
+&lt;td&gt;0.402521&lt;/td&gt;
+&lt;td&gt;0.715668&lt;/td&gt;
+&lt;td&gt;0.821532&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;ted_spread_p0 crea_hp_yoy_p3 realgpd_yoy_p3&lt;/td&gt;
+&lt;td&gt;{u'crea_hp_yoy_p3': -8.76409349446, u'realgpd_yoy_p3': -0.180879352626, u'const': -0.318947340435, u'ted_spread_p0': 2.86354149694}&lt;/td&gt;
+&lt;td&gt;{u'crea_hp_yoy_p3': 5.84134461416e-10, u'realgpd_yoy_p3': 2.43206207395e-05, u'ted_spread_p0': 6.41362452225e-11}&lt;/td&gt;
+&lt;td&gt;2.432062e-05&lt;/td&gt;
+&lt;td&gt;{u'crea_hp_yoy_p3': 1.26977569699, u'realgpd_yoy_p3': 1.05558827276, u'ted_spread_p0': 1.29286084071}&lt;/td&gt;
+&lt;td&gt;1.292861&lt;/td&gt;
+&lt;td&gt;0.506863&lt;/td&gt;
+&lt;td&gt;0.458546&lt;/td&gt;
+&lt;td&gt;0.716024&lt;/td&gt;
+&lt;td&gt;0.782067&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;ted_spread_p0 cap_rate_p2 bbb_spread_p3&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p2': 0.225756509972, u'const': -3.78840359933, u'bbb_spread_p3': 0.570654122306, u'ted_spread_p0': 2.67079906481}&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p2': 0.193180231382, u'bbb_spread_p3': 2.30746281702e-07, u'ted_spread_p0': 9.08484906408e-10}&lt;/td&gt;
+&lt;td&gt;1.931802e-01&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p2': 1.75920678376, u'bbb_spread_p3': 2.17026703782, u'ted_spread_p0': 1.31977926124}&lt;/td&gt;
+&lt;td&gt;2.170267&lt;/td&gt;
+&lt;td&gt;0.506110&lt;/td&gt;
+&lt;td&gt;0.411367&lt;/td&gt;
+&lt;td&gt;0.716570&lt;/td&gt;
+&lt;td&gt;0.815428&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;ted_spread_p0 realgpd_yoy_p2 corp_profit_p1&lt;/td&gt;
+&lt;td&gt;{u'corp_profit_p1': -0.00960849919163, u'const': -0.407772979121, u'realgpd_yoy_p2': -0.257333465025, u'ted_spread_p0': 2.29032216488}&lt;/td&gt;
+&lt;td&gt;{u'corp_profit_p1': 0.000448333783238, u'realgpd_yoy_p2': 4.97703208541e-08, u'ted_spread_p0': 7.49817339718e-09}&lt;/td&gt;
+&lt;td&gt;4.483338e-04&lt;/td&gt;
+&lt;td&gt;{u'corp_profit_p1': 1.23841713376, u'realgpd_yoy_p2': 1.22668430577, u'ted_spread_p0': 1.11609747523}&lt;/td&gt;
+&lt;td&gt;1.238417&lt;/td&gt;
+&lt;td&gt;0.505281&lt;/td&gt;
+&lt;td&gt;0.321448&lt;/td&gt;
+&lt;td&gt;0.717171&lt;/td&gt;
+&lt;td&gt;0.875497&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;ted_spread_p0 bbb_spread_p3 cap_rate_p3&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p3': 0.201637275061, u'bbb_spread_p3': 0.593429505205, u'const': -3.71870866222, u'ted_spread_p0': 2.71903806154}&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p3': 0.217238393496, u'bbb_spread_p3': 7.84889309862e-09, u'ted_spread_p0': 3.23824482993e-10}&lt;/td&gt;
+&lt;td&gt;2.172384e-01&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p3': 1.4724277304, u'bbb_spread_p3': 1.80756321736, u'ted_spread_p0': 1.27957899111}&lt;/td&gt;
+&lt;td&gt;1.807563&lt;/td&gt;
+&lt;td&gt;0.505135&lt;/td&gt;
+&lt;td&gt;0.405297&lt;/td&gt;
+&lt;td&gt;0.717277&lt;/td&gt;
+&lt;td&gt;0.819622&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;ted_spread_p0 spindex_yoy_p3 cap_rate_p3&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p3': 0.594228769802, u'spindex_yoy_p3': -0.031124114991, u'const': -4.49069384587, u'ted_spread_p0': 2.48354562619}&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p3': 4.50370245447e-05, u'spindex_yoy_p3': 8.36225082073e-09, u'ted_spread_p0': 1.64539790007e-09}&lt;/td&gt;
+&lt;td&gt;4.503702e-05&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p3': 1.06865169504, u'spindex_yoy_p3': 1.22753770126, u'ted_spread_p0': 1.18199596216}&lt;/td&gt;
+&lt;td&gt;1.227538&lt;/td&gt;
+&lt;td&gt;0.504430&lt;/td&gt;
+&lt;td&gt;0.408088&lt;/td&gt;
+&lt;td&gt;0.717788&lt;/td&gt;
+&lt;td&gt;0.817696&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;ted_spread_p0 realgpd_yoy_p2 bbb_spread_p3&lt;/td&gt;
+&lt;td&gt;{u'bbb_spread_p3': 0.517442462306, u'const': -2.1307227209, u'realgpd_yoy_p2': -0.0864549354609, u'ted_spread_p0': 2.66817475933}&lt;/td&gt;
+&lt;td&gt;{u'bbb_spread_p3': 0.000504611426207, u'realgpd_yoy_p2': 0.249265257706, u'ted_spread_p0': 1.27380241683e-09}&lt;/td&gt;
+&lt;td&gt;2.492653e-01&lt;/td&gt;
+&lt;td&gt;{u'bbb_spread_p3': 4.29026413402, u'realgpd_yoy_p2': 3.6616378528, u'ted_spread_p0': 1.34053982558}&lt;/td&gt;
+&lt;td&gt;4.290264&lt;/td&gt;
+&lt;td&gt;0.504018&lt;/td&gt;
+&lt;td&gt;0.388464&lt;/td&gt;
+&lt;td&gt;0.718086&lt;/td&gt;
+&lt;td&gt;0.831140&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;realgpd_yoy_p1 ted_spread_p0 spindex_yoy_p3&lt;/td&gt;
+&lt;td&gt;{u'spindex_yoy_p3': -0.00697418929236, u'const': -0.358295064272, u'realgpd_yoy_p1': -0.287950006036, u'ted_spread_p0': 2.24832163495}&lt;/td&gt;
+&lt;td&gt;{u'spindex_yoy_p3': 0.396355057686, u'realgpd_yoy_p1': 4.80031372299e-05, u'ted_spread_p0': 2.97028063227e-08}&lt;/td&gt;
+&lt;td&gt;3.963551e-01&lt;/td&gt;
+&lt;td&gt;{u'spindex_yoy_p3': 3.44623710801, u'realgpd_yoy_p1': 3.17299042455, u'ted_spread_p0': 1.18476784624}&lt;/td&gt;
+&lt;td&gt;3.446237&lt;/td&gt;
+&lt;td&gt;0.503737&lt;/td&gt;
+&lt;td&gt;0.457973&lt;/td&gt;
+&lt;td&gt;0.718290&lt;/td&gt;
+&lt;td&gt;0.782481&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;realgpd_yoy_p1 ted_spread_p0 crea_hp_yoy_p2&lt;/td&gt;
+&lt;td&gt;{u'crea_hp_yoy_p2': -1.0795826604, u'const': -0.272715216966, u'realgpd_yoy_p1': -0.318271064261, u'ted_spread_p0': 2.22651917837}&lt;/td&gt;
+&lt;td&gt;{u'crea_hp_yoy_p2': 0.450477095771, u'realgpd_yoy_p1': 3.13546780517e-10, u'ted_spread_p0': 2.90322487555e-08}&lt;/td&gt;
+&lt;td&gt;4.504771e-01&lt;/td&gt;
+&lt;td&gt;{u'crea_hp_yoy_p2': 1.48055472983, u'realgpd_yoy_p1': 1.40383603833, u'ted_spread_p0': 1.15790564414}&lt;/td&gt;
+&lt;td&gt;1.480555&lt;/td&gt;
+&lt;td&gt;0.502876&lt;/td&gt;
+&lt;td&gt;0.479863&lt;/td&gt;
+&lt;td&gt;0.718912&lt;/td&gt;
+&lt;td&gt;0.766517&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;realgpd_yoy_p1 ted_spread_p0 spindex_yoy_p4&lt;/td&gt;
+&lt;td&gt;{u'spindex_yoy_p4': -0.00287623611266, u'const': -0.307424934206, u'realgpd_yoy_p1': -0.319272637088, u'ted_spread_p0': 2.2027800319}&lt;/td&gt;
+&lt;td&gt;{u'spindex_yoy_p4': 0.630438613957, u'realgpd_yoy_p1': 1.06155602716e-08, u'ted_spread_p0': 4.3262669625e-08}&lt;/td&gt;
+&lt;td&gt;6.304386e-01&lt;/td&gt;
+&lt;td&gt;{u'spindex_yoy_p4': 1.90330721432, u'realgpd_yoy_p1': 1.77597233856, u'ted_spread_p0': 1.16353394534}&lt;/td&gt;
+&lt;td&gt;1.903307&lt;/td&gt;
+&lt;td&gt;0.500930&lt;/td&gt;
+&lt;td&gt;0.450725&lt;/td&gt;
+&lt;td&gt;0.720318&lt;/td&gt;
+&lt;td&gt;0.787695&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;ted_spread_p0 bbb_spread_p3 spindex_yoy_p2&lt;/td&gt;
+&lt;td&gt;{u'bbb_spread_p3': 0.601012948771, u'spindex_yoy_p2': -0.00542467267777, u'const': -2.49819167847, u'ted_spread_p0': 2.8074946861}&lt;/td&gt;
+&lt;td&gt;{u'bbb_spread_p3': 5.53590432482e-08, u'spindex_yoy_p2': 0.387126006585, u'ted_spread_p0': 1.07989092515e-10}&lt;/td&gt;
+&lt;td&gt;3.871260e-01&lt;/td&gt;
+&lt;td&gt;{u'bbb_spread_p3': 2.12232941161, u'spindex_yoy_p2': 1.94673426734, u'ted_spread_p0': 1.26539793559}&lt;/td&gt;
+&lt;td&gt;2.122329&lt;/td&gt;
+&lt;td&gt;0.500684&lt;/td&gt;
+&lt;td&gt;0.429745&lt;/td&gt;
+&lt;td&gt;0.720496&lt;/td&gt;
+&lt;td&gt;0.802598&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;realgpd_yoy_p1 ted_spread_p0 corp_profit_p1&lt;/td&gt;
+&lt;td&gt;{u'corp_profit_p1': -0.00111510712547, u'const': -0.295544468835, u'realgpd_yoy_p1': -0.322134804647, u'ted_spread_p0': 2.16984747298}&lt;/td&gt;
+&lt;td&gt;{u'corp_profit_p1': 0.746943635339, u'realgpd_yoy_p1': 7.85857215941e-08, u'ted_spread_p0': 3.07526883363e-08}&lt;/td&gt;
+&lt;td&gt;7.469436e-01&lt;/td&gt;
+&lt;td&gt;{u'corp_profit_p1': 2.09799265347, u'realgpd_yoy_p1': 2.09768958589, u'ted_spread_p0': 1.09854672985}&lt;/td&gt;
+&lt;td&gt;2.097993&lt;/td&gt;
+&lt;td&gt;0.500194&lt;/td&gt;
+&lt;td&gt;0.446912&lt;/td&gt;
+&lt;td&gt;0.720849&lt;/td&gt;
+&lt;td&gt;0.790424&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;0&lt;/th&gt;
+&lt;td&gt;realgpd_yoy_p0 ted_spread_p0 cap_rate_p3&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p3': 0.639727648052, u'realgpd_yoy_p0': -0.253032450789, u'const': -4.28034401961, u'ted_spread_p0': 1.90847482334}&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p3': 1.18825887769e-05, u'realgpd_yoy_p0': 1.23019019096e-08, u'ted_spread_p0': 3.86554982571e-07}&lt;/td&gt;
+&lt;td&gt;1.188259e-05&lt;/td&gt;
+&lt;td&gt;{u'cap_rate_p3': 1.04954092806, u'realgpd_yoy_p0': 1.04901230219, u'ted_spread_p0': 1.04189905245}&lt;/td&gt;
+&lt;td&gt;1.049541&lt;/td&gt;
+&lt;td&gt;0.500114&lt;/td&gt;
+&lt;td&gt;0.505297&lt;/td&gt;
+&lt;td&gt;0.720907&lt;/td&gt;
+&lt;td&gt;0.747542&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="cell border-box-sizing code_cell rendered"&gt;
+&lt;div class="input"&gt;
+&lt;div class="prompt input_prompt"&gt;In [10]:&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+&lt;div class="input_area"&gt;
+&lt;div class=" highlight hl-ipython2"&gt;&lt;pre&gt;&lt;span class="n"&gt;all_combination&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="output_wrapper"&gt;
+&lt;div class="output"&gt;
+&lt;div class="output_area"&gt;&lt;div class="prompt output_prompt"&gt;Out[10]:&lt;/div&gt;
+&lt;div class="output_text output_subarea output_execute_result"&gt;
+&lt;pre&gt;(5, 14, 18)&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="cell border-box-sizing code_cell rendered"&gt;
+&lt;div class="input"&gt;
+&lt;div class="prompt input_prompt"&gt;In [11]:&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+&lt;div class="input_area"&gt;
+&lt;div class=" highlight hl-ipython2"&gt;&lt;pre&gt;&lt;span class="n"&gt;best_reg_result&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;summary&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="output_wrapper"&gt;
+&lt;div class="output"&gt;
+&lt;div class="output_area"&gt;&lt;div class="prompt output_prompt"&gt;Out[11]:&lt;/div&gt;
+&lt;div class="output_html rendered_html output_subarea output_execute_result"&gt;
+&lt;table class="simpletable"&gt;
+&lt;caption&gt;OLS Regression Results&lt;/caption&gt;
+&lt;tr&gt;
+&lt;th&gt;Dep. Variable:&lt;/th&gt; &lt;td&gt;cum_pd_num&lt;/td&gt; &lt;th&gt;  R-squared:         &lt;/th&gt; &lt;td&gt;   0.615&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;Model:&lt;/th&gt; &lt;td&gt;OLS&lt;/td&gt; &lt;th&gt;  Adj. R-squared:    &lt;/th&gt; &lt;td&gt;   0.601&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;Method:&lt;/th&gt; &lt;td&gt;Least Squares&lt;/td&gt; &lt;th&gt;  F-statistic:       &lt;/th&gt; &lt;td&gt;   46.24&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;Date:&lt;/th&gt; &lt;td&gt;Mon, 17 Apr 2017&lt;/td&gt; &lt;th&gt;  Prob (F-statistic):&lt;/th&gt; &lt;td&gt;5.77e-18&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;Time:&lt;/th&gt; &lt;td&gt;21:56:19&lt;/td&gt; &lt;th&gt;  Log-Likelihood:    &lt;/th&gt; &lt;td&gt; -85.467&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;No. Observations:&lt;/th&gt; &lt;td&gt;    91&lt;/td&gt; &lt;th&gt;  AIC:               &lt;/th&gt; &lt;td&gt;   178.9&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;Df Residuals:&lt;/th&gt; &lt;td&gt;    87&lt;/td&gt; &lt;th&gt;  BIC:               &lt;/th&gt; &lt;td&gt;   189.0&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;Df Model:&lt;/th&gt; &lt;td&gt;     3&lt;/td&gt; &lt;th&gt; &lt;/th&gt; &lt;td&gt; &lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;Covariance Type:&lt;/th&gt; &lt;td&gt;nonrobust&lt;/td&gt; &lt;th&gt; &lt;/th&gt; &lt;td&gt; &lt;/td&gt;
+&lt;/tr&gt;
+&lt;/table&gt;
+&lt;table class="simpletable"&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;/td&gt; &lt;th&gt;coef&lt;/th&gt; &lt;th&gt;std err&lt;/th&gt; &lt;th&gt;t&lt;/th&gt; &lt;th&gt;P&gt;|t|&lt;/th&gt; &lt;th&gt;[95.0% Conf. Int.]&lt;/th&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;const&lt;/th&gt; &lt;td&gt;   -5.8248&lt;/td&gt; &lt;td&gt;    0.770&lt;/td&gt; &lt;td&gt;   -7.569&lt;/td&gt; &lt;td&gt; 0.000&lt;/td&gt; &lt;td&gt;   -7.354    -4.295&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;ted_spread_p0&lt;/th&gt; &lt;td&gt;    2.9978&lt;/td&gt; &lt;td&gt;    0.340&lt;/td&gt; &lt;td&gt;    8.805&lt;/td&gt; &lt;td&gt; 0.000&lt;/td&gt; &lt;td&gt;    2.321     3.675&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;cap_rate_p3&lt;/th&gt; &lt;td&gt;    0.8444&lt;/td&gt; &lt;td&gt;    0.120&lt;/td&gt; &lt;td&gt;    7.055&lt;/td&gt; &lt;td&gt; 0.000&lt;/td&gt; &lt;td&gt;    0.607     1.082&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;crea_hp_yoy_p3&lt;/th&gt; &lt;td&gt;   -9.7555&lt;/td&gt; &lt;td&gt;    1.111&lt;/td&gt; &lt;td&gt;   -8.784&lt;/td&gt; &lt;td&gt; 0.000&lt;/td&gt; &lt;td&gt;  -11.963    -7.548&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/table&gt;
+&lt;table class="simpletable"&gt;
+&lt;tr&gt;
+&lt;th&gt;Omnibus:&lt;/th&gt; &lt;td&gt; 3.899&lt;/td&gt; &lt;th&gt;  Durbin-Watson:     &lt;/th&gt; &lt;td&gt;   2.125&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;Prob(Omnibus):&lt;/th&gt; &lt;td&gt; 0.142&lt;/td&gt; &lt;th&gt;  Jarque-Bera (JB):  &lt;/th&gt; &lt;td&gt;   3.893&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;Skew:&lt;/th&gt; &lt;td&gt; 0.210&lt;/td&gt; &lt;th&gt;  Prob(JB):          &lt;/th&gt; &lt;td&gt;   0.143&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;Kurtosis:&lt;/th&gt; &lt;td&gt; 3.922&lt;/td&gt; &lt;th&gt;  Cond. No.          &lt;/th&gt; &lt;td&gt;    107.&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="cell border-box-sizing code_cell rendered"&gt;
+&lt;div class="input"&gt;
+&lt;div class="prompt input_prompt"&gt;In [ ]:&lt;/div&gt;
+&lt;div class="inner_cell"&gt;
+&lt;div class="input_area"&gt;
+&lt;div class=" highlight hl-ipython2"&gt;&lt;pre&gt; 
+&lt;/pre&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;script type="text/javascript"&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var mathjaxscript = document.createElement('script');
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript';
+    mathjaxscript.src = '//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: 'center'," +
+        "    displayIndent: '0em'," +
+        "    showMathMenu: true," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['$','$'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        " linebreaks: { automatic: true, width: '95% container' }, " +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'black ! important'} }" +
+        "    } " +
+        "}); ";
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+&lt;/script&gt;
+</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Huiming Song</dc:creator><pubDate>Sat, 15 Apr 2017 22:03:00 -0500</pubDate><guid>tag:,2017-04-15:pages/2017/04/15/variable-selection-in-linear-regression-2/</guid><category>python</category><category>statsmodels</category></item><item><title>jupyter and pandas display</title><link>/pages/2017/04/02/jupyter-and-pandas-display/</link><description>&lt;h3&gt;1. show all the rows or columns from a DataFrame in Jupyter QTConcole&lt;/h3&gt;
 &lt;p&gt;if the df has a lot of rows or columns, then when you try to show the df, pandas will auto detect the size of the displaying area and automatically hide some part of the data by replacing with &lt;code&gt;...&lt;/code&gt;. To show the full data without any hiding, you can use &lt;code&gt;pd.set_option('display.max_rows', 500)&lt;/code&gt; and &lt;code&gt;pd.set_option('display.max_rows', 500)&lt;/code&gt; to change the max number of rows or max number of columns to display.&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;pandas&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;pd&lt;/span&gt;
 &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;numpy&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;np&lt;/span&gt;
@@ -426,6 +2655,7 @@ dtype: object
 &lt;/pre&gt;&lt;/div&gt;
 
 
+&lt;p&gt;&lt;img alt="png" src="/figures/20170320_pandas_agg_dict.PNG" /&gt;&lt;/p&gt;
 &lt;div&gt;
 &lt;table border="1" class="dataframe"&gt;
   &lt;thead&gt;
