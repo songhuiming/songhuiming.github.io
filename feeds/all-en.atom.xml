@@ -112,8 +112,11 @@
 
 
 &lt;p&gt;最后定义损失函数和它的最优化函数。通常对线性回归模型我们都是要最小化均方误差。损失函数定义为平方损失$L = \sum_{i=1}^{n}(y_i - f(x_{i}|W)) ^2$。 把回归函数写成矩阵的形式为$Y = X \cdot W$，那么损失函数也可以表达为矩阵相乘$L = (Y - XW)'(Y-XW)$. 要最小化损失函数，我们首先求解出梯度为&lt;/p&gt;
-&lt;p&gt;$$ \frac{\partial L}{\partial W}  &amp;amp; = \frac{\partial ( (Y - XW)'(Y-XW))}{\partial W} $$
-$$= \frac{\partial (Y'Y - 2W'X'Y  + W'X'XW)}{\partial W} = -2X'(Y - XW) $$&lt;/p&gt;
+&lt;p&gt;$$ \begin{aligned}
+ \frac{\partial L}{\partial W}  &amp;amp; = \frac{\partial ( (Y - XW)'(Y-XW))}{\partial W}  \\
+ &amp;amp; = \frac{\partial (Y'Y - 2W'X'Y  + W'X'XW)}{\partial W} \\
+ &amp;amp;= -2X'(Y - XW)
+\end{aligned}$$&lt;/p&gt;
 &lt;p&gt;&lt;code&gt;tf&lt;/code&gt;(包括&lt;code&gt;sklearn&lt;/code&gt;)都是通过数值办法来最小化损失函数的，而不是通过解析解，尽管我们知道对线性模型回归参数$W$参在解析解$\hat{W} = (X'X)^{-1}X'Y$. 具体就是让W每次沿着它的梯度方向变化一点点(learning rate),然后反复迭代，直到达到我们的收敛条件或者停止条件。在第一篇中我们介绍过梯度下降的原理：假如损失函数是一座山，我们现在站在山坡上朝四周看看，然后找一个方向能让我们走一点点路但是下降的最快，那个方向就是梯度的方向。&lt;/p&gt;
 &lt;p&gt;&lt;code&gt;tf&lt;/code&gt;提供了很多最优化(不同的梯度下降)的办法，参见&lt;a href="https://www.tensorflow.org/api_guides/python/train#Optimizers"&gt;Optimizers&lt;/a&gt;.对某些数据使用梯度下降的时候会出现鞍点，导致&lt;code&gt;GradientDescentOptimizer&lt;/code&gt;可能会找不到最优点或者只是local的最优点。这时应该尝试别的最优化的办法。在我们的例子中，&lt;code&gt;GradientDescentOptimizer&lt;/code&gt;找不到最优解， 但是&lt;code&gt;AdamOptimizer&lt;/code&gt;可以找到最优解。&lt;/p&gt;
 &lt;p&gt;&lt;code&gt;learning rate&lt;/code&gt;的参数设置为&lt;code&gt;trainable=False&lt;/code&gt;表示每次迭代的时候&lt;code&gt;learning rate&lt;/code&gt;本身不变化。&lt;code&gt;learning rate&lt;/code&gt;太小会导致迭代步骤太多，计算所需要的时间就会很长。&lt;code&gt;learning rate&lt;/code&gt;太大也会有问题：在你将要靠近最优点的时候，因为下一步跨的太大，导致跨过了最优点(overshoot)。比较好的办法是：刚开始迭代的时候&lt;code&gt;learning rate&lt;/code&gt;可以大一些，然后随着渐渐靠近最优点，&lt;code&gt;learning rate&lt;/code&gt;应该渐渐减小。&lt;/p&gt;
@@ -351,11 +354,6 @@ $$
     |\psi_2\rangle &amp;amp;= c|0\rangle + d|1\rangle
   \end{align}
 $$&lt;/p&gt;
-&lt;p&gt;$$ \begin{aligned}
- \frac{\partial L}{\partial W}  &amp;amp; = \frac{\partial ( (Y - XW)'(Y-XW))}{\partial W}  \\ 
- &amp;amp; = \frac{\partial (Y'Y - 2W'X'Y  + W'X'XW)}{\partial W} \\
- &amp;amp;= -2X'(Y - XW)&lt;br /&gt;
-\end{aligned}$$&lt;/p&gt;
 &lt;p&gt;And test a display math without equaltion number:
 $$
   \begin{align*}
@@ -394,6 +392,11 @@ $$&lt;/p&gt;
 &lt;p&gt;If you found error while typeseting math formula, try to escape some special characters.&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ol&gt;
+&lt;p&gt;$$ \begin{aligned}
+ \frac{\partial L}{\partial W}  &amp;amp; = \frac{\partial ( (Y - XW)'(Y-XW))}{\partial W}  \\ 
+ &amp;amp; = \frac{\partial (Y'Y - 2W'X'Y  + W'X'XW)}{\partial W} \\
+ &amp;amp;= -2X'(Y - XW)&lt;br /&gt;
+\end{aligned}$$&lt;/p&gt;
 &lt;h3&gt;Reference&lt;/h3&gt;
 &lt;ol&gt;
 &lt;li&gt;&lt;a href="http://stackoverflow.com/questions/26275645/how-to-supported-latex-in-github-pages"&gt;How to supported latex in github-pages&lt;/a&gt;&lt;/li&gt;
