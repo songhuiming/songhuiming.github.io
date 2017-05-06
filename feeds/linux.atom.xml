@@ -1,5 +1,86 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata</title><link href="/" rel="alternate"></link><link href="/feeds/linux.atom.xml" rel="self"></link><id>/</id><updated>2017-01-22T00:00:00-06:00</updated><entry><title>increase disk space on vmware for ubuntu</title><link href="/pages/2017/01/22/increase-disk-space-on-vmware-for-ubuntu/" rel="alternate"></link><updated>2017-01-22T00:00:00-06:00</updated><author><name>Huiming Song</name></author><id>tag:,2017-01-22:pages/2017/01/22/increase-disk-space-on-vmware-for-ubuntu/</id><summary type="html">&lt;h1&gt;increase disk space for vmware ubuntu&lt;/h1&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata</title><link href="/" rel="alternate"></link><link href="/feeds/linux.atom.xml" rel="self"></link><id>/</id><updated>2017-02-12T00:00:00-06:00</updated><entry><title>install docker, dl package, ssh access for ubuntu</title><link href="/pages/2017/02/12/install-docker-dl-package-ssh-access-for-ubuntu/" rel="alternate"></link><updated>2017-02-12T00:00:00-06:00</updated><author><name>Huiming Song</name></author><id>tag:,2017-02-12:pages/2017/02/12/install-docker-dl-package-ssh-access-for-ubuntu/</id><summary type="html">&lt;h4&gt;1. install vim&lt;/h4&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;sudo apt remove vim-tiny
+sudo apt update
+sudo apt install vim
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h4&gt;2. change resolution&lt;/h4&gt;
+&lt;p&gt;it is like 1604_2 has fixed this. it can be full screen now. skip this. &lt;code&gt;vi setscreen.sh&lt;/code&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;xrandr --newmode &amp;quot;1920x1080&amp;quot;  173.00  1920 2048 2248 2576  1080 1083 1088 1120 -hsync +vsync
+xrandr --addmode Virtual1 1920x1080
+xrandr --output Virtual1 --mode 1920x1080
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h4&gt;3. &lt;a href="http://songhuiming.github.io/pages/2017/02/25/an-zhuang-dockerhe-tensorflow/"&gt;install docker&lt;/a&gt;&lt;/h4&gt;
+&lt;h4&gt;4. install the dl-docker image&lt;/h4&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;4.1. install based on the docker file for particular version 
+` docker build -t shmhub/dl-class:cpu -f Dockerfile.cpu.dl_class . `
+
+4.2. change keras to use theano by default
+`vi .keras/keras.json`
+```
+{
+    &amp;quot;image_dim_ordering&amp;quot;: &amp;quot;tf&amp;quot;,
+    &amp;quot;epsilon&amp;quot;: 1e-07,
+    &amp;quot;floatx&amp;quot;: &amp;quot;float32&amp;quot;,
+    &amp;quot;backend&amp;quot;: &amp;quot;tensorflow&amp;quot;
+}
+```
+
+4.3. test and commit 
+`docker run -it -p 8888:8888 -p 6006:6006 -v /$(pwd):/root/sharedfolder shmhub/dl-class:cpu bash`
+to commit, please refer to docker document.
+`docker commit -m &amp;quot;change keras to use theano by default&amp;quot; -a &amp;quot;author: shm&amp;quot; 62fa48f18e4f shmhub/dl-class:cpu`
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h4&gt;5. set up remote access&lt;/h4&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;5.1. install openssh    `sudo apt-get install openssh-server`
+5.2. set up static ip for ubuntu 
+5.3. port forwarding and dns
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h4&gt;6. install the others, like conda on ubuntu&lt;/h4&gt;
+&lt;h4&gt;7. install/setup git on ubuntu&lt;/h4&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;sudo apt-get update
+sudo apt-get install git
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;7.1. &lt;a href="https://help.github.com/articles/set-up-git/#platform-linux"&gt;set up git&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;7.2. &lt;a href="https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/"&gt;Generating a new SSH key&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;For all the steps on video, please click:&lt;/p&gt;
+&lt;p&gt;&lt;a href="https://www.youtube.com/watch?v=55WeObE_Hmg"&gt;&lt;img alt="IMAGE ALT TEXT HERE" src="https://img.youtube.com/vi/55WeObE_Hmg/0.jpg" /&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;h4&gt;8. &lt;a href="https://coderwall.com/p/ohk6cg/remote-access-to-ipython-notebooks-via-ssh"&gt;remote access to jupyter notebook&lt;/a&gt;&lt;/h4&gt;
+&lt;p&gt;Scenario: On your local computer, you want to open and manipulate an IPython notebook running on a remote computer. We will do this by opening an &lt;strong&gt;SSH tunnel&lt;/strong&gt;. &lt;em&gt;This tunnel will forward the port used by the remotely running IPython instance to a port on the local machine, where it can be accessed in a browser just like a locally running IPython instance&lt;/em&gt;.&lt;/p&gt;
+&lt;p&gt;On ubuntu or any other linux:&lt;/p&gt;
+&lt;p&gt;First, make sure you install Jupyter notebook in both remote (working station in your offcie) and local (your home computer)&lt;/p&gt;
+&lt;p&gt;In remote host, open the terminal, change directory to where you have your notebooks and type:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;jupyter notebook --no-browser --port=8888
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;In your local computer, open MS-DOS cmd (if using Windows) or Unix terminal, then type:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;ssh -N -f -L localhost:8888:localhost:8888 remote_user@remote_host
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;If you use Windows, there is no built in ssh terminal, you can use tools such as Putty  to build a ssh tunnel follow the following steps:&lt;/p&gt;
+&lt;p&gt;open putty client: &lt;strong&gt;Session -&amp;gt; put your hostname and port = 22&lt;/strong&gt;, just as what you did normally to connect to you remote server.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Connection -&amp;gt; SSH -&amp;gt; Tunnels&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;In the destination port box, enter: &lt;code&gt;127.0.0.1:8888&lt;/code&gt;, And select &lt;code&gt;Local and Auto&lt;/code&gt; options.&lt;/p&gt;
+&lt;p&gt;In the Source port, enter: 8888, Then click the Add button, you will see L8888 127.0.0.1:8889 in the box under the Remove button.&lt;/p&gt;
+&lt;p&gt;Now you can open the session, and on your local machine, type &lt;code&gt;http://127.0.0.1:8888&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;You will be able to get access to the Ipython notebook server running on the remot&lt;/p&gt;
+&lt;h4&gt;9. turn off jupyter notebook token and password&lt;/h4&gt;
+&lt;p&gt;In the &lt;code&gt;~/.jupyter/jupyter_notebook_config.py&lt;/code&gt; or &lt;code&gt;~/.jupyter/jupyter_notebook_config.json&lt;/code&gt;, add&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;c.NotebookApp.token = &amp;#39;&amp;#39;
+c.NotebookApp.password = &amp;#39;&amp;#39;
+&lt;/pre&gt;&lt;/div&gt;</summary><category term="linux"></category><category term="python"></category><category term="docker"></category><category term="remote access"></category></entry><entry><title>increase disk space on vmware for ubuntu</title><link href="/pages/2017/01/22/increase-disk-space-on-vmware-for-ubuntu/" rel="alternate"></link><updated>2017-01-22T00:00:00-06:00</updated><author><name>Huiming Song</name></author><id>tag:,2017-01-22:pages/2017/01/22/increase-disk-space-on-vmware-for-ubuntu/</id><summary type="html">&lt;h1&gt;increase disk space for vmware ubuntu&lt;/h1&gt;
 &lt;p&gt;Because of more data downloaded, I need to increase the vmware ubuntu disk space from 100Gb to 350Gb. This is the experience how to do it.&lt;/p&gt;
 &lt;h3&gt;1. increase the disk space from vmware&lt;/h3&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;-- power off the machine
@@ -116,7 +197,39 @@ find /data01/saswork -printf &lt;span class="s2"&gt;&amp;quot;%u  %s\n&amp;quot;
 &lt;h3&gt;Reference&lt;/h3&gt;
 &lt;ol&gt;
 &lt;li&gt;&lt;a href="http://alvinalexander.com/unix/edu/examples/find.shtml"&gt;A collection of Unix/Linux find command examples&lt;/a&gt;&lt;/li&gt;
-&lt;/ol&gt;</summary><category term="python"></category><category term="linux"></category></entry><entry><title>Change Ubuntu Resolution in VMWARE</title><link href="/pages/2015/10/16/change-ubuntu-resolution-in-vmware/" rel="alternate"></link><updated>2015-10-16T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:,2015-10-16:pages/2015/10/16/change-ubuntu-resolution-in-vmware/</id><summary type="html">&lt;p&gt;After reinstalling vmware 12 on my desktop, there is no choice of 1920x1080 resolotion available any more in Ubuntu in the vmware.&lt;/p&gt;
+&lt;/ol&gt;</summary><category term="python"></category><category term="linux"></category></entry><entry><title>install pelican in ubuntu again</title><link href="/pages/2016/05/10/install-pelican-in-ubuntu-again/" rel="alternate"></link><updated>2016-05-10T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:,2016-05-10:pages/2016/05/10/install-pelican-in-ubuntu-again/</id><summary type="html">&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;cd /Dropbox/blog&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;sudo apt-get install pelican&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;sudo apt-get install markdown&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;pip install typogrify&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;pelican-quickstart&lt;/code&gt;, you can run this anytime you want to change&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;</summary><category term="linux"></category><category term="python"></category></entry><entry><title>linux tips and resources</title><link href="/pages/2016/05/10/linux-tips-and-resources/" rel="alternate"></link><updated>2016-05-10T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:,2016-05-10:pages/2016/05/10/linux-tips-and-resources/</id><summary type="html">&lt;h3&gt;1. how to install &lt;code&gt;deb&lt;/code&gt; file on ubuntu&lt;/h3&gt;
+&lt;h6&gt;method 1&lt;/h6&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;step 1.  run `sudo dpkg -i /path/to/deb/file`. sometimes there will be errors after this, but it does not matter. run step 2.
+
+step 2.  then run `sudo apt-get install -f`
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h6&gt;method 2&lt;/h6&gt;
+&lt;p&gt;move the &lt;code&gt;deb&lt;/code&gt; file to &lt;code&gt;/var/cache/apt/archives/&lt;/code&gt;, then run &lt;code&gt;sudo apt-get install package_name&lt;/code&gt;&lt;/p&gt;
+&lt;h3&gt;2. how to install pip on ubuntu&lt;/h3&gt;
+&lt;p&gt;&lt;code&gt;sudo apt-get install python-pip&lt;/code&gt;&lt;/p&gt;
+&lt;h3&gt;3. remove the tiny vi in ubuntu&lt;/h3&gt;
+&lt;p&gt;&lt;code&gt;sudo apt-get remove vim.tiny&lt;/code&gt;       &lt;code&gt;sudo apt-get install vim&lt;/code&gt;&lt;/p&gt;
+&lt;h3&gt;4. kill all the process from multiprocessing in python&lt;/h3&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;kill -9 `ps -ef | grep my_py_project.py | grep -v grep | awk &amp;#39;{print $2}&amp;#39;`
+&lt;/pre&gt;&lt;/div&gt;</summary><category term="linux"></category></entry><entry><title>Change Ubuntu Resolution in VMWARE</title><link href="/pages/2015/10/16/change-ubuntu-resolution-in-vmware/" rel="alternate"></link><updated>2015-10-16T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:,2015-10-16:pages/2015/10/16/change-ubuntu-resolution-in-vmware/</id><summary type="html">&lt;p&gt;After reinstalling vmware 12 on my desktop, there is no choice of 1920x1080 resolotion available any more in Ubuntu in the vmware.&lt;/p&gt;
 &lt;p&gt;Find these two resolutions, the first one works for me. The second one does not.&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;from this &lt;a href="http://askubuntu.com/questions/251375/cant-get-1920-x-1080-in-ubuntu-via-vmware"&gt;link&lt;/a&gt;&lt;/li&gt;
