@@ -6,28 +6,31 @@
 
 
 &lt;p&gt;Gradient Descent is one of the optimization method by changing the parameters values in the negative gradient direction.&lt;/p&gt;
-&lt;p&gt;Let us assume the multi-variable function $F(\theta|x)$ is differenable about $\theta$. It is first order differentation to $x$ is denoted as $\triangledown F(\theta|x)$. To find the maximum(mimimum) of $F(\theta|x)$ by iteration, we will let the parameter $\theta$ change its value a little every time. The value changed along the gradient direction will be the fastest way to converge. So, from iteration $\theta^{i}$ to iteration $\theta^{i+1}$ we will let
-$$ \theta^{i + 1} = \theta^{i} - \lambda \cdot \triangledown F\left(\theta^{i}|x\right)$$ where $\lambda$ is called learning rate.&lt;/p&gt;
+&lt;p&gt;Let us assume the multi-variable function &lt;span class="math"&gt;\(F(\theta|x)\)&lt;/span&gt; is differenable about &lt;span class="math"&gt;\(\theta\)&lt;/span&gt;. It is first order differentation to &lt;span class="math"&gt;\(x\)&lt;/span&gt; is denoted as &lt;span class="math"&gt;\(\triangledown F(\theta|x)\)&lt;/span&gt;. To find the maximum(mimimum) of &lt;span class="math"&gt;\(F(\theta|x)\)&lt;/span&gt; by iteration, we will let the parameter &lt;span class="math"&gt;\(\theta\)&lt;/span&gt; change its value a little every time. The value changed along the gradient direction will be the fastest way to converge. So, from iteration &lt;span class="math"&gt;\(\theta^{i}\)&lt;/span&gt; to iteration &lt;span class="math"&gt;\(\theta^{i+1}\)&lt;/span&gt; we will let
+&lt;/p&gt;
+&lt;div class="math"&gt;$$ \theta^{i + 1} = \theta^{i} - \lambda \cdot \triangledown F\left(\theta^{i}|x\right)$$&lt;/div&gt;
+&lt;p&gt; where &lt;span class="math"&gt;\(\lambda\)&lt;/span&gt; is called learning rate.&lt;/p&gt;
 &lt;p&gt;In the following two examples will be shown how gradient descent works to find the solution: one is for linear regression(which has closed-form solution) and the other is for logistic regression(which does not have closed-form solution).&lt;/p&gt;
 &lt;p&gt;&lt;img alt="alt text" src="/figures/20170513_gradient_descent_linreg_animation.gif" title="Linear Regression" /&gt;
 &lt;img alt="alt text" src="/figures/20170513_gradient_descent_logistic_animation.gif" title="Logistic Regression" /&gt;&lt;/p&gt;
 &lt;h2&gt;Example 1: Linear regression&lt;/h2&gt;
 &lt;p&gt;A simple example of linear regression function can be written as&lt;/p&gt;
-&lt;p&gt;$$y_i = \alpha_0 + \alpha_1 \times x_i + \epsilon_i, ~~~ i = 1 \cdots n$$&lt;/p&gt;
+&lt;div class="math"&gt;$$y_i = \alpha_0 + \alpha_1 \times x_i + \epsilon_i, ~~~ i = 1 \cdots n$$&lt;/div&gt;
 &lt;p&gt;we can write it in vector form as &lt;/p&gt;
-&lt;p&gt;$$ Y = XW + \epsilon $$ &lt;/p&gt;
-&lt;p&gt;where $$W = [\alpha_0, \alpha_1]'$$&lt;/p&gt;
+&lt;div class="math"&gt;$$ Y = XW + \epsilon $$&lt;/div&gt;
+&lt;p&gt;where &lt;/p&gt;
+&lt;div class="math"&gt;$$W = [\alpha_0, \alpha_1]'$$&lt;/div&gt;
 &lt;p&gt;The target is to minimize the &lt;a href="https://en.wikipedia.org/wiki/Mean_squared_error"&gt;Mean Square Error(mse)&lt;/a&gt; function defined as&lt;/p&gt;
-&lt;p&gt;$$MSE = \frac{1}{n}\sum_{i=1}^{n}\left(y_i - \alpha_0 - \alpha_1 \times x_i \right)^{2} = \frac{1}{n} (Y - XW)'(Y-XW)$$&lt;/p&gt;
+&lt;div class="math"&gt;$$MSE = \frac{1}{n}\sum_{i=1}^{n}\left(y_i - \alpha_0 - \alpha_1 \times x_i \right)^{2} = \frac{1}{n} (Y - XW)'(Y-XW)$$&lt;/div&gt;
 &lt;p&gt;We will call its main part  Loss function :&lt;/p&gt;
-&lt;p&gt;$$ L = (Y - XW)'(Y-XW)$$&lt;/p&gt;
-&lt;p&gt;As introducted above, the gradient of the loss function to the parameter $W$ is:&lt;/p&gt;
-&lt;p&gt;\begin{aligned}
- \frac{\partial L}{\partial W}  &amp;amp; = \frac{\partial ( (Y - XW)'(Y-XW))}{\partial W}  \
- &amp;amp; = \frac{\partial (Y'Y - 2W'X'Y  + W'X'XW)}{\partial W} \
+&lt;div class="math"&gt;$$ L = (Y - XW)'(Y-XW)$$&lt;/div&gt;
+&lt;p&gt;As introducted above, the gradient of the loss function to the parameter &lt;span class="math"&gt;\(W\)&lt;/span&gt; is:&lt;/p&gt;
+&lt;div class="math"&gt;\begin{aligned}
+ \frac{\partial L}{\partial W}  &amp;amp; = \frac{\partial ( (Y - XW)'(Y-XW))}{\partial W}  \\
+ &amp;amp; = \frac{\partial (Y'Y - 2W'X'Y  + W'X'XW)}{\partial W} \\
  &amp;amp;= -2X'(Y - XW)
-\end{aligned}&lt;/p&gt;
-&lt;p&gt;Now we will show how to use this gradient to find the final value of $W$.&lt;/p&gt;
+\end{aligned}&lt;/div&gt;
+&lt;p&gt;Now we will show how to use this gradient to find the final value of &lt;span class="math"&gt;\(W\)&lt;/span&gt;.&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;ns&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;100&lt;/span&gt;
 &lt;span class="n"&gt;x&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;c_&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ones&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ns&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;linspace&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;10&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;ns&lt;/span&gt;&lt;span class="p"&gt;)]&lt;/span&gt;
 &lt;span class="n"&gt;y&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;x&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;dot&lt;/span&gt;&lt;span class="p"&gt;([[&lt;/span&gt;&lt;span class="mi"&gt;3&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;8&lt;/span&gt;&lt;span class="p"&gt;]])&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;random&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;normal&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;ns&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;reshape&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
@@ -38,8 +41,10 @@ $$ \theta^{i + 1} = \theta^{i} - \lambda \cdot \triangledown F\left(\theta^{i}|x
 &lt;/pre&gt;&lt;/div&gt;
 
 
-&lt;p&gt;The initial value of $W$ will be $$W_0 = [0, 0]'$$&lt;/p&gt;
-&lt;p&gt;For each loop, $$W_{i+1} = W_i - \frac{\partial L}{\partial W} \times \lambda$$&lt;/p&gt;
+&lt;p&gt;The initial value of &lt;span class="math"&gt;\(W\)&lt;/span&gt; will be &lt;/p&gt;
+&lt;div class="math"&gt;$$W_0 = [0, 0]'$$&lt;/div&gt;
+&lt;p&gt;For each loop, &lt;/p&gt;
+&lt;div class="math"&gt;$$W_{i+1} = W_i - \frac{\partial L}{\partial W} \times \lambda$$&lt;/div&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;w0&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;array&lt;/span&gt;&lt;span class="p"&gt;([&lt;/span&gt;&lt;span class="mf"&gt;0.0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mf"&gt;0.0&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;reshape&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
 &lt;span class="n"&gt;learning_rate&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mf"&gt;0.00001&lt;/span&gt;
 
@@ -65,7 +70,7 @@ $$ \theta^{i + 1} = \theta^{i} - \lambda \cdot \triangledown F\left(\theta^{i}|x
 
 &lt;p&gt;&lt;img alt="alt text" src="/figures/20170513_gradient_descent_linreg_animation.gif" title="Linear Regression" /&gt;&lt;/p&gt;
 &lt;p&gt;For linear regression, we have the analytical solution(or closed-form solution) in the form:&lt;/p&gt;
-&lt;p&gt;$$W = (X'X)^{-1}X'Y$$&lt;/p&gt;
+&lt;div class="math"&gt;$$W = (X'X)^{-1}X'Y$$&lt;/div&gt;
 &lt;p&gt;So the analytical solution can be calculated directly in python. The analytical solution is: constant = 2.73 and the slope is 8.02.&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;regres&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;linalg&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;inv&lt;/span&gt;&lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="n"&gt;x&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;T&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;dot&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;x&lt;/span&gt;&lt;span class="p"&gt;)))&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;dot&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;x&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;T&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;dot&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;y&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
 &lt;span class="k"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;The regression result is alpha_0 = {0:.2f}, alpha_1 = {1:.2f}&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;format&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;round&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;regres&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="nb"&gt;round&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;regres&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;)))&lt;/span&gt;
@@ -77,47 +82,50 @@ $$ \theta^{i + 1} = \theta^{i} - \lambda \cdot \triangledown F\left(\theta^{i}|x
 
 
 &lt;h2&gt;Logistic Regression&lt;/h2&gt;
-&lt;p&gt;Random variable $Y$ has &lt;a href="https://en.wikipedia.org/wiki/Bernoulli_distribution"&gt;Bernoulli distribution&lt;/a&gt;:
-$$
-    Y=\left{
+&lt;p&gt;Random variable &lt;span class="math"&gt;\(Y\)&lt;/span&gt; has &lt;a href="https://en.wikipedia.org/wiki/Bernoulli_distribution"&gt;Bernoulli distribution&lt;/a&gt;:
+&lt;/p&gt;
+&lt;div class="math"&gt;$$
+    Y=\left\{
                 \begin{array}{ll}
-                  1, \mbox{with probability} ~p\
-                  0, \mbox{with probability} ~1 - p\
+                  1, \mbox{with probability} ~p\\
+                  0, \mbox{with probability} ~1 - p\\
                 \end{array}
               \right.
- $$&lt;/p&gt;
-&lt;p&gt;Here $p$ is the function of $X$ given parameters $W$: $p = p(X|W)$.&lt;/p&gt;
+ $$&lt;/div&gt;
+&lt;p&gt;Here &lt;span class="math"&gt;\(p\)&lt;/span&gt; is the function of &lt;span class="math"&gt;\(X\)&lt;/span&gt; given parameters &lt;span class="math"&gt;\(W\)&lt;/span&gt;: &lt;span class="math"&gt;\(p = p(X|W)\)&lt;/span&gt;.&lt;/p&gt;
 &lt;p&gt;The logit function is&lt;/p&gt;
-&lt;p&gt;$$ \begin{align}
-       &amp;amp; ~~~~ \log \frac{p(X|W)}{1 - p(X|W)} = XW + \epsilon   \\
+&lt;div class="math"&gt;$$ \begin{align}
+       &amp;amp; ~~~~ \log \frac{p(X|W)}{1 - p(X|W)} = XW + \epsilon   \\\\
        &amp;amp; ==&amp;gt; p(X|W) = \frac{\exp(XW)}{ 1 + \exp(XW)}   \triangleq  h(W, X)
   \end{align}
-$$&lt;/p&gt;
-&lt;p&gt;here both $X$ and $W$ are vectors(shall be written as $\vec{X}$ and $\vec{W}$)&lt;/p&gt;
+$$&lt;/div&gt;
+&lt;p&gt;here both &lt;span class="math"&gt;\(X\)&lt;/span&gt; and &lt;span class="math"&gt;\(W\)&lt;/span&gt; are vectors(shall be written as &lt;span class="math"&gt;\(\vec{X}\)&lt;/span&gt; and &lt;span class="math"&gt;\(\vec{W}\)&lt;/span&gt;)&lt;/p&gt;
 &lt;p&gt;So the likelihood funciton can be written as &lt;/p&gt;
-&lt;p&gt;$$
+&lt;div class="math"&gt;$$
 \begin{align}
-    L(X, W) = \prod_{i=1}^{n} p\left(X_i|W\right)^{y_i} \left(1 - p\left(X_i|W\right)\right)^{(1 - y_i)}&lt;br /&gt;
+    L(X, W) = \prod_{i=1}^{n} p\left(X_i|W\right)^{y_i} \left(1 - p\left(X_i|W\right)\right)^{(1 - y_i)}  
   \end{align}
-$$&lt;/p&gt;
+$$&lt;/div&gt;
 &lt;p&gt;To max the likelihood function is the same as maximizing the log-likelihood funtion. The log-likelihood function is&lt;/p&gt;
-&lt;p&gt;$$ \begin{align}
-    LL(X, W) &amp;amp;= \log(L(X, W))  \\
-             &amp;amp;= \log\left(\prod_{i=1}^{n} p(X_i|W)^{y_i} (1 - p(X_i|W))^{(1 - y_i)}\right)  \\
+&lt;div class="math"&gt;$$ \begin{align}
+    LL(X, W) &amp;amp;= \log(L(X, W))  \\\\
+             &amp;amp;= \log\left(\prod_{i=1}^{n} p(X_i|W)^{y_i} (1 - p(X_i|W))^{(1 - y_i)}\right)  \\\\
              &amp;amp;= \sum_{i=1}^n \left[ y_i \log(p(X_i|W)) + (1 - y_i) \log(1 - p(X_i|W)) \right]
   \end{align}
-$$&lt;/p&gt;
-&lt;p&gt;from this we can get the gradient of $W$ is &lt;/p&gt;
-&lt;p&gt;$$ \begin{align}
+$$&lt;/div&gt;
+&lt;p&gt;from this we can get the gradient of &lt;span class="math"&gt;\(W\)&lt;/span&gt; is &lt;/p&gt;
+&lt;div class="math"&gt;$$ \begin{align}
     \frac{\partial LL(X, W)}{\partial W} = \sum_{i=1}^n \left( h(W, X_i) - y_i \right) X_i 
   \end{align}
-$$
+$$&lt;/div&gt;
+&lt;p&gt;
 where
-$$
+&lt;/p&gt;
+&lt;div class="math"&gt;$$
  h(W, X_i) = \frac{\exp(X_i W)}{ 1 + \exp(X_i W)}
-$$&lt;/p&gt;
-&lt;p&gt;Next an example is shown how to use gradient descent to find the solution of $W$ to maximize the likelihood function.The link function is of the form:&lt;/p&gt;
-&lt;p&gt;$$\log \frac{p}{1-p} = \beta_0 + \beta_1 x_1 + \beta_2 x_2$$&lt;/p&gt;
+$$&lt;/div&gt;
+&lt;p&gt;Next an example is shown how to use gradient descent to find the solution of &lt;span class="math"&gt;\(W\)&lt;/span&gt; to maximize the likelihood function.The link function is of the form:&lt;/p&gt;
+&lt;div class="math"&gt;$$\log \frac{p}{1-p} = \beta_0 + \beta_1 x_1 + \beta_2 x_2$$&lt;/div&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;w&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;array&lt;/span&gt;&lt;span class="p"&gt;([&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;5&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;reshape&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;3&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
 &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;random&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;seed&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;99&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
 &lt;span class="n"&gt;x&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;c_&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ones&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;100&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;reshape&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;100&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;random&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;normal&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;200&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;reshape&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;100&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;)]&lt;/span&gt;
@@ -188,7 +196,63 @@ $$&lt;/p&gt;
 &lt;/pre&gt;&lt;/div&gt;
 
 
-&lt;p&gt;&lt;a href="https://mdbootstrap.com/css/colors/"&gt;bootstrap color hex value&lt;/a&gt;&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Huiming Song</dc:creator><pubDate>Sat, 13 May 2017 00:00:00 -0500</pubDate><guid>tag:,2017-05-13:pages/2017/05/13/gradient-descent-in-solving-linear-regression-and-logistic-regression/</guid><category>python</category><category>deep learning</category><category>data mining</category></item><item><title>Tensorflow简介--05: Multivariate Regression with Stochastic Gradient Descent</title><link>/pages/2017/05/06/tensorflowjian-jie-05-multivariate-regression-with-stochastic-gradient-descent/</link><description>&lt;p&gt;尽管&lt;code&gt;TenforFlow(tf)&lt;/code&gt;最主要的功能是进行深度学习,包括&lt;a href="https://en.wikipedia.org/wiki/Convolutional_neural_network"&gt;卷积神经网络(CNN)&lt;/a&gt;,&lt;a href="https://en.wikipedia.org/wiki/Recurrent_neural_network"&gt;循环神经网络(RNN)&lt;/a&gt;和&lt;a href="https://en.wikipedia.org/wiki/Deep_learning"&gt;深度神经网络(DNN)&lt;/a&gt;等等。但是作为一个深度学习框架，其也提供了进行一般统计学习和优化的工具。前面(&lt;a href="http://songhuiming.github.io/pages/2017/02/26/tensorflowjian-jie-01/"&gt;1&lt;/a&gt;, &lt;a href="http://songhuiming.github.io/pages/2017/02/26/tensorflowjian-jie-02/"&gt;2&lt;/a&gt;, &lt;a href="http://songhuiming.github.io/pages/2017/02/26/tensorflowjian-jie-03/"&gt;3&lt;/a&gt;, &lt;a href="http://songhuiming.github.io/pages/2017/03/05/tensorflowjian-jie-04/"&gt;4&lt;/a&gt;)我们已经介绍了&lt;code&gt;tf&lt;/code&gt;的基本设置和各个命令的含义。下面我们使用一个例子来展示怎么使用&lt;code&gt;tf&lt;/code&gt;来进行多元回归拟合数据。具体的说，用一个例子来说明怎么借助&lt;code&gt;tf&lt;/code&gt;的&lt;code&gt;Stochastic Gradient Descent&lt;/code&gt;做多项式回归。下面的动图展示了拟合函数的参数(回归系数)在&lt;code&gt;tf&lt;/code&gt;经过多次迭代以后，拟合曲线渐渐逼近真实值的过程。&lt;/p&gt;
+&lt;p&gt;&lt;a href="https://mdbootstrap.com/css/colors/"&gt;bootstrap color hex value&lt;/a&gt;&lt;/p&gt;
+&lt;script type="text/javascript"&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width &lt; 768) ? "left" : align;
+        indent = (screen.width &lt; 768) ? "0em" : indent;
+        linebreak = (screen.width &lt; 768) ? 'true' : linebreak;
+    }
+    
+    var mathjaxscript = document.createElement('script');
+    var location_protocol = (false) ? 'https' : document.location.protocol;
+    if (location_protocol !== 'http' &amp;&amp; location_protocol !== 'https') location_protocol = 'https:';
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript'; 
+    mathjaxscript.src = location_protocol + '//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+&lt;/script&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Huiming Song</dc:creator><pubDate>Sat, 13 May 2017 00:00:00 -0500</pubDate><guid>tag:,2017-05-13:pages/2017/05/13/gradient-descent-in-solving-linear-regression-and-logistic-regression/</guid><category>python</category><category>deep learning</category><category>data mining</category></item><item><title>Tensorflow简介--05: Multivariate Regression with Stochastic Gradient Descent</title><link>/pages/2017/05/06/tensorflowjian-jie-05-multivariate-regression-with-stochastic-gradient-descent/</link><description>&lt;p&gt;尽管&lt;code&gt;TenforFlow(tf)&lt;/code&gt;最主要的功能是进行深度学习,包括&lt;a href="https://en.wikipedia.org/wiki/Convolutional_neural_network"&gt;卷积神经网络(CNN)&lt;/a&gt;,&lt;a href="https://en.wikipedia.org/wiki/Recurrent_neural_network"&gt;循环神经网络(RNN)&lt;/a&gt;和&lt;a href="https://en.wikipedia.org/wiki/Deep_learning"&gt;深度神经网络(DNN)&lt;/a&gt;等等。但是作为一个深度学习框架，其也提供了进行一般统计学习和优化的工具。前面(&lt;a href="http://songhuiming.github.io/pages/2017/02/26/tensorflowjian-jie-01/"&gt;1&lt;/a&gt;, &lt;a href="http://songhuiming.github.io/pages/2017/02/26/tensorflowjian-jie-02/"&gt;2&lt;/a&gt;, &lt;a href="http://songhuiming.github.io/pages/2017/02/26/tensorflowjian-jie-03/"&gt;3&lt;/a&gt;, &lt;a href="http://songhuiming.github.io/pages/2017/03/05/tensorflowjian-jie-04/"&gt;4&lt;/a&gt;)我们已经介绍了&lt;code&gt;tf&lt;/code&gt;的基本设置和各个命令的含义。下面我们使用一个例子来展示怎么使用&lt;code&gt;tf&lt;/code&gt;来进行多元回归拟合数据。具体的说，用一个例子来说明怎么借助&lt;code&gt;tf&lt;/code&gt;的&lt;code&gt;Stochastic Gradient Descent&lt;/code&gt;做多项式回归。下面的动图展示了拟合函数的参数(回归系数)在&lt;code&gt;tf&lt;/code&gt;经过多次迭代以后，拟合曲线渐渐逼近真实值的过程。&lt;/p&gt;
 &lt;script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"&gt;&lt;/script&gt;
 
 &lt;script&gt;
@@ -241,7 +305,7 @@ $$&lt;/p&gt;
 &lt;/pre&gt;&lt;/div&gt;
 
 
-&lt;p&gt;我们的目的是使用&lt;code&gt;tf&lt;/code&gt;来进行多元回归(这个例子是多项式)。首先我们需要模拟产生一个样本数据：$X$是0到9上的均匀分布的点，$Y$是$X$的多项式函数， $y = -50 + 30 \cdot x - 12 \cdot x^2 + x^3 + \epsilon$. $X$和$Y$的关系见下图。&lt;/p&gt;
+&lt;p&gt;我们的目的是使用&lt;code&gt;tf&lt;/code&gt;来进行多元回归(这个例子是多项式)。首先我们需要模拟产生一个样本数据：&lt;span class="math"&gt;\(X\)&lt;/span&gt;是0到9上的均匀分布的点，&lt;span class="math"&gt;\(Y\)&lt;/span&gt;是&lt;span class="math"&gt;\(X\)&lt;/span&gt;的多项式函数， &lt;span class="math"&gt;\(y = -50 + 30 \cdot x - 12 \cdot x^2 + x^3 + \epsilon\)&lt;/span&gt;. &lt;span class="math"&gt;\(X\)&lt;/span&gt;和&lt;span class="math"&gt;\(Y\)&lt;/span&gt;的关系见下图。&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;random&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;seed&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;99&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
 &lt;span class="n"&gt;x&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;linspace&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;9&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;100&lt;/span&gt;&lt;span class="p"&gt;)[:,&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;newaxis&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
 &lt;span class="n"&gt;y&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;  &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;polyval&lt;/span&gt;&lt;span class="p"&gt;([&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;12&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;30&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;50&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="n"&gt;x&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;random&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;randn&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;100&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
@@ -255,9 +319,11 @@ $$&lt;/p&gt;
 
 
 &lt;p&gt;&lt;img alt="png" src="/figures/20170505_tf_multivar_regression_01.png" /&gt;&lt;/p&gt;
-&lt;p&gt;做多项式回归的时候选择基函数为$[1, \space x, \space x^2, \space x^3 ]$,python中可以使用&lt;code&gt;np.power(x, range(4))&lt;/code&gt;得到。因为随机梯度下降的时候梯度跟$X$的值有关系，所以我们需要对$X$的每一列进行标准化让所有的$X$的值处在同样的尺度下。&lt;/p&gt;
-&lt;p&gt;数据标准化的一个办法是所有的值(我们的例子中是每一列数据)减去均值，除以方差 $$ X^{normalized} = \frac{X - \mu(X)}{\sigma(X)}$$ &lt;code&gt;numpy&lt;/code&gt;对应的code是&lt;code&gt;(x - x.mean(axis = 0)) / x.std(axis = 0)&lt;/code&gt;.&lt;/p&gt;
-&lt;p&gt;另一个办法是每一列数据除以最大值。因为我们的$X$都大于0，所以这样做的结果就是把所有的$X$变换到$[0, 1]$区间上。&lt;code&gt;numpy&lt;/code&gt;对应的code是&lt;code&gt;x / np.max(x, axis = 0)&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;做多项式回归的时候选择基函数为&lt;span class="math"&gt;\([1, \space x, \space x^2, \space x^3 ]\)&lt;/span&gt;,python中可以使用&lt;code&gt;np.power(x, range(4))&lt;/code&gt;得到。因为随机梯度下降的时候梯度跟&lt;span class="math"&gt;\(X\)&lt;/span&gt;的值有关系，所以我们需要对&lt;span class="math"&gt;\(X\)&lt;/span&gt;的每一列进行标准化让所有的&lt;span class="math"&gt;\(X\)&lt;/span&gt;的值处在同样的尺度下。&lt;/p&gt;
+&lt;p&gt;数据标准化的一个办法是所有的值(我们的例子中是每一列数据)减去均值，除以方差 &lt;/p&gt;
+&lt;div class="math"&gt;$$ X^{normalized} = \frac{X - \mu(X)}{\sigma(X)}$$&lt;/div&gt;
+&lt;p&gt; &lt;code&gt;numpy&lt;/code&gt;对应的code是&lt;code&gt;(x - x.mean(axis = 0)) / x.std(axis = 0)&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;另一个办法是每一列数据除以最大值。因为我们的&lt;span class="math"&gt;\(X\)&lt;/span&gt;都大于0，所以这样做的结果就是把所有的&lt;span class="math"&gt;\(X\)&lt;/span&gt;变换到&lt;span class="math"&gt;\([0, 1]\)&lt;/span&gt;区间上。&lt;code&gt;numpy&lt;/code&gt;对应的code是&lt;code&gt;x / np.max(x, axis = 0)&lt;/code&gt;.&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;pol_order&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;4&lt;/span&gt;
 &lt;span class="n"&gt;x&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;power&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;x&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nb"&gt;range&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;pol_order&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
 
@@ -272,7 +338,7 @@ $$&lt;/p&gt;
 &lt;/pre&gt;&lt;/div&gt;
 
 
-&lt;p&gt;normalized过的$X$和$Y$的关系为&lt;/p&gt;
+&lt;p&gt;normalized过的&lt;span class="math"&gt;\(X\)&lt;/span&gt;和&lt;span class="math"&gt;\(Y\)&lt;/span&gt;的关系为&lt;/p&gt;
 &lt;p&gt;&lt;img alt="png" src="/figures/20170505_tf_multivar_regression_02.png" /&gt;&lt;/p&gt;
 &lt;p&gt;把上面定义好的data分为training和test两部分：&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;random&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;seed&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;99&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
@@ -293,20 +359,20 @@ $$&lt;/p&gt;
 &lt;/pre&gt;&lt;/div&gt;
 
 
-&lt;p&gt;接下来定义模型表达式。模型的参数变量通过&lt;code&gt;tf.Variable&lt;/code&gt;来定义，跟&lt;code&gt;tf.placehold&lt;/code&gt;的定义很相似，不同的地方在于&lt;code&gt;tf.Variable&lt;/code&gt;的值会随着拟合而发生变化。线性模型的表达式为$Y=X \times W$。所以参数W的维度与X的列数相等。矩阵X和W相乘由&lt;code&gt;tf.matmul&lt;/code&gt;定义。&lt;/p&gt;
+&lt;p&gt;接下来定义模型表达式。模型的参数变量通过&lt;code&gt;tf.Variable&lt;/code&gt;来定义，跟&lt;code&gt;tf.placehold&lt;/code&gt;的定义很相似，不同的地方在于&lt;code&gt;tf.Variable&lt;/code&gt;的值会随着拟合而发生变化。线性模型的表达式为&lt;span class="math"&gt;\(Y=X \times W\)&lt;/span&gt;。所以参数W的维度与X的列数相等。矩阵X和W相乘由&lt;code&gt;tf.matmul&lt;/code&gt;定义。&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="k"&gt;with&lt;/span&gt; &lt;span class="n"&gt;tf&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;name_scope&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;Model&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
     &lt;span class="n"&gt;W&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;tf&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Variable&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;tf&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;zeros&lt;/span&gt;&lt;span class="p"&gt;([&lt;/span&gt;&lt;span class="n"&gt;pol_order&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="n"&gt;dtype&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;tf&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;float32&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;W&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
     &lt;span class="n"&gt;y&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;tf&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;matmul&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;inputs&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;W&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
 &lt;/pre&gt;&lt;/div&gt;
 
 
-&lt;p&gt;最后定义损失函数和它的最优化函数。通常对线性回归模型我们都是要最小化均方误差。损失函数定义为平方损失$L = \sum_{i=1}^{n}(y_i - f(x_{i}|W)) ^2$。 把回归函数写成矩阵的形式为$Y = X \cdot W$，那么损失函数也可以表达为矩阵相乘$L = (Y - XW)'(Y-XW)$. 要最小化损失函数，我们首先求解出梯度为&lt;/p&gt;
-&lt;p&gt;$$ \begin{aligned}
- \frac{\partial L}{\partial W}  &amp;amp; = \frac{\partial ( (Y - XW)'(Y-XW))}{\partial W}  \\
- &amp;amp; = \frac{\partial (Y'Y - 2W'X'Y  + W'X'XW)}{\partial W} \\
+&lt;p&gt;最后定义损失函数和它的最优化函数。通常对线性回归模型我们都是要最小化均方误差。损失函数定义为平方损失&lt;span class="math"&gt;\(L = \sum_{i=1}^{n}(y_i - f(x_{i}|W)) ^2\)&lt;/span&gt;。 把回归函数写成矩阵的形式为&lt;span class="math"&gt;\(Y = X \cdot W\)&lt;/span&gt;，那么损失函数也可以表达为矩阵相乘&lt;span class="math"&gt;\(L = (Y - XW)'(Y-XW)\)&lt;/span&gt;. 要最小化损失函数，我们首先求解出梯度为&lt;/p&gt;
+&lt;div class="math"&gt;$$ \begin{aligned}
+ \frac{\partial L}{\partial W}  &amp;amp; = \frac{\partial ( (Y - XW)'(Y-XW))}{\partial W}  \\\\
+ &amp;amp; = \frac{\partial (Y'Y - 2W'X'Y  + W'X'XW)}{\partial W} \\\\
  &amp;amp;= -2X'(Y - XW)
-\end{aligned}$$&lt;/p&gt;
-&lt;p&gt;&lt;code&gt;tf&lt;/code&gt;(包括&lt;code&gt;sklearn&lt;/code&gt;)都是通过数值办法来最小化损失函数的，而不是通过解析解，尽管我们知道对线性模型回归参数$W$参在解析解$\hat{W} = (X'X)^{-1}X'Y$. 具体就是让W每次沿着它的梯度方向变化一点点(learning rate),然后反复迭代，直到达到我们的收敛条件或者停止条件。在第一篇中我们介绍过梯度下降的原理：假如损失函数是一座山，我们现在站在山坡上朝四周看看，然后找一个方向能让我们走一点点路但是下降的最快，那个方向就是梯度的方向。&lt;/p&gt;
+\end{aligned}$$&lt;/div&gt;
+&lt;p&gt;&lt;code&gt;tf&lt;/code&gt;(包括&lt;code&gt;sklearn&lt;/code&gt;)都是通过数值办法来最小化损失函数的，而不是通过解析解，尽管我们知道对线性模型回归参数&lt;span class="math"&gt;\(W\)&lt;/span&gt;参在解析解&lt;span class="math"&gt;\(\hat{W} = (X'X)^{-1}X'Y\)&lt;/span&gt;. 具体就是让W每次沿着它的梯度方向变化一点点(learning rate),然后反复迭代，直到达到我们的收敛条件或者停止条件。在第一篇中我们介绍过梯度下降的原理：假如损失函数是一座山，我们现在站在山坡上朝四周看看，然后找一个方向能让我们走一点点路但是下降的最快，那个方向就是梯度的方向。&lt;/p&gt;
 &lt;p&gt;&lt;code&gt;tf&lt;/code&gt;提供了很多最优化(不同的梯度下降)的办法，参见&lt;a href="https://www.tensorflow.org/api_guides/python/train#Optimizers"&gt;Optimizers&lt;/a&gt;.对某些数据使用梯度下降的时候会出现鞍点，导致&lt;code&gt;GradientDescentOptimizer&lt;/code&gt;可能会找不到最优点或者只是local的最优点。这时应该尝试别的最优化的办法。在我们的例子中，&lt;code&gt;GradientDescentOptimizer&lt;/code&gt;找不到最优解， 但是&lt;code&gt;AdamOptimizer&lt;/code&gt;可以找到最优解。&lt;/p&gt;
 &lt;p&gt;&lt;code&gt;learning rate&lt;/code&gt;的参数设置为&lt;code&gt;trainable=False&lt;/code&gt;表示每次迭代的时候&lt;code&gt;learning rate&lt;/code&gt;本身不变化。&lt;code&gt;learning rate&lt;/code&gt;太小会导致迭代步骤太多，计算所需要的时间就会很长。&lt;code&gt;learning rate&lt;/code&gt;太大也会有问题：在你将要靠近最优点的时候，因为下一步跨的太大，导致跨过了最优点(overshoot)。比较好的办法是：刚开始迭代的时候&lt;code&gt;learning rate&lt;/code&gt;可以大一些，然后随着渐渐靠近最优点，&lt;code&gt;learning rate&lt;/code&gt;应该渐渐减小。&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="k"&gt;with&lt;/span&gt; &lt;span class="n"&gt;tf&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;name_scope&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;SGD&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
@@ -420,7 +486,8 @@ $$&lt;/p&gt;
 
 
 &lt;p&gt;最终，损失函数在training上面收敛到0.9525，循环达到了停止的条件。这时候损失函数在test上的值为1.12177&lt;/p&gt;
-&lt;p&gt;最后的拟合函数为 $$ y = -56.3677 + 78.8013 \cdot x - 293.1888 \cdot x^2  + 209.9586 \cdot x^3$$&lt;/p&gt;
+&lt;p&gt;最后的拟合函数为 &lt;/p&gt;
+&lt;div class="math"&gt;$$ y = -56.3677 + 78.8013 \cdot x - 293.1888 \cdot x^2  + 209.9586 \cdot x^3$$&lt;/div&gt;
 &lt;p&gt;用于拟合的数据的前5行为&lt;/p&gt;
 &lt;div&gt;
 &lt;table border="1" class="dataframe"&gt;
@@ -503,7 +570,63 @@ The MSE from sklearn is: 1.12222708205
 &lt;li&gt;&lt;a href="https://www.tensorflow.org/get_started/mnist/mechanics"&gt;TensorFlow Mechanics 101&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href="https://www.tensorflow.org/versions/r0.11/api_docs/python/client/session_management"&gt;Session management&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href="http://stackoverflow.com/questions/33610685/in-tensorflow-what-is-the-difference-between-session-run-and-tensor-eval"&gt;what is the difference between Session.run() and Tensor.eval()&lt;/a&gt;&lt;/li&gt;
-&lt;/ol&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Huiming Song</dc:creator><pubDate>Sat, 06 May 2017 00:00:00 -0500</pubDate><guid>tag:,2017-05-06:pages/2017/05/06/tensorflowjian-jie-05-multivariate-regression-with-stochastic-gradient-descent/</guid><category>python</category><category>tensorflow</category><category>deep learning</category></item><item><title>test math formula in github pages</title><link>/pages/2017/05/04/test-math-formula-in-github-pages/</link><description>&lt;p&gt;It only enables math formula. But it did not support complicated things like equation number and so on.&lt;/p&gt;
+&lt;/ol&gt;
+&lt;script type="text/javascript"&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width &lt; 768) ? "left" : align;
+        indent = (screen.width &lt; 768) ? "0em" : indent;
+        linebreak = (screen.width &lt; 768) ? 'true' : linebreak;
+    }
+    
+    var mathjaxscript = document.createElement('script');
+    var location_protocol = (false) ? 'https' : document.location.protocol;
+    if (location_protocol !== 'http' &amp;&amp; location_protocol !== 'https') location_protocol = 'https:';
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript'; 
+    mathjaxscript.src = location_protocol + '//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+&lt;/script&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Huiming Song</dc:creator><pubDate>Sat, 06 May 2017 00:00:00 -0500</pubDate><guid>tag:,2017-05-06:pages/2017/05/06/tensorflowjian-jie-05-multivariate-regression-with-stochastic-gradient-descent/</guid><category>python</category><category>tensorflow</category><category>deep learning</category></item><item><title>test math formula in github pages</title><link>/pages/2017/05/04/test-math-formula-in-github-pages/</link><description>&lt;p&gt;It only enables math formula. But it did not support complicated things like equation number and so on.&lt;/p&gt;
 &lt;h3&gt;method 1. copy the following in the md file&lt;/h3&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nt"&gt;&amp;lt;script&lt;/span&gt; &lt;span class="na"&gt;type=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;text/javascript&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;src=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML&amp;quot;&lt;/span&gt;&lt;span class="nt"&gt;&amp;gt;&amp;lt;/script&amp;gt;&lt;/span&gt;
 &lt;span class="nt"&gt;&amp;lt;script&amp;gt;&lt;/span&gt;
@@ -518,43 +641,50 @@ The MSE from sklearn is: 1.12222708205
 &lt;/pre&gt;&lt;/div&gt;
 
 
-&lt;p&gt;will generate $$\frac{\partial f(y)}{\partial x} = \frac{\partial f}{\partial y} \times \frac{\partial y}{\partial x}$$&lt;/p&gt;
+&lt;p&gt;will generate &lt;/p&gt;
+&lt;div class="math"&gt;$$\frac{\partial f(y)}{\partial x} = \frac{\partial f}{\partial y} \times \frac{\partial y}{\partial x}$$&lt;/div&gt;
 &lt;p&gt;And &lt;code&gt;\\( \frac{1}{n} \\)&lt;/code&gt; will create formula inline: \( \frac{1}{n} \).&lt;/p&gt;
 &lt;hr /&gt;
-&lt;p&gt;Let's test some inline math $x$, $y$, $x_1$, $y_1$.&lt;/p&gt;
-&lt;p&gt;Now a inline math with special character: $|\psi\rangle$, $x'$, $x^*$.&lt;/p&gt;
+&lt;p&gt;Let's test some inline math &lt;span class="math"&gt;\(x\)&lt;/span&gt;, &lt;span class="math"&gt;\(y\)&lt;/span&gt;, &lt;span class="math"&gt;\(x_1\)&lt;/span&gt;, &lt;span class="math"&gt;\(y_1\)&lt;/span&gt;.&lt;/p&gt;
+&lt;p&gt;Now a inline math with special character: &lt;span class="math"&gt;\(|\psi\rangle\)&lt;/span&gt;, &lt;span class="math"&gt;\(x'\)&lt;/span&gt;, &lt;span class="math"&gt;\(x^\*\)&lt;/span&gt;.&lt;/p&gt;
 &lt;p&gt;Test a display math:
-$$
+&lt;/p&gt;
+&lt;div class="math"&gt;$$
    |\psi_1\rangle = a|0\rangle + b|1\rangle
-$$&lt;/p&gt;
+$$&lt;/div&gt;
 &lt;p&gt;Test a display math with equation number:
-\begin{equation}
+&lt;/p&gt;
+&lt;div class="math"&gt;\begin{equation}
    |\psi_1\rangle = a|0\rangle + b|1\rangle
-\end{equation}&lt;/p&gt;
+\end{equation}&lt;/div&gt;
 &lt;p&gt;Test a display math with equation number:
-$$
+&lt;/p&gt;
+&lt;div class="math"&gt;$$
   \begin{align}
-    |\psi_1\rangle &amp;amp;= a|0\rangle + b|1\rangle \\
+    |\psi_1\rangle &amp;amp;= a|0\rangle + b|1\rangle \\\\
     |\psi_2\rangle &amp;amp;= c|0\rangle + d|1\rangle
   \end{align}
-$$&lt;/p&gt;
+$$&lt;/div&gt;
 &lt;p&gt;And test a display math without equaltion number:
-$$
-  \begin{align*}
-    |\psi_1\rangle &amp;amp;= a|0\rangle + b|1\rangle \\
+&lt;/p&gt;
+&lt;div class="math"&gt;$$
+  \begin{align\*}
+    |\psi_1\rangle &amp;amp;= a|0\rangle + b|1\rangle \\\\
     |\psi_2\rangle &amp;amp;= c|0\rangle + d|1\rangle
-  \end{align*}
-$$&lt;/p&gt;
+  \end{align\*}
+$$&lt;/div&gt;
 &lt;p&gt;Test a display math with equation number:
-\begin{align}
-    |\psi_1\rangle &amp;amp;= a|0\rangle + b|1\rangle \\
+&lt;/p&gt;
+&lt;div class="math"&gt;\begin{align}
+    |\psi_1\rangle &amp;amp;= a|0\rangle + b|1\rangle \\\\
     |\psi_2\rangle &amp;amp;= c|0\rangle + d|1\rangle
-\end{align}&lt;/p&gt;
+\end{align}&lt;/div&gt;
 &lt;p&gt;And test a display math without equaltion number:
-\begin{align*}
-    |\psi_1\rangle &amp;amp;= a|0\rangle + b|1\rangle \\
+&lt;/p&gt;
+&lt;div class="math"&gt;\begin{align\*}
+    |\psi_1\rangle &amp;amp;= a|0\rangle + b|1\rangle \\\\
     |\psi_2\rangle &amp;amp;= c|0\rangle + d|1\rangle
-\end{align*}&lt;/p&gt;
+\end{align\*}&lt;/div&gt;
 &lt;p&gt;Here are some notes about the above example:&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;
@@ -576,17 +706,73 @@ $$&lt;/p&gt;
 &lt;p&gt;If you found error while typeseting math formula, try to escape some special characters.&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ol&gt;
-&lt;p&gt;$$ \begin{aligned}
- \frac{\partial L}{\partial W}  &amp;amp; = \frac{\partial ( (Y - XW)'(Y-XW))}{\partial W}  \\ 
- &amp;amp; = \frac{\partial (Y'Y - 2W'X'Y  + W'X'XW)}{\partial W} \\
- &amp;amp;= -2X'(Y - XW)&lt;br /&gt;
-\end{aligned}$$&lt;/p&gt;
+&lt;div class="math"&gt;$$ \begin{aligned}
+ \frac{\partial L}{\partial W}  &amp;amp; = \frac{\partial ( (Y - XW)'(Y-XW))}{\partial W}  \\\\ 
+ &amp;amp; = \frac{\partial (Y'Y - 2W'X'Y  + W'X'XW)}{\partial W} \\\\
+ &amp;amp;= -2X'(Y - XW)  
+\end{aligned}$$&lt;/div&gt;
 &lt;h3&gt;Reference&lt;/h3&gt;
 &lt;ol&gt;
 &lt;li&gt;&lt;a href="http://stackoverflow.com/questions/26275645/how-to-supported-latex-in-github-pages"&gt;How to supported latex in github-pages&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href="http://haixing-hu.github.io/programming/2013/09/20/how-to-use-mathjax-in-jekyll-generated-github-pages/"&gt;How to use MathJax in Jekyll generated Github pages&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href="https://zishuaiz.github.io/blog/how-to-enable-mathjax-in-github-pages"&gt;How to enable mathjax/latex in github pages&lt;/a&gt;&lt;/li&gt;
-&lt;/ol&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Huiming Song</dc:creator><pubDate>Thu, 04 May 2017 00:00:00 -0500</pubDate><guid>tag:,2017-05-04:pages/2017/05/04/test-math-formula-in-github-pages/</guid><category>python</category></item><item><title>Numpy Introduction 02</title><link>/pages/2017/04/21/numpy-introduction-02/</link><description>&lt;style type="text/css"&gt;/*!
+&lt;/ol&gt;
+&lt;script type="text/javascript"&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width &lt; 768) ? "left" : align;
+        indent = (screen.width &lt; 768) ? "0em" : indent;
+        linebreak = (screen.width &lt; 768) ? 'true' : linebreak;
+    }
+    
+    var mathjaxscript = document.createElement('script');
+    var location_protocol = (false) ? 'https' : document.location.protocol;
+    if (location_protocol !== 'http' &amp;&amp; location_protocol !== 'https') location_protocol = 'https:';
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript'; 
+    mathjaxscript.src = location_protocol + '//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+&lt;/script&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Huiming Song</dc:creator><pubDate>Thu, 04 May 2017 00:00:00 -0500</pubDate><guid>tag:,2017-05-04:pages/2017/05/04/test-math-formula-in-github-pages/</guid><category>python</category></item><item><title>Numpy Introduction 02</title><link>/pages/2017/04/21/numpy-introduction-02/</link><description>&lt;style type="text/css"&gt;/*!
 *
 * IPython notebook
 *
@@ -3122,7 +3308,7 @@ np.expand_dims(x, axis = 1) 在index=1增加一个维度，所以现在维度为
 &lt;h3&gt;1.1. convolve of two vectors&lt;/h3&gt;
 &lt;p&gt;The convolution of two vectors, u and v, represents the area of overlap under the points as v slides across u. Algebraically, convolution is the same operation as multiplying polynomials whose coefficients are the elements of u and v.&lt;/p&gt;
 &lt;p&gt;Let m = length(u) and n = length(v) . Then w is the vector of length m+n-1 whose kth element is
-$w(k)=\sum_j u(j)v(k−j+1)$.&lt;/p&gt;
+&lt;span class="math"&gt;\(w(k)=\sum_j u(j)v(k−j+1)\)&lt;/span&gt;.&lt;/p&gt;
 &lt;p&gt;The sum is over all the values of j that lead to legal subscripts for u(j) and v(k-j+1), specifically j = max(1,k+1-n):1:min(k,m). When m = n, this gives&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;w(1) = u(1)*v(1)
 w(2) = u(1)*v(2)+u(2)*v(1)
@@ -3501,7 +3687,63 @@ which is related to c_{av}[k] by c&amp;#39;_{av}[k] = c_{av}[-k].
 &lt;/pre&gt;&lt;/div&gt;
 
 
-&lt;p&gt;&lt;img alt="png" src="/figures/output_33_1.png" /&gt;&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Huiming Song</dc:creator><pubDate>Sun, 16 Apr 2017 22:03:00 -0500</pubDate><guid>tag:,2017-04-16:pages/2017/04/16/convolve-correlate-and-image-process-in-numpy/</guid><category>python</category><category>numpy</category></item><item><title>variable selection in linear regression: 2</title><link>/pages/2017/04/15/variable-selection-in-linear-regression-2/</link><description>&lt;h2&gt;summary&lt;/h2&gt;
+&lt;p&gt;&lt;img alt="png" src="/figures/output_33_1.png" /&gt;&lt;/p&gt;
+&lt;script type="text/javascript"&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width &lt; 768) ? "left" : align;
+        indent = (screen.width &lt; 768) ? "0em" : indent;
+        linebreak = (screen.width &lt; 768) ? 'true' : linebreak;
+    }
+    
+    var mathjaxscript = document.createElement('script');
+    var location_protocol = (false) ? 'https' : document.location.protocol;
+    if (location_protocol !== 'http' &amp;&amp; location_protocol !== 'https') location_protocol = 'https:';
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript'; 
+    mathjaxscript.src = location_protocol + '//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+&lt;/script&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Huiming Song</dc:creator><pubDate>Sun, 16 Apr 2017 22:03:00 -0500</pubDate><guid>tag:,2017-04-16:pages/2017/04/16/convolve-correlate-and-image-process-in-numpy/</guid><category>python</category><category>numpy</category></item><item><title>variable selection in linear regression: 2</title><link>/pages/2017/04/15/variable-selection-in-linear-regression-2/</link><description>&lt;h2&gt;summary&lt;/h2&gt;
 &lt;p&gt;This is an example of variable selection in linear regression(and it can be easily applied in logistic regression). It has two steps:&lt;/p&gt;
 &lt;p&gt;The first step is univariate analysis. It checks the pearson correlation between each x and y. This is helpful to reduce the candidate predictors by only selecting the variables has significant correlation. The cutoff point is set p-value no more than 10%. Also the correlation coefficient sign is tested to make sure the correlation should make sense.&lt;/p&gt;
 &lt;p&gt;The second step is multi-variate analysis. For the variables selected in step 1(say there are n variables left), all possible variables combinations will be run in the linear regression. Like all 2 variables combination(C(n, 2) combinations), 3 variables combination(C(n, 3) combinations)... will be tested in the linear regression. If there are duplicated variables(like GDP annual change and GDP quarterly change) in the model, it will de droped. The regression sign of each variable will be checked again. If any sign does not make sense, then the model will be droped. If there is any variable is not significant, then the model will be droped. If there is multicollinearity(checked by VIF), the model will be droped. &lt;/p&gt;
@@ -4709,7 +4951,7 @@ figures
 
 
 &lt;h3&gt;1. weighted average&lt;/h3&gt;
-&lt;p&gt;Let's denote &lt;code&gt;x = [x_1, ..., x_n]&lt;/code&gt;. The weight &lt;code&gt;w&lt;/code&gt; is denoted as &lt;code&gt;w = [w_1, ..., w_n]&lt;/code&gt;. The weighted average of &lt;code&gt;x&lt;/code&gt; by &lt;code&gt;w&lt;/code&gt; is $\frac{ \sum_{i=1}^{n} x_i * w_i } { \sum_{i=1}^{n} w_i}$&lt;/p&gt;
+&lt;p&gt;Let's denote &lt;code&gt;x = [x_1, ..., x_n]&lt;/code&gt;. The weight &lt;code&gt;w&lt;/code&gt; is denoted as &lt;code&gt;w = [w_1, ..., w_n]&lt;/code&gt;. The weighted average of &lt;code&gt;x&lt;/code&gt; by &lt;code&gt;w&lt;/code&gt; is &lt;span class="math"&gt;\(\frac{ \sum_{i=1}^{n} x_i * w_i } { \sum_{i=1}^{n} w_i}\)&lt;/span&gt;&lt;/p&gt;
 &lt;p&gt;&lt;code&gt;numpy&lt;/code&gt; provides a function called &lt;code&gt;np.average()&lt;/code&gt; to calculate the weighted average. An example of calculate by hand and by the &lt;code&gt;np.average&lt;/code&gt; is given below:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;random&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;seed&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;9999&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
 &lt;span class="n"&gt;df&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;pd&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;DataFrame&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;random&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;random&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;20&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;reshape&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;10&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="n"&gt;columns&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;val1&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;wt&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
@@ -5240,7 +5482,64 @@ dtype: object
     &lt;/tr&gt;
   &lt;/tbody&gt;
 &lt;/table&gt;
-&lt;/div&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Huiming Song</dc:creator><pubDate>Sat, 18 Mar 2017 00:00:00 -0500</pubDate><guid>tag:,2017-03-18:pages/2017/03/18/weighted-avarage-aggrefated-function-with-apply-and-agg/</guid><category>python</category><category>pandas</category></item><item><title>tensorflow简介--04</title><link>/pages/2017/03/05/tensorflowjian-jie-04/</link><description>&lt;h2&gt;Logistic Regression回顾&lt;/h2&gt;
+&lt;/div&gt;
+
+&lt;script type="text/javascript"&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width &lt; 768) ? "left" : align;
+        indent = (screen.width &lt; 768) ? "0em" : indent;
+        linebreak = (screen.width &lt; 768) ? 'true' : linebreak;
+    }
+    
+    var mathjaxscript = document.createElement('script');
+    var location_protocol = (false) ? 'https' : document.location.protocol;
+    if (location_protocol !== 'http' &amp;&amp; location_protocol !== 'https') location_protocol = 'https:';
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript'; 
+    mathjaxscript.src = location_protocol + '//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+&lt;/script&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Huiming Song</dc:creator><pubDate>Sat, 18 Mar 2017 00:00:00 -0500</pubDate><guid>tag:,2017-03-18:pages/2017/03/18/weighted-avarage-aggrefated-function-with-apply-and-agg/</guid><category>python</category><category>pandas</category></item><item><title>tensorflow简介--04</title><link>/pages/2017/03/05/tensorflowjian-jie-04/</link><description>&lt;h2&gt;Logistic Regression回顾&lt;/h2&gt;
 &lt;p&gt;我们已经学习了给定一些features，比如房屋面积，怎么通过TF的线性回归来预测数值型的结果，比如说房屋价格。&lt;/p&gt;
 &lt;p&gt;但是有时候我们需要进行分类，而不是预测一个数值。比如：给定一些数字的图片，我们希望能识别出0，1，...9.或者给了一首歌，我们希望能识别这是摇滚音乐，乡村音乐或者其他。这种分类的模型识别的结果我们叫&lt;em&gt;class&lt;/em&gt;.我们可以用TF中的logistic regression来做分类。&lt;/p&gt;
 &lt;p&gt;下面我们会讨论用logistic regression来做数字图形识别，也就是分类成0，1，...9.&lt;/p&gt;
@@ -10856,9 +11155,9 @@ Name: acs_k3, dtype: int64
 &lt;li&gt;standardized residuals, and&lt;/li&gt;
 &lt;li&gt;Cook's distance.&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;To understand &lt;a href="https://en.wikipedia.org/wiki/Leverage_%28statistics%29"&gt;leverage&lt;/a&gt;, recognize that &lt;a href="https://en.wikipedia.org/wiki/Ordinary_least_squares"&gt;Ordinary Least Squares regression&lt;/a&gt; fits a line that will pass through the center of your data, ($\bar{X}$, $\bar{Y}$)
-. The line can be shallowly or steeply sloped, but it will pivot around that point like a &lt;a href="https://en.wikipedia.org/wiki/Lever"&gt;lever&lt;/a&gt; on a &lt;a href="https://en.wiktionary.org/wiki/fulcrum"&gt;fulcrum&lt;/a&gt;. We can take this analogy fairly literally: because OLS seeks to minimize the vertical distances between the data and the line*, the data points that are further out towards the extremes of $\bar{X}$ will push / pull harder on the lever (i.e., the regression line); they have more leverage. One result of this could be that the results you get are driven by a few data points; that's what this plot is intended to help you determine.&lt;/p&gt;
-&lt;p&gt;Another result of the fact that points further out on X have more leverage is that they tend to be closer to the regression line (or more accurately: the regression line is fit so as to be closer to them) than points that are near $\bar{X}$. In other words, the residual standard deviation can differ at different points on X&lt;/p&gt;
+&lt;p&gt;To understand &lt;a href="https://en.wikipedia.org/wiki/Leverage_%28statistics%29"&gt;leverage&lt;/a&gt;, recognize that &lt;a href="https://en.wikipedia.org/wiki/Ordinary_least_squares"&gt;Ordinary Least Squares regression&lt;/a&gt; fits a line that will pass through the center of your data, (&lt;span class="math"&gt;\(\bar{X}\)&lt;/span&gt;, &lt;span class="math"&gt;\(\bar{Y}\)&lt;/span&gt;)
+. The line can be shallowly or steeply sloped, but it will pivot around that point like a &lt;a href="https://en.wikipedia.org/wiki/Lever"&gt;lever&lt;/a&gt; on a &lt;a href="https://en.wiktionary.org/wiki/fulcrum"&gt;fulcrum&lt;/a&gt;. We can take this analogy fairly literally: because OLS seeks to minimize the vertical distances between the data and the line*, the data points that are further out towards the extremes of &lt;span class="math"&gt;\(\bar{X}\)&lt;/span&gt; will push / pull harder on the lever (i.e., the regression line); they have more leverage. One result of this could be that the results you get are driven by a few data points; that's what this plot is intended to help you determine.&lt;/p&gt;
+&lt;p&gt;Another result of the fact that points further out on X have more leverage is that they tend to be closer to the regression line (or more accurately: the regression line is fit so as to be closer to them) than points that are near &lt;span class="math"&gt;\(\bar{X}\)&lt;/span&gt;. In other words, the residual standard deviation can differ at different points on X&lt;/p&gt;
 &lt;p&gt;(even if the error standard deviation is constant). To correct for this, residuals are often &lt;a href="https://en.wikipedia.org/wiki/Studentized_residual"&gt;standardized&lt;/a&gt; so that they have constant variance (assuming the underlying data generating process is homoscedastic, of course).&lt;/p&gt;
 &lt;p&gt;One way to think about whether or not the results you have were driven by a given data point is to calculate how far the predicted values for your data would move if your model were fit without the data point in question. This calculated total distance is called &lt;a href="https://en.wikipedia.org/wiki/Cook%27s_distance"&gt;Cook's distance&lt;/a&gt;. Fortunately, you don't have to rerun your regression model N times to find out how far the predicted values will move, Cook's D is a function of the leverage and standardized residual associated with each data point.&lt;/p&gt;
 &lt;p&gt;With these facts in mind, consider the plots associated with four different situations:&lt;/p&gt;
@@ -10917,7 +11216,7 @@ Name: acs_k3, dtype: int64
 
 &lt;p&gt;&lt;img alt="png" src="/figures/ucla_ats_linreg_2_0_01.png" /&gt;&lt;/p&gt;
 &lt;p&gt;&lt;img alt="png" src="/figures/ucla_ats_linreg_2_0_02.png" /&gt;&lt;/p&gt;
-&lt;p&gt;The first graph includes the (x, y) scatter plot, the actual function generates the data(blue line) and the predicted linear regression line(green line). The linear regression will go through the average point $(\bar{x}, \bar{y})$ all the time. &lt;/p&gt;
+&lt;p&gt;The first graph includes the (x, y) scatter plot, the actual function generates the data(blue line) and the predicted linear regression line(green line). The linear regression will go through the average point &lt;span class="math"&gt;\((\bar{x}, \bar{y})\)&lt;/span&gt; all the time. &lt;/p&gt;
 &lt;p&gt;The second graph is the Leverage v.s. Studentized residuals plot. y axis(verticle axis) is the studentized residuals indicating if there is any outliers based on the alpha value(significace level). It shows point 0(the first data point) is like an outlier a little based on current alpha. Point 5 and 3 are high leverage data points. Generally there isn't any issue with this regression fitting. &lt;/p&gt;
 &lt;h6&gt;case 2. There is high leverage point (30, 20.8). This point has higher leverage than the others but There is no outliers. Because of this, its R2=0.684 which is higher than the case 1.&lt;/h6&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;x2&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;r_&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;x1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;30&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
@@ -11034,7 +11333,63 @@ Name: acs_k3, dtype: int64
 &lt;li&gt;&lt;a href="http://stats.stackexchange.com/questions/58141/interpreting-plot-lm"&gt;Interpreting plot.lm()&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href="http://statsmodels.sourceforge.net/devel/examples/notebooks/generated/example_regression_plots.html"&gt;Regression Plots&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href="http://statsmodels.sourceforge.net/stable/graphics.html"&gt;statsmodels graphics&lt;/a&gt;&lt;/li&gt;
-&lt;/ol&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Huiming Song</dc:creator><pubDate>Sun, 27 Nov 2016 00:00:00 -0600</pubDate><guid>tag:,2016-11-27:pages/2016/11/27/linear-regression-in-python-outliers-leverage-detect/</guid><category>python</category><category>data minging</category><category>statsmodels</category></item><item><title>mysql 2006 error: Sign up MySQL Server has gone away when importing large sql file</title><link>/pages/2016/11/06/mysql-2006-error-sign-up-mysql-server-has-gone-away-when-importing-large-sql-file/</link><description>&lt;p&gt;Recently I build a webpage to apply sentiment analysis for the tweets about Trump and Hillary. The real time tweets were pulled and saved to mysql. There are lots of tweets every second to save so I got the mysql crashed again and again.&lt;/p&gt;
+&lt;/ol&gt;
+&lt;script type="text/javascript"&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width &lt; 768) ? "left" : align;
+        indent = (screen.width &lt; 768) ? "0em" : indent;
+        linebreak = (screen.width &lt; 768) ? 'true' : linebreak;
+    }
+    
+    var mathjaxscript = document.createElement('script');
+    var location_protocol = (false) ? 'https' : document.location.protocol;
+    if (location_protocol !== 'http' &amp;&amp; location_protocol !== 'https') location_protocol = 'https:';
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript'; 
+    mathjaxscript.src = location_protocol + '//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+&lt;/script&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Huiming Song</dc:creator><pubDate>Sun, 27 Nov 2016 00:00:00 -0600</pubDate><guid>tag:,2016-11-27:pages/2016/11/27/linear-regression-in-python-outliers-leverage-detect/</guid><category>python</category><category>data minging</category><category>statsmodels</category></item><item><title>mysql 2006 error: Sign up MySQL Server has gone away when importing large sql file</title><link>/pages/2016/11/06/mysql-2006-error-sign-up-mysql-server-has-gone-away-when-importing-large-sql-file/</link><description>&lt;p&gt;Recently I build a webpage to apply sentiment analysis for the tweets about Trump and Hillary. The real time tweets were pulled and saved to mysql. There are lots of tweets every second to save so I got the mysql crashed again and again.&lt;/p&gt;
 &lt;p&gt;The following are some of the errors I got:&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;&lt;strong&gt;MySQL error 2006: mysql server has gone away&lt;/strong&gt;&lt;/li&gt;
@@ -16937,7 +17292,7 @@ dtype: int64
 &lt;span class="k"&gt;where&lt;/span&gt; &lt;span class="n"&gt;rn&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
 &lt;/pre&gt;&lt;/div&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Huiming Song</dc:creator><pubDate>Tue, 29 Sep 2015 00:00:00 -0500</pubDate><guid>tag:,2015-09-29:pages/2015/09/29/first-row-partition-by-var-order-by-the-numeric-var/</guid><category>sql</category></item><item><title>best subset regression in python</title><link>/pages/2015/09/26/best-subset-regression-in-python/</link><description>&lt;p&gt;best subset就是对所有的自变量可能的组合都作为一个模型，然后根据最优（对线性回归，比如用R^2， 对logistic regression，使用AUC或者其他标准 ）选择适当的模型。&lt;/p&gt;
 &lt;p&gt;好处是比较了所有可能的模型，然后选择最优的&lt;/p&gt;
-&lt;p&gt;不好的地方是计算量会非常大，n个变量需要运行$2^n - 1$个模型。&lt;/p&gt;
+&lt;p&gt;不好的地方是计算量会非常大，n个变量需要运行&lt;span class="math"&gt;\(2^n - 1\)&lt;/span&gt;个模型。&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;numpy&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;np&lt;/span&gt;
 &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;pandas&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;pd&lt;/span&gt;
 &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;urllib&lt;/span&gt;
@@ -17008,7 +17363,63 @@ dtype: int64
 &lt;/pre&gt;&lt;/div&gt;
 
 
-&lt;p&gt;最后选择出来的模型跟SAS里面选择出来的一样，都是除去hsgrad的剩下7个变量&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Huiming Song</dc:creator><pubDate>Sat, 26 Sep 2015 00:00:00 -0500</pubDate><guid>tag:,2015-09-26:pages/2015/09/26/best-subset-regression-in-python/</guid><category>python</category><category>data minging</category></item><item><title>numpy introduction 01</title><link>/pages/2015/09/26/numpy-introduction-01/</link><description>&lt;h3&gt;numpu base:&lt;/h3&gt;
+&lt;p&gt;最后选择出来的模型跟SAS里面选择出来的一样，都是除去hsgrad的剩下7个变量&lt;/p&gt;
+&lt;script type="text/javascript"&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width &lt; 768) ? "left" : align;
+        indent = (screen.width &lt; 768) ? "0em" : indent;
+        linebreak = (screen.width &lt; 768) ? 'true' : linebreak;
+    }
+    
+    var mathjaxscript = document.createElement('script');
+    var location_protocol = (false) ? 'https' : document.location.protocol;
+    if (location_protocol !== 'http' &amp;&amp; location_protocol !== 'https') location_protocol = 'https:';
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript'; 
+    mathjaxscript.src = location_protocol + '//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+&lt;/script&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Huiming Song</dc:creator><pubDate>Sat, 26 Sep 2015 00:00:00 -0500</pubDate><guid>tag:,2015-09-26:pages/2015/09/26/best-subset-regression-in-python/</guid><category>python</category><category>data minging</category></item><item><title>numpy introduction 01</title><link>/pages/2015/09/26/numpy-introduction-01/</link><description>&lt;h3&gt;numpu base:&lt;/h3&gt;
 &lt;ol&gt;
 &lt;li&gt;slicing and indexing an array / subset&lt;/li&gt;
 &lt;li&gt;How to get a row, a column in numpy array:  &lt;code&gt;arr[:, 1]&lt;/code&gt; 跟 &lt;code&gt;arr[:, :1]&lt;/code&gt;的区别&lt;/li&gt;
@@ -17517,10 +17928,10 @@ memory usage: 7.0+ KB
 &lt;h4&gt;recursion function就是函数调用自身。recursion function通常需要下面两个过程：&lt;/h4&gt;
 &lt;ol&gt;
 &lt;li&gt;
-&lt;p&gt;&lt;strong&gt;Base case&lt;/strong&gt;: 就是不需要调用自身就能给出答案的部分，通常是递归初始的时候。比如求阶乘 $n=1$ 和 $n=0$ 的时候&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Base case&lt;/strong&gt;: 就是不需要调用自身就能给出答案的部分，通常是递归初始的时候。比如求阶乘 &lt;span class="math"&gt;\(n=1\)&lt;/span&gt; 和 &lt;span class="math"&gt;\(n=0\)&lt;/span&gt; 的时候&lt;/p&gt;
 &lt;/li&gt;
 &lt;li&gt;
-&lt;p&gt;&lt;strong&gt;Recursive case&lt;/strong&gt;: 函数调用自身进行计算的部分. 比如阶乘里面  $f(n) = f(n - 1) \times n = (n - 1)! \times n$ 部分&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Recursive case&lt;/strong&gt;: 函数调用自身进行计算的部分. 比如阶乘里面  &lt;span class="math"&gt;\(f(n) = f(n - 1) \times n = (n - 1)! \times n\)&lt;/span&gt; 部分&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ol&gt;
 &lt;h5&gt;下面是几个例子，用来说明recursion怎么构造，怎么使用&lt;/h5&gt;
@@ -17675,7 +18086,63 @@ memory usage: 7.0+ KB
 
 
 &lt;p&gt;reference&lt;/p&gt;
-&lt;p&gt;1.: &lt;a href="http://www.python-course.eu/python3_recursive_functions.php"&gt;Recursive Functions&lt;/a&gt;&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Huiming Song</dc:creator><pubDate>Sat, 26 Sep 2015 00:00:00 -0500</pubDate><guid>tag:,2015-09-26:pages/2015/09/26/python-recursion-function/</guid><category>python</category></item><item><title>Set up data/code between host/guest/dropbox</title><link>/pages/2015/09/26/set-up-datacode-between-hostguestdropbox/</link><description>&lt;h2&gt;share folders between host and vmware guest machine&lt;/h2&gt;
+&lt;p&gt;1.: &lt;a href="http://www.python-course.eu/python3_recursive_functions.php"&gt;Recursive Functions&lt;/a&gt;&lt;/p&gt;
+&lt;script type="text/javascript"&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width &lt; 768) ? "left" : align;
+        indent = (screen.width &lt; 768) ? "0em" : indent;
+        linebreak = (screen.width &lt; 768) ? 'true' : linebreak;
+    }
+    
+    var mathjaxscript = document.createElement('script');
+    var location_protocol = (false) ? 'https' : document.location.protocol;
+    if (location_protocol !== 'http' &amp;&amp; location_protocol !== 'https') location_protocol = 'https:';
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript'; 
+    mathjaxscript.src = location_protocol + '//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+&lt;/script&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Huiming Song</dc:creator><pubDate>Sat, 26 Sep 2015 00:00:00 -0500</pubDate><guid>tag:,2015-09-26:pages/2015/09/26/python-recursion-function/</guid><category>python</category></item><item><title>Set up data/code between host/guest/dropbox</title><link>/pages/2015/09/26/set-up-datacode-between-hostguestdropbox/</link><description>&lt;h2&gt;share folders between host and vmware guest machine&lt;/h2&gt;
 &lt;p&gt;This will refer to &lt;a href="http://songhuiming.github.io/pages/2015/09/26/share-folders-in-windows-with-vmware-guest-ubuntu/"&gt;share folders in windows with vmware guest ubuntu&lt;/a&gt; &lt;/p&gt;
 &lt;h2&gt;plan:&lt;/h2&gt;
 &lt;p&gt;1: data will be saved in E:\kaggle_data folder, this folder will be shared with guest machine. so it does not need to download data in ubuntu machine.&lt;/p&gt;
@@ -17835,8 +18302,8 @@ umount /mnt
 &lt;/li&gt;
 &lt;/ol&gt;
 &lt;p&gt;We can rewrite the above funcion in the following way:&lt;/p&gt;
-&lt;p&gt;$y = \alpha + \beta_1 \times x + \beta_2 \times (x + 15) I(x &amp;gt; -15) + \beta_3 \times (x - 10) I(x &amp;gt; 10)$&lt;/p&gt;
-&lt;p&gt;$y = 3 - 2 \times x + 3 \times (x + 15) I(x &amp;gt; -15) - 5 \times (x - 10) I(x &amp;gt; 10)$&lt;/p&gt;
+&lt;p&gt;&lt;span class="math"&gt;\(y = \alpha + \beta_1 \times x + \beta_2 \times (x + 15) I(x &amp;gt; -15) + \beta_3 \times (x - 10) I(x &amp;gt; 10)\)&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;&lt;span class="math"&gt;\(y = 3 - 2 \times x + 3 \times (x + 15) I(x &amp;gt; -15) - 5 \times (x - 10) I(x &amp;gt; 10)\)&lt;/span&gt;&lt;/p&gt;
 &lt;p&gt;python code to generate the simulation data. In different intervals of x, the relation between x and y is different.&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;pandas&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;pd&lt;/span&gt;
 &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;numpy&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;np&lt;/span&gt;
@@ -17919,7 +18386,63 @@ umount /mnt
 &lt;/pre&gt;&lt;/div&gt;
 
 
-&lt;p&gt;&lt;img alt="png" src="/figures/20150912_piecewise_linear_regression_03.png" /&gt;&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Huiming Song</dc:creator><pubDate>Tue, 22 Sep 2015 00:00:00 -0500</pubDate><guid>tag:,2015-09-22:pages/2015/09/22/piecewise-linear-function-and-the-explanation/</guid><category>python</category><category>data mining</category></item><item><title>sklearn evaluation model with scoring parameter and sklearn.metrics</title><link>/pages/2015/09/04/sklearn-evaluation-model-with-scoring-parameter-and-sklearnmetrics/</link><description>&lt;h2&gt;Sklearn Model Evaluation and Scoring Function&lt;/h2&gt;
+&lt;p&gt;&lt;img alt="png" src="/figures/20150912_piecewise_linear_regression_03.png" /&gt;&lt;/p&gt;
+&lt;script type="text/javascript"&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width &lt; 768) ? "left" : align;
+        indent = (screen.width &lt; 768) ? "0em" : indent;
+        linebreak = (screen.width &lt; 768) ? 'true' : linebreak;
+    }
+    
+    var mathjaxscript = document.createElement('script');
+    var location_protocol = (false) ? 'https' : document.location.protocol;
+    if (location_protocol !== 'http' &amp;&amp; location_protocol !== 'https') location_protocol = 'https:';
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript'; 
+    mathjaxscript.src = location_protocol + '//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+&lt;/script&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Huiming Song</dc:creator><pubDate>Tue, 22 Sep 2015 00:00:00 -0500</pubDate><guid>tag:,2015-09-22:pages/2015/09/22/piecewise-linear-function-and-the-explanation/</guid><category>python</category><category>data mining</category></item><item><title>sklearn evaluation model with scoring parameter and sklearn.metrics</title><link>/pages/2015/09/04/sklearn-evaluation-model-with-scoring-parameter-and-sklearnmetrics/</link><description>&lt;h2&gt;Sklearn Model Evaluation and Scoring Function&lt;/h2&gt;
 &lt;p&gt;Table of Contents:&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;a href="#summary_steps"&gt;Summary Steps&lt;/a&gt;&lt;/li&gt;

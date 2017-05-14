@@ -104,28 +104,31 @@
 
 
 <p>Gradient Descent is one of the optimization method by changing the parameters values in the negative gradient direction.</p>
-<p>Let us assume the multi-variable function $F(\theta|x)$ is differenable about $\theta$. It is first order differentation to $x$ is denoted as $\triangledown F(\theta|x)$. To find the maximum(mimimum) of $F(\theta|x)$ by iteration, we will let the parameter $\theta$ change its value a little every time. The value changed along the gradient direction will be the fastest way to converge. So, from iteration $\theta^{i}$ to iteration $\theta^{i+1}$ we will let
-$$ \theta^{i + 1} = \theta^{i} - \lambda \cdot \triangledown F\left(\theta^{i}|x\right)$$ where $\lambda$ is called learning rate.</p>
+<p>Let us assume the multi-variable function <span class="math">\(F(\theta|x)\)</span> is differenable about <span class="math">\(\theta\)</span>. It is first order differentation to <span class="math">\(x\)</span> is denoted as <span class="math">\(\triangledown F(\theta|x)\)</span>. To find the maximum(mimimum) of <span class="math">\(F(\theta|x)\)</span> by iteration, we will let the parameter <span class="math">\(\theta\)</span> change its value a little every time. The value changed along the gradient direction will be the fastest way to converge. So, from iteration <span class="math">\(\theta^{i}\)</span> to iteration <span class="math">\(\theta^{i+1}\)</span> we will let
+</p>
+<div class="math">$$ \theta^{i + 1} = \theta^{i} - \lambda \cdot \triangledown F\left(\theta^{i}|x\right)$$</div>
+<p> where <span class="math">\(\lambda\)</span> is called learning rate.</p>
 <p>In the following two examples will be shown how gradient descent works to find the solution: one is for linear regression(which has closed-form solution) and the other is for logistic regression(which does not have closed-form solution).</p>
 <p><img alt="alt text" src="/figures/20170513_gradient_descent_linreg_animation.gif" title="Linear Regression" />
 <img alt="alt text" src="/figures/20170513_gradient_descent_logistic_animation.gif" title="Logistic Regression" /></p>
 <h2>Example 1: Linear regression</h2>
 <p>A simple example of linear regression function can be written as</p>
-<p>$$y_i = \alpha_0 + \alpha_1 \times x_i + \epsilon_i, ~~~ i = 1 \cdots n$$</p>
+<div class="math">$$y_i = \alpha_0 + \alpha_1 \times x_i + \epsilon_i, ~~~ i = 1 \cdots n$$</div>
 <p>we can write it in vector form as </p>
-<p>$$ Y = XW + \epsilon $$ </p>
-<p>where $$W = [\alpha_0, \alpha_1]'$$</p>
+<div class="math">$$ Y = XW + \epsilon $$</div>
+<p>where </p>
+<div class="math">$$W = [\alpha_0, \alpha_1]'$$</div>
 <p>The target is to minimize the <a href="https://en.wikipedia.org/wiki/Mean_squared_error">Mean Square Error(mse)</a> function defined as</p>
-<p>$$MSE = \frac{1}{n}\sum_{i=1}^{n}\left(y_i - \alpha_0 - \alpha_1 \times x_i \right)^{2} = \frac{1}{n} (Y - XW)'(Y-XW)$$</p>
+<div class="math">$$MSE = \frac{1}{n}\sum_{i=1}^{n}\left(y_i - \alpha_0 - \alpha_1 \times x_i \right)^{2} = \frac{1}{n} (Y - XW)'(Y-XW)$$</div>
 <p>We will call its main part  Loss function :</p>
-<p>$$ L = (Y - XW)'(Y-XW)$$</p>
-<p>As introducted above, the gradient of the loss function to the parameter $W$ is:</p>
-<p>\begin{aligned}
- \frac{\partial L}{\partial W}  &amp; = \frac{\partial ( (Y - XW)'(Y-XW))}{\partial W}  \
- &amp; = \frac{\partial (Y'Y - 2W'X'Y  + W'X'XW)}{\partial W} \
+<div class="math">$$ L = (Y - XW)'(Y-XW)$$</div>
+<p>As introducted above, the gradient of the loss function to the parameter <span class="math">\(W\)</span> is:</p>
+<div class="math">\begin{aligned}
+ \frac{\partial L}{\partial W}  &amp; = \frac{\partial ( (Y - XW)'(Y-XW))}{\partial W}  \\
+ &amp; = \frac{\partial (Y'Y - 2W'X'Y  + W'X'XW)}{\partial W} \\
  &amp;= -2X'(Y - XW)
-\end{aligned}</p>
-<p>Now we will show how to use this gradient to find the final value of $W$.</p>
+\end{aligned}</div>
+<p>Now we will show how to use this gradient to find the final value of <span class="math">\(W\)</span>.</p>
 <div class="highlight"><pre><span class="n">ns</span> <span class="o">=</span> <span class="mi">100</span>
 <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">c_</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">ns</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">ns</span><span class="p">)]</span>
 <span class="n">y</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">dot</span><span class="p">([[</span><span class="mi">3</span><span class="p">],</span> <span class="p">[</span><span class="mi">8</span><span class="p">]])</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">ns</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
@@ -136,8 +139,10 @@ $$ \theta^{i + 1} = \theta^{i} - \lambda \cdot \triangledown F\left(\theta^{i}|x
 </pre></div>
 
 
-<p>The initial value of $W$ will be $$W_0 = [0, 0]'$$</p>
-<p>For each loop, $$W_{i+1} = W_i - \frac{\partial L}{\partial W} \times \lambda$$</p>
+<p>The initial value of <span class="math">\(W\)</span> will be </p>
+<div class="math">$$W_0 = [0, 0]'$$</div>
+<p>For each loop, </p>
+<div class="math">$$W_{i+1} = W_i - \frac{\partial L}{\partial W} \times \lambda$$</div>
 <div class="highlight"><pre><span class="n">w0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 <span class="n">learning_rate</span> <span class="o">=</span> <span class="mf">0.00001</span>
 
@@ -163,7 +168,7 @@ $$ \theta^{i + 1} = \theta^{i} - \lambda \cdot \triangledown F\left(\theta^{i}|x
 
 <p><img alt="alt text" src="/figures/20170513_gradient_descent_linreg_animation.gif" title="Linear Regression" /></p>
 <p>For linear regression, we have the analytical solution(or closed-form solution) in the form:</p>
-<p>$$W = (X'X)^{-1}X'Y$$</p>
+<div class="math">$$W = (X'X)^{-1}X'Y$$</div>
 <p>So the analytical solution can be calculated directly in python. The analytical solution is: constant = 2.73 and the slope is 8.02.</p>
 <div class="highlight"><pre><span class="n">regres</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">((</span><span class="n">x</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
 <span class="k">print</span><span class="p">(</span><span class="s2">&quot;The regression result is alpha_0 = {0:.2f}, alpha_1 = {1:.2f}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">regres</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">2</span><span class="p">),</span> <span class="nb">round</span><span class="p">(</span><span class="n">regres</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">2</span><span class="p">)))</span>
@@ -175,47 +180,50 @@ $$ \theta^{i + 1} = \theta^{i} - \lambda \cdot \triangledown F\left(\theta^{i}|x
 
 
 <h2>Logistic Regression</h2>
-<p>Random variable $Y$ has <a href="https://en.wikipedia.org/wiki/Bernoulli_distribution">Bernoulli distribution</a>:
-$$
-    Y=\left{
+<p>Random variable <span class="math">\(Y\)</span> has <a href="https://en.wikipedia.org/wiki/Bernoulli_distribution">Bernoulli distribution</a>:
+</p>
+<div class="math">$$
+    Y=\left\{
                 \begin{array}{ll}
-                  1, \mbox{with probability} ~p\
-                  0, \mbox{with probability} ~1 - p\
+                  1, \mbox{with probability} ~p\\
+                  0, \mbox{with probability} ~1 - p\\
                 \end{array}
               \right.
- $$</p>
-<p>Here $p$ is the function of $X$ given parameters $W$: $p = p(X|W)$.</p>
+ $$</div>
+<p>Here <span class="math">\(p\)</span> is the function of <span class="math">\(X\)</span> given parameters <span class="math">\(W\)</span>: <span class="math">\(p = p(X|W)\)</span>.</p>
 <p>The logit function is</p>
-<p>$$ \begin{align}
-       &amp; ~~~~ \log \frac{p(X|W)}{1 - p(X|W)} = XW + \epsilon   \\
+<div class="math">$$ \begin{align}
+       &amp; ~~~~ \log \frac{p(X|W)}{1 - p(X|W)} = XW + \epsilon   \\\\
        &amp; ==&gt; p(X|W) = \frac{\exp(XW)}{ 1 + \exp(XW)}   \triangleq  h(W, X)
   \end{align}
-$$</p>
-<p>here both $X$ and $W$ are vectors(shall be written as $\vec{X}$ and $\vec{W}$)</p>
+$$</div>
+<p>here both <span class="math">\(X\)</span> and <span class="math">\(W\)</span> are vectors(shall be written as <span class="math">\(\vec{X}\)</span> and <span class="math">\(\vec{W}\)</span>)</p>
 <p>So the likelihood funciton can be written as </p>
-<p>$$
+<div class="math">$$
 \begin{align}
-    L(X, W) = \prod_{i=1}^{n} p\left(X_i|W\right)^{y_i} \left(1 - p\left(X_i|W\right)\right)^{(1 - y_i)}<br />
+    L(X, W) = \prod_{i=1}^{n} p\left(X_i|W\right)^{y_i} \left(1 - p\left(X_i|W\right)\right)^{(1 - y_i)}  
   \end{align}
-$$</p>
+$$</div>
 <p>To max the likelihood function is the same as maximizing the log-likelihood funtion. The log-likelihood function is</p>
-<p>$$ \begin{align}
-    LL(X, W) &amp;= \log(L(X, W))  \\
-             &amp;= \log\left(\prod_{i=1}^{n} p(X_i|W)^{y_i} (1 - p(X_i|W))^{(1 - y_i)}\right)  \\
+<div class="math">$$ \begin{align}
+    LL(X, W) &amp;= \log(L(X, W))  \\\\
+             &amp;= \log\left(\prod_{i=1}^{n} p(X_i|W)^{y_i} (1 - p(X_i|W))^{(1 - y_i)}\right)  \\\\
              &amp;= \sum_{i=1}^n \left[ y_i \log(p(X_i|W)) + (1 - y_i) \log(1 - p(X_i|W)) \right]
   \end{align}
-$$</p>
-<p>from this we can get the gradient of $W$ is </p>
-<p>$$ \begin{align}
+$$</div>
+<p>from this we can get the gradient of <span class="math">\(W\)</span> is </p>
+<div class="math">$$ \begin{align}
     \frac{\partial LL(X, W)}{\partial W} = \sum_{i=1}^n \left( h(W, X_i) - y_i \right) X_i 
   \end{align}
-$$
+$$</div>
+<p>
 where
-$$
+</p>
+<div class="math">$$
  h(W, X_i) = \frac{\exp(X_i W)}{ 1 + \exp(X_i W)}
-$$</p>
-<p>Next an example is shown how to use gradient descent to find the solution of $W$ to maximize the likelihood function.The link function is of the form:</p>
-<p>$$\log \frac{p}{1-p} = \beta_0 + \beta_1 x_1 + \beta_2 x_2$$</p>
+$$</div>
+<p>Next an example is shown how to use gradient descent to find the solution of <span class="math">\(W\)</span> to maximize the likelihood function.The link function is of the form:</p>
+<div class="math">$$\log \frac{p}{1-p} = \beta_0 + \beta_1 x_1 + \beta_2 x_2$$</div>
 <div class="highlight"><pre><span class="n">w</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">99</span><span class="p">)</span>
 <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">c_</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">2</span><span class="p">)]</span>
@@ -286,7 +294,63 @@ $$</p>
 </pre></div>
 
 
-<p><a href="https://mdbootstrap.com/css/colors/">bootstrap color hex value</a></p></div>
+<p><a href="https://mdbootstrap.com/css/colors/">bootstrap color hex value</a></p>
+<script type="text/javascript">if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width < 768) ? "left" : align;
+        indent = (screen.width < 768) ? "0em" : indent;
+        linebreak = (screen.width < 768) ? 'true' : linebreak;
+    }
+    
+    var mathjaxscript = document.createElement('script');
+    var location_protocol = (false) ? 'https' : document.location.protocol;
+    if (location_protocol !== 'http' && location_protocol !== 'https') location_protocol = 'https:';
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript'; 
+    mathjaxscript.src = location_protocol + '//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+</script></div>
     <footer>
 <p class="meta">
   <span class="byline author vcard">
