@@ -101,12 +101,12 @@
 <p><a href="https://en.wikipedia.org/wiki/IFRS_9">IFRS 9</a> is an International Financial Reporting Standard (IFRS) promulgated by the International Accounting Standards Board (IASB). It addresses the accounting for financial instruments. It contains three main topics: classification and measurement of financial instruments, impairment of financial assets and hedge accounting. It will replace the earlier IFRS for financial instruments, IAS 39, when it becomes effective in 2018.</p>
 <p><img alt="png" src="/figures/20170525_ifrs9_calc_engine_00.PNG" />   </p>
 <p>Both IFRS9(staging 2) and CECL will requre the lifetime expected credit: loss. Here is to introduce an online lifetime credit loss calculation engine.</p>
-<p>Please click <a href="http://159.203.111.2/ifrs9/">ifrs9 calc engine</a> to run.</p>
+<p>Please click <a href="http://159.203.111.2/ifrs9/">ifrs9 calc engine</a> to run with this <a href="https://github.com/songhuiming/git_it/blob/master/share_files/sample_pd_file.csv">sample data</a>.</p>
 <h3>2. Calculaiton Engine usage</h3>
 <p>To do the calculation, we need these items:</p>
-<p>1; loan information: outstanding(EAD), maturity time, interest rate, and the current time of the loan (to link to the correct time predicted pd as explained below). To be simile, this online engine assumes the LGD/Prepay are constant for ech month. So the input loan informaiton should include these columns:</p>
+<p>1, loan information: outstanding(EAD), maturity time, interest rate, and the current time of the loan (to link to the correct time predicted pd as explained below). To be simile, this online engine assumes the LGD/Prepay are constant for ech month. So the input loan informaiton should include these columns:</p>
 <p><img alt="png" src="/figures/20170525_ifrs9_calc_engine_01.PNG" />   </p>
-<p>2; predicted lifetime pd file (this engine is developed to calculate IFRS9/CECL ECL for any time loan, including historical time for backtesting. so it needs these 4 columns: 3 columns of combined levels(year/quarter, month order to indicate the pd, pd risk rating) and 1 column gives the pd values). The most simple file should have the loan snapshot time and the PD risk rating of the borrower. A sample data is from <a href="https://github.com/songhuiming/git_it/blob/master/share_files/sample_pd_file.csv">here</a></p>
+<p>2, predicted lifetime pd file (this engine is developed to calculate IFRS9/CECL ECL for any time loan, including historical time for backtesting. so it needs these 4 columns: 3 columns of combined levels(year/quarter, month order to indicate the pd, pd risk rating) and 1 column gives the pd values). The most simple file should have the loan snapshot time and the PD risk rating of the borrower. A sample data is from <a href="https://github.com/songhuiming/git_it/blob/master/share_files/sample_pd_file.csv">here</a></p>
 <h3>3. Calculation</h3>
 <h4>3.1. Upload the PD file</h4>
 <p>The predicted PD file is necessary for calculation. Since different kind of PD and different value of PD will be used for test, the option is provided to upload the customed PD values for the test.</p>
@@ -186,26 +186,26 @@ NONE
 
 <p>The second function is <strong>ifrs9</strong> which is to get html information and do the calculation.</p>
 <p>After all the input forms are filled and submited to calculate, the route will call the flask <strong>ifrs9</strong> function: </p>
-<p>1; it will check the filename first, if no file uploaded, it will pop out message to ask for upload the pd file.
-2; if there is uploaded file, then it will request the filled in form values from html
-3; it will call the function to do ECL calculation
-4; it will flash out the calculation result</p>
+<p>1, it will check the filename first, if no file uploaded, it will pop out message to ask for upload the pd file.</p>
+<p>2, if there is uploaded file, then it will request the filled in form values from html</p>
+<p>3, it will call the function to do ECL calculation</p>
+<p>4, it will flash out the calculation result</p>
 <div class="highlight"><pre><span class="n">flash</span><span class="p">(</span><span class="s1">&#39;Total IFRS9 Lifetime EL is: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">output</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="s1">&#39;, Total IFRS9 Lifetime PD is: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">output</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
 <span class="n">flash</span><span class="p">(</span><span class="s1">&#39;Total IFRS9 1 year EL is: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">output</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span> <span class="o">+</span> <span class="s1">&#39;, Total IFRS9 1 year PD is: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">output</span><span class="p">[</span><span class="mi">4</span><span class="p">]))</span>
 </pre></div>
 
 
-<p>5; it will return to <code>render_template</code> with the output data(the detailed monthly calculation) as parameters to html file for display</p>
+<p>5, it will return to <code>render_template</code> with the output data(the detailed monthly calculation) as parameters to html file for display</p>
 <div class="highlight"><pre><span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s2">&quot;ifrs9_mockup.html&quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">style</span> <span class="o">+</span> <span class="n">output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">to_html</span><span class="p">(</span><span class="n">index</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span> <span class="n">col_space</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">float_format</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="s1">&#39;</span><span class="si">%10.2f</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">x</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="s1">&#39;centered&#39;</span><span class="p">))</span>
 </pre></div>
 
 
 <h3>5. Batch Run</h3>
 <p>The above is an example for <strong>one single</strong> loan calculation. To calculate all the loan at one time, it needs batch run. The basic idea is very simple:</p>
-<p>1; get the input file(loan file, pd file and so on)
-2; loop through each loan, get the corresponding pd/lgd/prepay information. Then do the calculation.
-3; Since step 2 is idpendent for each loan, it can be done parallely.
-4; with <code>multiprocessing</code> in python for parallel calculation, the calculation speed will increase dramatically </p>
+<p>1, get the input file(loan file, pd file and so on)</p>
+<p>2, loop through each loan, get the corresponding pd/lgd/prepay information. Then do the calculation.</p>
+<p>3, Since step 2 is idpendent for each loan, it can be done parallely.</p>
+<p>4, with <code>multiprocessing</code> in python for parallel calculation, the calculation speed will increase dramatically </p>
 <h3>Reference</h3>
 <ol>
 <li><a href="https://stackoverflow.com/questions/11556958/sending-data-from-html-form-to-a-python-script-in-flask">Sending data from HTML form to a Python script in Flask</a></li>
