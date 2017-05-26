@@ -1,5 +1,132 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata</title><link href="/" rel="alternate"></link><link href="/feeds/all-en.atom.xml" rel="self"></link><id>/</id><updated>2017-05-13T00:00:00-05:00</updated><entry><title>Gradient Descent in solving linear regression and logistic regression</title><link href="/pages/2017/05/13/gradient-descent-in-solving-linear-regression-and-logistic-regression/" rel="alternate"></link><updated>2017-05-13T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:,2017-05-13:pages/2017/05/13/gradient-descent-in-solving-linear-regression-and-logistic-regression/</id><summary type="html">&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;numpy&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;np&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nn"&gt;pandas&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;pd&lt;/span&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata</title><link href="/" rel="alternate"></link><link href="/feeds/all-en.atom.xml" rel="self"></link><id>/</id><updated>2017-05-27T00:00:00-05:00</updated><entry><title>Online IFRS9/CECL lifetime credit loss calculation engine</title><link href="/pages/2017/05/27/online-ifrs9cecl-lifetime-credit-loss-calculation-engine/" rel="alternate"></link><updated>2017-05-27T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:,2017-05-27:pages/2017/05/27/online-ifrs9cecl-lifetime-credit-loss-calculation-engine/</id><summary type="html">&lt;h3&gt;1. Introduction&lt;/h3&gt;
+&lt;p&gt;&lt;a href="https://en.wikipedia.org/wiki/IFRS_9"&gt;IFRS 9&lt;/a&gt; is an International Financial Reporting Standard (IFRS) promulgated by the International Accounting Standards Board (IASB). It addresses the accounting for financial instruments. It contains three main topics: classification and measurement of financial instruments, impairment of financial assets and hedge accounting. It will replace the earlier IFRS for financial instruments, IAS 39, when it becomes effective in 2018.&lt;/p&gt;
+&lt;p&gt;&lt;img alt="png" src="/figures/20170525_ifrs9_calc_engine_00.PNG" /&gt;   &lt;/p&gt;
+&lt;p&gt;Both IFRS9(staging 2) and CECL will requre the lifetime expected credit: loss. Here is to introduce an online lifetime credit loss calculation engine.&lt;/p&gt;
+&lt;p&gt;Please click &lt;a href="http://159.203.111.2/ifrs9/"&gt;ifrs9 calc engine&lt;/a&gt; to run.&lt;/p&gt;
+&lt;h3&gt;2. Calculaiton Engine usage&lt;/h3&gt;
+&lt;p&gt;To do the calculation, we need these items:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;1. loan information: outstanding(EAD), maturity time, interest rate, and the current time of the loan (to link to the correct time predicted pd as explained below). To be simile, this online engine assumes the LGD/Prepay are constant for ech month. So the input loan informaiton should include these columns:
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;img alt="png" src="/figures/20170525_ifrs9_calc_engine_01.PNG" /&gt;   &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;2. predicted lifetime pd file (this engine is developed to calculate IFRS9/CECL ECL for any time loan, including historical time for backtesting. so it needs these 4 columns: 3 columns of combined levels(year/quarter, month order to indicate the pd, pd risk rating) and 1 column gives the pd values). The most simple file should have the loan snapshot time and the PD risk rating of the borrower. A sample data is from [here](https://github.com/songhuiming/git_it/blob/master/share_files/sample_pd_file.csv)
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;3. Calculation&lt;/h3&gt;
+&lt;h4&gt;3.1. Upload the PD file&lt;/h4&gt;
+&lt;p&gt;The predicted PD file is necessary for calculation. Since different kind of PD and different value of PD will be used for test, the option is provided to upload the customed PD values for the test.&lt;/p&gt;
+&lt;p&gt;&lt;img alt="png" src="/figures/20170525_ifrs9_calc_engine_02.PNG" /&gt;   &lt;/p&gt;
+&lt;h4&gt;3.2. Input the loan information&lt;/h4&gt;
+&lt;p&gt;As explained before, the information about the loan is needed. An example of the loan information is given as below:&lt;/p&gt;
+&lt;p&gt;&lt;img alt="png" src="/figures/20170525_ifrs9_calc_engine_03.PNG" /&gt;   &lt;/p&gt;
+&lt;h4&gt;3.3. Output&lt;/h4&gt;
+&lt;p&gt;The lifetime ECL/PD and 1 year ECL/PD will pop out.
+&lt;img alt="png" src="/figures/20170525_ifrs9_calc_engine_04.PNG" /&gt;   &lt;/p&gt;
+&lt;p&gt;At the bottom it prints out the monthly cash flow for ECL calculation. It starts from Month 1 with full outstanding balance. Every month there is amoortization payment, interest payment, prepay, credit loss and new drawn amout if there is. Finally there is the month end balance and the corresponding ECL in that month. It will starts from Month 1 until the balance down to 0.  &lt;/p&gt;
+&lt;p&gt;A snapshot of the detailed calculation is&lt;/p&gt;
+&lt;p&gt;&lt;img alt="png" src="/figures/20170525_ifrs9_calc_engine_05.PNG" /&gt;   &lt;/p&gt;
+&lt;h3&gt;4. Web Development&lt;/h3&gt;
+&lt;p&gt;This part will introduce about the development of the online calculation engine website. It is more like a notes for myself to summarize the logic of the development.&lt;/p&gt;
+&lt;p&gt;Since the calcualtion is by python,  &lt;a href="http://flask.pocoo.org/"&gt;flask&lt;/a&gt; is selected as the framework. CSS is &lt;a href="http://getbootstrap.com/"&gt;Bootstrap&lt;/a&gt; which is very easy to use to build a moden look webpage. The ouload/submit/forms are all Bootstrap widgets.&lt;/p&gt;
+&lt;h4&gt;4.1. html file&lt;/h4&gt;
+&lt;p&gt;html file has six functions:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;1. get the uploaded pd file
+2. post the uploaded pd file
+3. get the input loan informaiton
+4. post the input loan information
+5. get the submition for calculation
+6. post the submition result
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The full page is a Bootstrap container with two main forms.&lt;/p&gt;
+&lt;p&gt;First, The upload widget is fieldset inside the form. A &lt;code&gt;&amp;lt;form&amp;gt;&lt;/code&gt; tag is marked with &lt;code&gt;enctype=multipart/form-data&lt;/code&gt; and an &lt;code&gt;&amp;lt;input type=file&amp;gt;&lt;/code&gt; is placed in that form. If PD file is submitted to upload, the python code will &lt;code&gt;GET&lt;/code&gt; the &lt;code&gt;POST&lt;/code&gt; information and will check if it is csv or not. It will only accept csv file. If there is no PD file or the POST method is not activated in the html page, it will return to the upload page. &lt;code&gt;&amp;lt;form&amp;gt;&lt;/code&gt; tag has the &lt;code&gt;post&lt;/code&gt; method to active the route. The route will call the ptyhon upload file function and upload the file to the server. &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;        {% if request.args.get(&amp;#39;filename&amp;#39;) is none %}
+            &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;form&lt;/span&gt; &lt;span class="na"&gt;action&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;method&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;post&lt;/span&gt; &lt;span class="na"&gt;enctype&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;multipart/form-data&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+                &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;fieldset&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+                &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;legend&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;Upload PD CSV File&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;legend&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+            .........
+             &lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;form&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+        {% else %}
+            PD file {{request.args.get(&amp;#39;filename&amp;#39;)}} has been uploaded; Please fill in the loan information.
+        {% endif %}
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;If the file is successfully uploaded and successfully POST, it will redirect to ifrs9 with the filename as the parameter like below&lt;/p&gt;
+&lt;p&gt;&lt;img alt="png" src="/figures/20170525_ifrs9_calc_engine_06.PNG" /&gt;   &lt;/p&gt;
+&lt;p&gt;The html file and the python upload file function is linked by "request". &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;{{filename}}
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Second is to input the loan information in the form. It also has the &lt;code&gt;post&lt;/code&gt; method&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;        &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;form&lt;/span&gt; &lt;span class="na"&gt;action &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;method&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;post&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;role&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;form&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+            &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;fieldset&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+            &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;legend&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;Input Loan/Borrower Information&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;legend&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+            .....
+        &lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;form&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;After all the input forms are filled and submited to calculate, the route will call the flask &lt;strong&gt;ifrs9&lt;/strong&gt; function as introduced below.&lt;/p&gt;
+&lt;p&gt;if calculaion data is returned then it will be displayed on the page in div of the centered class.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;        {% if data is not none %}
+        &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;br&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+        &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;div&lt;/span&gt; &lt;span class="na"&gt;class&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;centered&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+        {{data | safe}}
+        &lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;div&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+        {% else%}
+        NONE
+        {% endif %}
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h4&gt;4.2. python file&lt;/h4&gt;
+&lt;p&gt;There are two piece of python code.&lt;/p&gt;
+&lt;p&gt;The first function is to upload the PD file with enabled GET and POST method. It will use &lt;code&gt;@app.route(url, methods=[])&lt;/code&gt; to tell what url will activate the python function. The &lt;code&gt;route()&lt;/code&gt; decorator is used to bind a function to a URL. If it excutes successfully, it will &lt;code&gt;redirect&lt;/code&gt; to the ifrs9 url.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;redirect&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;url_for&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;ifrs9&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;filename&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;filename&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The second function is &lt;strong&gt;ifrs9&lt;/strong&gt; which is to get html information and do the calculation.&lt;/p&gt;
+&lt;p&gt;After all the input forms are filled and submited to calculate, the route will call the flask &lt;strong&gt;ifrs9&lt;/strong&gt; function: &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;1. it will check the filename first, if no file uploaded, it will pop out message to ask for upload the pd file.
+2. if there is uploaded file, then it will request the filled in form values from html
+3. it will call the function to do ECL calculation
+4. it will flash out the calculation result
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;flash&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;Total IFRS9 Lifetime EL is: &amp;#39;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;output&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;, Total IFRS9 Lifetime PD is: &amp;#39;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;output&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;]))&lt;/span&gt;
+&lt;span class="n"&gt;flash&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;Total IFRS9 1 year EL is: &amp;#39;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;output&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;3&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;, Total IFRS9 1 year PD is: &amp;#39;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;output&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;4&lt;/span&gt;&lt;span class="p"&gt;]))&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;5. it will return to `render_template` with the output data(the detailed monthly calculation) as parameters to html file for display
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;render_template&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;ifrs9_mockup.html&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;data&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;style&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;output&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;to_html&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;index&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;col_space&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;5&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;float_format&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;lambda&lt;/span&gt; &lt;span class="n"&gt;x&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;&lt;/span&gt;&lt;span class="si"&gt;%10.2f&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;&lt;/span&gt; &lt;span class="o"&gt;%&lt;/span&gt; &lt;span class="n"&gt;x&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;classes&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;centered&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;5. Batch Run&lt;/h3&gt;
+&lt;p&gt;The above is an example for &lt;strong&gt;one single&lt;/strong&gt; loan calculation. To calculate all the loan at one time, it needs batch run. The basic idea is very simple:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;1. get the input file(loan file, pd file and so on)
+2. loop through each loan, get the corresponding pd/lgd/prepay information. Then do the calculation.
+3. Since step 2 is idpendent for each loan, it can be done parallely.
+4. with `multiprocessing` in python for parallel calculation, the calculation speed will increase dramatically
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;Reference&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;a href="https://stackoverflow.com/questions/11556958/sending-data-from-html-form-to-a-python-script-in-flask"&gt;Sending data from HTML form to a Python script in Flask&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;</summary><category term="python"></category></entry><entry><title>Gradient Descent in solving linear regression and logistic regression</title><link href="/pages/2017/05/13/gradient-descent-in-solving-linear-regression-and-logistic-regression/" rel="alternate"></link><updated>2017-05-13T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:,2017-05-13:pages/2017/05/13/gradient-descent-in-solving-linear-regression-and-logistic-regression/</id><summary type="html">&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;numpy&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;np&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nn"&gt;pandas&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;pd&lt;/span&gt;
 &lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;matplotlib&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;pyplot&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;plt&lt;/span&gt;
 &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;math&lt;/span&gt;
 &lt;/pre&gt;&lt;/div&gt;
@@ -625,6 +752,7 @@ The MSE from sklearn is: 1.12222708205
 &lt;p&gt;If use &lt;code&gt;pelican&lt;/code&gt;, the easist way is to include the plug-in called &lt;a href="https://github.com/getpelican/pelican-plugins/tree/master/render_math"&gt;Math Render Plugin For Pelican&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;It use &lt;code&gt;MathJax&lt;/code&gt; to give pelican the ability to render mathematics. It supports both markdown and reStructuredText.&lt;/p&gt;
 &lt;p&gt;It also supports &lt;a href="http://docs.mathjax.org/en/latest/tex.html#color"&gt;color&lt;/a&gt; and &lt;a href="http://docs.mathjax.org/en/latest/tex.html#mhchem"&gt;mhchem&lt;/a&gt;.&lt;/p&gt;
+&lt;hr /&gt;
 &lt;p&gt;It only enables math formula. But it did not support complicated things like equation number and so on.&lt;/p&gt;
 &lt;h3&gt;method 1. copy the following in the md file&lt;/h3&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nt"&gt;&amp;lt;script&lt;/span&gt; &lt;span class="na"&gt;type=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;text/javascript&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;src=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML&amp;quot;&lt;/span&gt;&lt;span class="nt"&gt;&amp;gt;&amp;lt;/script&amp;gt;&lt;/span&gt;
