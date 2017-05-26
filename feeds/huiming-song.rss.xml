@@ -6,13 +6,9 @@
 &lt;p&gt;Please click &lt;a href="http://159.203.111.2/ifrs9/"&gt;ifrs9 calc engine&lt;/a&gt; to run.&lt;/p&gt;
 &lt;h3&gt;2. Calculaiton Engine usage&lt;/h3&gt;
 &lt;p&gt;To do the calculation, we need these items:&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;loan information: outstanding(EAD), maturity time, interest rate, and the current time of the loan (to link to the correct time predicted pd as explained below). To be simile, this online engine assumes the LGD/Prepay are constant for ech month. So the input loan informaiton should include these columns:&lt;/li&gt;
-&lt;/ol&gt;
+&lt;p&gt;1; loan information: outstanding(EAD), maturity time, interest rate, and the current time of the loan (to link to the correct time predicted pd as explained below). To be simile, this online engine assumes the LGD/Prepay are constant for ech month. So the input loan informaiton should include these columns:&lt;/p&gt;
 &lt;p&gt;&lt;img alt="png" src="/figures/20170525_ifrs9_calc_engine_01.PNG" /&gt;   &lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;predicted lifetime pd file (this engine is developed to calculate IFRS9/CECL ECL for any time loan, including historical time for backtesting. so it needs these 4 columns: 3 columns of combined levels(year/quarter, month order to indicate the pd, pd risk rating) and 1 column gives the pd values). The most simple file should have the loan snapshot time and the PD risk rating of the borrower. A sample data is from &lt;a href="https://github.com/songhuiming/git_it/blob/master/share_files/sample_pd_file.csv"&gt;here&lt;/a&gt;&lt;/li&gt;
-&lt;/ol&gt;
+&lt;p&gt;2; predicted lifetime pd file (this engine is developed to calculate IFRS9/CECL ECL for any time loan, including historical time for backtesting. so it needs these 4 columns: 3 columns of combined levels(year/quarter, month order to indicate the pd, pd risk rating) and 1 column gives the pd values). The most simple file should have the loan snapshot time and the PD risk rating of the borrower. A sample data is from &lt;a href="https://github.com/songhuiming/git_it/blob/master/share_files/sample_pd_file.csv"&gt;here&lt;/a&gt;&lt;/p&gt;
 &lt;h3&gt;3. Calculation&lt;/h3&gt;
 &lt;h4&gt;3.1. Upload the PD file&lt;/h4&gt;
 &lt;p&gt;The predicted PD file is necessary for calculation. Since different kind of PD and different value of PD will be used for test, the option is provided to upload the customed PD values for the test.&lt;/p&gt;
@@ -92,32 +88,26 @@ NONE
 
 &lt;p&gt;The second function is &lt;strong&gt;ifrs9&lt;/strong&gt; which is to get html information and do the calculation.&lt;/p&gt;
 &lt;p&gt;After all the input forms are filled and submited to calculate, the route will call the flask &lt;strong&gt;ifrs9&lt;/strong&gt; function: &lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;it will check the filename first, if no file uploaded, it will pop out message to ask for upload the pd file.&lt;/li&gt;
-&lt;li&gt;if there is uploaded file, then it will request the filled in form values from html&lt;/li&gt;
-&lt;li&gt;it will call the function to do ECL calculation&lt;/li&gt;
-&lt;li&gt;it will flash out the calculation result&lt;/li&gt;
-&lt;/ol&gt;
+&lt;p&gt;1; it will check the filename first, if no file uploaded, it will pop out message to ask for upload the pd file.
+2; if there is uploaded file, then it will request the filled in form values from html
+3; it will call the function to do ECL calculation
+4; it will flash out the calculation result&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;flash&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;Total IFRS9 Lifetime EL is: &amp;#39;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;output&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;, Total IFRS9 Lifetime PD is: &amp;#39;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;output&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;]))&lt;/span&gt;
 &lt;span class="n"&gt;flash&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;Total IFRS9 1 year EL is: &amp;#39;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;output&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;3&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;, Total IFRS9 1 year PD is: &amp;#39;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;output&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;4&lt;/span&gt;&lt;span class="p"&gt;]))&lt;/span&gt;
 &lt;/pre&gt;&lt;/div&gt;
 
 
-&lt;ol&gt;
-&lt;li&gt;it will return to &lt;code&gt;render_template&lt;/code&gt; with the output data(the detailed monthly calculation) as parameters to html file for display&lt;/li&gt;
-&lt;/ol&gt;
+&lt;p&gt;5; it will return to &lt;code&gt;render_template&lt;/code&gt; with the output data(the detailed monthly calculation) as parameters to html file for display&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;render_template&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;ifrs9_mockup.html&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;data&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;style&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;output&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;to_html&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;index&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;col_space&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;5&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;float_format&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;lambda&lt;/span&gt; &lt;span class="n"&gt;x&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;&lt;/span&gt;&lt;span class="si"&gt;%10.2f&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;&lt;/span&gt; &lt;span class="o"&gt;%&lt;/span&gt; &lt;span class="n"&gt;x&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;classes&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;centered&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
 &lt;/pre&gt;&lt;/div&gt;
 
 
 &lt;h3&gt;5. Batch Run&lt;/h3&gt;
 &lt;p&gt;The above is an example for &lt;strong&gt;one single&lt;/strong&gt; loan calculation. To calculate all the loan at one time, it needs batch run. The basic idea is very simple:&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;get the input file(loan file, pd file and so on)&lt;/li&gt;
-&lt;li&gt;loop through each loan, get the corresponding pd/lgd/prepay information. Then do the calculation.&lt;/li&gt;
-&lt;li&gt;Since step 2 is idpendent for each loan, it can be done parallely.&lt;/li&gt;
-&lt;li&gt;with &lt;code&gt;multiprocessing&lt;/code&gt; in python for parallel calculation, the calculation speed will increase dramatically &lt;/li&gt;
-&lt;/ol&gt;
+&lt;p&gt;1; get the input file(loan file, pd file and so on)
+2; loop through each loan, get the corresponding pd/lgd/prepay information. Then do the calculation.
+3; Since step 2 is idpendent for each loan, it can be done parallely.
+4; with &lt;code&gt;multiprocessing&lt;/code&gt; in python for parallel calculation, the calculation speed will increase dramatically &lt;/p&gt;
 &lt;h3&gt;Reference&lt;/h3&gt;
 &lt;ol&gt;
 &lt;li&gt;&lt;a href="https://stackoverflow.com/questions/11556958/sending-data-from-html-form-to-a-python-script-in-flask"&gt;Sending data from HTML form to a Python script in Flask&lt;/a&gt;&lt;/li&gt;
