@@ -142,15 +142,15 @@
 
 <p>The full page is a Bootstrap container with two main forms.</p>
 <p>First, The upload widget is fieldset inside the form. A <code>&lt;form&gt;</code> tag is marked with <code>enctype=multipart/form-data</code> and an <code>&lt;input type=file&gt;</code> is placed in that form. If PD file is submitted to upload, the python code will <code>GET</code> the <code>POST</code> information and will check if it is csv or not. It will only accept csv file. If there is no PD file or the POST method is not activated in the html page, it will return to the upload page. <code>&lt;form&gt;</code> tag has the <code>post</code> method to active the route. The route will call the ptyhon upload file function and upload the file to the server. </p>
-<div class="highlight"><pre>        {% if request.args.get(&#39;filename&#39;) is none %}
-            <span class="p">&lt;</span><span class="nt">form</span> <span class="na">action</span><span class="o">=</span><span class="s">&quot;&quot;</span> <span class="na">method</span><span class="o">=</span><span class="s">post</span> <span class="na">enctype</span><span class="o">=</span><span class="s">multipart/form-data</span><span class="p">&gt;</span>
-                <span class="p">&lt;</span><span class="nt">fieldset</span><span class="p">&gt;</span>
-                <span class="p">&lt;</span><span class="nt">legend</span><span class="p">&gt;</span>Upload PD CSV File<span class="p">&lt;/</span><span class="nt">legend</span><span class="p">&gt;</span>
-            .........
-             <span class="p">&lt;/</span><span class="nt">form</span><span class="p">&gt;</span>
-        {% else %}
-            PD file {{request.args.get(&#39;filename&#39;)}} has been uploaded; Please fill in the loan information.
-        {% endif %}
+<div class="highlight"><pre>{% if request.args.get(&#39;filename&#39;) is none %}
+    <span class="p">&lt;</span><span class="nt">form</span> <span class="na">action</span><span class="o">=</span><span class="s">&quot;&quot;</span> <span class="na">method</span><span class="o">=</span><span class="s">post</span> <span class="na">enctype</span><span class="o">=</span><span class="s">multipart/form-data</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">fieldset</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">legend</span><span class="p">&gt;</span>Upload PD CSV File<span class="p">&lt;/</span><span class="nt">legend</span><span class="p">&gt;</span>
+    .........
+     <span class="p">&lt;/</span><span class="nt">form</span><span class="p">&gt;</span>
+{% else %}
+    PD file {{request.args.get(&#39;filename&#39;)}} has been uploaded; Please fill in the loan information.
+{% endif %}
 </pre></div>
 
 
@@ -162,24 +162,24 @@
 
 
 <p>Second is to input the loan information in the form. It also has the <code>post</code> method</p>
-<div class="highlight"><pre>        <span class="p">&lt;</span><span class="nt">form</span> <span class="na">action </span><span class="o">=</span> <span class="s">&quot;&quot;</span> <span class="na">method</span><span class="o">=</span><span class="s">&quot;post&quot;</span> <span class="na">role</span><span class="o">=</span><span class="s">&quot;form&quot;</span><span class="p">&gt;</span>
-            <span class="p">&lt;</span><span class="nt">fieldset</span><span class="p">&gt;</span>
-            <span class="p">&lt;</span><span class="nt">legend</span><span class="p">&gt;</span>Input Loan/Borrower Information<span class="p">&lt;/</span><span class="nt">legend</span><span class="p">&gt;</span>
-            .....
-        <span class="p">&lt;/</span><span class="nt">form</span><span class="p">&gt;</span>
+<div class="highlight"><pre><span class="p">&lt;</span><span class="nt">form</span> <span class="na">action </span><span class="o">=</span> <span class="s">&quot;&quot;</span> <span class="na">method</span><span class="o">=</span><span class="s">&quot;post&quot;</span> <span class="na">role</span><span class="o">=</span><span class="s">&quot;form&quot;</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">fieldset</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">legend</span><span class="p">&gt;</span>Input Loan/Borrower Information<span class="p">&lt;/</span><span class="nt">legend</span><span class="p">&gt;</span>
+    .....
+<span class="p">&lt;/</span><span class="nt">form</span><span class="p">&gt;</span>
 </pre></div>
 
 
 <p>After all the input forms are filled and submited to calculate, the route will call the flask <strong>ifrs9</strong> function as introduced below.</p>
 <p>if calculaion data is returned then it will be displayed on the page in div of the centered class.</p>
-<div class="highlight"><pre>        {% if data is not none %}
-        <span class="p">&lt;</span><span class="nt">br</span><span class="p">&gt;</span>
-        <span class="p">&lt;</span><span class="nt">div</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;centered&quot;</span><span class="p">&gt;</span>
-        {{data | safe}}
-        <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
-        {% else%}
-        NONE
-        {% endif %}
+<div class="highlight"><pre>{% if data is not none %}
+<span class="p">&lt;</span><span class="nt">br</span><span class="p">&gt;</span>
+<span class="p">&lt;</span><span class="nt">div</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;centered&quot;</span><span class="p">&gt;</span>
+{{data | safe}}
+<span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+{% else%}
+NONE
+{% endif %}
 </pre></div>
 
 
@@ -192,35 +192,32 @@
 
 <p>The second function is <strong>ifrs9</strong> which is to get html information and do the calculation.</p>
 <p>After all the input forms are filled and submited to calculate, the route will call the flask <strong>ifrs9</strong> function: </p>
-<div class="highlight"><pre>1. it will check the filename first, if no file uploaded, it will pop out message to ask for upload the pd file.
-2. if there is uploaded file, then it will request the filled in form values from html
-3. it will call the function to do ECL calculation
-4. it will flash out the calculation result
-</pre></div>
-
-
+<ol>
+<li>it will check the filename first, if no file uploaded, it will pop out message to ask for upload the pd file.</li>
+<li>if there is uploaded file, then it will request the filled in form values from html</li>
+<li>it will call the function to do ECL calculation</li>
+<li>it will flash out the calculation result</li>
+</ol>
 <div class="highlight"><pre><span class="n">flash</span><span class="p">(</span><span class="s1">&#39;Total IFRS9 Lifetime EL is: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">output</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="s1">&#39;, Total IFRS9 Lifetime PD is: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">output</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
 <span class="n">flash</span><span class="p">(</span><span class="s1">&#39;Total IFRS9 1 year EL is: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">output</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span> <span class="o">+</span> <span class="s1">&#39;, Total IFRS9 1 year PD is: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">output</span><span class="p">[</span><span class="mi">4</span><span class="p">]))</span>
 </pre></div>
 
 
-<div class="highlight"><pre>5. it will return to `render_template` with the output data(the detailed monthly calculation) as parameters to html file for display
-</pre></div>
-
-
+<ol>
+<li>it will return to <code>render_template</code> with the output data(the detailed monthly calculation) as parameters to html file for display</li>
+</ol>
 <div class="highlight"><pre><span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s2">&quot;ifrs9_mockup.html&quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">style</span> <span class="o">+</span> <span class="n">output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">to_html</span><span class="p">(</span><span class="n">index</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span> <span class="n">col_space</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">float_format</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="s1">&#39;</span><span class="si">%10.2f</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">x</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="s1">&#39;centered&#39;</span><span class="p">))</span>
 </pre></div>
 
 
 <h3>5. Batch Run</h3>
 <p>The above is an example for <strong>one single</strong> loan calculation. To calculate all the loan at one time, it needs batch run. The basic idea is very simple:</p>
-<div class="highlight"><pre>1. get the input file(loan file, pd file and so on)
-2. loop through each loan, get the corresponding pd/lgd/prepay information. Then do the calculation.
-3. Since step 2 is idpendent for each loan, it can be done parallely.
-4. with `multiprocessing` in python for parallel calculation, the calculation speed will increase dramatically
-</pre></div>
-
-
+<ol>
+<li>get the input file(loan file, pd file and so on)</li>
+<li>loop through each loan, get the corresponding pd/lgd/prepay information. Then do the calculation.</li>
+<li>Since step 2 is idpendent for each loan, it can be done parallely.</li>
+<li>with <code>multiprocessing</code> in python for parallel calculation, the calculation speed will increase dramatically </li>
+</ol>
 <h3>Reference</h3>
 <ol>
 <li><a href="https://stackoverflow.com/questions/11556958/sending-data-from-html-form-to-a-python-script-in-flask">Sending data from HTML form to a Python script in Flask</a></li>
