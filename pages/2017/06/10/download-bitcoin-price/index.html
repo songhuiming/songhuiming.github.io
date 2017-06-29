@@ -4,7 +4,7 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>python closure &mdash; pydata</title>
+  <title>Download Bitcoin Price &mdash; pydata</title>
   <meta name="author" content="shm">
 
 
@@ -92,50 +92,50 @@
 <div>
   <article class="hentry" role="article">
 <header>
-      <h1 class="entry-title">python closure</h1>
+      <h1 class="entry-title">Download Bitcoin Price</h1>
     <p class="meta">
-<time datetime="2016-06-14T00:00:00-05:00" pubdate>Tue 14 June 2016</time>    </p>
+<time datetime="2017-06-10T00:00:00-05:00" pubdate>Sat 10 June 2017</time>    </p>
 </header>
 
-  <div class="entry-content"><p>如果一个函数里面定义了另一个函数，这样的函数叫<code>nested function</code>, <code>nested function</code>可以访问它的封闭区域内的变量。比如</p>
-<div class="highlight"><pre><span class="k">def</span> <span class="nf">add_function</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">add_value</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="n">value</span>
-    <span class="k">return</span> <span class="n">add_value</span>
+  <div class="entry-content"><p>前段时间各种E-corn(比特币，以太币)的价格飞涨，买买提很多搞深度学习的朋友都把显卡拿来挖矿了。最近读到<a href="https://zhuanlan.zhihu.com/p/20090944">知乎上的一篇文章</a>。讲的是比特币交易。不同的地区，不同的交易平台会出现不同的价格。所以就有了无风险套利的空间。在价格低的平台买进，在价格高的平台卖出。因为要实时监控价格，决定交易策略，所以不可能一直靠人工点击查看价格进行交易。必须依靠机器来自动抓取比特币的价格，自动进行买卖。</p>
+<p>看完以后唏嘘不已，想起了n年前我还在加州读书的时候，在办公室里面搞了一台机器，日夜挖矿，乐此不疲。那个时候每天在办公室就是看看paper，上上买买提。慢慢学会了倒卖各种电脑相机打印机，wii的游戏机平衡板，到后来果果出来iphone ipad更是迎来了高潮。那是一个疯狂的时代，也是一个热火朝天的时代。每天忙乎乎的，然后到半岛搞了螃蟹龙虾九层塔鸭舌。</p>
+<p>黄鹤一去不复返。</p>
+<p>anyway，下面是一个最简单的例子，怎么通过网站的api接口来下载数据。当然要是没有api接口的话，那就只能自己crawl各种网页了。下一篇blog我会简单的介绍一下我怎么爬<a href="https://www.wsj.com/">wsj</a>的新闻标题的。</p>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">bs4</span> <span class="kn">import</span> <span class="n">BeautifulSoup</span>
+<span class="kn">import</span> <span class="nn">urllib</span>
+<span class="kn">import</span> <span class="nn">urllib2</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="kn">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">seaborn</span> <span class="kn">as</span> <span class="nn">sns</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
 
-<span class="n">add3</span> <span class="o">=</span> <span class="n">add_function</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
-
-<span class="k">print</span> <span class="n">add3</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>  <span class="c1"># output is 13</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">set_style</span><span class="p">(</span><span class="s2">&quot;darkgrid&quot;</span><span class="p">)</span>
 </pre></div>
 
 
-<p>now if we delete the function <code>add_function</code>. we can still run <code>add3</code> function and <code>3</code> will be remembered.</p>
-<p>这种数据<code>3</code>和code捆绑在一起的方法叫闭包<code>closure</code></p>
-<h5>什么时候会出现<code>closure</code>?</h5>
-<p>以下三个条件必须满足:
-1. 有一个<code>nested function</code>(function inside a function)
-2. <code>nested function</code>会涉及一个定义在封闭函数内部的值
-3. 最终要返回<code>nested function</code></p>
-<h5>什么时候使用<code>closure</code></h5>
-<p><code>closure</code>避免了使用全局变量。如果一个类(<code>class</code>)只有很少的<code>methods</code>的时候，使用<code>closure</code>会更方便简洁。比如上面的例子，我们可以很快的定义不同的加法函数</p>
-<div class="highlight"><pre><span class="n">add5</span> <span class="o">=</span> <span class="n">add_function</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
-<span class="n">add10</span> <span class="o">=</span> <span class="n">add_function</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
-
-<span class="k">print</span> <span class="n">add5</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
-<span class="k">print</span> <span class="n">add10</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<p>打开网页，数据是json格式的。直接json load成dict，然后转为DataFrame以方便查看。但是如果保存到sql的话，不需要转为DataFrame。</p>
+<div class="highlight"><pre><span class="c1">#r = urllib.urlopen(r&#39;file:///H:/python/test/wsj_bmo.html&#39;).read()</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">urllib2</span><span class="o">.</span><span class="n">urlopen</span><span class="p">(</span><span class="s1">&#39;https://data.btcchina.com/data/trades&#39;</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>  
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<span class="c1"># response = urllib.urlopen(r&#39;https://data.btcchina.com/data/trades&#39;).read()</span>
 </pre></div>
 
 
-<p>所有的python函数都有一个<code>__closure__</code>属性。</p>
-<div class="highlight"><pre><span class="n">add_function</span><span class="o">.</span><span class="n">__closure__</span>
-<span class="n">add5</span><span class="o">.</span><span class="n">__closure__</span>        <span class="c1"># Out[18]: (&lt;cell at 0x00000000040A09A8: int object at 0x0000000001D58758&gt;,)</span>
-
-<span class="n">add5</span><span class="o">.</span><span class="n">__closure__</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">cell_contents</span>
+<div class="highlight"><pre><span class="n">date_num</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span>
+<span class="n">date_str</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">))</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1"> %H:%M&#39;</span><span class="p">))</span>
+<span class="n">idx</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">50</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">df</span><span class="o">.</span><span class="n">price</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">color</span> <span class="o">=</span> <span class="s2">&quot;#33b5e5&quot;</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">date_str</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">rotation</span> <span class="o">=</span> <span class="mi">45</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">locator_params</span><span class="p">(</span><span class="n">tight</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">nbins</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Bitcoin Price(CNY) in Last 24 Hours&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 
 
-<p>Figure 1. tab1: show the plot</p>
-<p><img alt="png" src="/figures/20160614_python_closure_01.PNG" /></p></div>
+<p><img alt="png" src="/figures/20170610_bitcoin_price_download.png" /></p></div>
     <footer>
 <p class="meta">
   <span class="byline author vcard">
@@ -143,11 +143,11 @@
         <a href="/author/huiming-song.html">Huiming Song</a>
     </span>
   </span>
-<time datetime="2016-06-14T00:00:00-05:00" pubdate>Tue 14 June 2016</time>  <span class="categories">
-    <a class='category' href='/category/python.html'>Python</a>
+<time datetime="2017-06-10T00:00:00-05:00" pubdate>Sat 10 June 2017</time>  <span class="categories">
+    <a class='category' href='/category/python.html'>python</a>
   </span>
   <span class="categories">
-    <a class="category" href="/tag/python.html">python</a>,    <a class="category" href="/tag/base.html">base</a>  </span>
+    <a class="category" href="/tag/python.html">python</a>,    <a class="category" href="/tag/quant.html">quant</a>  </span>
 </p><div class="sharing">
 </div>    </footer>
   </article>
@@ -232,9 +232,9 @@
 </script>
   <script type="text/javascript">
     var disqus_shortname = 'songhuiming';
-    var disqus_identifier = '/pages/2016/06/14/python-closure/';
-    var disqus_url = '/pages/2016/06/14/python-closure/';
-    var disqus_title = 'python closure';
+    var disqus_identifier = '/pages/2017/06/10/download-bitcoin-price/';
+    var disqus_url = '/pages/2017/06/10/download-bitcoin-price/';
+    var disqus_title = 'Download Bitcoin Price';
     (function() {
       var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
       dsq.src = "//" + disqus_shortname + '.disqus.com/embed.js';

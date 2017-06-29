@@ -1,6 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata</title><link href="/" rel="alternate"></link><link href="/feeds/all.atom.xml" rel="self"></link><id>/</id><updated>2017-06-03T00:00:00-05:00</updated><entry><title>买入股票时，买入价至少设为多少才能保证有九成的把握在当天成交？</title><link href="/pages/2017/06/03/mai-ru-gu-piao-shi-mai-ru-jie-zhi-shao-she-wei-duo-shao-cai-neng-bao-zheng-you-jiu-cheng-de-ba-wo-zai-dang-tian-cheng-jiao/" rel="alternate"></link><updated>2017-06-03T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:,2017-06-03:pages/2017/06/03/mai-ru-gu-piao-shi-mai-ru-jie-zhi-shao-she-wei-duo-shao-cai-neng-bao-zheng-you-jiu-cheng-de-ba-wo-zai-dang-tian-cheng-jiao/</id><summary type="html">&lt;p&gt;这是我觉得很好的一篇知乎文章，原作者不仅简明扼要的把一个问题转化为数学问题，把书本上关于Ito积分应用到现实问题中，而且给出了一个Simulation解，做到了让人真正明白是怎么回事。&lt;/p&gt;
-&lt;p&gt;原文参见&lt;a href="https://www.zhihu.com/question/21561785/answer/18723625"&gt;知乎&lt;/a&gt;。一下摘自原文。&lt;/p&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata</title><link href="/" rel="alternate"></link><link href="/feeds/all.atom.xml" rel="self"></link><id>/</id><updated>2017-06-10T00:00:00-05:00</updated><entry><title>Download Bitcoin Price</title><link href="/pages/2017/06/10/download-bitcoin-price/" rel="alternate"></link><updated>2017-06-10T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:,2017-06-10:pages/2017/06/10/download-bitcoin-price/</id><summary type="html">&lt;p&gt;前段时间各种E-corn(比特币，以太币)的价格飞涨，买买提很多搞深度学习的朋友都把显卡拿来挖矿了。最近读到&lt;a href="https://zhuanlan.zhihu.com/p/20090944"&gt;知乎上的一篇文章&lt;/a&gt;。讲的是比特币交易。不同的地区，不同的交易平台会出现不同的价格。所以就有了无风险套利的空间。在价格低的平台买进，在价格高的平台卖出。因为要实时监控价格，决定交易策略，所以不可能一直靠人工点击查看价格进行交易。必须依靠机器来自动抓取比特币的价格，自动进行买卖。&lt;/p&gt;
+&lt;p&gt;看完以后唏嘘不已，想起了n年前我还在加州读书的时候，在办公室里面搞了一台机器，日夜挖矿，乐此不疲。那个时候每天在办公室就是看看paper，上上买买提。慢慢学会了倒卖各种电脑相机打印机，wii的游戏机平衡板，到后来果果出来iphone ipad更是迎来了高潮。那是一个疯狂的时代，也是一个热火朝天的时代。每天忙乎乎的，然后到半岛搞了螃蟹龙虾九层塔鸭舌。&lt;/p&gt;
+&lt;p&gt;黄鹤一去不复返。&lt;/p&gt;
+&lt;p&gt;anyway，下面是一个最简单的例子，怎么通过网站的api接口来下载数据。当然要是没有api接口的话，那就只能自己crawl各种网页了。下一篇blog我会简单的介绍一下我怎么爬&lt;a href="https://www.wsj.com/"&gt;wsj&lt;/a&gt;的新闻标题的。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;bs4&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;BeautifulSoup&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;urllib&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;urllib2&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;json&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;pandas&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;pd&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;seaborn&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;sns&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;matplotlib.pyplot&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;plt&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;datetime&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;datetime&lt;/span&gt;
+
+&lt;span class="n"&gt;sns&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;set_style&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;darkgrid&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;打开网页，数据是json格式的。直接json load成dict，然后转为DataFrame以方便查看。但是如果保存到sql的话，不需要转为DataFrame。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="c1"&gt;#r = urllib.urlopen(r&amp;#39;file:///H:/python/test/wsj_bmo.html&amp;#39;).read()&lt;/span&gt;
+&lt;span class="n"&gt;response&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;urllib2&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;urlopen&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;https://data.btcchina.com/data/trades&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;data&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;json&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;load&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;response&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;  
+&lt;span class="n"&gt;df&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;pd&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;DataFrame&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;data&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="c1"&gt;# response = urllib.urlopen(r&amp;#39;https://data.btcchina.com/data/trades&amp;#39;).read()&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;date_num&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;df&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;date&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;map&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;lambda&lt;/span&gt; &lt;span class="n"&gt;x&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;datetime&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;fromtimestamp&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;int&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;x&lt;/span&gt;&lt;span class="p"&gt;)))&lt;/span&gt;
+&lt;span class="n"&gt;date_str&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;df&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;date&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;map&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;lambda&lt;/span&gt; &lt;span class="n"&gt;x&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;datetime&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;fromtimestamp&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;int&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;x&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;strftime&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;%Y-%m-&lt;/span&gt;&lt;span class="si"&gt;%d&lt;/span&gt;&lt;span class="s1"&gt; %H:%M&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+&lt;span class="n"&gt;idx&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;range&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;df&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;shape&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="mi"&gt;50&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;plt&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;plot&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;idx&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;df&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;price&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;idx&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="n"&gt;color&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;#33b5e5&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;label&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;plt&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;xticks&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;idx&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;date_str&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;idx&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="n"&gt;rotation&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;45&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;plt&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;locator_params&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;tight&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;True&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;nbins&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;10&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;plt&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;title&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;Bitcoin Price(CNY) in Last 24 Hours&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;plt&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;legend&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;span class="n"&gt;plt&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;show&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;img alt="png" src="/figures/20170610_bitcoin_price_download.png" /&gt;&lt;/p&gt;</summary><category term="python"></category><category term="quant"></category></entry><entry><title>买入股票时，买入价至少设为多少才能保证有九成的把握在当天成交？</title><link href="/pages/2017/06/03/mai-ru-gu-piao-shi-mai-ru-jie-zhi-shao-she-wei-duo-shao-cai-neng-bao-zheng-you-jiu-cheng-de-ba-wo-zai-dang-tian-cheng-jiao/" rel="alternate"></link><updated>2017-06-03T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:,2017-06-03:pages/2017/06/03/mai-ru-gu-piao-shi-mai-ru-jie-zhi-shao-she-wei-duo-shao-cai-neng-bao-zheng-you-jiu-cheng-de-ba-wo-zai-dang-tian-cheng-jiao/</id><summary type="html">&lt;p&gt;这是我觉得很好的一篇知乎文章，原作者不仅简明扼要的把一个问题转化为数学问题，把书本上关于Ito积分应用到现实问题中，而且给出了一个Simulation解，做到了让人真正明白是怎么回事。&lt;/p&gt;
+&lt;p&gt;原文参见&lt;a href="https://www.zhihu.com/question/21561785/answer/18723625"&gt;知乎&lt;/a&gt;。以下摘自原文。&lt;/p&gt;
 &lt;p&gt;原始问题是:&lt;strong&gt;买入股票时，买入价至少设为多少才能保证有九成的把握在当天成交？假定股价服从布朗运动。下单后不可修改。&lt;/strong&gt;&lt;/p&gt;
 &lt;p&gt;下面完全是引用的最高票答案：&lt;/p&gt;
 &lt;p&gt;既然题目里面说了Brownian Motion，我只说说从金融数学的角度怎么处理这个问题，至于行为经济学、市场文化学这些太抽象，相关答案很多，我就不多嘴了。现在欢迎大家来到Q-measure（Risk-neutral Probability measure）。&lt;/p&gt;
@@ -10,17 +48,17 @@
 &lt;p&gt;设符合条件的买入价为&lt;span class="math"&gt;\(S_{bid} \leq S_0\)&lt;/span&gt;，根据假设，股价服从Geometric Brownian Motion：
 &lt;/p&gt;
 &lt;div class="math"&gt;$$
-\begin{align}
+\begin{align\*}
 \frac{dS_t}{S_t} = rdt + \sigma dW = \sigma dW ~~~~ (w.r.t. r = 0)
-\end{align}
+\end{align\*}
 $$&lt;/div&gt;
 &lt;p&gt;
 因此，根据Ito's Calculus，我们有：
 &lt;/p&gt;
 &lt;div class="math"&gt;$$
-\begin{align}
+\begin{align\*}
  \ln S_t = \ln S_0 + \left(- \frac{1}{2} \sigma^2 \right) t + \sigma W_t
-\end{align}
+\end{align\*}
 $$&lt;/div&gt;
 &lt;p&gt;变形，易得：
 &lt;/p&gt;
@@ -37,10 +75,10 @@ $$&lt;/div&gt;
 &lt;p&gt;我不加证明的给出&lt;span class="math"&gt;\(m(t)\)&lt;/span&gt;的累积分布函数（CDF）如下，证明需要利用布朗运动的反射性质（Reflection Principle），有兴趣的可以要我补充：
 &lt;/p&gt;
 &lt;div class="math"&gt;$$
-\begin{align}
+\begin{align\*}
 &amp;amp; \mu = -\frac{1}{2}\sigma^2, \alpha = \ln S_0 \\\\
 &amp;amp; F_{m(t)}(x) = N\left(\frac{x - \alpha - \mu t}{\sigma \sqrt{t}}\right) + \exp \left(2 \frac{\mu(x - \alpha)}{\sigma^2}\right) N\left(\frac{x - \alpha + \mu t}{\sigma \sqrt{t}}\right)
-\end{align}
+\end{align\*}
 $$&lt;/div&gt;
 &lt;p&gt;那么利用这一函数的反函数，分分钟搞定这个问题的解析解：
 &lt;/p&gt;
