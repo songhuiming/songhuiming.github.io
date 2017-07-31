@@ -1,5 +1,310 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata</title><link href="/" rel="alternate"></link><link href="/feeds/python.atom.xml" rel="self"></link><id>/</id><updated>2017-07-22T00:00:00-05:00</updated><entry><title>LSTM Introduction</title><link href="/pages/2017/07/22/lstm-introduction/" rel="alternate"></link><updated>2017-07-22T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:,2017-07-22:pages/2017/07/22/lstm-introduction/</id><summary type="html">&lt;h2&gt;Intro&lt;/h2&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata</title><link href="/" rel="alternate"></link><link href="/feeds/python.atom.xml" rel="self"></link><id>/</id><updated>2017-07-29T10:00:00-05:00</updated><entry><title>tensorflow简介--07</title><link href="/pages/2017/07/29/tensorflowjian-jie-07/" rel="alternate"></link><updated>2017-07-29T10:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:,2017-07-29:pages/2017/07/29/tensorflowjian-jie-07/</id><summary type="html">&lt;p&gt;这是以前看卷积神经网络做的笔记。我把大概的意思用中文写了，毕竟看中文还是快得多。但是关键的专有名字还是保留着英文，这样方便查看英文资料。比如查找帮助的时候经常会出现filter,FC layer这种说法，所以我觉得还是保留英文更好一些，而不是翻译成过滤器和全连接层。&lt;/p&gt;
+&lt;p&gt;卷积神经网络和其他神经网络有相似的地方：它们都是由神经元构成，每个神经元接受输入的数据，每个神经元有各个输入的权重(weights)和偏差(biases)参数，最后有对应的输出，然后通过最小化损失函数来求解相应的参数。&lt;/p&gt;
+&lt;p&gt;和通常的神经网络不同的是：卷积神经网络通常用来进行图像识别。它通过一些特殊的设计使得参数的数量大为减少。&lt;/p&gt;
+&lt;h2&gt;结构总览&lt;/h2&gt;
+&lt;p&gt;通常的神经网络中，神经元对每一个输入的数据点都会有一个参数与之对应。在处理图像的时候，这就会导致引入巨多的参数。比如一个1000万象素的图片，一个神经元就会有3000万个(3个chanel)参数。如果有很多神经元的时候参数就会非常多。&lt;/p&gt;
+&lt;p&gt;卷积神经网络的神经元都有三个维度：width, height, depth(这儿的depth指的是激活层的第三维，不是神经网络的layer的个数).比如CIFAR-10里一个32x32x3(width x height x depth)的图片，每个layer的神经元只连接这个图片的一小块。最后的输出是一个[1x1x10]的向量，用来表示图片是10个类别里的哪一个类别。&lt;/p&gt;
+&lt;p&gt;&lt;img alt="alt text" src="figures/20170729_cnn_introduction_01.jpeg" title="Logo Title Text 1" /&gt;&lt;/p&gt;
+&lt;p&gt;上图左边是通常的3层神经网络。第一层是输入层。第二层的4个神经元中每个神经元都与输入层的每个输入相连，同样第三层的每个神经元与第二层的每个输出相连。最后的输出层与前一层的所有神经元相连。上图右边是卷积神经网络，红色的是一个图片的输入层，所以其维度是[width x height x 3]，中间layer的每个神经元只跟输入层的一小部分相连，比如通常用一个3x3x3的filter与图片中每个3x3x3的小区域相连。卷积神经网络由各个Layer构成。&lt;/p&gt;
+&lt;h2&gt;构造CNN的Layers&lt;/h2&gt;
+&lt;p&gt;卷积神经网络主要有三种不同的Layer:convolutional layer, pooling layer, fully-connected layer.我们通常把它们叠加起来构成卷积神经网络。&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;例子&lt;/em&gt;： 一个简单的CIFAR-10的分类卷积神经网络包含下面几个layer[INPUT-CONV-RELU-POOL-FC].&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;INPUT[32x32x3]是输入图像的像素矩阵。这些图片的width是32， height是32，有3个chanel&lt;/li&gt;
+&lt;li&gt;CONV层用来计算卷积神经网络：input的每一个小块会跟filter矩阵做一个卷积，如果有12个filter矩阵，那么输出就是[32x32x12]。&lt;/li&gt;
+&lt;li&gt;RELU层会对CONV的[32x32x12]矩阵里的每一个元素做一个变换&lt;span class="math"&gt;\(max(0, x)\)&lt;/span&gt;.RELU不改变矩阵的shape&lt;/li&gt;
+&lt;li&gt;POOL层用来沿着spatial维度(width, height)做一个downsampling，输出矩阵的维度为[16x16x3]&lt;/li&gt;
+&lt;li&gt;FC用来计算分类得分。对每一个输入的图片，它的输出是一个[1x1x10]的向量矩阵。这10个数字用来表示图片在每个分类的得分。和普通的NN一样，FC的神经元跟前面输入的每一个数字都有联系。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;上面的例子中，CONV和FC包含参数，RELU和POOL不含参数。损失函数是FC里面每个分类的得分和图片真实分类的一个函数。通过最小化损失函数可以得到CONV和FC里面的参数的值。&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;tiny VGG&lt;/em&gt; : 下面是一个&lt;a href="http://www.robots.ox.ac.uk/~vgg/research/very_deep/"&gt;VGG&lt;/a&gt;结构的卷积神经网络示意图&lt;/p&gt;
+&lt;p&gt;&lt;img alt="alt text" src="figures/20170729_cnn_introduction_02.jpeg" title="Logo Title Text 1" /&gt;&lt;/p&gt;
+&lt;p&gt;上图最左边是一张输入的图片，中间是CNN的各个layer，最右边FC layer输出图片在每个分类里面的概率。&lt;/p&gt;
+&lt;p&gt;下面分别介绍CNN里面几个重要的Layers:CONV, POOLING, FC.&lt;/p&gt;
+&lt;h3&gt;Convolutional　Layer&lt;/h3&gt;
+&lt;p&gt;卷积层是卷积神经网络的核心部分。简单地说就是对输入的数据通过Filter做卷积然后输出。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;总览&lt;/strong&gt; 
+卷积层的参数是是一系列的可优化的参数。每个filter对应输入的空间(spatially，width, height)的某一部分,但是在depth上shape是一样的。比如第一个卷积层上的filter的size为[5x5x3] (也就是在width和height上的5个像素，3是因为输入的图片depth为3，有3个chanel)。在forward pass过程中，每一个这样的filter沿着图片的width和height滑动(或者叫卷积)，这样我们就会得到一个二维的矩阵。假设这个卷积层有12个filter，每个都这样做卷积，我们把这12个卷积的矩阵stack在一起就得到新的输出(输出维度为 [width X height X 12] ,输出的width和height的大小跟stride和padding有关，后面会具体介绍)&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Local Connectivity&lt;/strong&gt;
+当处理高维输入的时候，一般不能把前一个输入的所有神经元都跟卷积层的神经元连接起来，那样会引入天量的参数。我们只是把输入的每一小块区域跟当前卷积层的神经元联系起来。这一小块区域的空间维度大小叫做接受域(receptive field,也就是filter的size)，这是一个可以变化的超参数。在深度(depth)上他们是一样大小。&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;例1&lt;/em&gt; 每张CIFAR-10的图片的初始输入维度为[32x32x3]，如果接受域(receptive field, 或者叫filter size)的大小为5x5，那么卷积层的每个神经元都与输入图片的每个[5x5x3]的区域通过filter做卷积(所以filter的大小也为5x5x3，共计75个参数，加上一个bias，总共76个参数)。注意depth方向的大小为3，因为depth方向的大小总是跟输入的depth一样大。&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;例2&lt;/em&gt; 假设输入的size为[16x16x20].假如receptive field的size是3x3，那么卷积层上的每个神经元都与输入矩阵的每个[3x3x20]的区域通过filter做卷积。所以每个filter的参数数量是181个[3x3x20=180加1个bias，共计181个]。注意的是这时候沿着width，height的空间大小是3x3，但是沿着depth是20.因为输入的矩阵的depth是20.&lt;/p&gt;
+&lt;p&gt;&lt;img alt="alt text" src="figures/20170729_cnn_introduction_04.png" title="Logo Title Text 1" /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt="alt text" src="figures/20170729_cnn_introduction_03." title="jpeg &amp;quot;Logo Title Text 1&amp;quot;" /&gt;&lt;/p&gt;
+&lt;p&gt;上图最左边粉色图片大小为[32x32x3]，receptive field是其中每个粉色的小块，大小为[5x5x3],所以filter的大小为5x5x3。中间的蓝色的图片说明有5个filter，所以conv layer的输出的depth为5。如果假设width和hegith不变，那么中间蓝色的输出区域大小为[32x32x5]。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Spatial Arrangement&lt;/strong&gt; 前面介绍了卷积神经网络的神经元怎么与输入的数据相连。下面我们介绍在卷积神经网络里面的输出数据是什么样子（这儿的所有的数据都是指numpy array）。输出数据的size决定于下面三个超参数：&lt;strong&gt;depth, stride, zero-padding&lt;/strong&gt;。&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;depth&lt;/strong&gt;是输出结果的一个超参数，简单来说它指的是filter的数量。有时候也叫&lt;em&gt;fibre&lt;/em&gt;&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;stride&lt;/strong&gt;指的是每次滑动filter时移动的步长。stride为1表示每次沿着width或者height方向移动一个点，stride为2表示每次移动两个点的步长；如果步长为2，那么新产生的output就会比输入的数据的在width和height上面小(spatial size会变小)。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;zero-padding&lt;/strong&gt; 0填充：有时候需要在输入的矩阵外面填充上0，通常这样做的目的是为了控制输出的空间大小(spatial size)，比如说为了使得输入和输出在width和height上大小一样。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;输出的空间大小可以有下面几个值计算出来：输入的大小(&lt;span class="math"&gt;\(W\)&lt;/span&gt;),接受域(filter)的大小(&lt;span class="math"&gt;\(F\)&lt;/span&gt;),步长(&lt;span class="math"&gt;\(S\)&lt;/span&gt;),以及外围补充的0的个数(&lt;span class="math"&gt;\(P\)&lt;/span&gt;)。这样得到的输出的神经元的个数为&lt;span class="math"&gt;\((W - F + 2P)/S + 1\)&lt;/span&gt;。比如对一个7x7（depth为1，略去）的输入，filter的大小是3x3，步长为1，0个0填充，那么输出的大小为5x5。如果步长为2，那么输出的大小为3x3。&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;使用0填充&lt;/em&gt; 通常当S=1的时候，需要设置0填充的数量&lt;span class="math"&gt;\(P= (F-1)/2\)&lt;/span&gt;，这样的话输入和输出会有同样的空间尺寸。&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;步长的限制&lt;/em&gt; 设置步长S的值的时候必须要注意使得公式&lt;span class="math"&gt;\((W - F + 2P)/S + 1\)&lt;/span&gt;有效。如果不能整除的话那么步长的设置就是无效的：比如W=10，P=0，F=3，假设设置S=2，那么&lt;span class="math"&gt;\((W - F + 2P)/S + 1 = (10 - 3 + 0) / 2 + 1 = 4.5\)&lt;/span&gt;。这个步长就无效。实际计算的时候要么会报错，要么就是需要采取0填充来使之有效。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;参数共享&lt;/strong&gt; 在用filter滑过输入数据的时候，通常不会对输入数据的每一个小块都选择一个不同的filter，如果这样做的话会导致filter过多，因而模型里参数的个数会急剧上升。通常所有输入数据小块会滑过同一个filter，得到一个输出矩阵。然后所有的输入数据小块再滑过一个新的filter，再得到一个新的输出矩阵。最后把这些输出矩阵stack在一起得到最终的输出矩阵。有几个矩阵stack在一起，最后的输出矩阵的depth就是几。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Numpy Examples&lt;/strong&gt; 下面是一个具体的例子，使用numpy的代码来帮助解释清楚。假如输入矩阵是一个numpy数组&lt;code&gt;X&lt;/code&gt;，那么&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;在width，height为&lt;code&gt;(x, y)&lt;/code&gt;位置处depth上的值可以表示为&lt;code&gt;X[x, y, :]&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;在depth为&lt;code&gt;d&lt;/code&gt;的切片(所有width,height上的值)是一个矩阵，表示为&lt;code&gt;X[:, :, d]&lt;/code&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;&lt;em&gt;Conv Layer&lt;/em&gt; 假设&lt;code&gt;X&lt;/code&gt;的维度为&lt;code&gt;X.shape: (11, 11, 4)&lt;/code&gt;，假设没有0填充(P=0)，filter的大小为F=5,步长为S=2,那么输出矩阵的spatial尺寸为(11-5)/2+1 = 4，也就是输出矩阵的width和height大小为4.输出矩阵&lt;code&gt;V&lt;/code&gt;看起来如下&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;V[0, 0, 0] = np.sum(X[:5, :5, :] * W0) + b0&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;V[1, 0, 0] = np.sum(X[2:7, :5, :] * W0) + b0&lt;/code&gt;，注意步长为2&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;V[2, 0, 0] = np.sum(X[4:9, :5, :] * W0) + b0&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;V[3, 0, 0] = np.sum(X[6:11, :5, :] * W0) + b0&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;在numpy里面，上面的&lt;code&gt;*&lt;/code&gt;表示矩阵对应的元素相乘，不是矩阵相乘。&lt;code&gt;W0&lt;/code&gt;是权重矩阵filter，其size为&lt;code&gt;W0.shape: (5, 5, 4)&lt;/code&gt;.&lt;code&gt;b0&lt;/code&gt;是bias。注意这里的参数共享：在输出的depth的index=0(&lt;code&gt;V[:, : 0]&lt;/code&gt;)的维度上，&lt;code&gt;W0&lt;/code&gt;和&lt;code&gt;b0&lt;/code&gt;都相同。下面计算数据矩阵depth=1上面的值&lt;code&gt;V[:, :, 1]&lt;/code&gt;：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;V[0, 0, 1] = np.sum(X[:5, :5, :] * W1) + b1&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;V[1, 0, 1] = np.sum(X[2:7, :5, :] * W1) + b1&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;V[2, 0, 1] = np.sum(X[4:9, :5, :] * W1) + b1&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;V[3, 0, 1] = np.sum(X[6:11, :5, :] * W1) + b1&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;V[0, 1, 1] = np.sum(X[:5, 2:7, :] * W1 + b1)&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;V[2, 3, 1] = np.sum(X[4:9, 6:11, :] * W1) + b1&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;我们可以看到，在上面输出矩阵depth的index=1(&lt;code&gt;V[:, :, 1]&lt;/code&gt;)上面，我们所有的参数都是&lt;code&gt;W1&lt;/code&gt;和&lt;code&gt;b1&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;总结&lt;/strong&gt; 在卷积层上:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;接受一个输入矩阵，size(shape)为&lt;span class="math"&gt;\(W_1 \times H_1 \times D_1\)&lt;/span&gt;&lt;/li&gt;
+&lt;li&gt;需要有4个超参数&lt;ul&gt;
+&lt;li&gt;Filter的数量&lt;span class="math"&gt;\(K\)&lt;/span&gt;&lt;/li&gt;
+&lt;li&gt;Filter的size &lt;span class="math"&gt;\(F\)&lt;/span&gt;, (输入矩阵每次选取的小块的size)&lt;/li&gt;
+&lt;li&gt;步长&lt;span class="math"&gt;\(S\)&lt;/span&gt;&lt;/li&gt;
+&lt;li&gt;0填充的大小&lt;span class="math"&gt;\(P\)&lt;/span&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;输出一个size为&lt;span class="math"&gt;\(W_2 \times H_2 \times D_2\)&lt;/span&gt;的矩阵，其中&lt;ul&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(W_2 = (W_1 - F + 2P) / S + 1\)&lt;/span&gt;&lt;/li&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(H_2 = (H_1 - F + 2P) / S +１\)&lt;/span&gt;&lt;/li&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(D_2 = K\)&lt;/span&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;因为参数共享，每个filter有&lt;span class="math"&gt;\(F \cdot F \cdot D1\)&lt;/span&gt;个权重参数，&lt;span class="math"&gt;\(K\)&lt;/span&gt;个filter总共有&lt;span class="math"&gt;\((F \cdot F \cdot D_1) \cdot K\)&lt;/span&gt;个权重参数与&lt;span class="math"&gt;\(K\)&lt;/span&gt;个bias参数&lt;/li&gt;
+&lt;li&gt;输出矩阵上第&lt;span class="math"&gt;\(d\)&lt;/span&gt;个depth的slice上(即&lt;code&gt;V[:, :, d]&lt;/code&gt;，size为&lt;span class="math"&gt;\(W_2 \times H_2\)&lt;/span&gt;)的矩阵是由输入矩阵跟第&lt;span class="math"&gt;\(d\)&lt;/span&gt;个filter作用产生的结果&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;通常超参数的的值会被设置为&lt;span class="math"&gt;\(F = 3, S = 1, P = 1\)&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;卷积示例&lt;/strong&gt; 下面是一个卷积层的示例。输入数据的3个通道被表示为3个矩阵(下面的 x[:, :, 0], x[:, :, 1], x[:, :, 2])，输入的size大小为&lt;span class="math"&gt;\(W_1 = 5, H_1 = 5, D_1 = 3\)&lt;/span&gt;,卷积层的超参数是&lt;span class="math"&gt;\(K = 2, F = 3, S = 2, P = 1\)&lt;/span&gt;。即有两个width x height大小为[3x3],depth = 3的filter，分别为&lt;span class="math"&gt;\(W_0, W_1\)&lt;/span&gt;。输出的空间size为(5 - 3 + 2)/2 + 1 = 3.输出的depth = 2，因为有两个filter。所以最后的输出是两个3x3的矩阵。&lt;/p&gt;
+&lt;p&gt;&lt;img alt="alt text" src="figures/20170729_cnn_introduction_05.gif" title="Logo Title Text 1" /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;采用矩阵相乘来计算&lt;/strong&gt; 上面卷积层上的计算实际上是各个小矩阵元素相乘的和然后再加上bias，我们可以把它统一成一个大的矩阵相乘的表达式。&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;我们把输入矩阵的没一小块都拉长为一个列向量，记为&lt;em&gt;im2col&lt;/em&gt;.比如输入为[227x227x3],filter为[11x11x3]，步长为4。我们从输入矩阵上拿出[11x11x3]的小块然后拉长为一个向量，向量的长度为11x11x3=363.每隔步长为4再拿出一小块[11x11x3]的矩阵做这样的拉长，在width和height方向上分别有(227 - 11)/4 + 1 = 55个小矩阵(所以总共有55x55=3025)个[11x11x3]的小矩阵。把3025个小矩阵都拉长为长度363的向量，放在一起就变成了[363x3025]的矩阵。把输入矩阵通过&lt;em&gt;im2col&lt;/em&gt;拉长以后变成的矩阵记为&lt;code&gt;X_col&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;把卷积层上的权重也拉成向量。比如有96个size为[11x11x3]的filter，这样得到一个矩阵记为&lt;code&gt;W_row&lt;/code&gt;，大小为[96x363]&lt;/li&gt;
+&lt;li&gt;这样卷积就可以表示为矩阵点乘&lt;code&gt;np.dot(W_row, X_col)&lt;/code&gt;，结果为[96x3025]的矩阵&lt;/li&gt;
+&lt;li&gt;最后需要把[96x3025]的矩阵reshape成[55x55x96]&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;上面的办法简单易懂，但是会比较费内存，因为在把输入矩阵拉成向量的时候有很多元素是重复出现的。这就增加了内存的消耗。但是好处是我们有非常快速的算法来计算，而且同样的&lt;code&gt;im2col&lt;/code&gt;想法可以用在下面的pooling里面。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Backpropagation&lt;/strong&gt;(反向传播) 在最小化损失函数的时候，通常使用迭代的办法，沿着梯度方向慢慢收敛。要计算梯度就必须计算偏导数，因为损失函数通常是函数的函数，或者更多的函数复合起来的函数，所以需要使用链式规则(chain rules)层层展开。反向传播其实就是使用链式规则求偏导数。 &lt;/p&gt;
+&lt;h3&gt;Pooling Layer (sub-sampling)&lt;/h3&gt;
+&lt;p&gt;通常在一个卷积层做好后，把输出用来作为新的输入，再做下一个卷积层之前，都会加上pooling层(抽样)，这样可以减少参数的个数(输入矩阵变小了)，也就相应的减少了overfitting.在实际当中的意义通常是：各个卷积层的目的是从输入图片中寻找到某些feature，通过抽样会使卷积层更多的去关注输入的图片的features，而不是去关注那些太detail的东西。因为太关注detail通常会导致模型过分拟合。 pooling层通常做的就是max-pooling：把输入矩阵选一小块(通常见到的是[2x2]的小矩阵)，然后只保留这一小块(4个数字里面)的最大的那个值。一般情况下，pooling层有如下性质：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;输入的矩阵的大小为&lt;span class="math"&gt;\(W_1 \times H_1 \times D1\)&lt;/span&gt;&lt;/li&gt;
+&lt;li&gt;需要两个超参数&lt;ul&gt;
+&lt;li&gt;他们的空间大小F&lt;/li&gt;
+&lt;li&gt;步长S&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;长生一个大小为&lt;span class="math"&gt;\(W_2 \times H_2 \times D2\)&lt;/span&gt;的矩阵，其中&lt;ul&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(W_2 = (W_1 - F)/S +１\)&lt;/span&gt;&lt;/li&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(H_2 = (H_1 - F)/S + 1\)&lt;/span&gt;&lt;/li&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(D2 = D1\)&lt;/span&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;这一步没有新的参数，因为只是抽样&lt;/li&gt;
+&lt;li&gt;通常也不会使用0填充&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;通常见到比较多的是&lt;span class="math"&gt;\(F = 2, S=2\)&lt;/span&gt;，或者&lt;span class="math"&gt;\(F = 3, S = 2\)&lt;/span&gt;.&lt;/p&gt;
+&lt;p&gt;下图是一个max pooling的示意图，从每个[2x2]的小区域里面选取最大的一个数，所以输出的矩阵大小是输入的矩阵大小的一半。
+&lt;img alt="alt text" src="figures/20170729_cnn_introduction_06.jpeg" title="Logo Title Text 1" /&gt;&lt;/p&gt;
+&lt;h3&gt;Normalization Layer / 正则层&lt;/h3&gt;
+&lt;p&gt;常见的有batch normalization和layer normalization。尽管stanford那个教程说normalization现在渐渐不是那么流行了，但是我自己的经验是做了normalization还是有效果的。通过normalization以后，所有的数据都一致化了，这样的话做梯度下降的时候更stable。否则的话那些绝对数值过大的数据会影响梯度下降的效果。&lt;/p&gt;
+&lt;h3&gt;Fully-connected Layer / 全连接层&lt;/h3&gt;
+&lt;p&gt;跟通常神经网络一样，全连接层里面的神经元跟输入数据的每个点都相连。所以全连接层可以看作是一个矩阵相乘，然后加上bias。&lt;/p&gt;
+&lt;h2&gt;卷积神经网络结构&lt;/h2&gt;
+&lt;p&gt;卷积神经网络通常由这三层构成：conv层，pooling层和FC层。&lt;/p&gt;
+&lt;h3&gt;各层结构&lt;/h3&gt;
+&lt;p&gt;常见的卷积神经网络是由CONV-RELU层累加在一起，然后跟着pooling层，然后重复这个结构，最后是FC层。就是&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;INPUT -&amp;gt; [[CONV -&amp;gt; relu]*N -&amp;gt; POOL?]*M -&amp;gt; [FC -&amp;gt; RELU]*k -&amp;gt; FC&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;这里的&lt;code&gt;*&lt;/code&gt;表示重复，&lt;code&gt;POOL?&lt;/code&gt;表示可选，通常&lt;code&gt;0 &amp;lt;= N &amp;lt;= 3, M &amp;gt;= 0, 0 &amp;lt;= K &amp;lt; 3&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;下面是几个常见个卷积网络&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;INPUT -&amp;gt; FC&lt;/code&gt;, 这是一个线性分类器. 其中 &lt;code&gt;N = M = K = 0&lt;/code&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;INPUT -&amp;gt; CONV -&amp;gt; RELU -&amp;gt; FC&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;INPUT -&amp;gt; [CONV -&amp;gt; RELU -&amp;gt; POOL]*2 -&amp;gt; FC -&amp;gt; RELU -&amp;gt; FC&lt;/code&gt;. 每个CONV层后面都有一个POOL层.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;INPUT -&amp;gt; [CONV -&amp;gt; RELU -&amp;gt; CONV -&amp;gt; RELU -&amp;gt; POOL]*3 -&amp;gt; [FC -&amp;gt; RELU]*2 -&amp;gt; FC&lt;/code&gt; 在POOL层之前有两个CONV层迭加。这样可以建立一些深度比较深的网络，因为不同的卷积层迭加可以用来描述比较复杂的features&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;最后用&lt;code&gt;VGG16&lt;/code&gt;作为一个例子来帮助解释上面卷积神经网络的讲解：&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;VGG16&lt;/code&gt;曾经取得过很好的成绩，一直到现在还是被很多人使用。它的方法很简单，每次的卷积filter的width和height都是[3x3]。简单高效。&lt;/p&gt;
+&lt;p&gt;下面是各层的说明&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;lambda_1:读进去的输入data的大小，224x224，3个通道&lt;/li&gt;
+&lt;li&gt;zeropadding2d_1：在输入数据外面进行0填充，P=1，P是超参数，这一步没有模型需要fit的参数。&lt;/li&gt;
+&lt;li&gt;convolution2d_1：第一个卷积层，filter的size是3x3x3,bias有一个参数，所以每个filter有28个参数，总计64个filter，所以参数个数为28x64=1792&lt;/li&gt;
+&lt;li&gt;zeropadding2d_2：0填充，P=1，没有需要fit的参数&lt;/li&gt;
+&lt;li&gt;convolution2d_2：第二个卷积，filter的size是3x3x64,bias有一个参数，所以每个filter参数为577，共计64个filter，所以参数个数为577x64=36928&lt;/li&gt;
+&lt;li&gt;maxpooling2d_1: 对每个2x2的矩阵抽样，选取最大的值。这一步没有参数，但是因为抽样，所以输出矩阵的size变为[64x112x112]&lt;/li&gt;
+&lt;li&gt;......如此反复&lt;/li&gt;
+&lt;li&gt;flatten_1: 把前一层maxpooling2d_5进行拉直，所以元素的个数为512x7x7=25088&lt;/li&gt;
+&lt;li&gt;dense_1: 是一个FC层，所以与输入的每个元素都相连，输出为一个4096的向量，所以总共的参数是(25088+1)x4096=102764544个&lt;/li&gt;
+&lt;li&gt;dropout_1：直接drop掉一部分数据，这样做的原因也是防止overfitting&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;具体的每层结构详细情况如下:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;keras&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;vgg16&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;vgg16&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;Vgg16&lt;/span&gt;
+&lt;span class="n"&gt;vgg&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;Vgg16&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;vgg&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;model&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;summary&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;____________________________________________________________________________________________________
+Layer (type)                     Output Shape          Param #     Connected to                     
+====================================================================================================
+lambda_1 (Lambda)                (None, 3, 224, 224)   0           lambda_input_1[0][0]             
+____________________________________________________________________________________________________
+zeropadding2d_1 (ZeroPadding2D)  (None, 3, 226, 226)   0           lambda_1[0][0]                   
+____________________________________________________________________________________________________
+convolution2d_1 (Convolution2D)  (None, 64, 224, 224)  1792        zeropadding2d_1[0][0]            
+____________________________________________________________________________________________________
+zeropadding2d_2 (ZeroPadding2D)  (None, 64, 226, 226)  0           convolution2d_1[0][0]            
+____________________________________________________________________________________________________
+convolution2d_2 (Convolution2D)  (None, 64, 224, 224)  36928       zeropadding2d_2[0][0]            
+____________________________________________________________________________________________________
+maxpooling2d_1 (MaxPooling2D)    (None, 64, 112, 112)  0           convolution2d_2[0][0]            
+____________________________________________________________________________________________________
+zeropadding2d_3 (ZeroPadding2D)  (None, 64, 114, 114)  0           maxpooling2d_1[0][0]             
+____________________________________________________________________________________________________
+convolution2d_3 (Convolution2D)  (None, 128, 112, 112) 73856       zeropadding2d_3[0][0]            
+____________________________________________________________________________________________________
+zeropadding2d_4 (ZeroPadding2D)  (None, 128, 114, 114) 0           convolution2d_3[0][0]            
+____________________________________________________________________________________________________
+convolution2d_4 (Convolution2D)  (None, 128, 112, 112) 147584      zeropadding2d_4[0][0]            
+____________________________________________________________________________________________________
+maxpooling2d_2 (MaxPooling2D)    (None, 128, 56, 56)   0           convolution2d_4[0][0]            
+____________________________________________________________________________________________________
+zeropadding2d_5 (ZeroPadding2D)  (None, 128, 58, 58)   0           maxpooling2d_2[0][0]             
+____________________________________________________________________________________________________
+convolution2d_5 (Convolution2D)  (None, 256, 56, 56)   295168      zeropadding2d_5[0][0]            
+____________________________________________________________________________________________________
+zeropadding2d_6 (ZeroPadding2D)  (None, 256, 58, 58)   0           convolution2d_5[0][0]            
+____________________________________________________________________________________________________
+convolution2d_6 (Convolution2D)  (None, 256, 56, 56)   590080      zeropadding2d_6[0][0]            
+____________________________________________________________________________________________________
+zeropadding2d_7 (ZeroPadding2D)  (None, 256, 58, 58)   0           convolution2d_6[0][0]            
+____________________________________________________________________________________________________
+convolution2d_7 (Convolution2D)  (None, 256, 56, 56)   590080      zeropadding2d_7[0][0]            
+____________________________________________________________________________________________________
+maxpooling2d_3 (MaxPooling2D)    (None, 256, 28, 28)   0           convolution2d_7[0][0]            
+____________________________________________________________________________________________________
+zeropadding2d_8 (ZeroPadding2D)  (None, 256, 30, 30)   0           maxpooling2d_3[0][0]             
+____________________________________________________________________________________________________
+convolution2d_8 (Convolution2D)  (None, 512, 28, 28)   1180160     zeropadding2d_8[0][0]            
+____________________________________________________________________________________________________
+zeropadding2d_9 (ZeroPadding2D)  (None, 512, 30, 30)   0           convolution2d_8[0][0]            
+____________________________________________________________________________________________________
+convolution2d_9 (Convolution2D)  (None, 512, 28, 28)   2359808     zeropadding2d_9[0][0]            
+____________________________________________________________________________________________________
+zeropadding2d_10 (ZeroPadding2D) (None, 512, 30, 30)   0           convolution2d_9[0][0]            
+____________________________________________________________________________________________________
+convolution2d_10 (Convolution2D) (None, 512, 28, 28)   2359808     zeropadding2d_10[0][0]           
+____________________________________________________________________________________________________
+maxpooling2d_4 (MaxPooling2D)    (None, 512, 14, 14)   0           convolution2d_10[0][0]           
+____________________________________________________________________________________________________
+zeropadding2d_11 (ZeroPadding2D) (None, 512, 16, 16)   0           maxpooling2d_4[0][0]             
+____________________________________________________________________________________________________
+convolution2d_11 (Convolution2D) (None, 512, 14, 14)   2359808     zeropadding2d_11[0][0]           
+____________________________________________________________________________________________________
+zeropadding2d_12 (ZeroPadding2D) (None, 512, 16, 16)   0           convolution2d_11[0][0]           
+____________________________________________________________________________________________________
+convolution2d_12 (Convolution2D) (None, 512, 14, 14)   2359808     zeropadding2d_12[0][0]           
+____________________________________________________________________________________________________
+zeropadding2d_13 (ZeroPadding2D) (None, 512, 16, 16)   0           convolution2d_12[0][0]           
+____________________________________________________________________________________________________
+convolution2d_13 (Convolution2D) (None, 512, 14, 14)   2359808     zeropadding2d_13[0][0]           
+____________________________________________________________________________________________________
+maxpooling2d_5 (MaxPooling2D)    (None, 512, 7, 7)     0           convolution2d_13[0][0]           
+____________________________________________________________________________________________________
+flatten_1 (Flatten)              (None, 25088)         0           maxpooling2d_5[0][0]             
+____________________________________________________________________________________________________
+dense_1 (Dense)                  (None, 4096)          102764544   flatten_1[0][0]                  
+____________________________________________________________________________________________________
+dropout_1 (Dropout)              (None, 4096)          0           dense_1[0][0]                    
+____________________________________________________________________________________________________
+dense_2 (Dense)                  (None, 4096)          16781312    dropout_1[0][0]                  
+____________________________________________________________________________________________________
+dropout_2 (Dropout)              (None, 4096)          0           dense_2[0][0]                    
+____________________________________________________________________________________________________
+dense_3 (Dense)                  (None, 1000)          4097000     dropout_2[0][0]                  
+====================================================================================================
+Total params: 138357544
+____________________________________________________________________________________________________
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;script type="text/javascript"&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width &lt; 768) ? "left" : align;
+        indent = (screen.width &lt; 768) ? "0em" : indent;
+        linebreak = (screen.width &lt; 768) ? 'true' : linebreak;
+    }
+    
+    var mathjaxscript = document.createElement('script');
+    var location_protocol = (false) ? 'https' : document.location.protocol;
+    if (location_protocol !== 'http' &amp;&amp; location_protocol !== 'https') location_protocol = 'https:';
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript'; 
+    mathjaxscript.src = location_protocol + '//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js','mhchem.js'], equationNumbers: { autoNumber: 'AMS' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+&lt;/script&gt;</summary><category term="python"></category><category term="tensorflow"></category><category term="deep learning"></category></entry><entry><title>LSTM Introduction</title><link href="/pages/2017/07/22/lstm-introduction/" rel="alternate"></link><updated>2017-07-22T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:,2017-07-22:pages/2017/07/22/lstm-introduction/</id><summary type="html">&lt;h2&gt;Intro&lt;/h2&gt;
 &lt;p&gt;通常介绍deep learning的时候总是从卷积神经网络开始，因为最近deep learning的流行就是从卷积神经网络在图像识别上的广泛应用开始的。但是在银行这种地方，没有什么明显的图像处理的需求。更多的是要处理各种序列性的数据，比如时间序列等等。所以这里我会从循环神经网络(&lt;a href="https://en.wikipedia.org/wiki/Recurrent_neural_network"&gt;RNN&lt;/a&gt;)开始，并且结合一个例子用来展示怎么进行时间序列的建模。&lt;/p&gt;
 &lt;p&gt;RNN的一个显著特征是：新的输入(下图t时刻的输入，绿色的箭头)会和前一个state(下图从t-1到t的蓝色箭头)一起变成新的输入。并以此循环。&lt;/p&gt;
 &lt;p&gt;&lt;img alt="alt text" src="/figures/20170722_lstm_stock_return_00_1.png" title="RNN" /&gt;&lt;/p&gt;
