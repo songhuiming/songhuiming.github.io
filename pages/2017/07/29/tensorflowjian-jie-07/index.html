@@ -103,7 +103,7 @@
 <h2>结构总览</h2>
 <p>通常的神经网络中，神经元对每一个输入的数据点都会有一个参数与之对应。在处理图像的时候，这就会导致引入巨多的参数。比如一个1000万象素的图片，一个神经元就会有3000万个(3个chanel)参数。如果有很多神经元的时候参数就会非常多。</p>
 <p>卷积神经网络的神经元都有三个维度：width, height, depth(这儿的depth指的是激活层的第三维，不是神经网络的layer的个数).比如CIFAR-10里一个32x32x3(width x height x depth)的图片，每个layer的神经元只连接这个图片的一小块。最后的输出是一个[1x1x10]的向量，用来表示图片是10个类别里的哪一个类别。</p>
-<p><img alt="alt text" src="figures/20170729_cnn_introduction_01.jpeg" title="Logo Title Text 1" /></p>
+<p><img alt="alt text" src="/figures/20170729_cnn_introduction_01.jpeg" title="Logo Title Text 1" /></p>
 <p>上图左边是通常的3层神经网络。第一层是输入层。第二层的4个神经元中每个神经元都与输入层的每个输入相连，同样第三层的每个神经元与第二层的每个输出相连。最后的输出层与前一层的所有神经元相连。上图右边是卷积神经网络，红色的是一个图片的输入层，所以其维度是[width x height x 3]，中间layer的每个神经元只跟输入层的一小部分相连，比如通常用一个3x3x3的filter与图片中每个3x3x3的小区域相连。卷积神经网络由各个Layer构成。</p>
 <h2>构造CNN的Layers</h2>
 <p>卷积神经网络主要有三种不同的Layer:convolutional layer, pooling layer, fully-connected layer.我们通常把它们叠加起来构成卷积神经网络。</p>
@@ -117,7 +117,7 @@
 </ul>
 <p>上面的例子中，CONV和FC包含参数，RELU和POOL不含参数。损失函数是FC里面每个分类的得分和图片真实分类的一个函数。通过最小化损失函数可以得到CONV和FC里面的参数的值。</p>
 <p><em>tiny VGG</em> : 下面是一个<a href="http://www.robots.ox.ac.uk/~vgg/research/very_deep/">VGG</a>结构的卷积神经网络示意图</p>
-<p><img alt="alt text" src="figures/20170729_cnn_introduction_02.jpeg" title="Logo Title Text 1" /></p>
+<p><img alt="alt text" src="/figures/20170729_cnn_introduction_02.jpeg" title="Logo Title Text 1" /></p>
 <p>上图最左边是一张输入的图片，中间是CNN的各个layer，最右边FC layer输出图片在每个分类里面的概率。</p>
 <p>下面分别介绍CNN里面几个重要的Layers:CONV, POOLING, FC.</p>
 <h3>Convolutional　Layer</h3>
@@ -128,8 +128,8 @@
 当处理高维输入的时候，一般不能把前一个输入的所有神经元都跟卷积层的神经元连接起来，那样会引入天量的参数。我们只是把输入的每一小块区域跟当前卷积层的神经元联系起来。这一小块区域的空间维度大小叫做接受域(receptive field,也就是filter的size)，这是一个可以变化的超参数。在深度(depth)上他们是一样大小。</p>
 <p><em>例1</em> 每张CIFAR-10的图片的初始输入维度为[32x32x3]，如果接受域(receptive field, 或者叫filter size)的大小为5x5，那么卷积层的每个神经元都与输入图片的每个[5x5x3]的区域通过filter做卷积(所以filter的大小也为5x5x3，共计75个参数，加上一个bias，总共76个参数)。注意depth方向的大小为3，因为depth方向的大小总是跟输入的depth一样大。</p>
 <p><em>例2</em> 假设输入的size为[16x16x20].假如receptive field的size是3x3，那么卷积层上的每个神经元都与输入矩阵的每个[3x3x20]的区域通过filter做卷积。所以每个filter的参数数量是181个[3x3x20=180加1个bias，共计181个]。注意的是这时候沿着width，height的空间大小是3x3，但是沿着depth是20.因为输入的矩阵的depth是20.</p>
-<p><img alt="alt text" src="figures/20170729_cnn_introduction_04.png" title="Logo Title Text 1" /></p>
-<p><img alt="alt text" src="figures/20170729_cnn_introduction_03." title="jpeg &quot;Logo Title Text 1&quot;" /></p>
+<p><img alt="alt text" src="/figures/20170729_cnn_introduction_04.png" title="Logo Title Text 1" /></p>
+<p><img alt="alt text" src="/figures/20170729_cnn_introduction_03." title="jpeg &quot;Logo Title Text 1&quot;" /></p>
 <p>上图最左边粉色图片大小为[32x32x3]，receptive field是其中每个粉色的小块，大小为[5x5x3],所以filter的大小为5x5x3。中间的蓝色的图片说明有5个filter，所以conv layer的输出的depth为5。如果假设width和hegith不变，那么中间蓝色的输出区域大小为[32x32x5]。</p>
 <p><strong>Spatial Arrangement</strong> 前面介绍了卷积神经网络的神经元怎么与输入的数据相连。下面我们介绍在卷积神经网络里面的输出数据是什么样子（这儿的所有的数据都是指numpy array）。输出数据的size决定于下面三个超参数：<strong>depth, stride, zero-padding</strong>。</p>
 <ol>
@@ -184,7 +184,7 @@
 </ul>
 <p>通常超参数的的值会被设置为<span class="math">\(F = 3, S = 1, P = 1\)</span></p>
 <p><strong>卷积示例</strong> 下面是一个卷积层的示例。输入数据的3个通道被表示为3个矩阵(下面的 x[:, :, 0], x[:, :, 1], x[:, :, 2])，输入的size大小为<span class="math">\(W_1 = 5, H_1 = 5, D_1 = 3\)</span>,卷积层的超参数是<span class="math">\(K = 2, F = 3, S = 2, P = 1\)</span>。即有两个width x height大小为[3x3],depth = 3的filter，分别为<span class="math">\(W_0, W_1\)</span>。输出的空间size为(5 - 3 + 2)/2 + 1 = 3.输出的depth = 2，因为有两个filter。所以最后的输出是两个3x3的矩阵。</p>
-<p><img alt="alt text" src="figures/20170729_cnn_introduction_05.gif" title="Logo Title Text 1" /></p>
+<p><img alt="alt text" src="/figures/20170729_cnn_introduction_05.gif" title="Logo Title Text 1" /></p>
 <p><strong>采用矩阵相乘来计算</strong> 上面卷积层上的计算实际上是各个小矩阵元素相乘的和然后再加上bias，我们可以把它统一成一个大的矩阵相乘的表达式。</p>
 <ol>
 <li>我们把输入矩阵的没一小块都拉长为一个列向量，记为<em>im2col</em>.比如输入为[227x227x3],filter为[11x11x3]，步长为4。我们从输入矩阵上拿出[11x11x3]的小块然后拉长为一个向量，向量的长度为11x11x3=363.每隔步长为4再拿出一小块[11x11x3]的矩阵做这样的拉长，在width和height方向上分别有(227 - 11)/4 + 1 = 55个小矩阵(所以总共有55x55=3025)个[11x11x3]的小矩阵。把3025个小矩阵都拉长为长度363的向量，放在一起就变成了[363x3025]的矩阵。把输入矩阵通过<em>im2col</em>拉长以后变成的矩阵记为<code>X_col</code></li>
@@ -214,7 +214,7 @@
 </ul>
 <p>通常见到比较多的是<span class="math">\(F = 2, S=2\)</span>，或者<span class="math">\(F = 3, S = 2\)</span>.</p>
 <p>下图是一个max pooling的示意图，从每个[2x2]的小区域里面选取最大的一个数，所以输出的矩阵大小是输入的矩阵大小的一半。
-<img alt="alt text" src="figures/20170729_cnn_introduction_06.jpeg" title="Logo Title Text 1" /></p>
+<img alt="alt text" src="/figures/20170729_cnn_introduction_06.jpeg" title="Logo Title Text 1" /></p>
 <h3>Normalization Layer / 正则层</h3>
 <p>常见的有batch normalization和layer normalization。尽管stanford那个教程说normalization现在渐渐不是那么流行了，但是我自己的经验是做了normalization还是有效果的。通过normalization以后，所有的数据都一致化了，这样的话做梯度下降的时候更stable。否则的话那些绝对数值过大的数据会影响梯度下降的效果。</p>
 <h3>Fully-connected Layer / 全连接层</h3>
@@ -252,10 +252,7 @@
 <span class="kn">import</span> <span class="nn">vgg16</span>
 <span class="kn">from</span> <span class="nn">vgg16</span> <span class="kn">import</span> <span class="n">Vgg16</span>
 <span class="n">vgg</span> <span class="o">=</span> <span class="n">Vgg16</span><span class="p">()</span>
-</pre></div>
-
-
-<div class="highlight"><pre><span class="n">vgg</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+<span class="n">vgg</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
 </pre></div>
 
 
@@ -340,10 +337,6 @@ dense_3 (Dense)                  (None, 1000)          4097000     dropout_2[0][
 ====================================================================================================
 Total params: 138357544
 ____________________________________________________________________________________________________
-</pre></div>
-
-
-<div class="highlight"><pre>
 </pre></div>
 
 
