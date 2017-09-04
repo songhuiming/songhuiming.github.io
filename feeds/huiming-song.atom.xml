@@ -54,7 +54,7 @@
 \end{aligned}&lt;/div&gt;
 &lt;p&gt;The symbal &lt;span class="math"&gt;\(\cdot\)&lt;/span&gt; above means &lt;a href="https://en.wikipedia.org/wiki/Dot_product"&gt;dot product&lt;/a&gt; of the vector or the matrix. We also need the [elementwise product](https://en.wikipedia.org/wiki/Hadamard_product_(matrices) denoted as &lt;span class="math"&gt;\(\odot\)&lt;/span&gt;.&lt;/p&gt;
 &lt;h3&gt;1.2. Cost Function&lt;/h3&gt;
-&lt;p&gt;Cost function generally measures the distance between the predictions and the true value. ~~test to cancel words~~&lt;/p&gt;
+&lt;p&gt;Cost function generally measures the distance between the predictions and the true value. &lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;
 &lt;p&gt;&lt;strong&gt;&lt;a href="https://en.wikipedia.org/wiki/Cross_entropy#Cross-entropy_error_function_and_logistic_regression"&gt;Cross Entropy&lt;/a&gt; Loss function&lt;/strong&gt;:
@@ -67,46 +67,45 @@
 &lt;p&gt;&lt;strong&gt;L2 cost function&lt;/strong&gt;:&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ol&gt;
-&lt;div class="math"&gt;\begin{align}
+&lt;div class="math"&gt;\begin{aligned}
     C = \frac{1}{2}||y - a_3||^2  
-\end{align}&lt;/div&gt;
+\end{aligned}&lt;/div&gt;
 &lt;h3&gt;1.3. Derivatives / Gradient&lt;/h3&gt;
 &lt;p&gt;Suppose the Lost function is
 &lt;/p&gt;
-&lt;div class="math"&gt;\begin{align}
+&lt;div class="math"&gt;\begin{aligned}
     C = \frac{1}{2} ||y - a_3||^2   
-\end{align}&lt;/div&gt;
+\end{aligned}&lt;/div&gt;
 &lt;p&gt;First, let's denote
 &lt;/p&gt;
-&lt;div class="math"&gt;\begin{align*}
+&lt;div class="math"&gt;\begin{aligned}
     d_3 &amp;amp;= (a_3 - y) \odot (a_3 \odot (1 - a_3))  ,\; \; \mbox{ or call it } a_3_delta \\
     d_2 &amp;amp;= d_3 \cdot \Theta_2 \odot (a_2 \odot (1 - a_2)) 
-\end{align*}&lt;/div&gt;
+\end{aligned}&lt;/div&gt;
 &lt;p&gt;The partival derivative of Loss function to parameter &lt;span class="math"&gt;\(\theta_2\)&lt;/span&gt; using chain rule is:
 &lt;/p&gt;
-&lt;div class="math"&gt;\begin{aligned*}
+&lt;div class="math"&gt;\begin{aligned}
     \frac{\partial {C}}{\partial {\Theta_2}} &amp;amp; = \frac{\partial{C}}{\partial{a_3}} \frac{\partial{a_3}}{\partial{z_2}} \frac{\partial{z_2}}{\partial{\Theta_2}} \\
-    &amp;amp; \hcancel[red]{= (a_3 - y) \left(a_3 (1 - a_3)\right) a_2  \; \; (\mbox{if all are scalers})} \\
-    &amp;amp; \sout{= (a_3 - y) \left(a_3 (1 - a_3)\right) a_2  \; \; (\mbox{if all are scalers})} \\
-    &amp;amp; \propto  \left[(a_3 - y) \odot \left(a_3 \odot (1 - a_3)\right)\right]^{T} \cdot a_2 \\
+    &amp;amp; = (a_3 - y) \left(a_3 (1 - a_3)\right) a_2  \; \; (\mbox{if all are scalers}) \\
+    &amp;amp; =  \left[(a_3 - y) \odot \left(a_3 \odot (1 - a_3)\right)\right]^{T} \cdot a_2 \\
     &amp;amp;  \triangleq   d_3^{T} \cdot a_2  
-\end{aligned*}&lt;/div&gt;
+\end{aligned}&lt;/div&gt;
 &lt;p&gt;where  &lt;span class="math"&gt;\(d_3 \triangleq (a_3 - y) \odot \left(a_3 \odot (1 - a_3)\right)\)&lt;/span&gt; and  &lt;span class="math"&gt;\(\odot\)&lt;/span&gt;  maens element-wise product and &lt;span class="math"&gt;\(\cdot\)&lt;/span&gt; means dot product.&lt;/p&gt;
 &lt;p&gt;The partival derivative of Loss function to parameter &lt;span class="math"&gt;\(\Theta_1\)&lt;/span&gt; using chain rule is:
 &lt;/p&gt;
-&lt;div class="math"&gt;\begin{align\*}
+&lt;div class="math"&gt;\begin{aligned}
     \frac{\partial {C}}{\partial {\Theta_1}} &amp;amp; = \frac{\partial{C}}{\partial{a_3}} \frac{\partial{a_3}}{\partial{z_2}} \frac{\partial{z_2}}{\partial{a_2}} \frac{\partial{a_2}}{\partial{z_1}} \frac{\partial{z_1}}{\partial{\Theta_1}}  \\\\
     &amp;amp; \propto (a_3 - y) \left(a_3 (1 - a_3)\right) \theta_2 (a_2 (1 - a_2)) a_1 \\\\
     &amp;amp; \propto \left[(a_3 - y) \odot \left(a_3 (1 - a_3)\right) \cdot \theta_2 \odot (a_2 \odot (1 - a_2))\right]^{T} a_1 \\\\
     &amp;amp;  = d_2^{T} \cdot a_1
-\end{align\*}&lt;/div&gt;
+\end{aligned}&lt;/div&gt;
 &lt;p&gt;
 where $d_2 \triangleq d_3 \cdot \Theta_2 \odot (a_2 \odot (1 - a_2)) $.&lt;/p&gt;
 &lt;p&gt;To find the value of &lt;span class="math"&gt;\(\Theta_1\)&lt;/span&gt; and &lt;span class="math"&gt;\(\Theta_2\)&lt;/span&gt;, we need to iteratively adjust their value until their gradient is close to 0. That is, to iterate:&lt;/p&gt;
-&lt;div class="math"&gt;\begin{align\*}
+&lt;div class="math"&gt;\begin{aligned}
     \Theta_2^{i + 1} &amp;amp;= \Theta_2^{i} + \lambda  \frac{\partial {C}}{\partial {\Theta_2^{i}}}  \\\\
     \Theta_1^{i + 1} &amp;amp;= \Theta_1^{i} + \lambda  \frac{\partial {C}}{\partial {\Theta_1^{i}}} 
-\end{align\*}&lt;/div&gt;
+\end{aligned}&lt;/div&gt;
 &lt;h3&gt;4. Code&lt;/h3&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;numpy&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;np&lt;/span&gt;
 &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;random&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;seed&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;10&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
@@ -190,7 +189,7 @@ where $d_2 \triangleq d_3 \cdot \Theta_2 \odot (a_2 \odot (1 - a_2)) $.&lt;/p&gt
 &lt;p&gt;The corresponding characters are: 'k' 'n' 'n' 'p'. &lt;/p&gt;
 &lt;h3&gt;2.1. Model&lt;/h3&gt;
 &lt;p&gt;We will build a three layers neural network. &lt;/p&gt;
-&lt;div class="math"&gt;\begin{align\*}
+&lt;div class="math"&gt;\begin{aligned}
     a_1 &amp;amp;= X \\\\
     z_1 &amp;amp;= a_1 \cdot \Theta_1^{T}  \\\\
     a_2 &amp;amp;= \mbox{sigmoid}(z_1) = \frac{1}{1 + e^{- z_1}}  \qquad \mbox{the first activation layer} \\\\
@@ -198,42 +197,42 @@ where $d_2 \triangleq d_3 \cdot \Theta_2 \odot (a_2 \odot (1 - a_2)) $.&lt;/p&gt
     a_3 &amp;amp;= \mbox{sigmoid}(z_2) = \frac{1}{1 + e^{- z_2}}  \qquad \mbox{the second activation layer} \\\\
     z_3 &amp;amp;= a_3 \cdot \Theta_3^{T}  \\\\
     a_4 &amp;amp;= \mbox{sigmoid}(z_3) = \frac{1}{1 + e^{- z_3}}  \qquad \mbox{the third activation layer} \\\\
-\end{align\*}&lt;/div&gt;
+\end{aligned}&lt;/div&gt;
 &lt;h3&gt;2.2. Derivatives&lt;/h3&gt;
 &lt;p&gt;Suppose the Lost function is
 &lt;/p&gt;
-&lt;div class="math"&gt;\begin{align\*}
+&lt;div class="math"&gt;\begin{aligned}
     C = -\frac{1}{n}\sum_{x}\left[y \log(a_3) + (1 - y)\log(1 - a_3) \right] 
-\end{align\*}&lt;/div&gt;
+\end{aligned}&lt;/div&gt;
 &lt;p&gt;First, let's denote
 &lt;/p&gt;
-&lt;div class="math"&gt;\begin{align\*}
+&lt;div class="math"&gt;\begin{aligned}
     d_4 &amp;amp;= a_4 - y    \\\\
     d_3 &amp;amp;= d_4 \cdot \Theta_3 \odot (a_3 \odot (1 - a_3))  ,\; \; \mbox{ or call it } a_3\\_delta \\\\
     d_2 &amp;amp;= d_3 \cdot \Theta_2 \odot (a_2 \odot (1 - a_2)) 
-\end{align\*}&lt;/div&gt;
+\end{aligned}&lt;/div&gt;
 &lt;p&gt;The partival derivative of Loss function to parameter &lt;span class="math"&gt;\(\theta_3\)&lt;/span&gt; using chain rule is:&lt;/p&gt;
-&lt;div class="math"&gt;\begin{align\*}
+&lt;div class="math"&gt;\begin{aligned}
     \frac{\partial {C}}{\partial {\Theta_3}} &amp;amp; = \frac{\partial{C}}{\partial{a_4}} \frac{\partial{a_4}}{\partial{z_4}} \frac{\partial{z_4}}{\partial{\Theta_3}} \\\\
-    &amp;amp; \hcancel[red]{= - \left[ \frac{y}{a_4} - \frac{1 - y}{1 - a_4}  \right] \left(a_4 (1 - a_4)\right) a_3 = ( a_4 - y) a_3  \; \; (\mbox{if all are scalers})} \\\\
+    &amp;amp; = - \left[ \frac{y}{a_4} - \frac{1 - y}{1 - a_4}  \right] \left(a_4 (1 - a_4)\right) a_3 = ( a_4 - y) a_3  \; \; (\mbox{if all are scalers}) \\\\
     &amp;amp; =  \left[(a_4 - y)\right]^{T} \cdot a_3 \\\\
     &amp;amp;  \triangleq   d_4^{T} \cdot a_3  
-\end{align\*}&lt;/div&gt;
+\end{aligned}&lt;/div&gt;
 &lt;p&gt;The partival derivative of Loss function to parameter &lt;span class="math"&gt;\(\Theta_2\)&lt;/span&gt; using chain rule is:&lt;/p&gt;
-&lt;div class="math"&gt;\begin{align\*}
+&lt;div class="math"&gt;\begin{align}
     \frac{\partial {C}}{\partial {\Theta_2}} &amp;amp; =\frac{\partial{C}}{\partial{a_4}} \frac{\partial{a_4}}{\partial{z_4}} \frac{\partial{z_4}}{\partial{a_3}} \frac{\partial a_3}{\partial z_3} \frac{\partial z_3}{\partial \Theta_2} \\\\
     &amp;amp; \propto - \left[ \frac{y}{a_4} - \frac{1 - y}{1 - a_4}  \right] \left(a_4 (1 - a_4)\right) \Theta_3 (a_3(1-a_3)) a_2   \\\\
     &amp;amp; =  \left[d_4 \cdot \Theta_3 \odot \left(a_3 \odot (1 - a_3)\right)\right]^{T} \cdot a_2 \\\\
     &amp;amp;  \triangleq   d_3^{T} \cdot a_2  \\\\
-\end{align\*}&lt;/div&gt;
+\end{align}&lt;/div&gt;
 &lt;p&gt;The partival derivative of Loss function to parameter &lt;span class="math"&gt;\(\Theta_1\)&lt;/span&gt; using chain rule is:
 &lt;/p&gt;
-&lt;div class="math"&gt;\begin{align\*}
+&lt;div class="math"&gt;\begin{align}
     \frac{\partial {C}}{\partial {\Theta_1}} &amp;amp; = \frac{\partial{C}}{\partial{a_4}} \frac{\partial{a_4}}{\partial{z_4}} \frac{\partial{z_4}}{\partial{a_3}} \frac{\partial a_3}{\partial z_3} \frac{\partial z_3}{\partial a_2} \frac{\partial{a_2}}{\partial{z_2}} \frac{\partial{z_2}}{\partial{\Theta_1}}  \\\\
     &amp;amp; \propto - \left[ \frac{y}{a_4} - \frac{1 - y}{1 - a_4}  \right] \left(a_4 (1 - a_4)\right) \Theta_3 (a_3(1-a_3)) \Theta_2 (a_2(1-a_2)) \cdot a_1 \\\\
     &amp;amp; = \left[(a_3 - y) \odot \left(a_3 (1 - a_3)\right) \cdot \Theta_2 \odot (a_2 \odot (1 - a_2))\right]^{T} a_1 \\\\
     &amp;amp;  = d_2^{T} \cdot a_1
-\end{align\*}&lt;/div&gt;
+\end{align}&lt;/div&gt;
 &lt;h3&gt;2.3. Details&lt;/h3&gt;
 &lt;p&gt;The overall steps will include these:&lt;/p&gt;
 &lt;ol&gt;
