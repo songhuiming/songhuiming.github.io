@@ -192,13 +192,13 @@
 <p>The partival derivative of Loss function to parameter <span class="math">\(\Theta_1\)</span> using chain rule is:
 </p>
 <div class="math">\begin{aligned}
-    \frac{\partial {C}}{\partial {\Theta_1}} &amp; = \frac{\partial{C}}{\partial{a_3}} \frac{\partial{a_3}}{\partial{z_2}} \frac{\partial{z_2}}{\partial{a_2}} \frac{\partial{a_2}}{\partial{z_1}} \frac{\partial{z_1}}{\partial{\Theta_1}}  \\\\
-    &amp; \propto (a_3 - y) \left(a_3 (1 - a_3)\right) \Theta_2 (a_2 (1 - a_2)) a_1 \\\\
-    &amp; \propto \left[(a_3 - y) \odot \left(a_3 (1 - a_3)\right) \cdot \Theta_2 \odot (a_2 \odot (1 - a_2))\right]^{T} a_1 \\\\
+    \frac{\partial {C}}{\partial {\Theta_1}} &amp; = \frac{\partial{C}}{\partial{a_3}} \frac{\partial{a_3}}{\partial{z_2}} \frac{\partial{z_2}}{\partial{a_2}} \frac{\partial{a_2}}{\partial{z_1}} \frac{\partial{z_1}}{\partial{\Theta_1}}  \\
+    &amp; \propto (a_3 - y) \left(a_3 (1 - a_3)\right) \Theta_2 (a_2 (1 - a_2)) a_1 \\
+    &amp; \propto \left[(a_3 - y) \odot \left(a_3 (1 - a_3)\right) \cdot \Theta_2 \odot (a_2 \odot (1 - a_2))\right]^{T} a_1 \\
     &amp;  = d_2^{T} \cdot a_1
 \end{aligned}</div>
 <p>
-where $d_2 \triangleq d_3 \cdot \Theta_2 \odot (a_2 \odot (1 - a_2)) $.</p>
+where <span class="math">\(d_2 \triangleq d_3 \cdot \Theta_2 \odot \left(a_2 \odot (1 - a_2) \right)\)</span> .</p>
 <p>To find the value of <span class="math">\(\Theta_1\)</span> and <span class="math">\(\Theta_2\)</span>, we need to iteratively adjust their value until their gradient is close to 0. That is, to iterate:</p>
 <div class="math">\begin{aligned}
     \Theta_2^{i + 1} &amp;= \Theta_2^{i} + \lambda  \frac{\partial {C}}{\partial {\Theta_2^{i}}}  \\
@@ -305,7 +305,7 @@ where $d_2 \triangleq d_3 \cdot \Theta_2 \odot (a_2 \odot (1 - a_2)) $.</p>
 <p>First, let's denote
 </p>
 <div class="math">\begin{aligned}
-    d_4 &amp;= a_4 - y    \\
+    d_4 &amp;= a_4 - y   ,\; \; \mbox{ or call it } a_4\_delta \\
     d_3 &amp;= d_4 \cdot \Theta_3 \odot (a_3 \odot (1 - a_3))  ,\; \; \mbox{ or call it } a_3\_delta \\
     d_2 &amp;= d_3 \cdot \Theta_2 \odot (a_2 \odot (1 - a_2)) 
 \end{aligned}</div>
@@ -319,7 +319,7 @@ where $d_2 \triangleq d_3 \cdot \Theta_2 \odot (a_2 \odot (1 - a_2)) $.</p>
 <p>The partival derivative of Loss function to parameter <span class="math">\(\Theta_2\)</span> using chain rule is:</p>
 <div class="math">\begin{aligned}
     \frac{\partial {C}}{\partial {\Theta_2}} &amp; =\frac{\partial{C}}{\partial{a_4}} \frac{\partial{a_4}}{\partial{z_4}} \frac{\partial{z_4}}{\partial{a_3}} \frac{\partial a_3}{\partial z_3} \frac{\partial z_3}{\partial \Theta_2} \\
-    &amp; \propto - \left[ \frac{y}{a_4} - \frac{1 - y}{1 - a_4}  \right] \left(a_4 (1 - a_4)\right) \Theta_3 (a_3(1-a_3)) a_2   \\
+    &amp; \propto - \left[ \frac{y}{a_4} - \frac{1 - y}{1 - a_4}  \right] \left(a_4 (1 - a_4)\right) \Theta_3 (a_3(1-a_3)) a_2  \; \; (\mbox{if all are scalers})  \\
     &amp; =  \left[d_4 \cdot \Theta_3 \odot \left(a_3 \odot (1 - a_3)\right)\right]^{T} \cdot a_2 \\
     &amp;  \triangleq   d_3^{T} \cdot a_2  
 \end{aligned}</div>
@@ -327,7 +327,7 @@ where $d_2 \triangleq d_3 \cdot \Theta_2 \odot (a_2 \odot (1 - a_2)) $.</p>
 </p>
 <div class="math">\begin{aligned}
     \frac{\partial {C}}{\partial {\Theta_1}} &amp; = \frac{\partial{C}}{\partial{a_4}} \frac{\partial{a_4}}{\partial{z_4}} \frac{\partial{z_4}}{\partial{a_3}} \frac{\partial a_3}{\partial z_3} \frac{\partial z_3}{\partial a_2} \frac{\partial{a_2}}{\partial{z_2}} \frac{\partial{z_2}}{\partial{\Theta_1}}  \\
-    &amp; \propto - \left[ \frac{y}{a_4} - \frac{1 - y}{1 - a_4}  \right] \left(a_4 (1 - a_4)\right) \Theta_3 (a_3(1-a_3)) \Theta_2 (a_2(1-a_2)) \cdot a_1 \\
+    &amp; \propto - \left[ \frac{y}{a_4} - \frac{1 - y}{1 - a_4}  \right] \left(a_4 (1 - a_4)\right) \Theta_3 (a_3(1-a_3)) \Theta_2 (a_2(1-a_2)) \cdot a_1 \; \; (\mbox{if all are scalers}) \\
     &amp; = \left[(a_3 - y) \odot \left(a_3 (1 - a_3)\right) \cdot \Theta_2 \odot (a_2 \odot (1 - a_2))\right]^{T} a_1 \\
     &amp;  = d_2^{T} \cdot a_1
 \end{aligned}</div>
