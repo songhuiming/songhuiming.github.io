@@ -102,10 +102,10 @@
 <p>Recurrent neural network is one of the most popular neural networks for language modeling(based on existed words to predict next word) or automatic input like the automatic complete in the mobile input(based on existed character to predict next character).</p>
 <p>For example, when we build a RNN for language, that means: the training data is a list of sentences. Each sentence is a seris of words(tokenized words). For each sentence, from the first word, we will predict the second word. From the first and the second word, we will predict the third word, etc. Recurrent neural network means when it predict time order t, it will remember the information from time order 0 to time order t.</p>
 <p>Let's denote the sentence having <span class="math">\(t+1\)</span> words as <span class="math">\(x=[x_0, x_1, \cdots, x_t]\)</span>. We start from <span class="math">\(x_0\)</span> to status <span class="math">\(s_0 = \tanh(Ux_0 + Ws_{-1})\)</span>, where <span class="math">\(s_{-1}\)</span> is the initialization of status initialized as 0. The output <span class="math">\(o_0 = \mathrm{softmax}(Vs_0)\)</span>. Then when we go to next word <span class="math">\(x_1\)</span> we will have updated status <span class="math">\(s_1 = \tanh(Ux_1 + Ws_0)\)</span> and the corresponding output <span class="math">\(o_1 = \mathrm{softmax}(Vs_1)\)</span>. You will see at time order <span class="math">\(t=1\)</span> it not only depends on input <span class="math">\(x_1\)</span> but also depends on the previous status <span class="math">\(s_0\)</span>. The equation for the RNN used in this tutorial is:</p>
-<div class="math">\begin{aligned}
+<div class="math">\begin{aligned*}
 s_t &amp;= \tanh(Ux_t + Ws_{t-1}) \\
 o_t &amp;= \mathrm{softmax}(Vs_t)
-\end{aligned}</div>
+\end{aligned*}</div>
 <p>If we plot the logic of RNN and the corresponding forward propagation, it is like
 <img alt="alt text" src="/figures/20170826_rnn_scratch_01_rnn.jpg" title="Logo Title Text 1" /></p>
 <p>The training data is 79,170 sentences coming from 15,000 reddit comments(one comment may has multiple sentences). The vocabulary consists of the 8,000 most common words. For the words not included in the vocabulary list are replaced by UNKNOWN_TOKEN.</p>
@@ -114,22 +114,22 @@ o_t &amp;= \mathrm{softmax}(Vs_t)
 <h3>1.0. Model and Data Structure, Initialization</h3>
 <p>As introduced before, the model structure of RNN used here is:
 </p>
-<div class="math">\begin{aligned}
+<div class="math">\begin{aligned*}
 s_t &amp;= \tanh(Ux_t + Ws_{t-1}) \\
 o_t &amp;= \mathrm{softmax}(Vs_t)
-\end{aligned}</div>
+\end{aligned*}</div>
 <p>The vocabulary size <span class="math">\(C=8,000\)</span> and the hidden layer size <span class="math">\(H=100\)</span>. So the size of W is <span class="math">\(100 \times 100\)</span>.</p>
 <p>Let's assume one sentence has 10 words, for the corresponding mapped <span class="math">\(x\)</span>, we can treat it in two equal ways: 1. it is a python list by index of the words in the sentence. Then its length is the same as the number of words in that sentence, which is 10. we call it x_expression_1;   2. it is the one-hot transformation of these 10 words in the 8,000 vocabulary list. so its shape is [10, 8000]. For each row, there is one 1 in the word index position and the other 7999 positions will be all 0. we call it x_expression_2. So for each word of these 10 words, the matrix dot multiply <span class="math">\(U.\)</span>dot<span class="math">\((x\_expression\_2[t])\)</span> is the same as <span class="math">\(U[:, x\_expression\_1[t]]\)</span> for <span class="math">\(t = \mathrm{range(10)}\)</span>.</p>
 <p>If use numpy to explain above, it is <code>np.arange(1, 21).reshape(4, 5).dot([0,1,0,0,0])</code> == <code>np.arange(1, 21).reshape(4, 5)[:, 1]</code>. This will save a lot of time because numpy indexing is much faster than matrix dot multiply.</p>
 <p>The dimension of all the data used is(below <span class="math">\(x_t\)</span> is index position in the vocabulary list for the <span class="math">\(t_{th}\)</span> word in the sentence, and <span class="math">\(x\)</span> is a sentence with <span class="math">\(l\)</span> words):</p>
-<div class="math">\begin{aligned}
+<div class="math">\begin{aligned*}
 x_t &amp;\in \mathbb{R}^{8000}  \Longleftrightarrow x \in \mathbb{R}^{l \times 8000} \\
 o_t &amp;\in \mathbb{R}^{8000}  \Longleftrightarrow o \in \mathbb{R}^{l \times 8000} \\
 s_t &amp;\in \mathbb{R}^{100}   \Longleftrightarrow s \in \mathbb{R}^{l \times 100} \\
 U &amp;\in \mathbb{R}^{100 \times 8000} \\
 V &amp;\in \mathbb{R}^{8000 \times 100} \\
 W &amp;\in \mathbb{R}^{100 \times 100} \\
-\end{aligned}</div>
+\end{aligned*}</div>
 <p>When we iterate to update the parameters, we need to set up their initial values. It is very important to set up suitable initializations to make RNN gradients work well. The initizalition of the parameters is initialized as from random uniform distribution <span class="math">\(U\left(-\frac{1}{\sqrt{n}}, \frac{1}{\sqrt{n}} \right)\)</span> :</p>
 <div class="highlight"><pre><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">itertools</span>
@@ -229,9 +229,9 @@ W &amp;\in \mathbb{R}^{100 \times 100} \\
 
 <h3>1.2. Lost Function</h3>
 <p>We will use <a href="https://en.wikipedia.org/wiki/Cross_entropy#Cross-entropy_error_function_and_logistic_regression">cross entropy</a> loss function here. If we have <span class="math">\(N\)</span> training examples(words in the text) and <span class="math">\(C\)</span> classes(the size of the vocabulary list), then the lost function with respect to the prediction <span class="math">\(o\)</span> and the true lable <span class="math">\(y\)</span> is:</p>
-<div class="math">\begin{aligned}
+<div class="math">\begin{aligned*}
 L(y, o) = - \frac{1}{N}\sum_{n \in N}y_n \log o_n
-\end{aligned}</div>
+\end{aligned*}</div>
 <p>How do we know this loss function makes sense? </p>
 <p>If everything is predicted correctly, that is: for the <span class="math">\(y_i = 1\)</span>, the corresponding <span class="math">\(o_i = 1\)</span>, then <span class="math">\(1 \times \log(1) = 1 \times 0 = 0\)</span>. For the rest <span class="math">\(y_i = 0\)</span>, the multiplied value <span class="math">\(0 \times \log(o_i) = 0\)</span>. So the loss will be 0 for the perfect function.</p>
 <p>On the other way, if the model have no prediction power, then all <span class="math">\(o_i = 1/C\)</span> then we will have <span class="math">\(L(y, o) = - \frac{1}{N}\sum_{n \in N} \log \frac{1}{C} = \log(C)\)</span>.</p>
@@ -276,7 +276,7 @@ Actual loss: 8.987440
 <p><img alt="alt text" src="/figures/20170826_rnn_scratch_02_bptt_with_gradients.png" title="Logo Title Text 1" /></p>
 <p>To make it clear, I will write the forward propagation explitly:
 </p>
-<div class="math">\begin{aligned}
+<div class="math">\begin{aligned*}
 &amp; s_0 = tanh(U x_0 + W s_{-1}) \\
 &amp; z_0 = V s_0   \\
 &amp; o_0 \triangleq \hat{y}_{0} = sigmoid(z_0) \\\\
@@ -289,7 +289,7 @@ Actual loss: 8.987440
 &amp; s_3 = tanh(U x_3 + W s_2) \\
 &amp; z_3 = V s_3   \\
 &amp; o_3 \triangleq \hat{y}_{3} = sigmoid(z_3) \\
-\end{aligned}</div>
+\end{aligned*}</div>
 <p>Also, for simplification, I will treat everything as scale rather then vectors or matrix. This will make the partial derivative easy to understand. After we understand this, we only need tiny modification to replace some multiplication by the array dot multiply.</p>
 <p>First, let's denote
 </p>
@@ -401,9 +401,9 @@ Actual loss: 8.987440
 
 
 <p>When we implement the backpropagaton it is good idea to also implement gradient checking. The idad behind gradient checking is that derivative of a parameter is equal to the slope at that point, which we can approximate by slighyly changing the parameter and then dividing by the change:</p>
-<div class="math">\begin{aligned}
+<div class="math">\begin{aligned*}
 \frac{\partial{L}}{\partial{\theta}} = \lim_{h \rightarrow 0} \frac{L(\theta + h) - L(\theta - h)}{2h}
-\end{aligned}</div>
+\end{aligned*}</div>
 <p>We will compare the calculate gradient using the limitation approaching formula above with the gradients from the derivatives. They should be very close. The approximation needs to calculate the total loss for every parameter, so the gradient checking is very expensive. So it is a good idea to perform it on a model with a smaller vocabulary.</p>
 <div class="highlight"><pre>
 </pre></div>

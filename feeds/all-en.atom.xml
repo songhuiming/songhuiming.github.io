@@ -246,10 +246,10 @@
 &lt;p&gt;Recurrent neural network is one of the most popular neural networks for language modeling(based on existed words to predict next word) or automatic input like the automatic complete in the mobile input(based on existed character to predict next character).&lt;/p&gt;
 &lt;p&gt;For example, when we build a RNN for language, that means: the training data is a list of sentences. Each sentence is a seris of words(tokenized words). For each sentence, from the first word, we will predict the second word. From the first and the second word, we will predict the third word, etc. Recurrent neural network means when it predict time order t, it will remember the information from time order 0 to time order t.&lt;/p&gt;
 &lt;p&gt;Let's denote the sentence having &lt;span class="math"&gt;\(t+1\)&lt;/span&gt; words as &lt;span class="math"&gt;\(x=[x_0, x_1, \cdots, x_t]\)&lt;/span&gt;. We start from &lt;span class="math"&gt;\(x_0\)&lt;/span&gt; to status &lt;span class="math"&gt;\(s_0 = \tanh(Ux_0 + Ws_{-1})\)&lt;/span&gt;, where &lt;span class="math"&gt;\(s_{-1}\)&lt;/span&gt; is the initialization of status initialized as 0. The output &lt;span class="math"&gt;\(o_0 = \mathrm{softmax}(Vs_0)\)&lt;/span&gt;. Then when we go to next word &lt;span class="math"&gt;\(x_1\)&lt;/span&gt; we will have updated status &lt;span class="math"&gt;\(s_1 = \tanh(Ux_1 + Ws_0)\)&lt;/span&gt; and the corresponding output &lt;span class="math"&gt;\(o_1 = \mathrm{softmax}(Vs_1)\)&lt;/span&gt;. You will see at time order &lt;span class="math"&gt;\(t=1\)&lt;/span&gt; it not only depends on input &lt;span class="math"&gt;\(x_1\)&lt;/span&gt; but also depends on the previous status &lt;span class="math"&gt;\(s_0\)&lt;/span&gt;. The equation for the RNN used in this tutorial is:&lt;/p&gt;
-&lt;div class="math"&gt;\begin{aligned}
+&lt;div class="math"&gt;\begin{aligned*}
 s_t &amp;amp;= \tanh(Ux_t + Ws_{t-1}) \\
 o_t &amp;amp;= \mathrm{softmax}(Vs_t)
-\end{aligned}&lt;/div&gt;
+\end{aligned*}&lt;/div&gt;
 &lt;p&gt;If we plot the logic of RNN and the corresponding forward propagation, it is like
 &lt;img alt="alt text" src="/figures/20170826_rnn_scratch_01_rnn.jpg" title="Logo Title Text 1" /&gt;&lt;/p&gt;
 &lt;p&gt;The training data is 79,170 sentences coming from 15,000 reddit comments(one comment may has multiple sentences). The vocabulary consists of the 8,000 most common words. For the words not included in the vocabulary list are replaced by UNKNOWN_TOKEN.&lt;/p&gt;
@@ -258,22 +258,22 @@ o_t &amp;amp;= \mathrm{softmax}(Vs_t)
 &lt;h3&gt;1.0. Model and Data Structure, Initialization&lt;/h3&gt;
 &lt;p&gt;As introduced before, the model structure of RNN used here is:
 &lt;/p&gt;
-&lt;div class="math"&gt;\begin{aligned}
+&lt;div class="math"&gt;\begin{aligned*}
 s_t &amp;amp;= \tanh(Ux_t + Ws_{t-1}) \\
 o_t &amp;amp;= \mathrm{softmax}(Vs_t)
-\end{aligned}&lt;/div&gt;
+\end{aligned*}&lt;/div&gt;
 &lt;p&gt;The vocabulary size &lt;span class="math"&gt;\(C=8,000\)&lt;/span&gt; and the hidden layer size &lt;span class="math"&gt;\(H=100\)&lt;/span&gt;. So the size of W is &lt;span class="math"&gt;\(100 \times 100\)&lt;/span&gt;.&lt;/p&gt;
 &lt;p&gt;Let's assume one sentence has 10 words, for the corresponding mapped &lt;span class="math"&gt;\(x\)&lt;/span&gt;, we can treat it in two equal ways: 1. it is a python list by index of the words in the sentence. Then its length is the same as the number of words in that sentence, which is 10. we call it x_expression_1;   2. it is the one-hot transformation of these 10 words in the 8,000 vocabulary list. so its shape is [10, 8000]. For each row, there is one 1 in the word index position and the other 7999 positions will be all 0. we call it x_expression_2. So for each word of these 10 words, the matrix dot multiply &lt;span class="math"&gt;\(U.\)&lt;/span&gt;dot&lt;span class="math"&gt;\((x\_expression\_2[t])\)&lt;/span&gt; is the same as &lt;span class="math"&gt;\(U[:, x\_expression\_1[t]]\)&lt;/span&gt; for &lt;span class="math"&gt;\(t = \mathrm{range(10)}\)&lt;/span&gt;.&lt;/p&gt;
 &lt;p&gt;If use numpy to explain above, it is &lt;code&gt;np.arange(1, 21).reshape(4, 5).dot([0,1,0,0,0])&lt;/code&gt; == &lt;code&gt;np.arange(1, 21).reshape(4, 5)[:, 1]&lt;/code&gt;. This will save a lot of time because numpy indexing is much faster than matrix dot multiply.&lt;/p&gt;
 &lt;p&gt;The dimension of all the data used is(below &lt;span class="math"&gt;\(x_t\)&lt;/span&gt; is index position in the vocabulary list for the &lt;span class="math"&gt;\(t_{th}\)&lt;/span&gt; word in the sentence, and &lt;span class="math"&gt;\(x\)&lt;/span&gt; is a sentence with &lt;span class="math"&gt;\(l\)&lt;/span&gt; words):&lt;/p&gt;
-&lt;div class="math"&gt;\begin{aligned}
+&lt;div class="math"&gt;\begin{aligned*}
 x_t &amp;amp;\in \mathbb{R}^{8000}  \Longleftrightarrow x \in \mathbb{R}^{l \times 8000} \\
 o_t &amp;amp;\in \mathbb{R}^{8000}  \Longleftrightarrow o \in \mathbb{R}^{l \times 8000} \\
 s_t &amp;amp;\in \mathbb{R}^{100}   \Longleftrightarrow s \in \mathbb{R}^{l \times 100} \\
 U &amp;amp;\in \mathbb{R}^{100 \times 8000} \\
 V &amp;amp;\in \mathbb{R}^{8000 \times 100} \\
 W &amp;amp;\in \mathbb{R}^{100 \times 100} \\
-\end{aligned}&lt;/div&gt;
+\end{aligned*}&lt;/div&gt;
 &lt;p&gt;When we iterate to update the parameters, we need to set up their initial values. It is very important to set up suitable initializations to make RNN gradients work well. The initizalition of the parameters is initialized as from random uniform distribution &lt;span class="math"&gt;\(U\left(-\frac{1}{\sqrt{n}}, \frac{1}{\sqrt{n}} \right)\)&lt;/span&gt; :&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;numpy&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;np&lt;/span&gt;
 &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;itertools&lt;/span&gt;
@@ -373,9 +373,9 @@ W &amp;amp;\in \mathbb{R}^{100 \times 100} \\
 
 &lt;h3&gt;1.2. Lost Function&lt;/h3&gt;
 &lt;p&gt;We will use &lt;a href="https://en.wikipedia.org/wiki/Cross_entropy#Cross-entropy_error_function_and_logistic_regression"&gt;cross entropy&lt;/a&gt; loss function here. If we have &lt;span class="math"&gt;\(N\)&lt;/span&gt; training examples(words in the text) and &lt;span class="math"&gt;\(C\)&lt;/span&gt; classes(the size of the vocabulary list), then the lost function with respect to the prediction &lt;span class="math"&gt;\(o\)&lt;/span&gt; and the true lable &lt;span class="math"&gt;\(y\)&lt;/span&gt; is:&lt;/p&gt;
-&lt;div class="math"&gt;\begin{aligned}
+&lt;div class="math"&gt;\begin{aligned*}
 L(y, o) = - \frac{1}{N}\sum_{n \in N}y_n \log o_n
-\end{aligned}&lt;/div&gt;
+\end{aligned*}&lt;/div&gt;
 &lt;p&gt;How do we know this loss function makes sense? &lt;/p&gt;
 &lt;p&gt;If everything is predicted correctly, that is: for the &lt;span class="math"&gt;\(y_i = 1\)&lt;/span&gt;, the corresponding &lt;span class="math"&gt;\(o_i = 1\)&lt;/span&gt;, then &lt;span class="math"&gt;\(1 \times \log(1) = 1 \times 0 = 0\)&lt;/span&gt;. For the rest &lt;span class="math"&gt;\(y_i = 0\)&lt;/span&gt;, the multiplied value &lt;span class="math"&gt;\(0 \times \log(o_i) = 0\)&lt;/span&gt;. So the loss will be 0 for the perfect function.&lt;/p&gt;
 &lt;p&gt;On the other way, if the model have no prediction power, then all &lt;span class="math"&gt;\(o_i = 1/C\)&lt;/span&gt; then we will have &lt;span class="math"&gt;\(L(y, o) = - \frac{1}{N}\sum_{n \in N} \log \frac{1}{C} = \log(C)\)&lt;/span&gt;.&lt;/p&gt;
@@ -420,7 +420,7 @@ Actual loss: 8.987440
 &lt;p&gt;&lt;img alt="alt text" src="/figures/20170826_rnn_scratch_02_bptt_with_gradients.png" title="Logo Title Text 1" /&gt;&lt;/p&gt;
 &lt;p&gt;To make it clear, I will write the forward propagation explitly:
 &lt;/p&gt;
-&lt;div class="math"&gt;\begin{aligned}
+&lt;div class="math"&gt;\begin{aligned*}
 &amp;amp; s_0 = tanh(U x_0 + W s_{-1}) \\
 &amp;amp; z_0 = V s_0   \\
 &amp;amp; o_0 \triangleq \hat{y}_{0} = sigmoid(z_0) \\\\
@@ -433,7 +433,7 @@ Actual loss: 8.987440
 &amp;amp; s_3 = tanh(U x_3 + W s_2) \\
 &amp;amp; z_3 = V s_3   \\
 &amp;amp; o_3 \triangleq \hat{y}_{3} = sigmoid(z_3) \\
-\end{aligned}&lt;/div&gt;
+\end{aligned*}&lt;/div&gt;
 &lt;p&gt;Also, for simplification, I will treat everything as scale rather then vectors or matrix. This will make the partial derivative easy to understand. After we understand this, we only need tiny modification to replace some multiplication by the array dot multiply.&lt;/p&gt;
 &lt;p&gt;First, let's denote
 &lt;/p&gt;
@@ -545,9 +545,9 @@ Actual loss: 8.987440
 
 
 &lt;p&gt;When we implement the backpropagaton it is good idea to also implement gradient checking. The idad behind gradient checking is that derivative of a parameter is equal to the slope at that point, which we can approximate by slighyly changing the parameter and then dividing by the change:&lt;/p&gt;
-&lt;div class="math"&gt;\begin{aligned}
+&lt;div class="math"&gt;\begin{aligned*}
 \frac{\partial{L}}{\partial{\theta}} = \lim_{h \rightarrow 0} \frac{L(\theta + h) - L(\theta - h)}{2h}
-\end{aligned}&lt;/div&gt;
+\end{aligned*}&lt;/div&gt;
 &lt;p&gt;We will compare the calculate gradient using the limitation approaching formula above with the gradients from the derivatives. They should be very close. The approximation needs to calculate the total loss for every parameter, so the gradient checking is very expensive. So it is a good idea to perform it on a model with a smaller vocabulary.&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;
 &lt;/pre&gt;&lt;/div&gt;
