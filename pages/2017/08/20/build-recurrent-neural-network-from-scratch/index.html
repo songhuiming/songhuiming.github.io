@@ -102,10 +102,10 @@
 <p>Recurrent neural network is one of the most popular neural networks for language modeling(based on existed words to predict next word) or automatic input like the automatic complete in the mobile input(based on existed character to predict next character).</p>
 <p>For example, when we build a RNN for language, that means: the training data is a list of sentences. Each sentence is a seris of words(tokenized words). For each sentence, from the first word, we will predict the second word. From the first and the second word, we will predict the third word, etc. Recurrent neural network means when it predict time order t, it will remember the information from time order 0 to time order t.</p>
 <p>Let's denote the sentence having <span class="math">\(t+1\)</span> words as <span class="math">\(x=[x_0, x_1, \cdots, x_t]\)</span>. We start from <span class="math">\(x_0\)</span> to status <span class="math">\(s_0 = \tanh(Ux_0 + Ws_{-1})\)</span>, where <span class="math">\(s_{-1}\)</span> is the initialization of status initialized as 0. The output <span class="math">\(o_0 = \mathrm{softmax}(Vs_0)\)</span>. Then when we go to next word <span class="math">\(x_1\)</span> we will have updated status <span class="math">\(s_1 = \tanh(Ux_1 + Ws_0)\)</span> and the corresponding output <span class="math">\(o_1 = \mathrm{softmax}(Vs_1)\)</span>. You will see at time order <span class="math">\(t=1\)</span> it not only depends on input <span class="math">\(x_1\)</span> but also depends on the previous status <span class="math">\(s_0\)</span>. The equation for the RNN used in this tutorial is:</p>
-<div class="math">\begin{aligned*}
+<div class="math">\begin{aligned}
 s_t &amp;= \tanh(Ux_t + Ws_{t-1}) \\
 o_t &amp;= \mathrm{softmax}(Vs_t)
-\end{aligned*}</div>
+\end{aligned}</div>
 <p>If we plot the logic of RNN and the corresponding forward propagation, it is like
 <img alt="alt text" src="/figures/20170826_rnn_scratch_01_rnn.jpg" title="Logo Title Text 1" /></p>
 <p>The training data is 79,170 sentences coming from 15,000 reddit comments(one comment may has multiple sentences). The vocabulary consists of the 8,000 most common words. For the words not included in the vocabulary list are replaced by UNKNOWN_TOKEN.</p>
@@ -114,22 +114,22 @@ o_t &amp;= \mathrm{softmax}(Vs_t)
 <h3>1.0. Model and Data Structure, Initialization</h3>
 <p>As introduced before, the model structure of RNN used here is:
 </p>
-<div class="math">\begin{aligned*}
+<div class="math">\begin{aligned}
 s_t &amp;= \tanh(Ux_t + Ws_{t-1}) \\
 o_t &amp;= \mathrm{softmax}(Vs_t)
-\end{aligned*}</div>
+\end{aligned}</div>
 <p>The vocabulary size <span class="math">\(C=8,000\)</span> and the hidden layer size <span class="math">\(H=100\)</span>. So the size of W is <span class="math">\(100 \times 100\)</span>.</p>
 <p>Let's assume one sentence has 10 words, for the corresponding mapped <span class="math">\(x\)</span>, we can treat it in two equal ways: 1. it is a python list by index of the words in the sentence. Then its length is the same as the number of words in that sentence, which is 10. we call it x_expression_1;   2. it is the one-hot transformation of these 10 words in the 8,000 vocabulary list. so its shape is [10, 8000]. For each row, there is one 1 in the word index position and the other 7999 positions will be all 0. we call it x_expression_2. So for each word of these 10 words, the matrix dot multiply <span class="math">\(U.\)</span>dot<span class="math">\((x\_expression\_2[t])\)</span> is the same as <span class="math">\(U[:, x\_expression\_1[t]]\)</span> for <span class="math">\(t = \mathrm{range(10)}\)</span>.</p>
 <p>If use numpy to explain above, it is <code>np.arange(1, 21).reshape(4, 5).dot([0,1,0,0,0])</code> == <code>np.arange(1, 21).reshape(4, 5)[:, 1]</code>. This will save a lot of time because numpy indexing is much faster than matrix dot multiply.</p>
 <p>The dimension of all the data used is(below <span class="math">\(x_t\)</span> is index position in the vocabulary list for the <span class="math">\(t_{th}\)</span> word in the sentence, and <span class="math">\(x\)</span> is a sentence with <span class="math">\(l\)</span> words):</p>
-<div class="math">\begin{aligned*}
+<div class="math">\begin{aligned}
 x_t &amp;\in \mathbb{R}^{8000}  \Longleftrightarrow x \in \mathbb{R}^{l \times 8000} \\
 o_t &amp;\in \mathbb{R}^{8000}  \Longleftrightarrow o \in \mathbb{R}^{l \times 8000} \\
 s_t &amp;\in \mathbb{R}^{100}   \Longleftrightarrow s \in \mathbb{R}^{l \times 100} \\
 U &amp;\in \mathbb{R}^{100 \times 8000} \\
 V &amp;\in \mathbb{R}^{8000 \times 100} \\
 W &amp;\in \mathbb{R}^{100 \times 100} \\
-\end{aligned*}</div>
+\end{aligned}</div>
 <p>When we iterate to update the parameters, we need to set up their initial values. It is very important to set up suitable initializations to make RNN gradients work well. The initizalition of the parameters is initialized as from random uniform distribution <span class="math">\(U\left(-\frac{1}{\sqrt{n}}, \frac{1}{\sqrt{n}} \right)\)</span> :</p>
 <div class="highlight"><pre><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">itertools</span>
@@ -229,9 +229,9 @@ W &amp;\in \mathbb{R}^{100 \times 100} \\
 
 <h3>1.2. Lost Function</h3>
 <p>We will use <a href="https://en.wikipedia.org/wiki/Cross_entropy#Cross-entropy_error_function_and_logistic_regression">cross entropy</a> loss function here. If we have <span class="math">\(N\)</span> training examples(words in the text) and <span class="math">\(C\)</span> classes(the size of the vocabulary list), then the lost function with respect to the prediction <span class="math">\(o\)</span> and the true lable <span class="math">\(y\)</span> is:</p>
-<div class="math">\begin{aligned*}
+<div class="math">\begin{aligned}
 L(y, o) = - \frac{1}{N}\sum_{n \in N}y_n \log o_n
-\end{aligned*}</div>
+\end{aligned}</div>
 <p>How do we know this loss function makes sense? </p>
 <p>If everything is predicted correctly, that is: for the <span class="math">\(y_i = 1\)</span>, the corresponding <span class="math">\(o_i = 1\)</span>, then <span class="math">\(1 \times \log(1) = 1 \times 0 = 0\)</span>. For the rest <span class="math">\(y_i = 0\)</span>, the multiplied value <span class="math">\(0 \times \log(o_i) = 0\)</span>. So the loss will be 0 for the perfect function.</p>
 <p>On the other way, if the model have no prediction power, then all <span class="math">\(o_i = 1/C\)</span> then we will have <span class="math">\(L(y, o) = - \frac{1}{N}\sum_{n \in N} \log \frac{1}{C} = \log(C)\)</span>.</p>
@@ -276,7 +276,7 @@ Actual loss: 8.987440
 <p><img alt="alt text" src="/figures/20170826_rnn_scratch_02_bptt_with_gradients.png" title="Logo Title Text 1" /></p>
 <p>To make it clear, I will write the forward propagation explitly:
 </p>
-<div class="math">\begin{aligned*}
+<div class="math">\begin{aligned}
 &amp; s_0 = tanh(U x_0 + W s_{-1}) \\
 &amp; z_0 = V s_0   \\
 &amp; o_0 \triangleq \hat{y}_{0} = sigmoid(z_0) \\\\
@@ -289,75 +289,76 @@ Actual loss: 8.987440
 &amp; s_3 = tanh(U x_3 + W s_2) \\
 &amp; z_3 = V s_3   \\
 &amp; o_3 \triangleq \hat{y}_{3} = sigmoid(z_3) \\
-\end{aligned*}</div>
+\end{aligned}</div>
 <p>Also, for simplification, I will treat everything as scale rather then vectors or matrix. This will make the partial derivative easy to understand. After we understand this, we only need tiny modification to replace some multiplication by the array dot multiply.</p>
 <p>First, let's denote
 </p>
-<div class="math">\begin{align}
-&amp; d_3 \triangleq \big(\hat{y}_3 - y_3 \big) \cdot V \cdot \big(1 - s_3 ** 2 \big) \\
-&amp; d_2 \triangleq d_3 \cdot W \cdot \big(1 - s_2 ** 2 \big) \\
-&amp; d_1 \triangleq d_2 \cdot W \cdot \big(1 - s_1 ** 2 \big) \\
-&amp; d_0 \triangleq d_1 \cdot W \cdot \big(1 - s_0 ** 2 \big) \\
-\end{align}</div>
+<div class="math">\begin{aligned}
+&amp; d_3 \triangleq \big(\hat{y}_3 - y_3 \big) \cdot V \cdot \big(1 - s_3 ^ 2 \big) \\
+&amp; d_2 \triangleq d_3 \cdot W \cdot \big(1 - s_2 ^ 2 \big) \\
+&amp; d_1 \triangleq d_2 \cdot W \cdot \big(1 - s_1 ^ 2 \big) \\
+&amp; d_0 \triangleq d_1 \cdot W \cdot \big(1 - s_0 ^ 2 \big) \\
+\end{aligned}</div>
 <h4>1.3.1. Calculate of partial derivative of error <span class="math">\(E_3\)</span> to <span class="math">\(U\)</span>: <span class="math">\(\frac{\partial{L}}{\partial{U}}\)</span></h4>
 <p>We have already know each historical hidden status will be used to calculate current status. The parameters are used in each status. So we need to calculate all the hidden status to the parameter <span class="math">\(U\)</span>.</p>
-<div class="math">\begin{align}
-\frac{\partial{s_0}}{\partial{U}} &amp;= \big(1 - s_0 ** 2 \big) \left(x_0 + \frac{\partial{s_{-1}}}{\partial{U}} \right) \\
-&amp;= \big(1 - s_0 ** 2 \big) \cdot x_0 \\\\
-\frac{\partial{s_1}}{\partial{U}} &amp;= \big(1 - s_1 ** 2 \big) \left(x_1 + W \cdot \frac{\partial{s_{0}}}{\partial{U}} \right) \\
-&amp;= \big(1 - s_1 ** 2 \big) \big(x_1 + W \cdot \big(1 - s_0 ** 2 \big) \cdot x_0 \big) \\\\
-\frac{\partial{s_2}}{\partial{U}} &amp;= \big(1 - s_2 ** 2 \big) \left(x_2 + W \cdot \frac{\partial{s_{1}}}{\partial{U}} \right) \\
-&amp;= \big(1 - s_2 ** 2 \big) \Big(x_2 + W \cdot \big(1 - s_1 ** 2 \big) \big(x_1 + W \cdot \big(1 - s_0 ** 2 \big) \cdot x_0 \big) \Big)\\\\
-\frac{\partial{s_3}}{\partial{U}} &amp;= \big(1 - s_3 ** 2 \big) \left(x_3 + W \cdot \frac{\partial{s_{2}}}{\partial{U}} \right) \\
-&amp;= \big(1 - s_3 ** 2 \big) \bigg(x_3 + W \cdot \big(1 - s_2 ** 2 \big) \Big(x_2 + W \cdot \big(1 - s_1 ** 2 \big) \big(x_1 + W \cdot \big(1 - s_0 ** 2 \big) \cdot x_0 \big) \Big)  \bigg)\\\\
-\end{align}</div>
+<div class="math">\begin{aligned}
+\frac{\partial{s_0}}{\partial{U}} &amp;= \big(1 - s_0 ^ 2 \big) \left(x_0 + \frac{\partial{s_{-1}}}{\partial{U}} \right) \\
+&amp;= \big(1 - s_0 ^ 2 \big) \cdot x_0 \\\\
+\frac{\partial{s_1}}{\partial{U}} &amp;= \big(1 - s_1 ^ 2 \big) \left(x_1 + W \cdot \frac{\partial{s_{0}}}{\partial{U}} \right) \\
+&amp;= \big(1 - s_1 ^ 2 \big) \big(x_1 + W \cdot \big(1 - s_0 ^ 2 \big) \cdot x_0 \big) \\\\
+\frac{\partial{s_2}}{\partial{U}} &amp;= \big(1 - s_2 ^ 2 \big) \left(x_2 + W \cdot \frac{\partial{s_{1}}}{\partial{U}} \right) \\
+&amp;= \big(1 - s_2 ^ 2 \big) \Big(x_2 + W \cdot \big(1 - s_1 ^ 2 \big) \big(x_1 + W \cdot \big(1 - s_0 ^ 2 \big) \cdot x_0 \big) \Big)\\\\
+\frac{\partial{s_3}}{\partial{U}} &amp;= \big(1 - s_3 ^ 2 \big) \left(x_3 + W \cdot \frac{\partial{s_{2}}}{\partial{U}} \right) \\
+&amp;= \big(1 - s_3 ^ 2 \big) \\
+&amp; \bigg(x_3 + W \cdot \big(1 - s_2 ^ 2 \big) \Big(x_2 + W \cdot \big(1 - s_1 ^ 2 \big) \big(x_1 + W \cdot \big(1 - s_0 ^ 2 \big) \cdot x_0 \big) \Big)  \bigg)\\\\
+\end{aligned}</div>
 <p>After we get this, we can calculate the partial derivative of error <span class="math">\(E3\)</span> to <span class="math">\(U\)</span>:</p>
-<div class="math">\begin{align}
+<div class="math">\begin{aligned}
 \frac{\partial{E_3}}{\partial{U}} &amp;= \frac{\partial{E_3}}{\partial{\hat{y}_3}} \frac{\partial{\hat{y}_3}}{\partial{z_3}} \frac{\partial{z_3}}{\partial{s_3}} \frac{\partial{s_3}}{\partial{U}}  \\
 &amp;= \left(\frac{\partial{E_3}}{\partial{\hat{y}_3}} \frac{\partial{\hat{y}_3}}{\partial{z_3}} \right) \cdot \frac{\partial{z_3}}{\partial{s_3}} \cdot \frac{\partial{s_3}}{\partial{U}}  \\
 &amp;= \big(\hat{y}_3 - y_3 \big) \cdot V \cdot \frac{\partial{s_3}}{\partial{U}}  \\
-&amp;= \big(\hat{y}_3 - y_3 \big) \cdot V \cdot \big(1 - s_3 ** 2 \big) \bigg(x_3 + W \cdot \big(1 - s_2 ** 2 \big) \Big(x_2 + W \cdot \big(1 - s_1 ** 2 \big) \big(x_1 + W \cdot \big(1 - s_0 ** 2 \big) \cdot x_0 \big) \Big)  \bigg)\\
-&amp; \triangleq d_3 \big[x_3 + W \cdot  \big(1 - s_2 ** 2 \big) \Big(x_2 + W \cdot \big(1 - s_1 ** 2 \big) \big(x_1 + W \cdot \big(1 - s_0 ** 2 \big) \cdot x_0 \big) \Big)   \big]\\
-&amp;= d_3 x_3 + d_3 W \cdot \big(1 - s_2 ** 2 \big) \Big(x_2 + W \cdot \big(1 - s_1 ** 2 \big) \big(x_1 + W \cdot \big(1 - s_0 ** 2 \big) \cdot x_0 \big) \Big) \\
-&amp; \triangleq d_3 x_3 + d_2 \Big(x_2 + W \cdot \big(1 - s_1 ** 2 \big) \big(x_1 + W \cdot \big(1 - s_0 ** 2 \big) \cdot x_0 \big)\Big) \\
-&amp;= d_3 x_3 + d_2 x_2 + d_2 W \cdot \big(1 - s_1 ** 2 \big) \big(x_1 + W \cdot \big(1 - s_0 ** 2 \big) \cdot x_0 \big) \\
-&amp; \triangleq d_3 x_3 + d_2 x_2 + d_1 \big(x_1 + W \cdot \big(1 - s_0 ** 2 \big) \cdot x_0 \big) \\
-&amp;= d_3 x_3 + d_2 x_2 + d_1 x_1 + d_1 W \cdot \big(1 - s_0 ** 2 \big) \cdot x_0  \\
+&amp;= \big(\hat{y}_3 - y_3 \big) \cdot V \cdot \big(1 - s_3 ^ 2 \big) \bigg(x_3 + W \cdot \big(1 - s_2 ^ 2 \big) \Big(x_2 + W \cdot \big(1 - s_1 ^ 2 \big) \big(x_1 + W \cdot \big(1 - s_0 ^ 2 \big) \cdot x_0 \big) \Big)  \bigg)\\
+&amp; \triangleq d_3 \big[x_3 + W \cdot  \big(1 - s_2 ^ 2 \big) \Big(x_2 + W \cdot \big(1 - s_1 ^ 2 \big) \big(x_1 + W \cdot \big(1 - s_0 ^ 2 \big) \cdot x_0 \big) \Big)   \big]\\
+&amp;= d_3 x_3 + d_3 W \cdot \big(1 - s_2 ^ 2 \big) \Big(x_2 + W \cdot \big(1 - s_1 ^ 2 \big) \big(x_1 + W \cdot \big(1 - s_0 ^ 2 \big) \cdot x_0 \big) \Big) \\
+&amp; \triangleq d_3 x_3 + d_2 \Big(x_2 + W \cdot \big(1 - s_1 ^ 2 \big) \big(x_1 + W \cdot \big(1 - s_0 ^ 2 \big) \cdot x_0 \big)\Big) \\
+&amp;= d_3 x_3 + d_2 x_2 + d_2 W \cdot \big(1 - s_1 ^ 2 \big) \big(x_1 + W \cdot \big(1 - s_0 ^ 2 \big) \cdot x_0 \big) \\
+&amp; \triangleq d_3 x_3 + d_2 x_2 + d_1 \big(x_1 + W \cdot \big(1 - s_0 ^ 2 \big) \cdot x_0 \big) \\
+&amp;= d_3 x_3 + d_2 x_2 + d_1 x_1 + d_1 W \cdot \big(1 - s_0 ^ 2 \big) \cdot x_0  \\
 &amp; \triangleq d_3 x_3 + d_2 x_2 + d_1 x_1 + d_0 \cdot x_0  \\
-\end{align}</div>
+\end{aligned}</div>
 <h4>1.3.2. Calculate of partial derivative of error <span class="math">\(E_3\)</span> to <span class="math">\(W\)</span>: <span class="math">\(\frac{\partial{L}}{\partial{W}}\)</span></h4>
 <p>First is each hidden status to <span class="math">\(W\)</span>:</p>
-<div class="math">\begin{align}
-\frac{\partial{s_0}}{\partial{W}} &amp;= \big(1 - s_0 ** 2 \big) \left(s_{-1} + \frac{\partial{s_{-1}}}{\partial{W}} \right) \\
-&amp;= \big(1 - s_0 ** 2 \big) \cdot s_{-1} \\\\
-\frac{\partial{s_1}}{\partial{W}} &amp;= \big(1 - s_1 ** 2 \big) \left(s_0 + W \cdot \frac{\partial{s_{0}}}{\partial{W}} \right) \\
-&amp;= \big(1 - s_1 ** 2 \big) \big(s_0 + W \cdot \big(1 - s_0 ** 2 \big) \cdot s_{-1} \big) \\\\
-\frac{\partial{s_2}}{\partial{W}} &amp;= \big(1 - s_2 ** 2 \big) \left(s_1 + W \cdot \frac{\partial{s_{1}}}{\partial{W}} \right) \\
-&amp;= \big(1 - s_2 ** 2 \big) \Big(s_1 + W \cdot \big(1 - s_1 ** 2 \big) \big(s_0 + W \cdot \big(1 - s_0 ** 2 \big) \cdot s_{-1} \big) \Big)\\\\
-\frac{\partial{s_3}}{\partial{W}} &amp;= \big(1 - s_3 ** 2 \big) \left(s_2 + W \cdot \frac{\partial{s_{2}}}{\partial{W}} \right) \\
-&amp;= \big(1 - s_3 ** 2 \big) \bigg(s_2 + W \cdot \big(1 - s_2 ** 2 \big) \Big(s_1 + W \cdot \big(1 - s_1 ** 2 \big) \big(s_0 + W \cdot \big(1 - s_0 ** 2 \big) \cdot s_{-1} \big) \Big)  \bigg)\\\\
-\end{align}</div>
+<div class="math">\begin{aligned}
+\frac{\partial{s_0}}{\partial{W}} &amp;= \big(1 - s_0 ^ 2 \big) \left(s_{-1} + \frac{\partial{s_{-1}}}{\partial{W}} \right) \\
+&amp;= \big(1 - s_0 ^ 2 \big) \cdot s_{-1} \\\\
+\frac{\partial{s_1}}{\partial{W}} &amp;= \big(1 - s_1 ^ 2 \big) \left(s_0 + W \cdot \frac{\partial{s_{0}}}{\partial{W}} \right) \\
+&amp;= \big(1 - s_1 ^ 2 \big) \big(s_0 + W \cdot \big(1 - s_0 ^ 2 \big) \cdot s_{-1} \big) \\\\
+\frac{\partial{s_2}}{\partial{W}} &amp;= \big(1 - s_2 ^ 2 \big) \left(s_1 + W \cdot \frac{\partial{s_{1}}}{\partial{W}} \right) \\
+&amp;= \big(1 - s_2 ^ 2 \big) \Big(s_1 + W \cdot \big(1 - s_1 ^ 2 \big) \big(s_0 + W \cdot \big(1 - s_0 ^ 2 \big) \cdot s_{-1} \big) \Big)\\\\
+\frac{\partial{s_3}}{\partial{W}} &amp;= \big(1 - s_3 ^ 2 \big) \left(s_2 + W \cdot \frac{\partial{s_{2}}}{\partial{W}} \right) \\
+&amp;= \big(1 - s_3 ^ 2 \big) \bigg(s_2 + W \cdot \big(1 - s_2 ^ 2 \big) \Big(s_1 + W \cdot \big(1 - s_1 ^ 2 \big) \big(s_0 + W \cdot \big(1 - s_0 ^ 2 \big) \cdot s_{-1} \big) \Big)  \bigg)\\\\
+\end{aligned}</div>
 <p>Then we can write the partial derivative of error <span class="math">\(E3\)</span> to <span class="math">\(W\)</span>:</p>
-<div class="math">\begin{align}
+<div class="math">\begin{aligned}
 \frac{\partial{E_3}}{\partial{W}} &amp;= \frac{\partial{E_3}}{\partial{\hat{y}_3}} \frac{\partial{\hat{y}_3}}{\partial{z_3}} \frac{\partial{z_3}}{\partial{s_3}} \frac{\partial{s_3}}{\partial{W}}  \\
 &amp;= \left(\frac{\partial{E_3}}{\partial{\hat{y}_3}} \frac{\partial{\hat{y}_3}}{\partial{z_3}} \right) \cdot \frac{\partial{z_3}}{\partial{s_3}} \cdot \frac{\partial{s_3}}{\partial{W}}  \\
 &amp;= \big(\hat{y}_3 - y_3 \big) \cdot V \cdot \frac{\partial{s_3}}{\partial{W}}  \\
-&amp;= \big(\hat{y}_3 - y_3 \big) \cdot V \cdot \big(1 - s_3 ** 2 \big) \bigg(s_2 + W \cdot \big(1 - s_2 ** 2 \big) \Big(s_1 + W \cdot \big(1 - s_1 ** 2 \big) \big(s_0 + W \cdot \big(1 - s_0 ** 2 \big) \cdot s_{-1} \big) \Big)  \bigg)\\
-&amp; \triangleq d_3    \bigg(s_2 + W \cdot \big(1 - s_2 ** 2 \big) \Big(s_1 + W \cdot \big(1 - s_1 ** 2 \big) \big(s_0 + W \cdot \big(1 - s_0 ** 2 \big) \cdot s_{-1} \big) \Big)  \bigg)   \\
-&amp;= d_3 s_2 + d_3 W \cdot \big(1 - s_2 ** 2 \big) \Big(s_1 + W \cdot \big(1 - s_1 ** 2 \big) \big(s_0 + W \cdot \big(1 - s_0 ** 2 \big) \cdot s_{-1} \big) \Big) \\
-&amp; \triangleq d_3 s_2 + d_2 \Big(s_1 + W \cdot \big(1 - s_1 ** 2 \big) \big(s_0 + W \cdot \big(1 - s_0 ** 2 \big) \cdot s_{-1} \big) \Big) \\
-&amp;= d_3 s_2 + d_2 s_1 + d_2 W \cdot \big(1 - s_1 ** 2 \big) \big(s_0 + W \cdot \big(1 - s_0 ** 2 \big) \cdot s_{-1} \big) \\
-&amp; \triangleq d_3 s_2 + d_2 s_1 + d_1 \big(s_0 + W \cdot \big(1 - s_0 ** 2 \big) \cdot s_{-1} \big) \\
-&amp;= d_3 s_2 + d_2 s_1 + d_1 s_0 + d_1 W \cdot \big(1 - s_0 ** 2 \big) \cdot s_{-1}  \\
+&amp;= \big(\hat{y}_3 - y_3 \big) \cdot V \cdot \big(1 - s_3 ^ 2 \big) \bigg(s_2 + W \cdot \big(1 - s_2 ^ 2 \big) \Big(s_1 + W \cdot \big(1 - s_1 ^ 2 \big) \big(s_0 + W \cdot \big(1 - s_0 ^ 2 \big) \cdot s_{-1} \big) \Big)  \bigg)\\
+&amp; \triangleq d_3    \bigg(s_2 + W \cdot \big(1 - s_2 ^ 2 \big) \Big(s_1 + W \cdot \big(1 - s_1 ^ 2 \big) \big(s_0 + W \cdot \big(1 - s_0 ^ 2 \big) \cdot s_{-1} \big) \Big)  \bigg)   \\
+&amp;= d_3 s_2 + d_3 W \cdot \big(1 - s_2 ^ 2 \big) \Big(s_1 + W \cdot \big(1 - s_1 ^ 2 \big) \big(s_0 + W \cdot \big(1 - s_0 ^ 2 \big) \cdot s_{-1} \big) \Big) \\
+&amp; \triangleq d_3 s_2 + d_2 \Big(s_1 + W \cdot \big(1 - s_1 ^ 2 \big) \big(s_0 + W \cdot \big(1 - s_0 ^ 2 \big) \cdot s_{-1} \big) \Big) \\
+&amp;= d_3 s_2 + d_2 s_1 + d_2 W \cdot \big(1 - s_1 ^ 2 \big) \big(s_0 + W \cdot \big(1 - s_0 ^ 2 \big) \cdot s_{-1} \big) \\
+&amp; \triangleq d_3 s_2 + d_2 s_1 + d_1 \big(s_0 + W \cdot \big(1 - s_0 ^ 2 \big) \cdot s_{-1} \big) \\
+&amp;= d_3 s_2 + d_2 s_1 + d_1 s_0 + d_1 W \cdot \big(1 - s_0 ^ 2 \big) \cdot s_{-1}  \\
 &amp; \triangleq d_3 s_2 + d_2 s_1 + d_1 s_0 + d_0 \cdot s_{-1}  \\
-\end{align}</div>
+\end{aligned}</div>
 <h4>1.3.3. Calculate of partial derivative of error <span class="math">\(E_3\)</span> to <span class="math">\(V\)</span>: <span class="math">\(\frac{\partial{L}}{\partial{V}}\)</span></h4>
 <p>This will be easier than the two above:
 </p>
-<div class="math">\begin{align}
+<div class="math">\begin{aligned}
 \frac{\partial{E_3}}{\partial{V}} &amp;= \frac{\partial{E_3}}{\partial{\hat{y}_3}} \frac{\partial{\hat{y}_3}}{\partial{z_3}} \frac{\partial{z_3}}{\partial{V}} \\
 &amp;= (\hat{y}_{3} - y_3)  s_3
-\end{align}</div>
+\end{aligned}</div>
 <p>This simplifies the equations from vector and matrix multiply to scale multiply. But with this it can easily revert back to vertor and matrix, just need to pay attention of the orders, shape, transformation and dot multiply.</p>
 <p>From the derivatives formula above, we can easily write the BPTT in python:</p>
 <div class="highlight"><pre><span class="c1">## 3. BPTT</span>
@@ -385,7 +386,7 @@ Actual loss: 8.987440
     <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">T</span><span class="p">):</span>
         <span class="n">dLdV</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">outer</span><span class="p">(</span><span class="n">delta_o</span><span class="p">[</span><span class="n">t</span><span class="p">],</span> <span class="n">s</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>    <span class="c1"># at time step t, shape is word_dim * hidden_dim</span>
         <span class="c1"># initial delta calculation</span>
-        <span class="n">delta_t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">delta_o</span><span class="p">[</span><span class="n">t</span><span class="p">])</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span><span class="p">))</span>
+        <span class="n">delta_t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">delta_o</span><span class="p">[</span><span class="n">t</span><span class="p">])</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">^</span> <span class="mi">2</span><span class="p">))</span>
         <span class="c1"># backpropagation through time (for at most self.bptt_truncate steps)</span>
         <span class="c1"># given time step t, go back from time step t, to t-1, t-2, ...</span>
         <span class="k">for</span> <span class="n">bptt_step</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">t</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">bptt_truncate</span><span class="p">),</span> <span class="n">t</span><span class="o">+</span><span class="mi">1</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
@@ -393,7 +394,7 @@ Actual loss: 8.987440
             <span class="n">dLdW</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">outer</span><span class="p">(</span><span class="n">delta_t</span><span class="p">,</span> <span class="n">s</span><span class="p">[</span><span class="n">bptt_step</span> <span class="o">-</span> <span class="mi">1</span><span class="p">])</span>
             <span class="n">dLdU</span><span class="p">[:,</span> <span class="n">x</span><span class="p">[</span><span class="n">bptt_step</span><span class="p">]]</span> <span class="o">+=</span> <span class="n">delta_t</span>
             <span class="c1"># update delta for next step</span>
-            <span class="n">dleta_t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">delta_t</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">s</span><span class="p">[</span><span class="n">bptt_step</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+            <span class="n">dleta_t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">delta_t</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">s</span><span class="p">[</span><span class="n">bptt_step</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">^</span><span class="mi">2</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">[</span><span class="n">dLdU</span><span class="p">,</span> <span class="n">dLdV</span><span class="p">,</span> <span class="n">dLdW</span><span class="p">]</span>
 
 <span class="n">RNNNumpy</span><span class="o">.</span><span class="n">bptt</span> <span class="o">=</span> <span class="n">bptt</span>
@@ -401,9 +402,9 @@ Actual loss: 8.987440
 
 
 <p>When we implement the backpropagaton it is good idea to also implement gradient checking. The idad behind gradient checking is that derivative of a parameter is equal to the slope at that point, which we can approximate by slighyly changing the parameter and then dividing by the change:</p>
-<div class="math">\begin{aligned*}
+<div class="math">\begin{aligned}
 \frac{\partial{L}}{\partial{\theta}} = \lim_{h \rightarrow 0} \frac{L(\theta + h) - L(\theta - h)}{2h}
-\end{aligned*}</div>
+\end{aligned}</div>
 <p>We will compare the calculate gradient using the limitation approaching formula above with the gradients from the derivatives. They should be very close. The approximation needs to calculate the total loss for every parameter, so the gradient checking is very expensive. So it is a good idea to perform it on a model with a smaller vocabulary.</p>
 <div class="highlight"><pre>
 </pre></div>
