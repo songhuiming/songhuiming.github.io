@@ -676,22 +676,19 @@ confustion matrix on validation data: [[4259   56]
 
 
 <p><img alt="jpgpng" src="/figures/20170917_aws_device_failure_14.png" title="Logo Title Text 1" /></p>
-<h5>3.5.2.1. RandomForestAdaBoost Feature Importances</h5>
+<h5>3.5.2.2. AdaBoost Feature Importances</h5>
 <div class="highlight"><pre><span class="n">scatter_plot</span><span class="p">(</span><span class="n">picked_feature_name</span> <span class="o">=</span> <span class="s1">&#39;AdaBoost feature importances&#39;</span><span class="p">)</span>
 </pre></div>
 
 
 <p><img alt="jpgpng" src="/figures/20170917_aws_device_failure_15.png" title="Logo Title Text 1" /></p>
-<h5>3.5.2.1. Gradient Boost Feature Importances</h5>
+<h5>3.5.2.3. Gradient Boost Feature Importances</h5>
 <div class="highlight"><pre><span class="n">scatter_plot</span><span class="p">(</span><span class="n">picked_feature_name</span> <span class="o">=</span> <span class="s1">&#39;Gradient Boost feature importances&#39;</span><span class="p">)</span>
 </pre></div>
 
 
-<div class="highlight"><pre><span class="err">!</span><span class="p">[</span><span class="n">jpgpng</span><span class="p">](</span><span class="o">/</span><span class="n">figures</span><span class="o">/</span><span class="mi">20170917</span><span class="n">_aws_device_failure_16</span><span class="o">.</span><span class="n">png</span> <span class="s2">&quot;Logo Title Text 1&quot;</span><span class="p">)</span>
-</pre></div>
-
-
-<h5>3.5.2.1. Extra trees Feature Importances</h5>
+<p><img alt="jpgpng" src="/figures/20170917_aws_device_failure_16.png" title="Logo Title Text 1" /></p>
+<h5>3.5.2.4. Extra trees Feature Importances</h5>
 <div class="highlight"><pre><span class="n">scatter_plot</span><span class="p">(</span><span class="n">picked_feature_name</span> <span class="o">=</span> <span class="s1">&#39;Extra trees feature importances&#39;</span><span class="p">)</span>
 </pre></div>
 
@@ -700,7 +697,6 @@ confustion matrix on validation data: [[4259   56]
 <h3>3.6. XGBoost</h3>
 <p>Finally we will build another model with inputs from the output of the previous models. (This is a little like multi-layers neural network which use previous layers output as current layer input).</p>
 <p>This time we will XGBoost to build the model. XGBoost is known for boosted tree learners. It optimizes large scale boosted tree. </p>
-<p>First we will put the </p>
 <div class="highlight"><pre><span class="n">base_pred</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;randomforest&#39;</span><span class="p">:</span> <span class="n">rf_oof_train</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span>
                                 <span class="s1">&#39;extratree&#39;</span><span class="p">:</span> <span class="n">et_oof_train</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span>
                                 <span class="s1">&#39;adaboost&#39;</span><span class="p">:</span> <span class="n">ada_oof_train</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span>
@@ -709,7 +705,7 @@ confustion matrix on validation data: [[4259   56]
 </pre></div>
 
 
-<p>The correlation of the output from the </p>
+<p>The correlation of the output from the previous model output is given below. We can see the correlation is not very high so we can safely use these output as input for XGBoost model.</p>
 <div class="highlight"><pre><span class="n">data</span> <span class="o">=</span> <span class="p">[</span>
     <span class="n">go</span><span class="o">.</span><span class="n">Heatmap</span><span class="p">(</span><span class="n">z</span> <span class="o">=</span> <span class="n">base_pred</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">corr</span><span class="p">()</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
                <span class="n">x</span> <span class="o">=</span> <span class="n">base_pred</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
@@ -776,13 +772,12 @@ confustion matrix on validation data: [[4259   56]
 </pre></div>
 
 
-<div class="highlight"><pre>    max_depth: 20
-    min_samples_leaf: 2
-    n_estimators: 100
-confustion matrix on validation data: [[4259   56]
- [   0 4168]]
-confustion matrix on validation data: [[124384      4]
- [    88     18]]
+<div class="highlight"><pre><span class="n">max_depth</span><span class="o">:</span> <span class="mi">20</span>
+<span class="n">min_samples_leaf</span><span class="o">:</span> <span class="mi">2</span>
+<span class="n">n_estimators</span><span class="o">:</span> <span class="mi">100</span>
+
+<span class="n">confustion</span> <span class="n">matrix</span> <span class="n">on</span> <span class="n">validation</span> <span class="n">data</span><span class="o">:</span> <span class="o">[[</span><span class="mi">4259</span>   <span class="mi">56</span><span class="o">]</span> <span class="o">[</span>   <span class="mi">0</span> <span class="mi">4168</span><span class="o">]]</span>
+<span class="n">confustion</span> <span class="n">matrix</span> <span class="n">on</span> <span class="n">validation</span> <span class="n">data</span><span class="o">:</span> <span class="o">[[</span><span class="mi">124384</span>      <span class="mi">4</span><span class="o">]</span> <span class="o">[</span>    <span class="mi">88</span>     <span class="mi">18</span><span class="o">]]</span>
 </pre></div>
 
 
@@ -793,13 +788,12 @@ confustion matrix on validation data: [[124384      4]
 </pre></div>
 
 
-<div class="highlight"><pre>    max_depth: 50
-    min_samples_leaf: 2
-    n_estimators: 200
-confustion matrix on validation data: [[4241   74]
- [   0 4168]]
-confustion matrix on validation data: [[124382      6]
- [    82     24]]
+<div class="highlight"><pre><span class="n">max_depth</span><span class="o">:</span> <span class="mi">50</span>
+<span class="n">min_samples_leaf</span><span class="o">:</span> <span class="mi">2</span>
+<span class="n">n_estimators</span><span class="o">:</span> <span class="mi">200</span>
+
+<span class="n">confustion</span> <span class="n">matrix</span> <span class="n">on</span> <span class="n">validation</span> <span class="n">data</span><span class="o">:</span> <span class="o">[[</span><span class="mi">4241</span>   <span class="mi">74</span><span class="o">]</span> <span class="o">[</span>   <span class="mi">0</span> <span class="mi">4168</span><span class="o">]]</span>
+<span class="n">confustion</span> <span class="n">matrix</span> <span class="n">on</span> <span class="n">validation</span> <span class="n">data</span><span class="o">:</span> <span class="o">[[</span><span class="mi">124382</span>      <span class="mi">6</span><span class="o">]</span> <span class="o">[</span>    <span class="mi">82</span>     <span class="mi">24</span><span class="o">]]</span>
 </pre></div>
 
 
@@ -809,12 +803,11 @@ confustion matrix on validation data: [[124382      6]
 </pre></div>
 
 
-<div class="highlight"><pre>    learning_rate: 1
-    n_estimators: 200
-confustion matrix on validation data: [[4026  289]
- [ 151 4017]]
-confustion matrix on validation data: [[124388      0]
- [   105      1]]
+<div class="highlight"><pre><span class="n">learning_rate</span><span class="o">:</span> <span class="mi">1</span>
+<span class="n">n_estimators</span><span class="o">:</span> <span class="mi">200</span>
+
+<span class="n">confustion</span> <span class="n">matrix</span> <span class="n">on</span> <span class="n">validation</span> <span class="n">data</span><span class="o">:</span> <span class="o">[[</span><span class="mi">4026</span>  <span class="mi">289</span><span class="o">]</span> <span class="o">[</span> <span class="mi">151</span> <span class="mi">4017</span><span class="o">]]</span>
+<span class="n">confustion</span> <span class="n">matrix</span> <span class="n">on</span> <span class="n">validation</span> <span class="n">data</span><span class="o">:</span> <span class="o">[[</span><span class="mi">124388</span>      <span class="mi">0</span><span class="o">]</span> <span class="o">[</span>   <span class="mi">105</span>      <span class="mi">1</span><span class="o">]]</span>
 </pre></div>
 
 
@@ -825,13 +818,12 @@ confustion matrix on validation data: [[124388      0]
 </pre></div>
 
 
-<div class="highlight"><pre>    max_depth: 10
-    min_samples_leaf: 20
-    n_estimators: 200
-confustion matrix on validation data: [[4287   28]
- [   0 4168]]
-confustion matrix on validation data: [[124386      2]
- [    77     29]]
+<div class="highlight"><pre><span class="n">max_depth</span><span class="o">:</span> <span class="mi">10</span>
+<span class="n">min_samples_leaf</span><span class="o">:</span> <span class="mi">20</span>
+<span class="n">n_estimators</span><span class="o">:</span> <span class="mi">200</span>
+
+<span class="n">confustion</span> <span class="n">matrix</span> <span class="n">on</span> <span class="n">validation</span> <span class="n">data</span><span class="o">:</span> <span class="o">[[</span><span class="mi">4287</span>   <span class="mi">28</span><span class="o">]</span> <span class="o">[</span>   <span class="mi">0</span> <span class="mi">4168</span><span class="o">]]</span>
+<span class="n">confustion</span> <span class="n">matrix</span> <span class="n">on</span> <span class="n">validation</span> <span class="n">data</span><span class="o">:</span> <span class="o">[[</span><span class="mi">124386</span>      <span class="mi">2</span><span class="o">]</span> <span class="o">[</span>    <span class="mi">77</span>     <span class="mi">29</span><span class="o">]]</span>
 </pre></div>
 
 
@@ -841,11 +833,10 @@ confustion matrix on validation data: [[124386      2]
 </pre></div>
 
 
-<div class="highlight"><pre>    C: 0.2
-confustion matrix on validation data: [[4315    0]
- [4168    0]]
-confustion matrix on validation data: [[124388      0]
- [   106      0]]
+<div class="highlight"><pre><span class="n">C</span><span class="o">:</span> <span class="mf">0.2</span>
+
+<span class="n">confustion</span> <span class="n">matrix</span> <span class="n">on</span> <span class="n">validation</span> <span class="n">data</span><span class="o">:</span> <span class="o">[[</span><span class="mi">4315</span>    <span class="mi">0</span><span class="o">]</span> <span class="o">[</span><span class="mi">4168</span>    <span class="mi">0</span><span class="o">]]</span>
+<span class="n">confustion</span> <span class="n">matrix</span> <span class="n">on</span> <span class="n">validation</span> <span class="n">data</span><span class="o">:</span> <span class="o">[[</span><span class="mi">124388</span>      <span class="mi">0</span><span class="o">]</span> <span class="o">[</span>   <span class="mi">106</span>      <span class="mi">0</span><span class="o">]]</span>
 </pre></div>
 
 
