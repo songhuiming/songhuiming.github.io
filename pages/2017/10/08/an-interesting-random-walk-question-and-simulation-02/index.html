@@ -4,7 +4,7 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>install R, Rstudio and Shiny on Ubuntu &mdash; pydata</title>
+  <title>An interesting random walk question and simulation 02 &mdash; pydata</title>
   <meta name="author" content="shm">
 
 
@@ -80,10 +80,10 @@
       <li >
         <a href="/category/linux.html">Linux</a>
       </li>
-      <li >
+      <li class="active">
         <a href="/category/python.html">Python</a>
       </li>
-      <li class="active">
+      <li >
         <a href="/category/rthers.html">Rthers</a>
       </li>
 </ul></nav>
@@ -92,48 +92,112 @@
 <div>
   <article class="hentry" role="article">
 <header>
-      <h1 class="entry-title">install R, Rstudio and Shiny on Ubuntu</h1>
+      <h1 class="entry-title">An interesting random walk question and simulation 02</h1>
     <p class="meta">
-<time datetime="2015-10-06T00:00:00-05:00" pubdate>Tue 06 October 2015</time>    </p>
+<time datetime="2017-10-08T16:08:00-05:00" pubdate>Sun 08 October 2017</time>    </p>
 </header>
 
-  <div class="entry-content"><ol>
-<li>install latest R in Ubuntu</li>
-</ol>
-<p>update the source list by <code>sudo vi /etc/apt/sources.list</code></p>
-<p>add the following line into <code>/etc/apt/sources.list</code></p>
-<p><code>deb https://https://cran.cnr.Berkeley.edu/bin/linux/ubuntu trusty/</code></p>
-<p>Then</p>
-<div class="highlight"><pre>sudo apt-get update
-sudo apt-get install r-base
-sudo apt-get install r-base-dev
+  <div class="entry-content"><p>If we flip a coin, we will have 50% of chance getting head and 50% of chance getting tail. The question is: how many numbers of time shall we flip to get 3 consecutive heads?</p>
+<p>The question should also be asked with confidence. Before that, let's change it to a math question.</p>
+<p>We know <span class="math">\(P(H) = 0.5\)</span> and <span class="math">\(P(T) = 0.5\)</span>. Each flip is <span class="math">\(i.i.d.\)</span>. So it is easy to know that the probability that we get 3 consecutive Head is:</p>
+<div class="math">\begin{align}
+  &amp; P(\mbox{3 consecutive Head}) \\
+  &amp; = P(H) \times P(H) \times P(H) \\
+  &amp; = \frac{1}{2} \times \frac{1}{2} \times \frac{1}{2} \\
+  &amp; = \frac{1}{8}
+\end{align}</div>
+<p>But the question is not asking about the probability. It is asking about how many time we need to flip to get 3 consecutive heads.</p>
+<p>I try to write the distribution of the random variable but I cannot right now. So I did a simple simulation to estimate it. In the same way, I will ask the question as how many times shall I flip to get 3 consecutive heads with 90% confidence? The answer I got is 18.</p>
+<div class="highlight"><pre><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="k">def</span> <span class="nf">test</span><span class="p">():</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+        <span class="n">xsum</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">xsum</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="c1">#print(x)</span>
+            <span class="k">return</span> <span class="n">i</span>
+        <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+
+<span class="n">res</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10000</span><span class="p">):</span>
+    <span class="n">res</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">test</span><span class="p">())</span>
+
+<span class="n">res</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="mi">90</span><span class="p">)</span>
 </pre></div>
 
 
-<ol>
-<li>install RStudio Server</li>
-</ol>
-<div class="highlight"><pre>sudo apt-get install gdebi-core
-wget https://download2.rstudio.org/rstudio-server-0.99.485-amd64.deb
-sudo gdebi rstudio-server-0.99.485-amd64.deb
+<div class="highlight"><pre>18.0
 </pre></div>
 
 
-<p>double check install successfully:
-<code>sudo rstudio-server verify-installation</code></p>
-<ol>
-<li>start RStudio Server
-<code>http://&lt;myip&gt;:8787</code></li>
-</ol>
-<p>Reference:</p>
-<ol>
-<li>
-<p><a href="https://www.rstudio.com/products/rstudio/download-server/">Download RStudio Server</a></p>
-</li>
-<li>
-<p><a href="https://cran.r-project.org/bin/linux/ubuntu/README">UBUNTU PACKAGES FOR R</a> </p>
-</li>
-</ol></div>
+<p>And the average number of flips to get 3 consecutive heads is 8, which is consistent with our feeling because the probability of get this event is <span class="math">\(\frac{1}{8}\)</span>.</p>
+<div class="highlight"><pre><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre>8.0066000000000006
+</pre></div>
+
+
+<script type="text/javascript">if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width < 768) ? "left" : align;
+        indent = (screen.width < 768) ? "0em" : indent;
+        linebreak = (screen.width < 768) ? 'true' : linebreak;
+    }
+    
+    var mathjaxscript = document.createElement('script');
+    var location_protocol = (false) ? 'https' : document.location.protocol;
+    if (location_protocol !== 'http' && location_protocol !== 'https') location_protocol = 'https:';
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript'; 
+    mathjaxscript.src = location_protocol + '//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js','mhchem.js'], equationNumbers: { autoNumber: 'AMS' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+</script></div>
     <footer>
 <p class="meta">
   <span class="byline author vcard">
@@ -141,11 +205,11 @@ sudo gdebi rstudio-server-0.99.485-amd64.deb
         <a href="/author/huiming-song.html">Huiming Song</a>
     </span>
   </span>
-<time datetime="2015-10-06T00:00:00-05:00" pubdate>Tue 06 October 2015</time>  <span class="categories">
-    <a class='category' href='/category/rthers.html'>Rthers</a>
+<time datetime="2017-10-08T16:08:00-05:00" pubdate>Sun 08 October 2017</time>  <span class="categories">
+    <a class='category' href='/category/python.html'>Python</a>
   </span>
   <span class="categories">
-    <a class="category" href="/tag/r.html">R</a>  </span>
+    <a class="category" href="/tag/python.html">python</a>,    <a class="category" href="/tag/random-walk.html">random walk</a>  </span>
 </p><div class="sharing">
 </div>    </footer>
   </article>
@@ -230,9 +294,9 @@ sudo gdebi rstudio-server-0.99.485-amd64.deb
 </script>
   <script type="text/javascript">
     var disqus_shortname = 'songhuiming';
-    var disqus_identifier = '/pages/2015/10/06/install-r-rstudio-and-shiny-on-ubuntu/';
-    var disqus_url = '/pages/2015/10/06/install-r-rstudio-and-shiny-on-ubuntu/';
-    var disqus_title = 'install R, Rstudio and Shiny on Ubuntu';
+    var disqus_identifier = '/pages/2017/10/08/an-interesting-random-walk-question-and-simulation-02/';
+    var disqus_url = '/pages/2017/10/08/an-interesting-random-walk-question-and-simulation-02/';
+    var disqus_title = 'An interesting random walk question and simulation 02';
     (function() {
       var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
       dsq.src = "//" + disqus_shortname + '.disqus.com/embed.js';
