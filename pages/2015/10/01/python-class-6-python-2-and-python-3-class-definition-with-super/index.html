@@ -102,40 +102,48 @@
 <p>Things start being complicated if you introduce multiple inheritance (subclassing more than one class at a time). This is because if more than one base class has <code>__init__</code>, your class will inherit the first one only.</p>
 <p>In such cases, you should really use super if you can, I'll explain why. But not always you can. The problem is that all your base classes must also use it (and their base classes as well -- the whole tree).</p>
 <p>If that is the case, then this will also work correctly (in Python 3 but you could rework it into Python 2 -- it also has <code>super</code>):</p>
-<p>'''python</p>
-<h2>python3</h2>
-<p>class A:
-    def <strong>init</strong>(self):
-        print('A')
-        super().<strong>init</strong>()</p>
-<p>class B:
-    def <strong>init</strong>(self):
-        print('B')
-        super().<strong>init</strong>()</p>
-<p>class C(A, B):
-    pass</p>
-<p>C()</p>
-<h1>prints:</h1>
-<h1>A</h1>
-<h1>B</h1>
-<p>'''</p>
-<p>'''python</p>
-<h2>python2</h2>
-<p>class A(object):
-    def <strong>init</strong>(self):
-        print('A')
-        super(A, self).<strong>init</strong>()</p>
-<p>class B(object):
-    def <strong>init</strong>(self):
-        print('B')
-        super(B, self).<strong>init</strong>()</p>
-<p>class C(A, B):
-    pass</p>
-<p>C()</p>
-<h1>prints:</h1>
-<h1>A</h1>
-<h1>B</h1>
-<p>'''</p>
+<div class="highlight"><pre><span class="c1">## python3</span>
+<span class="k">class</span> <span class="nc">A</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">print</span><span class="p">(</span><span class="s1">&#39;A&#39;</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+
+<span class="k">class</span> <span class="nc">B</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">print</span><span class="p">(</span><span class="s1">&#39;B&#39;</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+
+<span class="k">class</span> <span class="nc">C</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+<span class="n">C</span><span class="p">()</span>
+<span class="c1">#prints:</span>
+<span class="c1">#A</span>
+<span class="c1">#B</span>
+</pre></div>
+
+
+<div class="highlight"><pre><span class="c1">## python2</span>
+<span class="k">class</span> <span class="nc">A</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">print</span><span class="p">(</span><span class="s1">&#39;A&#39;</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+
+<span class="k">class</span> <span class="nc">B</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">print</span><span class="p">(</span><span class="s1">&#39;B&#39;</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+
+<span class="k">class</span> <span class="nc">C</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+<span class="n">C</span><span class="p">()</span>
+<span class="c1">#prints:</span>
+<span class="c1">#A</span>
+<span class="c1">#B</span>
+</pre></div>
+
+
 <p>Notice how both base classes use super even though they don't have their own base classes.</p>
 <p>What super does is: it calls the method from the next class in MRO (method resolution order). The MRO for C is: (C, A, B, object). You can print <code>C.__mro__</code> to see it.</p>
 <p>So, <code>C</code> inherits <code>__init__</code> from A and super in <code>A.__init__</code> calls <code>B.__init__</code> (<code>B</code> follows <code>A</code> in <code>MRO</code>).</p>
