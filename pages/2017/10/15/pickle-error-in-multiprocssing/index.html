@@ -4,7 +4,7 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>python v.s. SAS &mdash; pydata</title>
+  <title>pickle error in multiprocssing &mdash; pydata</title>
   <meta name="author" content="shm">
 
 
@@ -92,160 +92,29 @@
 <div>
   <article class="hentry" role="article">
 <header>
-      <h1 class="entry-title">python v.s. SAS</h1>
+      <h1 class="entry-title">pickle error in multiprocssing</h1>
     <p class="meta">
-<time datetime="2016-07-12T00:00:00-05:00" pubdate>Tue 12 July 2016</time>    </p>
+<time datetime="2017-10-15T16:08:00-05:00" pubdate>Sun 15 October 2017</time>    </p>
 </header>
 
-  <div class="entry-content"><h2>python v.s. SAS</h2>
-<table>
-<thead>
-<tr>
-<th>Tables</th>
-<th align="left">python</th>
-<th>SAS</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>frequency</td>
-<td align="left"><ul><li><code>x.value_counts(dropna = False).sort_index()</code></li> <li><code>pd.crosstab(df.A, df.B).apply(lambda r: r/r.sum(), axis = 1)</code></li> </ul></td>
-<td><code>proc freq;</code></td>
-</tr>
-<tr>
-<td>drop/deep</td>
-<td align="left"><ul><li> <code>df.drop(['d1', 'd2', 'd3'], axis = 1)</code></li> <li><code>df.loc[:, ['k1', 'k2'])</code></li> </ul></td>
-<td><ul><li><code>data a(drop=d1 d2 d2);</code></li> <li><code>data a(keep=k1 k2 k3);</code></li> </ul></td>
-</tr>
-<tr>
-<td>rename</td>
-<td align="left"><ul><li><code>df.columns = ['a1', 'a2', 'a3']</code> </li> <li><code>df.rename(columns={'orig1':'new1', 'orig1':'new2'})</code></li> </ul></td>
-<td><code>data a(rename=(orig1=new1 orig2=new2));</code></td>
-</tr>
-<tr>
-<td>summarize</td>
-<td align="left"><ul><li><code>df.x.describe()</code></li></ul></td>
-<td><code>proc summary;</code></td>
-</tr>
-<tr>
-<td>bin</td>
-<td align="left"><ul><li><code>pd.cut(x, [min, cut1, …, cutk, max])</code> </li> <li><code>np.digitize(x, [cut1, cut2, …, cutk])</code></li> </ul></td>
-<td><code>proc rank;</code></td>
-</tr>
-<tr>
-<td>row select</td>
-<td align="left"><ul><li><code>df.loc[(cond1) &amp; (cond2), :]</code> </li> <li><code>df.iloc[:, [1, 3, 5]]</code></li> </ul></td>
-<td><code>where cond1 and cond2;</code></td>
-</tr>
-<tr>
-<td>merge</td>
-<td align="left"><ul><li><code>pd.merge(df1, df2, on = , how= )</code></li> <li><code>pd.concat([df1, df2, df3], axis = 0, ignore_index = True)</code> </li> <li> <code>df1.join(df1, how = )</code> </li> </ul></td>
-<td><code>merge df1 df2; by col1;</code></td>
-</tr>
-<tr>
-<td>sort</td>
-<td align="left"><ul><li><code>df.sort(['sort_by1',  'sort_by2'], ascending = [True, False])</code></li></ul></td>
-<td><code>proc sort; by sortby1 descending sort_by2;</code></td>
-</tr>
-<tr>
-<td>count missing</td>
-<td align="left"><ul><li><code>df.count()</code></li> <li><code>df.isnull().sum()</code></li> </ul></td>
-<td><code>proc means n nmiss min mean median max;</code></td>
-</tr>
-<tr>
-<td>format</td>
-<td align="left"><ul><li>1 &lt;-&gt; 1 mapping: &nbsp;&nbsp;&nbsp;   <code>df.column1.replace(zip(old_value, new_value))</code></li><li><code>hgc2012.sic_code.replace(dict(zip(sic_indust.sic, sic_indust.indust)))</code></li> <li> interval bin/mapping, like from PD to risk ranking:&nbsp;&nbsp;&nbsp; <code>[ranking[j] for j in np.digitize(x, intervals)]</code> </li> <li> <code>pd.cut(vectorx, [-np.inf, .25, .5, 1, 1.5, 2, 3, 3.6, 4.2, np.inf], labels = range(9))</code> </li> </ul></td>
-<td><code>proc format;</code></td>
-</tr>
-<tr>
-<td>columns start with</td>
-<td align="left"><ul><li><code>[x for x in list(df) if x.startswith('score')]</code></li></ul></td>
-<td><code>var scores: ;</code></td>
-</tr>
-<tr>
-<td>index</td>
-<td align="left"><ul><li><code>df.reset_index(inplace = True)</code></li> <li><code>df.set_index(‘Column_name’, inplace = True)</code></li> </ul></td>
-<td></td>
-</tr>
-<tr>
-<td>apply / map / applymap</td>
-<td align="left"><ul><li><code>pd.Series.map(func, dict, Series)</code></li> <li><code>pd.Series.apply()</code></li> <li><code>pd.DataFrame.apply(func, axis = 0)</code></li> <lipd.DataFrame.applymap(func)></li></ul></td>
-<td><code>data transformation, fotmat, aggregate</code></td>
-</tr>
-</tbody>
-</table>
-<h2>python tips</h2>
-<table>
-<thead>
-<tr>
-<th>Tables</th>
-<th align="left">desc</th>
-<th>code</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>1</td>
-<td align="left">replace blanks in var name by "_" and to lower case</td>
-<td><ul><li><code>hgcallvar = list(hgc)</code></li> <li><code>[x.replace(' ', '_').lower() for x in hgcallvar]</code></li> </ul></td>
-</tr>
-<tr>
-<td>2</td>
-<td align="left">string contains method</td>
-<td><ul><li><code>[x for x in list(hgc2012data) if 'sic' in x]</code></li> <li><code>[x for x in list(hgc2012data) if 'sic' not in x]</code></li> <li><code>[x for x in list(hgc2012data) if x.find('sic') &gt;= 0]</code></li> </ul></td>
-</tr>
-<tr>
-<td>3</td>
-<td align="left">search history in ipython</td>
-<td><ul><li><code>%hist -g median</code></li> </ul></td>
-</tr>
-<tr>
-<td>4</td>
-<td align="left">history in a list in ipython</td>
-<td><ul><li><code>_ih</code></li>  </ul></td>
-</tr>
-<tr>
-<td>5</td>
-<td align="left">change string to float and replace '.' by 0</td>
-<td><ul><li><code>map(lambda x: 0 if x == '.' else float(x), data['col_name'])</code></li>  </ul></td>
-</tr>
-<tr>
-<td>6</td>
-<td align="left">pandas dataframe column or series null value check</td>
-<td><ul><li><code>data['col_name'].isnull()</code></li>  </ul></td>
-</tr>
-<tr>
-<td>7</td>
-<td align="left">matplotlib inline plot, change figure size</td>
-<td><ul><li><code>plt.style.use('ggplot')</code></li> <li><code>%matplotlib inline</code></li> <li><code>plt.rcParams['figure.figsize'] = (10.0, 8.0)</code></li> </ul></td>
-</tr>
-<tr>
-<td>8</td>
-<td align="left">scatter plot / line plot / bar chart</td>
-<td><ul><li><code>fig = plt.figure()</code></li> <li><code>ax = fig.add_subplot(111)</code></li> <li></li> <li><code>plt.scatter(x, y, s = 5, color = u'b', marker = '.', label = 'scatter plt')</code></li> <li><code>ax.plot(x, y, linestyle = '', linewidth = 0.25, markeredgecolor='none', marker = 'o', label = r'label')</code></li> <li></li> <li><code>ax.plot(x, f2_pred, linestyle = ':', linewidth = 0.25, markeredgecolor='none', marker = '', label = r'label')</code></li> </ul></td>
-</tr>
-<tr>
-<td>9</td>
-<td align="left">sort a dict by key or by value</td>
-<td><ul><li><code>import operator</code> </li> <li> <code>x = {1: 2, 3: 4, 4: 3, 2: 1, 0: 0}</code> </li> <li> <code>sorted_x = sorted(x.items(), key=operator.itemgetter(1), reverse = True)  # sort by values, output is list of tuples</code></li> <li></li> <li><code>import operator</code></li> <li><code>x = {1: 2, 3: 4, 4: 3, 2: 1, 0: 0}</code></li> <li><code>sorted_x = sorted(x.items(), key=operator.itemgetter(0))    # sort by keys, output is list of tuples</code></li> </ul></td>
-</tr>
-<tr>
-<td>10</td>
-<td align="left">numpy sort array by a column: easier to do in pandas</td>
-<td><ul><li><code>testarray = np.array(np.random.randn(5, 3))</code></li> <li><code>testarray[testarray[:, 1].argsort()]</code></li>  <li> <code>a[a[:,1].argsort()[::-1]]    #reverse order</code> </li> </ul></td>
-</tr>
-<tr>
-<td>11</td>
-<td align="left">numpy sort array by muptiple columns (using lexsort)</td>
-<td><ul><li><code>a = np.random.randint(3, size = (5, 3))</code> </li> <li><code>ind = a_sort = np.lexsort((a[:, 1], a[: 0]))</code></li> <li> <code>a[ind]</code> </li> </ul></td>
-</tr>
-<tr>
-<td>12</td>
-<td align="left"></td>
-<td><ul><li></li> <li></li> </ul></td>
-</tr>
-</tbody>
-</table></div>
+  <div class="entry-content"><p>This is the useful links I used to solve the issue I got when using multiprocssing in python.</p>
+<ol>
+<li>
+<p>python Multithreading does not work well on windows. multiprocess sometimes have issues too. One simple example is about importing the self-defined module with multiprocessing in another code in windows NT OS. It is necessary to distinguish between the parent and child process with <code>__main__</code>. Refer to <a href="https://stackoverflow.com/questions/14175348/why-does-pythons-multiprocessing-module-import-main-when-starting-a-new-pro">This</a></p>
+</li>
+<li>
+<p>what can be pickled in python? Functions are only picklable if they are defined at the <strong>top level</strong> of the module. Refer to <a href="https://stackoverflow.com/questions/8804830/python-multiprocessing-pickling-error">this</a> </p>
+</li>
+<li>
+<p>When define the multiprocessing funtion inside the <code>class</code>, I got the error like <em>Can't pickle <type 'instancemethod'> when using multiprocessing Pool.map()</em>. I try to solve it with <code>copy_reg</code> as mentioned in <a href="https://stackoverflow.com/questions/1816958/cant-pickle-type-instancemethod-when-using-multiprocessing-pool-map">2</a>. Another way to solve it is to use <code>pathos.multiprocessing</code>. But finally I find <a href="https://stackoverflow.com/questions/1816958/cant-pickle-type-instancemethod-when-using-multiprocessing-pool-map/41959862#41959862">this</a> is the easiest way to do it: define the <code>__call__</code> method in the same class to call the function. This is the easiest way for me to solve it.</p>
+</li>
+</ol>
+<h2>Reference</h2>
+<ol>
+<li><a href="https://stackoverflow.com/questions/8804830/python-multiprocessing-pickling-error">Python multiprocessing pickling error</a></li>
+<li><a href="https://stackoverflow.com/questions/1816958/cant-pickle-type-instancemethod-when-using-multiprocessing-pool-map/41959862#41959862">Can't pickle <type 'instancemethod'> when using multiprocessing Pool.map()</a></li>
+<li><a href="https://stackoverflow.com/questions/14175348/why-does-pythons-multiprocessing-module-import-main-when-starting-a-new-pro">Why does Python's multiprocessing module import <strong>main</strong> when starting a new process on Windows?</a></li>
+</ol></div>
     <footer>
 <p class="meta">
   <span class="byline author vcard">
@@ -253,11 +122,11 @@
         <a href="/author/huiming-song.html">Huiming Song</a>
     </span>
   </span>
-<time datetime="2016-07-12T00:00:00-05:00" pubdate>Tue 12 July 2016</time>  <span class="categories">
+<time datetime="2017-10-15T16:08:00-05:00" pubdate>Sun 15 October 2017</time>  <span class="categories">
     <a class='category' href='/category/python.html'>Python</a>
   </span>
   <span class="categories">
-    <a class="category" href="/tag/python.html">python</a>,    <a class="category" href="/tag/data-mining.html">data mining</a>  </span>
+    <a class="category" href="/tag/python.html">python</a>,    <a class="category" href="/tag/multiprocessing.html">multiprocessing</a>  </span>
 </p><div class="sharing">
 </div>    </footer>
   </article>
@@ -342,9 +211,9 @@
 </script>
   <script type="text/javascript">
     var disqus_shortname = 'songhuiming';
-    var disqus_identifier = '/pages/2016/07/12/python-vs-sas/';
-    var disqus_url = '/pages/2016/07/12/python-vs-sas/';
-    var disqus_title = 'python v.s. SAS';
+    var disqus_identifier = '/pages/2017/10/15/pickle-error-in-multiprocssing/';
+    var disqus_url = '/pages/2017/10/15/pickle-error-in-multiprocssing/';
+    var disqus_title = 'pickle error in multiprocssing';
     (function() {
       var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
       dsq.src = "//" + disqus_shortname + '.disqus.com/embed.js';
