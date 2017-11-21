@@ -4,7 +4,7 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Tkinter to exe file with cx_freeze &mdash; pydata</title>
+  <title>python class (6): python 2 and python 3 class definition with super() &mdash; pydata</title>
   <meta name="author" content="shm">
 
 
@@ -92,35 +92,92 @@
 <div>
   <article class="hentry" role="article">
 <header>
-      <h1 class="entry-title">Tkinter to exe file with cx_freeze</h1>
+      <h1 class="entry-title">python class (6): python 2 and python 3 class definition with super()</h1>
     <p class="meta">
-<time datetime="2016-05-13T00:00:00-05:00" pubdate>Fri 13 May 2016</time>    </p>
+<time datetime="2015-10-01T00:00:00-05:00" pubdate>Thu 01 October 2015</time>    </p>
 </header>
 
-  <div class="entry-content"><p>cx_freeze用来把python code打包成为windows的可执行文件(exe文件)</p>
-<p>首先下载安装cx_freeze（google或者youtube）各种资料。</p>
-<p>新建一个文件夹，把python code复制到这个文件夹。在这个文件夹下面新建一个<code>setup.py</code>文件如下，主要在setup里面列出需要的package。刚开始的时候一直有error，<code>cx_Freeze.freezer.ConfigError: no file named sys (for module collections.sys)</code>,最后的解决办法是在options加入<code>'excludes': [ 'collections.abc']</code>。</p>
-<p>然后进入windows cmd，cd到python code和<code>setup.py</code>的文件的文件夹，run <code>python setup.py</code>，run完以后会在当前文件夹下面新建一个build文件夹，所有的东西都在这个build文件夹下面。其中的exe就是可执行文件。</p>
-<p><img alt="alt text" src="/figures/20160513_cx_freeze_01.PNG" title="Tex3" /></p>
-<div class="highlight"><pre><span class="kn">import</span> <span class="nn">cx_Freeze</span>
-<span class="kn">import</span> <span class="nn">sys</span>
-<span class="kn">import</span> <span class="nn">matplotlib</span>
-
-<span class="n">base</span> <span class="o">=</span> <span class="bp">None</span>
-
-<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">==</span> <span class="s1">&#39;win32&#39;</span><span class="p">:</span>
-   <span class="n">base</span> <span class="o">=</span> <span class="s2">&quot;Win32GUI&quot;</span>
-
-<span class="n">executables</span> <span class="o">=</span> <span class="p">[</span><span class="n">cx_Freeze</span><span class="o">.</span><span class="n">Executable</span><span class="p">(</span><span class="s2">&quot;cre_right_sizing_dataprint.py&quot;</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)]</span>
-
-<span class="n">cx_Freeze</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span>
-   <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;WhateverYourNmIs&quot;</span><span class="p">,</span>
-   <span class="n">options</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;build_exe&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;packages&quot;</span><span class="p">:[</span><span class="s2">&quot;Tkinter&quot;</span><span class="p">,</span>  <span class="s2">&quot;pandas&quot;</span><span class="p">,</span> <span class="s2">&quot;numpy&quot;</span><span class="p">,</span> <span class="s2">&quot;ttk&quot;</span><span class="p">,</span> <span class="s2">&quot;os&quot;</span><span class="p">,</span><span class="s2">&quot;sys&quot;</span><span class="p">,</span> <span class="s2">&quot;collections&quot;</span><span class="p">],</span> <span class="s1">&#39;excludes&#39;</span><span class="p">:</span> <span class="p">[</span> <span class="s1">&#39;collections.abc&#39;</span><span class="p">]}},</span>
-   <span class="n">version</span> <span class="o">=</span> <span class="s2">&quot;0.01&quot;</span><span class="p">,</span>
-   <span class="n">description</span> <span class="o">=</span> <span class="s2">&quot;CRE Test&quot;</span><span class="p">,</span>
-   <span class="n">executables</span> <span class="o">=</span> <span class="n">executables</span>
-   <span class="p">)</span>
-</pre></div></div>
+  <div class="entry-content"><h2>1. Why need super()</h2>
+<p>In a single inheritance case (when you subclass one class only), your new class inherits methods of the base class. This includes <code>__init__</code>. So if you don't define it in your class, you will get the one from the base.</p>
+<p>Things start being complicated if you introduce multiple inheritance (subclassing more than one class at a time). This is because if more than one base class has <code>__init__</code>, your class will inherit the first one only.</p>
+<p>In such cases, you should really use super if you can, I'll explain why. But not always you can. The problem is that all your base classes must also use it (and their base classes as well -- the whole tree).</p>
+<p>If that is the case, then this will also work correctly (in Python 3 but you could rework it into Python 2 -- it also has <code>super</code>):</p>
+<p>'''python</p>
+<h2>python3</h2>
+<p>class A:
+    def <strong>init</strong>(self):
+        print('A')
+        super().<strong>init</strong>()</p>
+<p>class B:
+    def <strong>init</strong>(self):
+        print('B')
+        super().<strong>init</strong>()</p>
+<p>class C(A, B):
+    pass</p>
+<p>C()</p>
+<h1>prints:</h1>
+<h1>A</h1>
+<h1>B</h1>
+<p>'''</p>
+<p>'''python</p>
+<h2>python2</h2>
+<p>class A(object):
+    def <strong>init</strong>(self):
+        print('A')
+        super(A, self).<strong>init</strong>()</p>
+<p>class B(object):
+    def <strong>init</strong>(self):
+        print('B')
+        super(B, self).<strong>init</strong>()</p>
+<p>class C(A, B):
+    pass</p>
+<p>C()</p>
+<h1>prints:</h1>
+<h1>A</h1>
+<h1>B</h1>
+<p>'''</p>
+<p>Notice how both base classes use super even though they don't have their own base classes.</p>
+<p>What super does is: it calls the method from the next class in MRO (method resolution order). The MRO for C is: (C, A, B, object). You can print <code>C.__mro__</code> to see it.</p>
+<p>So, <code>C</code> inherits <code>__init__</code> from A and super in <code>A.__init__</code> calls <code>B.__init__</code> (<code>B</code> follows <code>A</code> in <code>MRO</code>).</p>
+<p>So by doing nothing in <code>C</code>, you end up calling both, which is what you want.</p>
+<p>Now if you were not using super, you would end up inheriting <code>A.__init__</code> (as before) but this time there's nothing that would call <code>B.__init__</code> for you.</p>
+<p>'''python
+class A:
+    def <strong>init</strong>(self):
+        print('A')</p>
+<p>class B:
+    def <strong>init</strong>(self):
+        print('B')</p>
+<p>class C(A, B):
+    pass</p>
+<p>C()</p>
+<h1>prints:</h1>
+<h1>A</h1>
+<p>'''</p>
+<p>To fix that you have to define <code>C.__init__</code>:</p>
+<p>'''python
+class C(A, B):
+    def <strong>init</strong>(self):
+        A.<strong>init</strong>(self)
+        B.<strong>init</strong>(self)
+'''</p>
+<p>The problem with that is that in more complicated MI trees, <code>__init__</code> methods of some classes may end up being called more than once whereas <code>super</code>/<code>MRO</code> guarantee that they're called just once.</p>
+<h2>2. How to use super()</h2>
+<p><code>super()</code> (without arguments) was introduced in Python 3: <code>super()</code> -&gt; same as <code>super(__class__, self)</code></p>
+<p>Python 2 equivalent for new-style classes: <code>super(CurrentClass, self)</code></p>
+<p>for old-style classes you can always use:
+'''
+class Classname(OldStyleParent):
+    def <strong>init</strong>(self, *args, <strong>kwargs):
+        OldStyleParent.<strong>init</strong>(self, *args, </strong>kwargs)
+'''</p>
+<h3>Reference</h3>
+<ol>
+<li><a href="https://stackoverflow.com/questions/1713038/super-fails-with-error-typeerror-argument-1-must-be-type-not-classobj#">super() fails with error: TypeError “argument 1 must be type, not classobj”</a></li>
+<li><a href="https://stackoverflow.com/questions/11179008/python-inheritance-typeerror-object-init-takes-no-parameters">Python inheritance: TypeError: object.<strong>init</strong>() takes no parameters</a></li>
+<li><a href="https://stackoverflow.com/questions/10482953/python-extending-with-using-super-python-3-vs-python-2/10483204">Python extending with - using super() python 3 vs python 2</a></li>
+<li><a href="https://stackoverflow.com/questions/576169/understanding-python-super-with-init-methods">Understanding Python super() with <strong>init</strong>() methods</a></li>
+</ol></div>
     <footer>
 <p class="meta">
   <span class="byline author vcard">
@@ -128,11 +185,11 @@
         <a href="/author/huiming-song.html">Huiming Song</a>
     </span>
   </span>
-<time datetime="2016-05-13T00:00:00-05:00" pubdate>Fri 13 May 2016</time>  <span class="categories">
+<time datetime="2015-10-01T00:00:00-05:00" pubdate>Thu 01 October 2015</time>  <span class="categories">
     <a class='category' href='/category/python.html'>Python</a>
   </span>
   <span class="categories">
-    <a class="category" href="/tag/python.html">python</a>,    <a class="category" href="/tag/tkinter.html">Tkinter</a>  </span>
+    <a class="category" href="/tag/python.html">python</a>  </span>
 </p><div class="sharing">
 </div>    </footer>
   </article>
@@ -217,9 +274,9 @@
 </script>
   <script type="text/javascript">
     var disqus_shortname = 'songhuiming';
-    var disqus_identifier = '/pages/2016/05/13/tkinter-to-exe-file-with-cx_freeze/';
-    var disqus_url = '/pages/2016/05/13/tkinter-to-exe-file-with-cx_freeze/';
-    var disqus_title = 'Tkinter to exe file with cx_freeze';
+    var disqus_identifier = '/pages/2015/10/01/python-class-6-python-2-and-python-3-class-definition-with-super/';
+    var disqus_url = '/pages/2015/10/01/python-class-6-python-2-and-python-3-class-definition-with-super/';
+    var disqus_title = 'python class (6): python 2 and python 3 class definition with super()';
     (function() {
       var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
       dsq.src = "//" + disqus_shortname + '.disqus.com/embed.js';
