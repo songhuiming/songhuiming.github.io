@@ -141,36 +141,40 @@
 <p>So, <code>C</code> inherits <code>__init__</code> from A and super in <code>A.__init__</code> calls <code>B.__init__</code> (<code>B</code> follows <code>A</code> in <code>MRO</code>).</p>
 <p>So by doing nothing in <code>C</code>, you end up calling both, which is what you want.</p>
 <p>Now if you were not using super, you would end up inheriting <code>A.__init__</code> (as before) but this time there's nothing that would call <code>B.__init__</code> for you.</p>
-<p>'''python
-class A:
-    def <strong>init</strong>(self):
-        print('A')</p>
-<p>class B:
-    def <strong>init</strong>(self):
-        print('B')</p>
-<p>class C(A, B):
-    pass</p>
-<p>C()</p>
-<h1>prints:</h1>
-<h1>A</h1>
-<p>'''</p>
+<div class="highlight"><pre><span class="k">class</span> <span class="nc">A</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">print</span><span class="p">(</span><span class="s1">&#39;A&#39;</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">B</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">print</span><span class="p">(</span><span class="s1">&#39;B&#39;</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">C</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+<span class="n">C</span><span class="p">()</span>  <span class="c1"># output print: A</span>
+</pre></div>
+
+
 <p>To fix that you have to define <code>C.__init__</code>:</p>
-<p>'''python
-class C(A, B):
-    def <strong>init</strong>(self):
-        A.<strong>init</strong>(self)
-        B.<strong>init</strong>(self)
-'''</p>
+<div class="highlight"><pre><span class="k">class</span> <span class="nc">C</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">A</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">B</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+</pre></div>
+
+
 <p>The problem with that is that in more complicated MI trees, <code>__init__</code> methods of some classes may end up being called more than once whereas <code>super</code>/<code>MRO</code> guarantee that they're called just once.</p>
 <h2>2. How to use super()</h2>
 <p><code>super()</code> (without arguments) was introduced in Python 3: <code>super()</code> -&gt; same as <code>super(__class__, self)</code></p>
 <p>Python 2 equivalent for new-style classes: <code>super(CurrentClass, self)</code></p>
-<p>for old-style classes you can always use:
-'''
-class Classname(OldStyleParent):
-    def <strong>init</strong>(self, *args, <strong>kwargs):
-        OldStyleParent.<strong>init</strong>(self, *args, </strong>kwargs)
-'''</p>
+<p>for old-style classes you can always use:</p>
+<div class="highlight"><pre><span class="k">class</span> <span class="nc">Classname</span><span class="p">(</span><span class="n">OldStyleParent</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">OldStyleParent</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</pre></div>
+
+
 <h3>Reference</h3>
 <ol>
 <li><a href="https://stackoverflow.com/questions/1713038/super-fails-with-error-typeerror-argument-1-must-be-type-not-classobj#">super() fails with error: TypeError “argument 1 must be type, not classobj”</a></li>
