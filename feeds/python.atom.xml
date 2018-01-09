@@ -1,5 +1,57 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata</title><link href="/" rel="alternate"></link><link href="/feeds/python.atom.xml" rel="self"></link><id>/</id><updated>2017-10-22T16:08:00-05:00</updated><entry><title>An interesting random walk question and simulation 03</title><link href="/pages/2017/10/22/an-interesting-random-walk-question-and-simulation-03/" rel="alternate"></link><updated>2017-10-22T16:08:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:,2017-10-22:pages/2017/10/22/an-interesting-random-walk-question-and-simulation-03/</id><summary type="html">&lt;p&gt;This is to modify the answer to the previous &lt;a href="http://songhuiming.github.io/pages/2017/10/08/an-interesting-random-walk-question-and-simulation-02/"&gt;blog&lt;/a&gt; about the expectation number of flips to get the pattern of the coin. For example: if flip a fair coin, what is the expected flips to get 3 consecutive Heads (HHH)? What is the expectation of flips to get Head, Tail and Head(HTH) or more status like HHHH?&lt;/p&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata</title><link href="/" rel="alternate"></link><link href="/feeds/python.atom.xml" rel="self"></link><id>/</id><updated>2018-01-07T00:00:00-06:00</updated><entry><title>深度搜索，回溯法和递归</title><link href="/pages/2018/01/07/shen-du-sou-suo-hui-su-fa-he-di-gui/" rel="alternate"></link><updated>2018-01-07T00:00:00-06:00</updated><author><name>Huiming Song</name></author><id>tag:,2018-01-07:pages/2018/01/07/shen-du-sou-suo-hui-su-fa-he-di-gui/</id><summary type="html">&lt;p&gt;通常如果需要列出所有的结果的时候，就需要使用回溯法(backtracking)。当然通过暴力解法(brute force)也是可以，但是暴力解法会浪费太多的时间和空间。两点区别
+1. 回溯法会回头，把路径pop出来，而暴力解法是走所有的解
+2. 回溯法会剪枝，比如通过某些if条件滑过某些路径，减少很多不必要走的路&lt;/p&gt;
+&lt;h2&gt;识别回溯&lt;/h2&gt;
+&lt;p&gt;判断回溯很简单，拿到一个问题，你感觉如果不穷举一下就没法知道答案，那就可以开始回溯了。
+一般回溯的问题有三种：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;有没有解：Find a path to success &lt;/li&gt;
+&lt;li&gt;求所有解：Find all paths to success 
+    求所有解的个数
+    求所有解的具体信息&lt;/li&gt;
+&lt;li&gt;求最优解：Find the best path to success &lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2&gt;backtracking代码模板&lt;/h2&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="sd"&gt;&amp;#39;&amp;#39;&amp;#39;&lt;/span&gt;
+&lt;span class="sd"&gt;backtracking使用dfs的模板，基本跟dfs的模板一模一样&lt;/span&gt;
+&lt;span class="sd"&gt;&amp;#39;&amp;#39;&amp;#39;&lt;/span&gt;
+&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;Backtracking&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;object&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;backtracking&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nb"&gt;input&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;res&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[]&lt;/span&gt;
+
+        &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;dfs&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;input&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;temp&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;index&lt;/span&gt;&lt;span class="p"&gt;]):&lt;/span&gt;
+            &lt;span class="c1"&gt;# 边界&lt;/span&gt;
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="err"&gt;非法数据：&lt;/span&gt;
+                &lt;span class="k"&gt;return&lt;/span&gt;
+
+            &lt;span class="c1"&gt;# 终止条件&lt;/span&gt;
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;input&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;temp&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="err"&gt;：&lt;/span&gt;
+                &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;res&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;append&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;temp&lt;/span&gt;&lt;span class="p"&gt;[:])&lt;/span&gt;
+                &lt;span class="k"&gt;return&lt;/span&gt;
+
+            &lt;span class="c1"&gt;# for循环&lt;/span&gt;
+            &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="nb"&gt;range&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;input&lt;/span&gt;&lt;span class="p"&gt;)):&lt;/span&gt;
+                &lt;span class="c1"&gt;##1. 修改path&lt;/span&gt;
+                &lt;span class="n"&gt;temp&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;append&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;input&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+                &lt;span class="c1"&gt;##2. backtracking&lt;/span&gt;
+                &lt;span class="n"&gt;dfs&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;input&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;temp&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;index&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+                &lt;span class="c1"&gt;##3. 退回原来状态，恢复path&lt;/span&gt;
+                &lt;span class="n"&gt;temp&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;pop&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+        &lt;span class="c1"&gt;# 执行&lt;/span&gt;
+        &lt;span class="n"&gt;dfs&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;input&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;[],&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;res&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h2&gt;深度搜索与回溯法的区别&lt;/h2&gt;
+&lt;p&gt;简单一点可以认为　回溯法 = 深度搜索 + 剪枝。一般大家用深度搜索时，或多或少会剪枝，因此深度搜索与回溯法没有什么不同，可以在它们之间画上一个等号。简单的可以认为二者等价。&lt;/p&gt;
+&lt;p&gt;深度搜索一般用递归(recursion)来实现，这样比较简洁。&lt;/p&gt;
+&lt;p&gt;深度搜索能够在候选答案生成到一半时，就进行判断，抛弃不满足要求的答案，所以深度搜索比暴力搜索法要快。&lt;/p&gt;
+&lt;h2&gt;深度搜索与递归的区别&lt;/h2&gt;
+&lt;p&gt;深度搜索经常用递归(recursion)来实现，二者常常同时出现。深度搜索，是逻辑意义上的算法，递归，是一种物理意义上的实现，它和迭代(iteration)是对应的。深度搜索，可以用递归来实现，也可以用栈来实现；而递归，一般总是用来实现深度搜索。可以说，递归一定是深度搜索，深度搜索不一定用递归。&lt;/p&gt;</summary><category term="python"></category><category term="leetcode"></category></entry><entry><title>An interesting random walk question and simulation 03</title><link href="/pages/2017/10/22/an-interesting-random-walk-question-and-simulation-03/" rel="alternate"></link><updated>2017-10-22T16:08:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:,2017-10-22:pages/2017/10/22/an-interesting-random-walk-question-and-simulation-03/</id><summary type="html">&lt;p&gt;This is to modify the answer to the previous &lt;a href="http://songhuiming.github.io/pages/2017/10/08/an-interesting-random-walk-question-and-simulation-02/"&gt;blog&lt;/a&gt; about the expectation number of flips to get the pattern of the coin. For example: if flip a fair coin, what is the expected flips to get 3 consecutive Heads (HHH)? What is the expectation of flips to get Head, Tail and Head(HTH) or more status like HHHH?&lt;/p&gt;
 &lt;p&gt;Take the question of HHH as an example: this is a stochastic question about Markov Chain. The possible status will be {0, H, HH, HHH}. The corresponding status transition matrix is &lt;/p&gt;
 &lt;table border="1"&gt;
     &lt;tr&gt;
