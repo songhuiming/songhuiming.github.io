@@ -4,8 +4,10 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Categories &mdash; pydata</title>
+  <title>summary about http.request, GET and POST, form, and route in flask &mdash; pydata</title>
   <meta name="author" content="shm">
+
+
 
 
 
@@ -78,7 +80,7 @@
       <li >
         <a href="/category/linux.html">Linux</a>
       </li>
-      <li >
+      <li class="active">
         <a href="/category/python.html">Python</a>
       </li>
       <li >
@@ -88,17 +90,69 @@
   <div id="main">
     <div id="content">
 <div>
-	<article role="article">
-    	<header>
-    		<h1 class="entry-title">Blog Categories</h1>
-    	</header>
+  <article class="hentry" role="article">
+<header>
+      <h1 class="entry-title">summary about http.request, GET and POST, form, and route in flask</h1>
+    <p class="meta">
+<time datetime="2017-05-21T00:00:00-05:00" pubdate>Sun 21 May 2017</time>    </p>
+</header>
 
-	<p>
-		<a href="/category/linux.html">Linux</a> (7)<br>
-		<a href="/category/python.html">python</a> (95)<br>
-		<a href="/category/rthers.html">Rthers</a> (2)<br>
-	</p>
-	</article>
+  <div class="entry-content"><h2>1. Request</h2>
+<p><code>HTTP</code> works as a request-response protocol between a client and server.
+To access incoming request data, you can use the global <code>request</code> object. Flask parses incoming request data for you and gives you access to it through that global object. Internally Flask makes sure that you always get the correct data for the active thread if you are in a multithreaded environment. Some examples of how to get <code>request</code> data: <code>request.form</code>, <code>request.args.get</code>, <code>request.files</code>.</p>
+<h2>2. GET and POST</h2>
+<p><code>POST</code>: The browser tells the server that it wants to post some new information to that URL and that the server must ensure the data is stored and only stored once. This is how HTML forms usually transmit data to the server.</p>
+<p><code>PUT</code>: Similar to <code>POST</code> but the server might trigger the store procedure multiple times by overwriting the old values more than once. Now you might be asking why this is useful, but there are some good reasons to do it this way. Consider that the connection is lost during transmission: in this situation a system between the browser and the server might receive the request safely a second time without breaking things. With <code>POST</code> that would not be possible because it must only be triggered once.</p>
+<h2>3. form</h2>
+<p>The <code>form</code> tag needs two attributes set:</p>
+<h3>3.1. form action</h3>
+<p><code>action</code> is where the data is sent. If action is omitted, it assumed to be the current page (the same URL). In <code>flask</code>, <code>action</code> is the URL that the form data is sent to on submit. Generate it with url_for. It can be omitted if the same URL handles showing the form and processing the data.</p>
+<p>Add a view to handle the form data:</p>
+<div class="highlight"><pre><span class="nd">@app.route</span><span class="p">(</span><span class="s1">&#39;/handle_data&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;POST&#39;</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">handle_data</span><span class="p">():</span>
+    <span class="n">projectpath</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="p">[</span><span class="s1">&#39;projectFilepath&#39;</span><span class="p">]</span>
+    <span class="c1"># your code</span>
+    <span class="c1"># return a response</span>
+</pre></div>
+
+
+<p>Set the form's action to that view's URL:</p>
+<div class="highlight"><pre><span class="p">&lt;</span><span class="nt">form</span> <span class="na">action</span><span class="o">=</span><span class="s">&quot;{{ url_for(&#39;handle_data&#39;) }}&quot;</span> <span class="na">method</span><span class="o">=</span><span class="s">&quot;post&quot;</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">input</span> <span class="na">type</span><span class="o">=</span><span class="s">&quot;text&quot;</span> <span class="na">name</span><span class="o">=</span><span class="s">&quot;projectFilepath&quot;</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">input</span> <span class="na">type</span><span class="o">=</span><span class="s">&quot;submit&quot;</span><span class="p">&gt;</span>
+<span class="p">&lt;/</span><span class="nt">form</span><span class="p">&gt;</span>
+</pre></div>
+
+
+<h3>3.2. form method</h3>
+<p><code>method</code>: Whether to submit the data as a query string (GET) or form data (POST).</p>
+<h2>Reference</h2>
+<ol>
+<li><a href="https://www.w3schools.com/tags/ref_httpmethods.asp">HTTP Methods: GET vs. POST</a></li>
+<li><a href="https://stackoverflow.com/questions/26954122/how-can-i-pass-arguments-into-redirecturl-for-of-flask">How can I pass arguments into redirect(url_for()) of Flask?</a></li>
+<li><a href="https://stackoverflow.com/questions/26217779/how-to-get-the-name-of-a-submitted-form-in-flask">How to get the name of a submitted form in Flask?</a></li>
+<li><a href="https://stackoverflow.com/questions/11556958/sending-data-from-html-form-to-a-python-script-in-flask">Sending data from HTML form to a Python script in Flask</a></li>
+<li><a href="http://flask.pocoo.org/docs/0.12/quickstart/">HTTP Methods</a></li>
+<li><a href="https://stackoverflow.com/questions/31935307/what-is-the-difference-between-action-and-target-of-post">What is the difference between action and target of post?</a></li>
+<li><a href="http://flask.pocoo.org/docs/0.12/api/#flask.Request">Incoming Request Data</a></li>
+<li><a href="https://stackoverflow.com/questions/10434599/how-to-get-data-received-in-flask-request">How to get data received in Flask request</a></li>
+</ol></div>
+    <footer>
+<p class="meta">
+  <span class="byline author vcard">
+    Posted by <span class="fn">
+        <a href="/author/huiming-song.html">Huiming Song</a>
+    </span>
+  </span>
+<time datetime="2017-05-21T00:00:00-05:00" pubdate>Sun 21 May 2017</time>  <span class="categories">
+    <a class='category' href='/category/python.html'>python</a>
+  </span>
+  <span class="categories">
+    <a class="category" href="/tag/python.html">python</a>,    <a class="category" href="/tag/flask.html">flask</a>  </span>
+</p><div class="sharing">
+</div>    </footer>
+  </article>
+
 </div>
 <aside class="sidebar">
   <section>
@@ -179,6 +233,9 @@
 </script>
   <script type="text/javascript">
     var disqus_shortname = 'songhuiming';
+    var disqus_identifier = '/pages/2017/05/21/summary-about-httprequest-get-and-post-form-and-route-in-flask/';
+    var disqus_url = '/pages/2017/05/21/summary-about-httprequest-get-and-post-form-and-route-in-flask/';
+    var disqus_title = 'summary about http.request, GET and POST, form, and route in flask';
     (function() {
       var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
       dsq.src = "//" + disqus_shortname + '.disqus.com/embed.js';
