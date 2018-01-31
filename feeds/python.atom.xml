@@ -1,29 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata</title><link href="/" rel="alternate"></link><link href="/feeds/python.atom.xml" rel="self"></link><id>/</id><updated>2018-01-28T00:00:00-06:00</updated><entry><title>动态规划</title><link href="/pages/2018/01/28/dong-tai-gui-hua/" rel="alternate"></link><updated>2018-01-28T00:00:00-06:00</updated><author><name>Huiming Song</name></author><id>tag:,2018-01-28:pages/2018/01/28/dong-tai-gui-hua/</id><summary type="html">&lt;h2&gt;1: 动态规划的本质，是对问题状态的定义和状态转移方程的定义。&lt;/h2&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata</title><link href="/" rel="alternate"></link><link href="/feeds/python.atom.xml" rel="self"></link><id>/</id><updated>2018-01-28T00:00:00-06:00</updated><entry><title>动态规划</title><link href="/pages/2018/01/28/dong-tai-gui-hua/" rel="alternate"></link><updated>2018-01-28T00:00:00-06:00</updated><author><name>Huiming Song</name></author><id>tag:,2018-01-28:pages/2018/01/28/dong-tai-gui-hua/</id><summary type="html">&lt;h2&gt;动态规划的本质，是对问题状态的定义和状态转移方程的定义。&lt;/h2&gt;
 &lt;p&gt;引自维基百科&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;dynamic programming is a method for solving a complex problem by breaking it down into a collection of simpler subproblems.&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;p&gt;动态规划是通过拆分问题，定义问题状态和状态之间的关系，使得问题能够以递推（或者说分治）的方式去解决。如何拆分问题，是动态规划的核心。而拆分问题，靠的就是状态的定义和状态转移方程的定义。&lt;/p&gt;
-&lt;h2&gt;2: 什么是状态的定义？&lt;/h2&gt;
+&lt;h2&gt;什么是状态的定义？&lt;/h2&gt;
 &lt;p&gt;首先想说大家千万不要被下面的数学式吓到，这里只涉及到了函数相关的知识。我们先来看一个动态规划的教学必备题：&lt;/p&gt;
 &lt;blockquote&gt;
-&lt;p&gt;给定一个数列，长度为N，求这个数列的最长上升（递增）子数列（LIS）的长度.
-以1 7 2 8 3 4为例, 这个数列的最长递增子数列是 1 2 3 4，长度为4；
-次长的长度为3， 包括 1 7 8; 1 2 3 等.&lt;/p&gt;
+&lt;p&gt;给定一个数列，长度为N，求这个数列的最长上升（递增）子数列（LIS）的长度.&lt;/p&gt;
+&lt;p&gt;以1 7 2 8 3 4为例, 这个数列的最长递增子数列是 1 2 3 4，长度为4；&lt;/p&gt;
+&lt;p&gt;次长的长度为3， 包括 1 7 8; 1 2 3 等.&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;p&gt;要解决这个问题，我们首先要定义这个问题和这个问题的子问题。&lt;/p&gt;
 &lt;p&gt;我们来重新定义这个问题：&lt;/p&gt;
 &lt;blockquote&gt;
-&lt;p&gt;给定一个数列，长度为&lt;span class="math"&gt;\(N\)&lt;/span&gt;，
-设&lt;span class="math"&gt;\(F_k\)&lt;/span&gt;为：以数列中第&lt;span class="math"&gt;\(k\)&lt;/span&gt;项结尾的最长递增子序列的长度.
-求&lt;span class="math"&gt;\(F_1, ..., F_N\)&lt;/span&gt;中的最大值.&lt;/p&gt;
+&lt;p&gt;给定一个数列，长度为&lt;span class="math"&gt;\(N\)&lt;/span&gt;，&lt;/p&gt;
+&lt;p&gt;设&lt;span class="math"&gt;\(F_k\)&lt;/span&gt;为：以数列中第&lt;span class="math"&gt;\(k\)&lt;/span&gt;项结尾的最长递增子序列的长度.&lt;/p&gt;
+&lt;p&gt;求&lt;span class="math"&gt;\(F_1, ..., F_N\)&lt;/span&gt;中的最大值.&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;p&gt;显然，这个新问题与原问题等价。&lt;/p&gt;
 &lt;p&gt;而对于&lt;span class="math"&gt;\(F_k\)&lt;/span&gt;来讲，&lt;span class="math"&gt;\(F_1, ..., F_{k-1}\)&lt;/span&gt;都是&lt;span class="math"&gt;\(F_k\)&lt;/span&gt;的子问题：因为以第&lt;span class="math"&gt;\(k\)&lt;/span&gt;项结尾的最长递增子序列（下称LIS），包含着以第&lt;span class="math"&gt;\(1, ..., k-1\)&lt;/span&gt;中某项结尾的LIS。&lt;/p&gt;
 &lt;p&gt;上述的新问题&lt;span class="math"&gt;\(F_k\)&lt;/span&gt;也可以叫做状态，定义中的“&lt;span class="math"&gt;\(F_k\)&lt;/span&gt;为数列中第&lt;span class="math"&gt;\(k\)&lt;/span&gt;项结尾的LIS的长度”，就叫做对状态的定义。&lt;/p&gt;
 &lt;p&gt;之所以把&lt;span class="math"&gt;\(F_k\)&lt;/span&gt;做“状态”而不是“问题” ，一是因为避免跟原问题中“问题”混淆，二是因为这个新问题是数学化定义的。&lt;/p&gt;
-&lt;h2&gt;3: 什么是状态转移方程？&lt;/h2&gt;
+&lt;h2&gt;什么是状态转移方程？&lt;/h2&gt;
 &lt;p&gt;上述状态定义好之后，状态和状态之间的关系式，就叫做状态转移方程。&lt;/p&gt;
 &lt;p&gt;比如，对于LIS问题，我们的第一种定义：&lt;/p&gt;
 &lt;blockquote&gt;
@@ -31,12 +31,29 @@
 &lt;/blockquote&gt;
 &lt;p&gt;设&lt;span class="math"&gt;\(A\)&lt;/span&gt;为题中数列，状态转移方程为：&lt;/p&gt;
 &lt;blockquote&gt;
-&lt;p&gt;&lt;span class="math"&gt;\(F_1 = 1\)&lt;/span&gt;（根据状态定义导出边界情况）
-$F_k = max(F_i + 1 | A_k &amp;gt; A_i, i \in (1, ..., k-1)), (k &amp;gt; 1) $&lt;/p&gt;
+&lt;p&gt;&lt;span class="math"&gt;\(F_1 = 1\)&lt;/span&gt;（根据状态定义导出边界情况）&lt;/p&gt;
+&lt;p&gt;$F_k = max(F_i + 1 | A_k &amp;gt; A_i, i \in (1, ..., k-1)), (k &amp;gt; 1) $&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;p&gt;用文字解释一下是：以第&lt;span class="math"&gt;\(k\)&lt;/span&gt;项结尾的LIS的长度是：保证第&lt;span class="math"&gt;\(i\)&lt;/span&gt;项比第&lt;span class="math"&gt;\(k\)&lt;/span&gt;项小的情况下，以第&lt;span class="math"&gt;\(i\)&lt;/span&gt;项结尾的LIS长度加一的最大值，取遍&lt;span class="math"&gt;\(i\)&lt;/span&gt;的所有值（&lt;span class="math"&gt;\(i\)&lt;/span&gt;小于&lt;span class="math"&gt;\(k\)&lt;/span&gt;）。&lt;/p&gt;
 &lt;p&gt;这里可以看出，这里的状态转移方程，就是定义了问题和子问题之间的关系。&lt;/p&gt;
 &lt;p&gt;可以看出，状态转移方程就是带有条件的递推式。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;lengthOfLIS&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;nums&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="c1"&gt;#Edge condition&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;nums&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+    &lt;span class="n"&gt;dp&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="nb"&gt;xrange&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;nums&lt;/span&gt;&lt;span class="p"&gt;))]&lt;/span&gt;
+    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;k&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="nb"&gt;xrange&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;nums&lt;/span&gt;&lt;span class="p"&gt;)):&lt;/span&gt;
+        &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="nb"&gt;xrange&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;k&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+            &lt;span class="c1"&gt;# compare all F_i with F_k for i &amp;lt;ｋ&lt;/span&gt;
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;nums&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="n"&gt;nums&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;k&lt;/span&gt;&lt;span class="p"&gt;]:&lt;/span&gt;
+                &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;dp&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;dp&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;k&lt;/span&gt;&lt;span class="p"&gt;]:&lt;/span&gt;
+                    &lt;span class="n"&gt;dp&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;k&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;dp&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="nb"&gt;max&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;dp&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="n"&gt;lengthOfLIS&lt;/span&gt;&lt;span class="p"&gt;([&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;7&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;8&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;3&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;4&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
 &lt;h2&gt;动态规划迷思&lt;/h2&gt;
 &lt;p&gt;本题下其他用户的回答跟动态规划都有或多或少的联系，我也讲一下与本答案的联系。&lt;/p&gt;
 &lt;h3&gt;a. “缓存”，“重叠子问题”，“记忆化”：&lt;/h3&gt;
