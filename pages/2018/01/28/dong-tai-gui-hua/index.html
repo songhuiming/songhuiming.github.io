@@ -97,38 +97,31 @@
 <time datetime="2018-01-28T00:00:00-06:00" pubdate>Sun 28 January 2018</time>    </p>
 </header>
 
-  <div class="entry-content"><ol>
-<li>动态规划的本质，是对问题状态的定义和状态转移方程的定义。</li>
-</ol>
+  <div class="entry-content"><h2>1: 动态规划的本质，是对问题状态的定义和状态转移方程的定义。</h2>
 <p>引自维基百科</p>
 <blockquote>
 <p>dynamic programming is a method for solving a complex problem by breaking it down into a collection of simpler subproblems.</p>
 </blockquote>
 <p>动态规划是通过拆分问题，定义问题状态和状态之间的关系，使得问题能够以递推（或者说分治）的方式去解决。如何拆分问题，是动态规划的核心。而拆分问题，靠的就是状态的定义和状态转移方程的定义。</p>
-<ol>
-<li>什么是状态的定义？</li>
-</ol>
+<h2>2: 什么是状态的定义？</h2>
 <p>首先想说大家千万不要被下面的数学式吓到，这里只涉及到了函数相关的知识。我们先来看一个动态规划的教学必备题：</p>
 <blockquote>
-<p>给定一个数列，长度为N，求这个数列的最长上升（递增）子数列（LIS）的长度.</p>
-<p>以1 7 2 8 3 4为例。</p>
-<p>这个数列的最长递增子数列是 1 2 3 4，长度为4；</p>
-<p>次长的长度为3， 包括 1 7 8; 1 2 3 等.</p>
+<p>给定一个数列，长度为N，求这个数列的最长上升（递增）子数列（LIS）的长度.
+以1 7 2 8 3 4为例, 这个数列的最长递增子数列是 1 2 3 4，长度为4；
+次长的长度为3， 包括 1 7 8; 1 2 3 等.</p>
 </blockquote>
 <p>要解决这个问题，我们首先要定义这个问题和这个问题的子问题。</p>
 <p>我们来重新定义这个问题：</p>
 <blockquote>
-<p>给定一个数列，长度为<span class="math">\(N\)</span>，</p>
-<p>设<span class="math">\(F_k\)</span>为：以数列中第<span class="math">\(k\)</span>项结尾的最长递增子序列的长度.</p>
-<p>求<span class="math">\(F_1, ..., F_N\)</span>中的最大值.</p>
+<p>给定一个数列，长度为<span class="math">\(N\)</span>，
+设<span class="math">\(F_k\)</span>为：以数列中第<span class="math">\(k\)</span>项结尾的最长递增子序列的长度.
+求<span class="math">\(F_1, ..., F_N\)</span>中的最大值.</p>
 </blockquote>
 <p>显然，这个新问题与原问题等价。</p>
 <p>而对于<span class="math">\(F_k\)</span>来讲，<span class="math">\(F_1, ..., F_{k-1}\)</span>都是<span class="math">\(F_k\)</span>的子问题：因为以第<span class="math">\(k\)</span>项结尾的最长递增子序列（下称LIS），包含着以第<span class="math">\(1, ..., k-1\)</span>中某项结尾的LIS。</p>
 <p>上述的新问题<span class="math">\(F_k\)</span>也可以叫做状态，定义中的“<span class="math">\(F_k\)</span>为数列中第<span class="math">\(k\)</span>项结尾的LIS的长度”，就叫做对状态的定义。</p>
 <p>之所以把<span class="math">\(F_k\)</span>做“状态”而不是“问题” ，一是因为避免跟原问题中“问题”混淆，二是因为这个新问题是数学化定义的。</p>
-<ol>
-<li>什么是状态转移方程？</li>
-</ol>
+<h2>3: 什么是状态转移方程？</h2>
 <p>上述状态定义好之后，状态和状态之间的关系式，就叫做状态转移方程。</p>
 <p>比如，对于LIS问题，我们的第一种定义：</p>
 <blockquote>
@@ -136,26 +129,28 @@
 </blockquote>
 <p>设<span class="math">\(A\)</span>为题中数列，状态转移方程为：</p>
 <blockquote>
-<p><span class="math">\(F_1 = 1\)</span>（根据状态定义导出边界情况）</p>
-<p>$F_k = max(F_i + 1 | A_k &gt; A_i, i \in (1, ..., k-1)), (k &gt; 1) $</p>
+<p><span class="math">\(F_1 = 1\)</span>（根据状态定义导出边界情况）
+$F_k = max(F_i + 1 | A_k &gt; A_i, i \in (1, ..., k-1)), (k &gt; 1) $</p>
 </blockquote>
 <p>用文字解释一下是：以第<span class="math">\(k\)</span>项结尾的LIS的长度是：保证第<span class="math">\(i\)</span>项比第<span class="math">\(k\)</span>项小的情况下，以第<span class="math">\(i\)</span>项结尾的LIS长度加一的最大值，取遍<span class="math">\(i\)</span>的所有值（<span class="math">\(i\)</span>小于<span class="math">\(k\)</span>）。</p>
 <p>这里可以看出，这里的状态转移方程，就是定义了问题和子问题之间的关系。</p>
 <p>可以看出，状态转移方程就是带有条件的递推式。</p>
-<ol>
-<li>动态规划迷思</li>
-</ol>
+<h2>动态规划迷思</h2>
 <p>本题下其他用户的回答跟动态规划都有或多或少的联系，我也讲一下与本答案的联系。</p>
-<p>a. “缓存”，“重叠子问题”，“记忆化”：</p>
+<h3>a. “缓存”，“重叠子问题”，“记忆化”：</h3>
 <p>这三个名词，都是在阐述递推式求解的技巧。以<code>Fibonacci</code>数列为例，计算第100项的时候，需要计算第99项和98项；在计算第101项的时候，需要第100项和第99项，这时候你还需要重新计算第99项吗？不需要，你只需要在第一次计算的时候把它记下来就可以了。</p>
 <p>上述的需要再次计算的“第99项”，就叫“重叠子问题”。如果没有计算过，就按照递推式计算，如果计算过，直接使用，就像“缓存”一样，这种方法，叫做“记忆化”，这是递推式求解的技巧。这种技巧，通俗的说叫“花费空间来节省时间”。都不是动态规划的本质，不是动态规划的核心。</p>
-<p>b. “递归”：递归是递推式求解的方法，连技巧都算不上。</p>
-<p>c. "无后效性"，“最优子结构”：</p>
+<h3>b. “递归”：递归是递推式求解的方法，连技巧都算不上。</h3>
+<h3>c. "无后效性"，“最优子结构”：</h3>
 <p>上述的状态转移方程中，等式右边不会用到下标大于左边<span class="math">\(i\)</span>或者<span class="math">\(k\)</span>的值，这是"无后效性"的通俗上的数学定义，符合这种定义的状态定义，我们可以说它具有“最优子结构”的性质，在动态规划中我们要做的，就是找到这种“最优子结构”。</p>
 <p>在对状态和状态转移方程的定义过程中，满足“最优子结构”是一个隐含的条件（否则根本定义不出来）。</p>
 <p>需要注意的是，一个问题可能有多种不同的状态定义和状态转移方程定义，存在一个有后效性的定义，不代表该问题不适用动态规划。这也是其他几个答案中出现的逻辑误区：</p>
 <p>动态规划方法要寻找符合“最优子结构“的状态和状态转移方程的定义，在找到之后，这个问题就可以以“记忆化地求解递推式”的方法来解决。而寻找到的定义，才是动态规划的本质。</p>
 <p>文艺的说，动态规划是寻找一种对问题的观察角度，让问题能够以递推（或者说分治）的方式去解决。寻找看问题的角度，才是动态规划中最耀眼的宝石！</p>
+<h2>Reference</h2>
+<ol>
+<li><a href="https://www.zhihu.com/question/23995189">什么是动态规划？动态规划的意义是什么？</a></li>
+</ol>
 <script type="text/javascript">if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
     var align = "center",
         indent = "0em",
