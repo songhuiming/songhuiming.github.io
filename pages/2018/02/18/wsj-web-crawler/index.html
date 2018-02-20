@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>WSJ Web Crawler &mdash; pydata</title>
+  <meta name="author" content="shm">
+
+
+
+
+
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+    <link href="/favicon.png" rel="icon">
+
+  <link href="/theme/css/main.css" media="screen, projection"
+        rel="stylesheet" type="text/css">
+
+  <link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic"
+        rel="stylesheet" type="text/css">
+  <link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic"
+        rel="stylesheet" type="text/css">
+</head>
+
+<body>
+  <header role="banner"><hgroup>
+  <h1><a href="/">pydata</a></h1>
+    <h2>Keep Looking, Don't Settle</h2>
+</hgroup>
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>
+        MathJax.Hub.Config({
+            config: ["MMLorHTML.js"],
+            extensions: ["tex2jax.js","TeX/AMSmath.js","TeX/AMSsymbols.js"],
+            jax: ["input/TeX"],
+            tex2jax: {
+                inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+                displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+                processEscapes: false
+            },
+            TeX: {
+                TagSide: "right",
+                TagIndent: ".8em",
+                MultLineWidth: "85%",
+                equationNumbers: {
+                   autoNumber: "AMS",
+                },
+                unicode: {
+                   fonts: "STIXGeneral,'Arial Unicode MS'"
+                }
+            },
+            showProcessingMessages: false
+        });
+</script></header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+</ul>
+
+<form class="search" action="/search.html">
+    <input type="text" class="search-query" placeholder="Search" name="q" id="s">
+</form>
+
+<form action="https://www.google.com/search" method="get">
+    <fieldset role="search">
+       <input type="hidden" name="q" value="site:songhuiming.github.io" />
+       <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+    </fieldset>
+</form>
+
+
+<ul class="main-navigation">
+    <li><a href="/functions/archives.html">Archives</a></li>
+      <li >
+        <a href="/category/linux.html">Linux</a>
+      </li>
+      <li class="active">
+        <a href="/category/python.html">Python</a>
+      </li>
+      <li >
+        <a href="/category/rthers.html">Rthers</a>
+      </li>
+</ul></nav>
+  <div id="main">
+    <div id="content">
+<div>
+  <article class="hentry" role="article">
+<header>
+      <h1 class="entry-title">WSJ Web Crawler</h1>
+    <p class="meta">
+<time datetime="2018-02-18T00:00:00-06:00" pubdate>Sun 18 February 2018</time>    </p>
+</header>
+
+  <div class="entry-content"><h2>Introduction</h2>
+<p>This is an introduction to the <a href="http://songhuiming.com/wsj_counts/">Wall Street News Counts</a>. The idea is to crawl the online financial news of the public trading company. Do a sentiment analysis of the news and link the sentiment score with the stock price trend. It is believed the frequency of the news(volume / counts), the sentiment analysis score are good predictors to srock price trend.(see <a href="http://www.seas.upenn.edu/~cse400/CSE400_2007_2008/DavdaMittal/NLPSentimentTrading.pdf">1</a>).</p>
+<p>The first step is to crawl the news from different webpages like <a href="https://www.wsj.com">wall street journal</a>, <a href="https://www.bloomberg.com">bloomberg</a> and so on. Here is from WSJ, which free users can only get news title but not the contents. The second step is to clean and reformat the data. Like encoding, date and time format, exception handling. The third step is to score the contents of the news. A popular way is to score the data with different models and then pick the median or the sum of the score(is this like random forest?) The forth step is to incrementally dump the cleaned data to the database. Make sure there is no dups. The fifth step is to back up the db and the tables after dumping. You will find backup will be more and more importand in your life. The sixth step is to create some summary information tables for data visualization. Like here, I don't want to pull the db every time when someone visits my page. That will most likely cause the db crashed. Insteadly, I will save the summary information in an independent table in memory. <code>Redis</code> is very helpful to work as data cache. Finally the data will be sent to the frontend when it is called.</p>
+<h2>Main prograom</h2>
+<h3>1. crawl wsj web</h3>
+<p>I did not find wsj have good api to download the data.(by the way, it is like yahoo finance and google finance doesn't support well to download stock data in csv. Once it was very easy to do.) But python is very powerful for web crawling. <code>scrapy</code> is one of the most famous and powerful tool to use. Some other light tools include <code>BeautifulSoup</code>, <code>requests</code>, <code>urllib</code> and so on. If using these light tools, you need to spend some time to read the source code of the webpage. There are usually some nice features that make it easy for you to find out how to write your crawler. Also, regular expression will be your friend all the time.</p>
+<h3>2. clean data</h3>
+<p>This step will include cleaning the raw data(removing html tags, filling the missing part and so on), encoding the characters(utf-8), formating the data(date and time format, numers). Some useful packages are <code>datetime</code>, <code>time</code>, <code>re</code>. </p>
+<h3>3. score the data</h3>
+<p>After getting the news, we need to do some transformation on the data. <code>nltk</code> can help to do these work: <code>token</code> the words, normalize the words, <code>stemmer</code>, creates <code>tf-idf</code> and calculate the distance between different documents. These will be be input for the sentimental model. Different model will be used to score the same contents to get more reliable results.</p>
+<h3>4. dump data to db</h3>
+<p>If you only create one time run job, then db might not be necessary. But if you want the job to be kicked off regularly, then dumping data to db is very very important. Please refer to <a href="http://songhuiming.github.io/pages/2016/07/26/mysql-db-and-python-mysqldb/">this</a> for a quick review. Since here the news will be pretty long, mysql <code>TEXT</code> might not work depends on your mysql version. <code>MongoDB</code> which is document oriented together with <code>redis</code> as cache will work better.</p>
+<p>The crawling code will be run everyday to download the latest news. So only the incremental data will be saved to the database. Too frequent reading and writing will cause the db crash. Here is what I did: 1) download the news for each tickers and save them in the temp table. 2)select the latest time for that picker, and only dump the downloaded news after that time to the database. This will work like append a table to the existed table rather than doing it for each single record.</p>
+<h3>5. backup the data</h3>
+<p>Again, if for one time run, this is not necessary. But if you want to run the job regularly, it is very important to back up the data. </p>
+<h3>6. create summary information</h3>
+<p>It is not a good idea to read all the data in the database for every request. Here I will only show the number of news every week for each ticker and their stock price. A workable solution is to read the data out of the database at one time and then organize it to get their information every week. So any request from the front end will call this summary of data without having to read all the information in the database. This will not only save the time, but also reduce the possibility of system breakdown. </p>
+<h3>7. server end</h3>
+<p>The server will call the summary data generated, and then render them to the front end when the url triggers an event.</p>
+<h3>8. front end</h3>
+<p>If plot in python, <code>matplotlib</code> will be number 1 choice to plot static graphs. For dynamic graphs, I did not figure out which is the best. <code>bokeh</code>, <code>plotly</code> are the two that are easy to learn and powerful to use. But for charts in the front end, <code>highcharts</code> is a good choice. <a href="https://www.federalreserve.gov/data/dataviz.htm">St Louis Federal Reserve</a> has some good examples of data visualization with highcharts. A lot of work should be done here to improve the graphs. It is said you should know a back end language and a front end language. </p>
+<h2>Others</h2>
+<h3>1. cron job</h3>
+<p>Set up cron job to run the program every sunday. <code>* 8 * * 6 python /pathToCode/wsj.crawl.py</code> will run the code every sunday at 8:00AM.</p>
+<h3>2. sync data</h3>
+<p>downloading host and web host are different. So after the data is download, it must be synced to the host server to display. </p>
+<p>最后要说的：一入前端深似海。从html到javascript, css, jQuery, node.js, vue.js, react等等等，各种东西只能临阵磨枪，了解个皮毛。</p></div>
+    <footer>
+<p class="meta">
+  <span class="byline author vcard">
+    Posted by <span class="fn">
+        <a href="/author/huiming-song.html">Huiming Song</a>
+    </span>
+  </span>
+<time datetime="2018-02-18T00:00:00-06:00" pubdate>Sun 18 February 2018</time>  <span class="categories">
+    <a class='category' href='/category/python.html'>python</a>
+  </span>
+  <span class="categories">
+    <a class="category" href="/tag/python.html">python</a>,    <a class="category" href="/tag/flask.html">flask</a>,    <a class="category" href="/tag/highcharts.html">highcharts</a>,    <a class="category" href="/tag/sql.html">sql</a>,    <a class="category" href="/tag/webcrawl.html">webCrawl</a>  </span>
+</p><div class="sharing">
+</div>    </footer>
+  </article>
+
+</div>
+<aside class="sidebar">
+  <section>
+    <h1>Recent Posts</h1>
+    <ul id="recent_posts">
+      <li class="post">
+          <a href="/pages/2018/02/18/wsj-web-crawler/">WSJ Web Crawler</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2018/02/04/svm-introduction/">SVM Introduction</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2018/01/28/dong-tai-gui-hua/">动态规划</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2018/01/07/shen-du-sou-suo-hui-su-fa-he-di-gui/">深度搜索，回溯法和递归</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2017/10/22/an-interesting-random-walk-question-and-simulation-03/">An interesting random walk question and simulation 03</a>
+      </li>
+    </ul>
+  </section>
+  <section>
+      
+    <h1>Categories</h1>
+    <ul id="recent_posts">
+        <li><a href="/category/linux.html">Linux</a></li>
+        <li><a href="/category/python.html">python</a></li>
+        <li><a href="/category/rthers.html">Rthers</a></li>
+    </ul>
+  </section>
+ 
+
+  <section>
+  <h1>Tags</h1>
+    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/re.html">re</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/python.html">python</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/sklearn.html">sklearn</a>  </section>
+
+
+    <section>
+        <h1>Social</h1>
+        <ul>
+            <li><a href="https://www.linkedin.com/pub/huiming-song/24/735/349" target="_blank">Linkedin</a></li>
+        </ul>
+    </section>
+    <section>
+        <h1>Blogroll</h1>
+        <ul>
+            <li><a href="http://easysas.blogspot.com/" target="_blank">my old SAS blog</a></li>
+        </ul>
+    </section>
+
+</aside>    </div>
+  </div>
+  <footer role="contentinfo"><p>
+    Copyright &copy;  2015&ndash;2018  shm &mdash;
+  <span class="credit">Powered by <a href="http://getpelican.com">Pelican</a></span>
+</p></footer>
+  <script src="/theme/js/modernizr-2.0.js"></script>
+  <script src="/theme/js/ender.js"></script>
+  <script src="/theme/js/octopress.js" type="text/javascript"></script>
+    <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-65938411-1']);
+    _gaq.push(['_trackPageview']);
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-65938411-1');
+    ga('send', 'pageview');
+</script>
+  <script type="text/javascript">
+    var disqus_shortname = 'songhuiming';
+    var disqus_identifier = '/pages/2018/02/18/wsj-web-crawler/';
+    var disqus_url = '/pages/2018/02/18/wsj-web-crawler/';
+    var disqus_title = 'WSJ Web Crawler';
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = "//" + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+     })();
+  </script>
+</body>
+</html>
