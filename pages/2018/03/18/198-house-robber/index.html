@@ -4,7 +4,7 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>LSTM Introduction &mdash; pydata</title>
+  <title>198. House Robber &mdash; pydata</title>
   <meta name="author" content="shm">
 
 
@@ -92,45 +92,71 @@
 <div>
   <article class="hentry" role="article">
 <header>
-      <h1 class="entry-title">LSTM Introduction</h1>
+      <h1 class="entry-title">198. House Robber</h1>
     <p class="meta">
-<time datetime="2017-07-22T00:00:00-05:00" pubdate>Sat 22 July 2017</time>    </p>
+<time datetime="2018-03-18T00:00:00-05:00" pubdate>Sun 18 March 2018</time>    </p>
 </header>
 
-  <div class="entry-content"><h2>Intro</h2>
-<p>通常介绍deep learning的时候总是从卷积神经网络开始，因为最近deep learning的流行就是从卷积神经网络在图像识别上的广泛应用开始的。但是在银行这种地方，没有什么明显的图像处理的需求。更多的是要处理各种序列性的数据，比如时间序列等等。所以这里我会从循环神经网络(<a href="https://en.wikipedia.org/wiki/Recurrent_neural_network">RNN</a>)开始，并且结合一个例子用来展示怎么进行时间序列的建模。</p>
-<p>RNN的一个显著特征是：新的输入(下图t时刻的输入，绿色的箭头)会和前一个state(下图从t-1到t的蓝色箭头)一起变成新的输入。并以此循环。</p>
-<p><img alt="alt text" src="/figures/20170722_lstm_stock_return_00_1.png" title="RNN" /></p>
-<p>把上图画成下图的等号右边部分，那么整个的循环过程通常也就画为下图的等号左边部分。</p>
-<p><img alt="alt text" src="/figures/20170722_lstm_stock_return_00_2.png" title="RNN" /></p>
-<p>RNN好的地方是它可以记住前面一段时间的输入信息，不好的地方是它只能记住某段时间的输入信息，虽然理论上RNN可以处理长时间的信息，但是实际上它却不能很好的学习这些信息。对于长时间的输入信息它无能为力。</p>
-<p>对RNN的一个改进就是长短记忆网络(LSTM). LSTM通过信息阀门来控制信息是否能够通过。这个信息阀门是由一个sigmoid神经网络层和多元运算符组成。sigmoid网络层的输出是一个0，1之间的值，用来控制每个组成部分有多少信息可以通过。0表示没有信息能够通过，1表示所有的信息都可以通过。通过控制不同的信息加入到cell state中，LSTM实现了控制哪些信息可以对最后的stage施加影响。</p>
-<p><img alt="alt text" src="/figures/20170722_lstm_stock_return_00_3.png" title="RNN" /></p>
-<p>上面图中的各个标志的表示意义分别为</p>
-<p><img alt="alt text" src="/figures/20170722_lstm_stock_return_00_4.png" title="RNN" /></p>
-<p>LSTM在自然语言处理(NLP),自动翻译上面取得了很大的成功。如果我们换一个视角，把RNN/LSTM中的输入当成是按照时间顺序的排列的数据，它们就可以用来对(高维)时间序列建模和预测。我们可以控制在RNN/LSTM的每个输入的Layer上输出或者不输出，这样我们就很容易的进行一步预测比如<span class="math">\(X_{1}, X_{2}, \cdots, X_{n-1}\)</span>来预测<span class="math">\(\hat{X_{n}}\)</span>，或者进行多步预测，比如用<span class="math">\(X_{1}\)</span>来预测<span class="math">\(\hat{X_{2}}\)</span>，<span class="math">\(\hat{X_{2}}\)</span>来预测<span class="math">\(\hat{X_{3}}\)</span>等等。</p>
-<p>有一些实际的例子表明，在<span class="math">\(X_{1}, X_{2}, \cdots, X_{n-1}\)</span>来预测<span class="math">\(\hat{X_{t}}\)</span>中，即使不需要<span class="math">\(\hat{X_{2}}, \cdots, \hat{X_{n-1}}\)</span>，但是在模型中强制这些输出会提高模型的效果。</p>
-<p>也有一些实际的例子显示，经过改进CNN也可以用来处理这种序列性质的数据，而且可以得到比RNN更好的效果。</p>
-<h2>1. DATA &amp; Model</h2>
-<h3>1.1. 数据来源</h3>
-<p>使用的数据是<a href="https://en.wikipedia.org/wiki/List_of_S%26P_500_companies">S&amp;P500</a>从02Jan1998到09Aug2013攻击3926天每天的股票价格数据，包括OHLCV,共计500只股票。</p>
-<h3>1.2. 数据转变</h3>
-<p>对每一只股票，计算出它的每天几种不同价格的比值，比如Open对Close(c_2_o),High(c_2_h)以及Low(c_2_l)的比值，以及High对Close(h_2_c)和Low(h_2_l)的比值。因为各个股票的Volume会很不相同，为了让它们在同一个Scale上面，对Volume进行标准化，即减去均值，除以标准差。这些每只股票每天自身的性质会作为我们的自变量input。我们想做的是用这些来预测股票第二天是上涨还是下跌。也就是t+1时间的Close价格除以t时间的价格(c1_c0)。如果第二天上涨了，那么比值大于1，比值的对数函数就大于0.反之这个Close的价格的比值的对数函数就小于0.所有的数据可以从<a href="https://quantquote.com/historical-stock-data">quantquote</a>下载。</p>
-<p>因为不是所有的500只股票都有完整的3926天的数据，只有388只股票有完整的数据。取这388只股票上面所说的6个比值作为最后的X，取这388只股票的回报率的均值作为Y.Y可以理解为在388只股票上每只股票投资一块钱的平均回报率。从3926行数据中去前3900行作为最后的分析数据。所以最后X的维度为(3900, 2328),Y的维度为(3900, 1). </p>
-<h3>1.3. 数据说明</h3>
-<h4>1.3.1. 理想状况</h4>
-<p>假如我们已经知道Y的值是大于0还是小于0，我们可以做出最优的决定：对任一天，当第二天的价格高于当天的价格的时候，我们买进一块钱然后第二天卖掉，这样我们就可以赚取那一部分差价。如果第二天的价格低于今天的价格，我们就应该在今天卖一块钱的股票。这样的决策成为理想决策。当然实际上因为没法知道第二天的价格，所以这样的决策不存在。但是因为我们是历史数据，我们还是可以计算出理想决策最终可以获得多少利润。</p>
-<h4>1.3.2. 最差状况</h4>
-<p>最差的状况就是投一块钱，然后什么都不做最后所得到的状态。</p>
-<p><img alt="alt text" src="/figures/20170722_lstm_stock_return_01.png" title="RNN" /></p>
-<h4>1.4. 学习模型</h4>
-<p>因为回报率是一个连续值，但是我们实际关系的是它大于0还是小于0.所以我们把它分为11份，记为0到10.这样的话Y就是一个Categorical Variable，问题也就转化为一个有序分类(ordered categorical data)的问题。如果预测的<span class="math">\(\hat{Y} &lt; 5\)</span>，我们应该卖出。如果<span class="math">\(\hat{Y} == 5\)</span>,则不作任何交易。如果<span class="math">\(\hat{Y} &gt; 5\)</span>，则买入。</p>
-<h4>1.4.1. Multinomial Logistic Regression</h4>
-<p>类似于传统的logistic regression，只是这个时候Y不只是0和1，而是0到10.因为只是logistic regression，没有超参数，也没有变量选择，所以效果不是很好。
-<img alt="alt text" src="/figures/20170722_lstm_stock_return_02.png" title="RNN" /></p>
-<h4>1.4.2. LSTM Model</h4>
-<p>LSTM会根据输入的数据来有选择的记住前面的信息。这里我们使用tensorflow的<code>MultiRNNCell([LSTMCell() for _ in range(2)])</code>建立了一个两层的LSTM模型。可以看出，LSTM明天的提高了预测的效果。
-<img alt="alt text" src="/figures/20170722_lstm_stock_return_03.png" title="RNN" /></p>
+  <div class="entry-content"><p><a href="https://leetcode.com/problems/house-robber/description/">198. House Robber</a></p>
+<p>题目大意，一个强盗沿着一排房子盗窃，强盗不能盗连续的两个房子，求强盗能盗窃的最大值. 比如6个房子，强盗抢劫每个房子得到的值为 nums = [3, 1, 5, 3, 7, 9]。最大获利为 3 + 5 + 9 = 17.</p>
+<p>解题思路：</p>
+<p>这个题如果用brute force直接解的话会超时，brute force每个房子有两个可能，robber or not，所以n个房子的时间复杂度是<span class="math">\(O(2^n)\)</span>。直接超时。</p>
+<p>可以用动态规划来解：</p>
+<blockquote>
+<p>假设 d[i] = max money for up to ith home</p>
+<p>那么 d[i] = max(d[i - 1], d[i - 2] + nums[i])</p>
+</blockquote>
+<p>这种题目通常可以用记忆化递归，或者递推来解。通常可以进行空间压缩。</p>
+<h2>1. recursion with memorization</h2>
+<div class="highlight"><pre><span class="k">class</span> <span class="nc">Solution</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">rob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nums</span><span class="p">):</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">nums</span><span class="p">)</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)]</span>
+        <span class="k">def</span> <span class="nf">dp</span><span class="p">(</span><span class="n">nums</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">res</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">return</span> <span class="mi">0</span>
+            <span class="k">if</span> <span class="n">res</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">res</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">res</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">dp</span><span class="p">(</span><span class="n">nums</span><span class="p">,</span> <span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">res</span><span class="p">),</span> <span class="n">dp</span><span class="p">(</span><span class="n">nums</span><span class="p">,</span> <span class="n">i</span> <span class="o">-</span> <span class="mi">2</span><span class="p">,</span> <span class="n">res</span><span class="p">)</span> <span class="o">+</span> <span class="n">nums</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="k">return</span> <span class="n">res</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">dp</span><span class="p">(</span><span class="n">nums</span><span class="p">,</span> <span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">res</span><span class="p">)</span>
+</pre></div>
+
+
+<h2>2. 递推/动态规划</h2>
+<div class="highlight"><pre><span class="k">class</span> <span class="nc">Solution</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">rob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nums</span><span class="p">):</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">nums</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">nums</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)]</span>
+        <span class="n">d</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">nums</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">d</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">nums</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">nums</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+            <span class="n">d</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">],</span> <span class="n">d</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">nums</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">d</span><span class="p">[</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+</pre></div>
+
+
+<h2>3. 递推/动态规划 + 压缩空间</h2>
+<div class="highlight"><pre><span class="k">class</span> <span class="nc">Solution</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">rob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nums</span><span class="p">):</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">nums</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="n">dp1</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">dp2</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+            <span class="n">curr</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">dp1</span><span class="p">,</span> <span class="n">dp2</span> <span class="o">+</span> <span class="n">nums</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">dp2</span> <span class="o">=</span> <span class="n">dp1</span>
+            <span class="n">dp1</span> <span class="o">=</span> <span class="n">curr</span>
+        <span class="k">return</span> <span class="n">curr</span>
+</pre></div>
+
+
 <script type="text/javascript">if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
     var align = "center",
         indent = "0em",
@@ -194,11 +220,11 @@
         <a href="/author/huiming-song.html">Huiming Song</a>
     </span>
   </span>
-<time datetime="2017-07-22T00:00:00-05:00" pubdate>Sat 22 July 2017</time>  <span class="categories">
+<time datetime="2018-03-18T00:00:00-05:00" pubdate>Sun 18 March 2018</time>  <span class="categories">
     <a class='category' href='/category/python.html'>python</a>
   </span>
   <span class="categories">
-    <a class="category" href="/tag/python.html">python</a>,    <a class="category" href="/tag/quant.html">quant</a>  </span>
+    <a class="category" href="/tag/python.html">python</a>,    <a class="category" href="/tag/leetcode.html">leetcode</a>,    <a class="category" href="/tag/dynamic-programming.html">dynamic programming</a>  </span>
 </p><div class="sharing">
 </div>    </footer>
   </article>
@@ -283,9 +309,9 @@
 </script>
   <script type="text/javascript">
     var disqus_shortname = 'songhuiming';
-    var disqus_identifier = '/pages/2017/07/22/lstm-introduction/';
-    var disqus_url = '/pages/2017/07/22/lstm-introduction/';
-    var disqus_title = 'LSTM Introduction';
+    var disqus_identifier = '/pages/2018/03/18/198-house-robber/';
+    var disqus_url = '/pages/2018/03/18/198-house-robber/';
+    var disqus_title = '198. House Robber';
     (function() {
       var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
       dsq.src = "//" + disqus_shortname + '.disqus.com/embed.js';

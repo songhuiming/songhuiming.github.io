@@ -4,7 +4,7 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>linux function find, grep, locate, which and dkpg &mdash; pydata</title>
+  <title>leetcode 174. Dungeon Game &mdash; pydata</title>
   <meta name="author" content="shm">
 
 
@@ -77,10 +77,10 @@
 
 <ul class="main-navigation">
     <li><a href="/functions/archives.html">Archives</a></li>
-      <li class="active">
+      <li >
         <a href="/category/linux.html">Linux</a>
       </li>
-      <li >
+      <li class="active">
         <a href="/category/python.html">Python</a>
       </li>
       <li >
@@ -92,67 +92,29 @@
 <div>
   <article class="hentry" role="article">
 <header>
-      <h1 class="entry-title">linux function find, grep, locate, which and dkpg</h1>
+      <h1 class="entry-title">leetcode 174. Dungeon Game</h1>
     <p class="meta">
-<time datetime="2016-07-26T00:00:00-05:00" pubdate>Tue 26 July 2016</time>    </p>
+<time datetime="2018-03-18T00:00:00-05:00" pubdate>Sun 18 March 2018</time>    </p>
 </header>
 
-  <div class="entry-content"><p>The question comes from an issue I got: I have installed MySQLdb but when I try to <code>import MySQLdb</code>,
-it fails with error message that <code>MySQLdb</code> cannot be found. The steps to check:</p>
-<ol>
-<li>make sure the package is installed</li>
-<li>check where it is installed</li>
-<li>add the path to <code>PYTHONPATH</code></li>
-</ol>
-<p>Then import it again, it works.</p>
-<p>All these will be very easy if you are familiar with linux commands. It will be very convenitent and helpful in job if you master some linux functions. This blog is to list the useful function and its usage</p>
-<h2>1. <code>find</code> function and its usage</h2>
-<div class="highlight"><pre><span class="c1"># search multiple dirs</span>
-find /opt /usr /var -name foo.scala -type f     
+  <div class="entry-content"><p><a href="https://leetcode.com/problems/dungeon-game/description/">174. Dungeon Game</a></p>
+<p>题目大意：骑士在左上角<code>(0, 0)</code>,公主在右下角<code>(m, n)</code>。骑士每次只能向右或者向下，每个方格表示骑士消耗获得的hp，题目要求骑士出发时候所需要的最小hp。在任何位置骑士的hp都要大于0</p>
+<p>解题思路：假设dungeon的shape为(m, n)，我们建立一个shape为(m+1, n+1)的矩阵，index从0开始，最终要在(m-1, n-1)的位置有1个hp。那么按照题目的逻辑，从(m-1, n-1)能继续下去，在(m, n-1)和(m-1,n)都要至少要为1. 然后一步步朝左上角返回上去。</p>
+<h2>动态规划</h2>
+<div class="highlight"><pre><span class="k">class</span> <span class="nc">Solution</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">calculateMinimumHP</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dungeon</span><span class="p">):</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dungeon</span><span class="p">)</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dungeon</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">hp</span> <span class="o">=</span> <span class="p">[[</span><span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">m</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
+        <span class="n">hp</span><span class="p">[</span><span class="n">m</span><span class="p">][</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">hp</span><span class="p">[</span><span class="n">m</span> <span class="o">-</span> <span class="mi">1</span><span class="p">][</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">m</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                <span class="n">hp</span><span class="p">[</span><span class="n">y</span><span class="p">][</span><span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">hp</span><span class="p">[</span><span class="n">y</span> <span class="o">+</span> <span class="mi">1</span><span class="p">][</span><span class="n">x</span><span class="p">],</span> <span class="n">hp</span><span class="p">[</span><span class="n">y</span><span class="p">][</span><span class="n">x</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span> <span class="o">-</span> <span class="n">dungeon</span><span class="p">[</span><span class="n">y</span><span class="p">][</span><span class="n">x</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">hp</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
 
-<span class="c1"># fina all cache, xml and html files</span>
-find . -type f <span class="se">\(</span> -name <span class="s2">&quot;*cache&quot;</span> -o -name <span class="s2">&quot;*xml&quot;</span> -o -name <span class="s2">&quot;*html&quot;</span> <span class="se">\)</span>   
-
-<span class="c1"># find and search, ignore case with -i option</span>
-find . -type f -name <span class="s2">&quot;*.java&quot;</span> -exec grep -il string <span class="o">{}</span> <span class="se">\;</span>
-
-<span class="c1"># find and copy, cp *.mp3 files to /tmp/MusicFiles</span>
-find . -type f -name <span class="s2">&quot;*.mp3&quot;</span> -exec cp <span class="o">{}</span> /tmp/MusicFiles <span class="se">\;</span>     
-
-<span class="c1"># list user and corresponding disk usage</span>
-find /data01/saswork -printf <span class="s2">&quot;%u  %s\n&quot;</span> <span class="p">|</span> awk <span class="s1">&#39;{user[$1]+=$2}; END{ for( i in user) print i &quot; &quot; user[i]}&#39;</span>   
-
-<span class="c1"># how to list all my files, and size &gt; than a limit, in the given directory</span>
-<span class="k">for</span> r in <span class="k">$(</span>find /data01/ -type f -user hsong<span class="p">|</span> grep <span class="s2">&quot;^\/data01&quot;</span><span class="k">)</span><span class="p">;</span> <span class="k">do</span> ls -la $r<span class="p">;</span><span class="k">done</span><span class="p">|</span>cut -d <span class="s2">&quot; &quot;</span> -f 3,5,10
-<span class="k">for</span> r in <span class="k">$(</span>find /data02/temp/temp_sasprod/ -type f -user hsong<span class="p">|</span> grep <span class="s2">&quot;^\/data02&quot;</span><span class="k">)</span><span class="p">;</span> <span class="k">do</span> ls -la $r<span class="p">;</span><span class="k">done</span><span class="p">|</span>cut -d <span class="s2">&quot; &quot;</span> -f 3,5,10
-<span class="k">for</span> r in <span class="k">$(</span>find /data02/temp/temp_sasprod/ -type f -size +500k -user hsong<span class="p">|</span> grep <span class="s2">&quot;^\/data02&quot;</span><span class="k">)</span><span class="p">;</span> <span class="k">do</span> ls -lSR $r<span class="p">;</span><span class="k">done</span> <span class="p">|</span> less
-</pre></div>
-
-
-<h2>2. <code>locate</code> to find where the function is</h2>
-<div class="highlight"><pre>locate python
-</pre></div>
-
-
-<h2>3. <code>dpkg</code> to check packages installed or not, and the path</h2>
-<ul>
-<li><code>dpkg -L PackageName</code> to find where the package is</li>
-</ul>
-<div class="highlight"><pre>dpkg –L MySQLdb
-</pre></div>
-
-
-<ul>
-<li>check if the package is installed or not</li>
-</ul>
-<div class="highlight"><pre>dpkg --get-selections | grep mysql
-</pre></div>
-
-
-<h3>Reference</h3>
-<ol>
-<li><a href="http://alvinalexander.com/unix/edu/examples/find.shtml">A collection of Unix/Linux find command examples</a></li>
-</ol></div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">Solution</span><span class="p">()</span><span class="o">.</span><span class="n">calculateMinimumHP</span><span class="p">([[</span><span class="mi">100</span><span class="p">]])</span>
+</pre></div></div>
     <footer>
 <p class="meta">
   <span class="byline author vcard">
@@ -160,11 +122,11 @@ find /data01/saswork -printf <span class="s2">&quot;%u  %s\n&quot;</span> <span 
         <a href="/author/huiming-song.html">Huiming Song</a>
     </span>
   </span>
-<time datetime="2016-07-26T00:00:00-05:00" pubdate>Tue 26 July 2016</time>  <span class="categories">
-    <a class='category' href='/category/linux.html'>Linux</a>
+<time datetime="2018-03-18T00:00:00-05:00" pubdate>Sun 18 March 2018</time>  <span class="categories">
+    <a class='category' href='/category/python.html'>python</a>
   </span>
   <span class="categories">
-    <a class="category" href="/tag/python.html">python</a>,    <a class="category" href="/tag/linux.html">linux</a>  </span>
+    <a class="category" href="/tag/python.html">python</a>,    <a class="category" href="/tag/leetcode.html">leetcode</a>,    <a class="category" href="/tag/dynamic-programming.html">dynamic programming</a>  </span>
 </p><div class="sharing">
 </div>    </footer>
   </article>
@@ -249,9 +211,9 @@ find /data01/saswork -printf <span class="s2">&quot;%u  %s\n&quot;</span> <span 
 </script>
   <script type="text/javascript">
     var disqus_shortname = 'songhuiming';
-    var disqus_identifier = '/pages/2016/07/26/linux-function-find-grep-locate-which-and-dkpg/';
-    var disqus_url = '/pages/2016/07/26/linux-function-find-grep-locate-which-and-dkpg/';
-    var disqus_title = 'linux function find, grep, locate, which and dkpg';
+    var disqus_identifier = '/pages/2018/03/18/leetcode-174-dungeon-game/';
+    var disqus_url = '/pages/2018/03/18/leetcode-174-dungeon-game/';
+    var disqus_title = 'leetcode 174. Dungeon Game';
     (function() {
       var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
       dsq.src = "//" + disqus_shortname + '.disqus.com/embed.js';
