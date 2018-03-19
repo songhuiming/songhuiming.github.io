@@ -4,7 +4,7 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>leetcode 62. Unique Paths &mdash; pydata</title>
+  <title>221. Maximal Square &mdash; pydata</title>
   <meta name="author" content="shm">
 
 
@@ -92,53 +92,56 @@
 <div>
   <article class="hentry" role="article">
 <header>
-      <h1 class="entry-title">leetcode 62. Unique Paths</h1>
+      <h1 class="entry-title">221. Maximal Square</h1>
     <p class="meta">
-<time datetime="2018-03-03T00:00:00-06:00" pubdate>Sat 03 March 2018</time>    </p>
+<time datetime="2018-03-18T00:00:00-05:00" pubdate>Sun 18 March 2018</time>    </p>
 </header>
 
-  <div class="entry-content"><p>这几道题目很相似，把它们放在一起做个比较。</p>
-<p><a href="https://leetcode.com/problems/unique-paths/description/">62. Unique Paths</a></p>
-<p><a href="https://leetcode.com/problems/unique-paths-ii/description/">63. Unique Paths II</a></p>
-<p><a href="https://leetcode.com/problems/minimum-path-sum/description/">64. Minimum Path Sum</a></p>
-<p>题目大意:从一个<span class="math">\(m \times n\)</span>的格子上左上角走到右下角，只能向右或者向下走，总共有多少种不同的走法？</p>
-<h2>1. 记忆化递归</h2>
-<p>这里的递归指的是函数自己调用自己。比如下面递归的办法中，函数<code>dp</code>自己会调用<code>dp</code>。 </p>
-<p>记忆化指的是把前面已经求解过的值记录在记忆体里面，这样后面要时候的时候就不需要重复计算。</p>
-<p>在位置<span class="math">\((y, x)\)</span>的走法上一行<span class="math">\((y - 1, x)\)</span>和前一列<span class="math">\((y, x - 1)\)</span>的走法的和。用一个记忆体<span class="math">\(f[y][x]\)</span>来记录<span class="math">\((y, x)\)</span>的走法。如果已经求解了，则不需要再求解。这样可以节省时间。考虑到边界会越界，对<span class="math">\(f\)</span>进行padding</p>
-<div class="highlight"><pre><span class="k">class</span> <span class="nc">Solution</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">uniquePaths</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">f</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">m</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
-        <span class="k">def</span> <span class="nf">dp</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">m</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="k">return</span> <span class="mi">0</span>
-            <span class="k">if</span> <span class="n">m</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-                <span class="k">return</span> <span class="mi">1</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="n">m</span><span class="p">][</span><span class="n">n</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="n">m</span><span class="p">][</span><span class="n">n</span><span class="p">]</span>
-            <span class="n">left_ans</span> <span class="o">=</span> <span class="n">dp</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
-            <span class="n">upper_ans</span> <span class="o">=</span> <span class="n">dp</span><span class="p">(</span><span class="n">m</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="n">m</span><span class="p">][</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">left_ans</span> <span class="o">+</span> <span class="n">upper_ans</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="n">m</span><span class="p">][</span><span class="n">n</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">dp</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+  <div class="entry-content"><p>题目大意，给定一个矩阵，元素为0或者1. 求所有元素都为1的最大正方形子矩阵。把它跟第85题放在一起，<a href="https://leetcode.com/problems/maximal-rectangle/description/">85题</a>求最大的长方形子矩阵。</p>
+<p><a href="https://leetcode.com/problems/maximal-square/">221. Maximal Square</a></p>
+<p><a href="https://leetcode.com/problems/maximal-rectangle/description/">85. Maximal Rectangle</a></p>
+<p>详细的讲解，请参考<a href="http://zxi.mytechroad.com/blog/dynamic-programming/leetcode-221-maximal-square/">[解题报告] LeetCode 221. Maximal Square</a></p>
+<h2>brute force</h2>
+<p><img src="/figures/leetcode_0221_maximal_square_01_brute_force.svg"></p>
+<p>对每一行(y)，对每一列(x)，对所有可能的size，检查以(y, x)为顶点，大小为size的区域是不是符合要求。对检查函数必须做优化，否则会TLE.</p>
+<div class="highlight"><pre><span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">size</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="n">x</span><span class="p">,</span> <span class="n">m</span> <span class="o">-</span> <span class="n">y</span><span class="p">)):</span>
+            <span class="n">check</span><span class="p">(</span><span class="n">matrix</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span> <span class="o">+</span> <span class="n">size</span><span class="p">,</span> <span class="n">y</span> <span class="o">+</span> <span class="n">size</span><span class="p">)</span>
+
+<span class="n">matrix</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]]</span>
 </pre></div>
 
 
-<h2>2. 递推 / 动态规划</h2>
-<p>递推(或者叫动态规划)的形式和递归很相似，只是把中间结果保存在数组里面从而避免重复求解。</p>
+<h2>动态规划</h2>
+<p>对每一行(y)，对每一列(x)，对所有可能的size，检查以(y, x)为顶点，大小为size的区域是不是符合要求。</p>
+<p>设置一个检查函数来降低时间复杂度：如图所示，把面积简化成从(0, 0)开始的几个长方形/正方形的面积的加减。</p>
+<p><img src="/figures/leetcode_0221_maximal_square_02.svg"></p>
+<p>而求从(0, 0)开始的任意的面积可以使用DP在时间复杂度为<span class="math">\(O(m * n)\)</span>的范围内解出来。</p>
+<p><img src="/figures/leetcode_0221_maximal_square_03.svg"></p>
+<p>最后的code如下。<span class="math">\(sums[i][j]\)</span>表示从<span class="math">\((0, 0)\)</span>到<span class="math">\((i, j)\)</span>的面积。</p>
 <div class="highlight"><pre><span class="k">class</span> <span class="nc">Solution</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">uniquePaths</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">f</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">m</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-        <span class="k">def</span> <span class="nf">dp</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
-            <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">m</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
-                <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
-                    <span class="k">if</span> <span class="n">y</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">x</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-                        <span class="k">continue</span>
-                    <span class="k">else</span><span class="p">:</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="n">y</span><span class="p">][</span><span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="n">y</span> <span class="o">-</span> <span class="mi">1</span><span class="p">][</span><span class="n">x</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="n">y</span><span class="p">][</span><span class="n">x</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
-        <span class="n">dp</span><span class="p">(</span><span class="n">m</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="n">m</span><span class="p">][</span><span class="n">n</span><span class="p">]</span>
+    <span class="k">def</span> <span class="nf">maximalSquare</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">matrix</span><span class="p">):</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">matrix</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">m</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">matrix</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+        <span class="c1"># sums[i][j] = sum(matrix[0][0] ~ matrix[i-1][j-1])</span>
+        <span class="n">sums</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">m</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">m</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+                <span class="n">sums</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">matrix</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="n">j</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">sums</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">+</span> <span class="n">sums</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">sums</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="n">j</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="n">ans</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">m</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">m</span><span class="o">-</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">n</span><span class="o">-</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                    <span class="nb">sum</span> <span class="o">=</span> <span class="n">sums</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="n">k</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="n">j</span><span class="o">+</span><span class="n">k</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">sums</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="n">k</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="n">j</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">sums</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="n">j</span><span class="o">+</span><span class="n">k</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">sums</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="n">j</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="nb">sum</span> <span class="o">==</span> <span class="n">k</span><span class="o">*</span><span class="n">k</span><span class="p">:</span>
+                        <span class="n">ans</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">ans</span><span class="p">,</span> <span class="nb">sum</span><span class="p">)</span>
+                        <span class="k">break</span>
+        <span class="k">return</span> <span class="n">ans</span>
 </pre></div>
 
 
@@ -205,7 +208,7 @@
         <a href="/author/huiming-song.html">Huiming Song</a>
     </span>
   </span>
-<time datetime="2018-03-03T00:00:00-06:00" pubdate>Sat 03 March 2018</time>  <span class="categories">
+<time datetime="2018-03-18T00:00:00-05:00" pubdate>Sun 18 March 2018</time>  <span class="categories">
     <a class='category' href='/category/python.html'>python</a>
   </span>
   <span class="categories">
@@ -294,9 +297,9 @@
 </script>
   <script type="text/javascript">
     var disqus_shortname = 'songhuiming';
-    var disqus_identifier = '/pages/2018/03/03/leetcode-62-unique-paths/';
-    var disqus_url = '/pages/2018/03/03/leetcode-62-unique-paths/';
-    var disqus_title = 'leetcode 62. Unique Paths';
+    var disqus_identifier = '/pages/2018/03/18/221-maximal-square/';
+    var disqus_url = '/pages/2018/03/18/221-maximal-square/';
+    var disqus_title = '221. Maximal Square';
     (function() {
       var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
       dsq.src = "//" + disqus_shortname + '.disqus.com/embed.js';
