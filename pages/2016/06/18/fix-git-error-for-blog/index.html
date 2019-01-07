@@ -4,7 +4,7 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>python class (4): 只允许添加给定的属性 __slots__ &mdash; pydata</title>
+  <title>fix git error for blog &mdash; pydata</title>
   <meta name="author" content="shm">
 
 
@@ -92,36 +92,32 @@
 <div>
   <article class="hentry" role="article">
 <header>
-      <h1 class="entry-title">python class (4): 只允许添加给定的属性 __slots__</h1>
+      <h1 class="entry-title">fix git error for blog</h1>
     <p class="meta">
-<time datetime="2015-10-01T00:00:00-05:00" pubdate>Thu 01 October 2015</time>    </p>
+<time datetime="2016-06-18T00:00:00-05:00" pubdate>Sat 18 June 2016</time>    </p>
 </header>
 
-  <div class="entry-content"><p>怎么才能限制class的属性，只允许添加被许可的属性 （<strong>slots</strong>）?</p>
-<div class="highlight"><pre><span class="k">class</span> <span class="nc">Person</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
- <span class="k">pass</span>
+  <div class="entry-content"><p>为了自动给blog备份，我把blog放在dropbox里面，这样主机和vmware上的ubuntu_dl机器可以同步，而且dropbox在线还有一份，这样不同意丢了。即使不小心删掉也会有online的备份。</p>
+<p>可是一个问题是老是会出现git的error,比如</p>
+<div class="highlight"><pre>hhh@ubuntu:~/Dropbox/blog/output$ git commit -m &quot;test&quot;
+error: object file .git/objects/d2/f4c036db03671b6d859b137e4ccdc06383fb14 is empty
+error: object file .git/objects/d2/f4c036db03671b6d859b137e4ccdc06383fb14 is empty
+fatal: loose object d2f4c036db03671b6d859b137e4ccdc06383fb14 (stored in .git/objects/d2/f4c036db03671b6d859b137e4ccdc06383fb14) is corrupt
 
-<span class="n">p</span> <span class="o">=</span> <span class="n">Person</span><span class="p">()</span>
+hhh@ubuntu:~/Dropbox/blog/output$ git commit -m &quot;test&quot;
+fatal: could not parse HEAD
 </pre></div>
 
 
-<p>此时可以添加许多属性</p>
-<div class="highlight"><pre>p.name = &#39;Mike&#39;
-p.age = 20
-p.grades = 90
-</pre></div>
-
-
-<p>如果要限制只允许添加给定的属性，那么使用<code>__slots__</code> </p>
-<div class="highlight"><pre><span class="k">class</span> <span class="nc">Person</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
- <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-  <span class="k">pass</span>
-
- <span class="n">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;age&#39;</span><span class="p">)</span>  <span class="c1">#只允许添加name和age两个属性，用tuple来定义</span>
-
-<span class="n">p</span> <span class="o">=</span> <span class="n">Person</span><span class="p">()</span>
-<span class="n">p</span><span class="o">.</span><span class="n">grades</span> <span class="o">=</span> <span class="mi">90</span>  <span class="c1">#报错，因为grades不在许可的属性之列</span>
-</pre></div></div>
+<p>好像是<code>.git</code>下面的文件因为dropbox同步什么的出现了问题。解决的办法也很简单。</p>
+<ol>
+<li>到<code>blog/output</code>文件夹, <code>cd output</code>, 删掉里面的<code>.git</code>文件夹 <code>rm -rf .git</code></li>
+<li><code>clone github</code>的文件 <code>git clone git@github.com:songhuiming/songhuiming.github.io.git</code></li>
+<li>这个时候在<code>output</code>文件夹下面会出现文件夹<code>songhuiming.github.io</code></li>
+<li>把<code>songhuiming.github.io</code>里面的<code>.git</code>文件夹复制到<code>output</code>下面, <code>cp -rf songhuiming.github.io/.git .</code></li>
+<li>删掉文件夹<code>songhuiming.github.io</code></li>
+<li>重新到<code>blog</code>文件夹下面<code>make html</code>然后就可以正常<code>git commit</code>和<code>git push</code>了</li>
+</ol></div>
     <footer>
 <p class="meta">
   <span class="byline author vcard">
@@ -129,11 +125,11 @@ p.grades = 90
         <a href="/author/huiming-song.html">Huiming Song</a>
     </span>
   </span>
-<time datetime="2015-10-01T00:00:00-05:00" pubdate>Thu 01 October 2015</time>  <span class="categories">
-    <a class='category' href='/category/python.html'>Python</a>
+<time datetime="2016-06-18T00:00:00-05:00" pubdate>Sat 18 June 2016</time>  <span class="categories">
+    <a class='category' href='/category/python.html'>python</a>
   </span>
   <span class="categories">
-    <a class="category" href="/tag/python.html">python</a>  </span>
+    <a class="category" href="/tag/python.html">python</a>,    <a class="category" href="/tag/git.html">git</a>  </span>
 </p><div class="sharing">
 </div>    </footer>
   </article>
@@ -218,9 +214,9 @@ p.grades = 90
 </script>
   <script type="text/javascript">
     var disqus_shortname = 'songhuiming';
-    var disqus_identifier = '/pages/2015/10/01/python-class-4-zhi-yun-xu-tian-jia-gei-ding-de-shu-xing-__slots__/';
-    var disqus_url = '/pages/2015/10/01/python-class-4-zhi-yun-xu-tian-jia-gei-ding-de-shu-xing-__slots__/';
-    var disqus_title = 'python class (4): 只允许添加给定的属性 __slots__';
+    var disqus_identifier = '/pages/2016/06/18/fix-git-error-for-blog/';
+    var disqus_url = '/pages/2016/06/18/fix-git-error-for-blog/';
+    var disqus_title = 'fix git error for blog';
     (function() {
       var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
       dsq.src = "//" + disqus_shortname + '.disqus.com/embed.js';
