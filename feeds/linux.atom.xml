@@ -1,5 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata</title><link href="/" rel="alternate"></link><link href="/feeds/linux.atom.xml" rel="self"></link><id>/</id><updated>2017-02-12T00:00:00-06:00</updated><entry><title>install docker, dl package, ssh access for ubuntu</title><link href="/pages/2017/02/12/install-docker-dl-package-ssh-access-for-ubuntu/" rel="alternate"></link><updated>2017-02-12T00:00:00-06:00</updated><author><name>Huiming Song</name></author><id>tag:,2017-02-12:pages/2017/02/12/install-docker-dl-package-ssh-access-for-ubuntu/</id><summary type="html">&lt;h4&gt;1. install vim&lt;/h4&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata</title><link href="/" rel="alternate"></link><link href="/feeds/linux.atom.xml" rel="self"></link><id>/</id><updated>2019-02-28T18:18:00-06:00</updated><entry><title>How to keep alive ssh sessions</title><link href="/pages/2019/02/28/how-to-keep-alive-ssh-sessions/" rel="alternate"></link><updated>2019-02-28T18:18:00-06:00</updated><author><name>Huiming Song</name></author><id>tag:,2019-02-28:pages/2019/02/28/how-to-keep-alive-ssh-sessions/</id><summary type="html">&lt;h2&gt;1. On AWS to connect with &lt;code&gt;ServerAliveInterval=100&lt;/code&gt;&lt;/h2&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;ssh -i ~/.ssh/xxxx.pem ubuntu@hithere.amazonaws.com -o ServerAliveInterval=100
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h2&gt;2. General Setup&lt;/h2&gt;
+&lt;p&gt;Many NAT firewalls time out idle sessions after a certain period of time to keep their trunks clean. Sometimes the interval between session drops is 24 hours, but on many commodity firewalls, connections are killed after as little as 300 seconds. To avoid having your SSH sessions become unresponsive after e.g. 5 minutes, do the following:&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;On Windows (PuTTY)&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;In your session properties, go to &lt;strong&gt;&lt;code&gt;Connection&lt;/code&gt;&lt;/strong&gt; and under &lt;strong&gt;&lt;code&gt;Sending of null packets to keep session active&lt;/code&gt;&lt;/strong&gt;, set &lt;strong&gt;&lt;code&gt;Seconds between keepalives (0 to turn off)&lt;/code&gt;&lt;/strong&gt; to e.g. &lt;strong&gt;&lt;code&gt;300&lt;/code&gt;&lt;/strong&gt; (5 minutes).&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;On Linux (ssh)&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;To enable the keep alive system-wide (root access required), edit &lt;code&gt;/etc/ssh/ssh_config&lt;/code&gt;; to set the settings for just your user, edit &lt;code&gt;~/.ssh/config&lt;/code&gt; (create the file if it doesn’t exist). Insert the following:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;Host *
+    ServerAliveInterval 300
+    ServerAliveCountMax 2
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;You can also make your OpenSSH server keep alive all connections with clients by adding the following to &lt;code&gt;/etc/ssh/sshd_config&lt;/code&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;ClientAliveInterval 300
+ClientAliveCountMax 2
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;These settings will make the SSH client or server send a null packet to the other side every &lt;strong&gt;300 seconds&lt;/strong&gt; (5 minutes), and give up if it doesn’t receive any response after &lt;strong&gt;2 tries&lt;/strong&gt;, at which point the connection is likely to have been discarded anyway.&lt;/p&gt;
+&lt;p&gt;From the ssh_config man page:&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;ServerAliveCountMax&lt;/strong&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Sets the number of server alive messages (see below) which may be sent without ssh(1) receiving any messages back from the server. If this threshold is reached while server alive messages are being sent, ssh will disconnect from the server, terminating the session. It is important to note that the use of server alive messages is very different from TCPKeepAlive (below). The server alive messages are sent through the encrypted channel and therefore will not be spoofable. The TCP keepalive option enabled by TCPKeepAlive is spoofable. The server alive mechanism is valuable when the client or server depend on knowing when a connection has become inactive.&lt;/p&gt;
+&lt;p&gt;The default value is 3. If, for example, ServerAliveInterval (see below) is set to 15 and ServerAliveCountMax is left at the default, if the server becomes unresponsive, ssh will disconnect after approximately 45 seconds. This option applies to protocol version 2 only; in protocol version 1 there is no mechanism to request a response from the server to the server alive messages, so disconnection is the responsibility of the TCP stack.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;strong&gt;ServerAliveInterval&lt;/strong&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Sets a timeout interval in seconds after which if no data has been received from the server, ssh(1) will send a message through the encrypted channel to request a response from the server. The default is 0, indicating that these messages will not be sent to the server, or 300 if the BatchMode option is set. This option applies to protocol version 2 only. ProtocolKeepAlives and SetupTimeOut are Debian-specific compatibility aliases for this option.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2&gt;Reference&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;a href="https://patrickmn.com/aside/how-to-keep-alive-ssh-sessions/"&gt;How to Keep Alive SSH Sessions&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;</summary><category term="linux"></category></entry><entry><title>install docker, dl package, ssh access for ubuntu</title><link href="/pages/2017/02/12/install-docker-dl-package-ssh-access-for-ubuntu/" rel="alternate"></link><updated>2017-02-12T00:00:00-06:00</updated><author><name>Huiming Song</name></author><id>tag:,2017-02-12:pages/2017/02/12/install-docker-dl-package-ssh-access-for-ubuntu/</id><summary type="html">&lt;h4&gt;1. install vim&lt;/h4&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;sudo apt remove vim-tiny
 sudo apt update
 sudo apt install vim
