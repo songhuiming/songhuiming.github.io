@@ -1,0 +1,1784 @@
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>SQLAlchemy &mdash; pydata</title>
+  <meta name="author" content="shm">
+
+
+
+
+
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+    <link href="/favicon.png" rel="icon">
+
+  <link href="/theme/css/main.css" media="screen, projection"
+        rel="stylesheet" type="text/css">
+
+  <link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic"
+        rel="stylesheet" type="text/css">
+  <link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic"
+        rel="stylesheet" type="text/css">
+</head>
+
+<body>
+  <header role="banner"><hgroup>
+  <h1><a href="/">pydata</a></h1>
+    <h2>Keep Looking, Don't Settle</h2>
+</hgroup>
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>
+        MathJax.Hub.Config({
+            config: ["MMLorHTML.js"],
+            extensions: ["tex2jax.js","TeX/AMSmath.js","TeX/AMSsymbols.js"],
+            jax: ["input/TeX"],
+            tex2jax: {
+                inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+                displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+                processEscapes: false
+            },
+            TeX: {
+                TagSide: "right",
+                TagIndent: ".8em",
+                MultLineWidth: "85%",
+                equationNumbers: {
+                   autoNumber: "AMS",
+                },
+                unicode: {
+                   fonts: "STIXGeneral,'Arial Unicode MS'"
+                }
+            },
+            showProcessingMessages: false
+        });
+</script></header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+</ul>
+
+<form class="search" action="/search.html">
+    <input type="text" class="search-query" placeholder="Search" name="q" id="s">
+</form>
+
+<form action="https://www.google.com/search" method="get">
+    <fieldset role="search">
+       <input type="hidden" name="q" value="site:songhuiming.github.io" />
+       <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+    </fieldset>
+</form>
+
+
+<ul class="main-navigation">
+    <li><a href="/functions/archives.html">Archives</a></li>
+      <li >
+        <a href="/category/linux.html">Linux</a>
+      </li>
+      <li class="active">
+        <a href="/category/python.html">Python</a>
+      </li>
+      <li >
+        <a href="/category/rthers.html">Rthers</a>
+      </li>
+</ul></nav>
+  <div id="main">
+    <div id="content">
+<div>
+  <article class="hentry" role="article">
+<header>
+      <h1 class="entry-title">SQLAlchemy</h1>
+    <p class="meta">
+<time datetime="2017-05-28T00:00:00-05:00" pubdate>Sun 28 May 2017</time>    </p>
+</header>
+
+  <div class="entry-content"><h2>1. SQLAlchemy简介</h2>
+<p>SQLAlchemy是一个与数据库进行交互的库。它可以让你用Python的类和语句创建数据模型来查询数据.它可以连接许多数据库，包括 Postgres，MySQL，SQLite和Oracle等等.</p>
+<h3>为什么用SQLAlchemy</h3>
+<p>简单地说，就是用统一的python的格式来写SQLcode.</p>
+<p>我们在使用不同的SQL的时候，语法会不尽相同。比如sqlite，mysql，mongodb等等，进行插入操作，新建变量操作等等，都不相同。这样导致每用一个SQL，都要去看一遍语法.使用SQLAlchemy相当于提供了一个统一的接口，这样我们只要写python的code，而不需要去关注具体的SQL的细节部分。</p>
+<p>用SQLAlchemy的主要原因是，把你从底层的数据库和SQL奇葩语法中解放出来。SQLAlchemy将常用语句和类型和SQL语句对应起来，让你可以更容易地理解数据库类型，而不需要担心太多细节。这样在处理像Oracle到PostgreSQL数据库这类的迁移工作，或从一个应用数据库到数据仓库时，事情就简单了。它还能确保数据在增加到数据库之前是经过安全的，适当转义处理的。这样可以避免SQL注入之类的事情发生。</p>
+<p>SQLAlchemy通过两个主要的模型来实现灵活的操作：SQL表达式语言（通常也叫Core）和ORM（Object-relational mapping，对象关系映射）。这两个模型可以根据你的需要独立使用，也可以合在一起使用。</p>
+<h4>SQLAlchemy Core和SQL表达式语言</h4>
+<p>SQL表达式语言是用Pythonic方式的来表达SQL语句和表达式，只是对传统的SQL语言的轻微抽象。它侧重于实用数据库的模式（schema，其实是具体到一个Tabel和View等），但是它实现了不同数据库之间标准化的接口。SQL表达式语言也是SQLAlchemy ORM的基础。</p>
+<h5>ORM</h5>
+<p>SQLAlchemy ORM与你在其他语言里遇到的ORM类似。它侧重于应用的Domain Model（一种将数据与其行为集成在一起的模式），借助工作单元的模式来维护对象状态。它还在SQL表达式语言之上增加了一层抽象，让用户可以更容易的操作数据库。你可以把ORM和SQL表达式语言结合起来构建强大的应用。ORM构建了一个声明式的系统，与许多其他ORM模型（如Ruby on Rails）使用的 active-record systems类似。</p>
+<p>虽然ORM非常有用，但是你要注意，类的很多用法与数据库的工作方式是不一样的。我们将在后面的章节介绍这些差异。</p>
+<h4>Core和ORM的选择</h4>
+<p>究竟是选择Core还是ORM作为应用的数据链接层呢？除了个人喜好，理由可以归结为一些影响因素。这两种模式的语法不太一样，但Core和ORM最大的差异是Core对数据模式和业务对象（business objects）的不同处理方式。</p>
+<p>SQLAlchemy Core是以模式为中心，和普通SQL一样有表，键和索引等。SQLAlchemy Core最擅长的时数据仓库，报表分析，以及其他使用数据查询和其他操作可以牢牢掌控的地方。它拥有强大的数据库连接池（ connection pool）和数据结果集（ResultSet）优化，非常适合处理大量数据，甚至多数据库也适用。</p>
+<p>但是，如果你更侧重于<a href="https://en.wikipedia.org/wiki/Domain-driven_design">领域驱动设计</a>(domain driven design)，那么ORM就可以将原数据和业务对象的底层的模式和结构大部分细节都封装起来。这样封装让数据库连接更简单，更像Python代码。大多数应用都更适合按照这种方法建模。ORM可以用一种非常高效的方法把领域驱动设计方法导入传统应用，或者改造原来带有原始SQL语句的应用。还有一个好处就是，通过对底层数据库的合理抽象，ORM让开发者把精力更多地集中在业务流程的实现上。</p>
+<p>不过，ORM是建立在SQLAlchemy Core基础之上的，你可以把处理MySQL的同样方式用于Oracle的数据仓库和Amazon Redshift数据库。当你需要业务对象和仓库数据时，ORM可以无缝的衔接每个环节。</p>
+<ul>
+<li>如果你的应用框架已经使用了ORM，但是想要更强大的报表功能，使用Core</li>
+<li>如果你不想像普通SQL一样以模式为中心，用ORM</li>
+<li>如果你的数据不需要业务对象，用Core</li>
+<li>如果你把数据看成业务对象，用ORM</li>
+<li>如果要建立快速原型，用ORM</li>
+<li>如果你既要业务对象，又要其他数据无关的功能（报表，数据分析等等），两个都用。</li>
+</ul>
+<p>知道了如何选择Core和ORM，我们介绍SQLAlchemy的安装与数据库连接方法。</p>
+<h3>SQLAlchemy安装与数据库连接</h3>
+<p>SQLAlchemy支持Python 2.6+，Python 3.3+和Pypy 2.1+，强烈推荐conda安装，pip也可以（Python 2.7.5+和Python 3.4+自带pip）。</p>
+<div class="highlight"><pre>pip install sqlalchemy
+</pre></div>
+
+
+<h4>连接数据库</h4>
+<p>连接数据库需要SQLAlchemy引擎，SQLAlchemy引擎为数据库执行SQL语句创建了一个常用的接口。引擎通过封装一个数据库连接池和方言来实现不同数据库类型统一的接口。这样做使得Python代码不需要关心不同数据库DBAPI之间的差异。SQLAlchemy提供了一个带连接字符串（connection string）和一些参数的函数来创建引擎。连接字符串形式如下：</p>
+<ul>
+<li>数据库类型（SQLite，Postgres，MySQL等）</li>
+<li>默认数据库类型的方言（Psycopg2，PyMySQL等）</li>
+<li>验证信息（用户名和密码）</li>
+<li>数据库的位置（文件名或数据库服务器地址）</li>
+<li>数据库服务器端口（可选）</li>
+<li>数据库名称（可选）</li>
+</ul>
+<p>SQLite数据库连接字符串就是一个文件或储存位置。例1-1中，第二行表示SQLAlchemy连接了当前文件夹中的一个SQLite数据库文件<code>cookies.db</code>，第三行是连接内存数据库，第四、五行分别是Unix和Windows系统中的全路径文件。Windows系统路径名称分隔符（<code>\</code>）在Python中是<code>'\\'</code>或<code>r'\'</code></p>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">sqlalchemy</span> <span class="kn">import</span> <span class="n">create_engine</span>
+<span class="n">engine</span> <span class="o">=</span> <span class="n">create_engine</span><span class="p">(</span><span class="s1">&#39;sqlite:///cookies.db&#39;</span><span class="p">)</span>
+<span class="n">engine2</span> <span class="o">=</span> <span class="n">create_engine</span><span class="p">(</span><span class="s1">&#39;sqlite:///:memory:&#39;</span><span class="p">)</span>
+<span class="n">engine3</span> <span class="o">=</span> <span class="n">create_engine</span><span class="p">(</span><span class="s1">&#39;sqlite:////home/cookiemonster/cookies.db&#39;</span><span class="p">)</span>
+<span class="n">engine3</span> <span class="o">=</span> <span class="n">create_engine</span><span class="p">(</span><span class="s1">&#39;sqlite:///c:</span><span class="se">\\</span><span class="s1">Users</span><span class="se">\\</span><span class="s1">cookiemonster</span><span class="se">\\</span><span class="s1">cookies.db&#39;</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre>`create_engine`函数创建了一个引擎实例，但是，它并没有真正打开链接，直到一个动作要求引擎执行时才会执行，比如查询或新建数据。
+</pre></div>
+
+
+<p>下面再让我们创建一个PostgreSQL数据库<code>mydb</code>。然后我们用函数构建一个引擎实例，如例1-2所示，你会发现我用了<code>postgresql+psycopg2</code>作为连接字符串的引擎和方言部分。</p>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">sqlalchemy</span> <span class="kn">import</span> <span class="n">create_engine</span>
+<span class="n">engine</span> <span class="o">=</span> <span class="n">create_engine</span><span class="p">(</span><span class="s1">&#39;postgresql+psycopg2://username:password@localhost:5432/mydb&#39;</span><span class="p">)</span>
+</pre></div>
+
+
+<p>同理，我们再看看MySQL引擎的创建，如例1-3所示，我们把参数<code>pool_recycle</code>设置成<code>3600</code>，表示每一小时自动连接一次。</p>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">sqlalchemy</span> <span class="kn">import</span> <span class="n">create_engine</span>
+<span class="n">engine</span> <span class="o">=</span> <span class="n">create_engine</span><span class="p">(</span><span class="s1">&#39;mysql+pymysql://cookiemonster:chocolatechip&#39;</span>
+                       <span class="s1">&#39;@mysql01.monster.internal/cookies&#39;</span><span class="p">,</span> <span class="n">pool_recycle</span><span class="o">=</span><span class="mi">3600</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre>MySQL默认超过8小时空闲则断开连接。为了绕开这个问题，引擎设置pool_recycle=3600
+</pre></div>
+
+
+<p><code>create_engine</code>函数的可选参数是：</p>
+<ul>
+<li><code>echo</code>：表示引擎行为的日志是否显示，像执行的SQL语句和其他参数等等。默认是<code>False</code>。</li>
+<li><code>ecoding</code>：默认使用SQLAlchemy的字符串编码<code>utf-8</code>，大多数DBAPI都用此编码。</li>
+<li><code>isolation_level</code>：SQLAlchemy分离等级。PostgreSQL+psycopg2的分类等级有<code>READ COMMITTED</code>，<code>READ UNCOMMITTED</code>，<code>REPEATABLE READ</code>，<code>SERIALIZABLE</code>，<code>AUTOCOMMIT</code>五种，默认是<code>READ COMMITTED</code>。PyMySQL也是这五种，InnoDB存储引擎数据库默认是<code>REPEATABLE READ</code>。</li>
+</ul>
+<p>用<code>isolation_level</code>关键词会为具体的DBAPI设置隔离等级，可就像数据库对应连接字符串的键值对一样，比如PostgreSQL是用psycopg2。</p>
+<p><code>pool_recycle</code>：这个参数是指数据库连接多少秒循环检查一次，对MySQL非常重要。默认值为-1，表示没有时间限制，一直连接。</p>
+<p>一旦引擎建立，我们就可以连接数据库了。通过<code>connect()</code>函数就可以。</p>
+<div class="highlight"><pre><span class="n">connection</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+</pre></div>
+
+
+<p>现在我们已经连接了数据库，可以用SQLAlchemy Core和ORM了。下面这部分，我们将探索SQLAlchemy Core的内容，学习如何定义和查询数据库。</p>
+<h3>SQLAlchemy Core</h3>
+<p>连接数据库之后，我们就可以使用SQLAlchemy Core来进行数据库操作了。SQLAlchemy Core是用Pythonic方式的SQL表达式语言来表示SQL命令和数据结构的。SQLAlchemy Core具有的这种特性让它不仅可以用于Django或SQLAlchemy ORM，也可以单独使用。</p>
+<p>首先我们需要定义数据表的数据类型，数据的关联性以及其他约束条件。</p>
+<h4>2.Schema and Types</h4>
+<p>为了搞定数据库，SQLAlchemy提供了以下三种方式来表示数据库中的表结构：</p>
+<ul>
+<li>Core：自定义表Table对象</li>
+<li>ORM：用类class表示数据表</li>
+<li>SQLsoup和Automap：直接从数据库映射</li>
+</ul>
+<p>本章重点介绍第一种方式，即通过SQLAlchemy Core来实现，后面的章节会介绍其他两种方法。<code>Table</code>对象包括了一系列具有特定类型的列和属性，这些通过一个常用的元数据容器来控制。首先我们介绍SQLAlchemy建数据表的数据类型。</p>
+<h4>Types</h4>
+<p>SQLAlchemy有四种数据类型：</p>
+<ul>
+<li>通用类型（Generic）</li>
+<li>SQL标准类型（SQL standard）</li>
+<li>数据库特有类型（Vendor Specific）</li>
+<li>用户自定义类型（User Defined）</li>
+</ul>
+<p>SQLAlchemy为不同的数据库定义了一些通用的数据类型。这些类型都在<code>sqlalchemy.types</code>模块中，为了引用方便也支持放在<code>sqlalchemy</code>里面。</p>
+<p>布尔型通用类型使用<code>BOOLEAN</code> SQL类型，对应的Python类型就是<code>True</code>和<code>False</code>；但是，对那些不支持<code>BOOLEAN</code> SQL类型的数据库通常要使用<code>SMALLINT</code>来代替。由于SQLAlchemy把这些细节都隐藏了，因此你可以放心大胆的操作数据，不用担心后面数据库用的是什么细节，只要在Python代码里处理<code>True</code>和<code>False</code>就行。即使数据仓库和交换数据库不一样，通用类型也可以完成数据处理。通用类型对应Python和SQL的含义如下表所示：</p>
+<table>
+<thead>
+<tr>
+<th align="center">SQLAlchemy</th>
+<th align="center">Python</th>
+<th align="center">SQL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">BigInteger</td>
+<td align="center">int</td>
+<td align="center">BIGINT</td>
+</tr>
+<tr>
+<td align="center">Boolean</td>
+<td align="center">bool</td>
+<td align="center">BOOLEAN or SMALLINT</td>
+</tr>
+<tr>
+<td align="center">Date</td>
+<td align="center">datetime.date</td>
+<td align="center">Date (SQLite: String)</td>
+</tr>
+<tr>
+<td align="center">DateTime</td>
+<td align="center">datetime.datetime</td>
+<td align="center">DATETIME (SQLite: String)</td>
+</tr>
+<tr>
+<td align="center">Enum</td>
+<td align="center">str</td>
+<td align="center">ENUM or VARCHAR</td>
+</tr>
+<tr>
+<td align="center">Float</td>
+<td align="center">float or Decimal</td>
+<td align="center">FLOAT or REAL</td>
+</tr>
+<tr>
+<td align="center">Integer</td>
+<td align="center">int</td>
+<td align="center">Integer</td>
+</tr>
+<tr>
+<td align="center">Interval</td>
+<td align="center">datetime.timedelta</td>
+<td align="center">INTERVAL or DATE from epoch</td>
+</tr>
+<tr>
+<td align="center">LargeBinary</td>
+<td align="center">byte</td>
+<td align="center">BLOB or BYTEA</td>
+</tr>
+<tr>
+<td align="center">Numeric</td>
+<td align="center">decimal.Decimal</td>
+<td align="center">NUMERIC or DECIMAL</td>
+</tr>
+<tr>
+<td align="center">Unicode</td>
+<td align="center">unicode</td>
+<td align="center">UNICODE or VARCHAR</td>
+</tr>
+<tr>
+<td align="center">Text</td>
+<td align="center">str</td>
+<td align="center">CLOB or TEXT</td>
+</tr>
+<tr>
+<td align="center">Time</td>
+<td align="center">datetime.time</td>
+<td align="center">DATETIME</td>
+</tr>
+</tbody>
+</table>
+<p>掌握通用类型非常重要，会经常使用</p>
+<p>如果通用类型不能满足需求，也会用到SQL标准类型和数据库专有类型。<code>CHAR</code>和<code>NVARCHAR</code>类型就是最好的例证，源自SQL类型。如果数据库的模式是在使用SQLAlchemy之前建立的，我们就要注意原模式与SQLAlchemy的差异。SQL标准类型的特性在不同的数据库里面可能有很大变化，也是在sqlalchemy.types模块中，为了和通用类型分开，都用大写字母表示。</p>
+<p>数据库专有类型只存在于特定的数据库中。你可以通过SQLALchemy网站或某种数据库的方言（dialect）文档查询此类型，放在sqlalchemy.dialects模块和数据库方言的子模块中，这些类型同样是大写字母。例如，我们想使用PostgreSQL强大的JSON类型，我们可以这样：</p>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">sqlalchemy.dialects.postgresql</span> <span class="kn">import</span> <span class="n">JSON</span>
+</pre></div>
+
+
+<p>这样我们就可以用PostgreSQL特有的JSON函数为我们的应用定义JSON类型，比如array_to_json。</p>
+<p>你也可以根据自己的需要自定义类型。例如，当增加数据记录时，需要对即将存储到VARCHAR列的文本增加前缀，下一次从数据记录中获取这些记录的时候要重新去掉前缀。这样定义类型就可以给那些系统中已经存在的旧数据进行标识，表示这类数据在新应用中并没什么用或者不太重要。</p>
+<p>了解了四类数据类型之后，我们来看看如果用元数据组织数据库的结构。</p>
+<h5>Metadata</h5>
+<p>元数据用于把数据库结构集成在一起方便SQLAlchemy快速对接。可以把元数据看成是一种表目录，再加一些引擎和链接的信息。这些信息可以通过MetaData.tables查看。读操作是线程安全的，但是，表的建立不完全是线程安全的。元数据使用之前需要导入并初始化。下面让我们建立一个Metadata对象，为本章后面的例子建立容器来盛放数据库的信息目录。</p>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">sqlalchemy</span> <span class="kn">import</span> <span class="n">MetaData</span>
+<span class="n">metadata</span> <span class="o">=</span> <span class="n">MetaData</span><span class="p">()</span>
+</pre></div>
+
+
+<p>有了盛放数据库结构的地方，我们就可以建立数据表了。</p>
+<h4>Tables</h4>
+<p>在SQLAlchemy Core里数据表对象初始化过程是通过Table通过表名称，元数据和数据列的名称，类型和属性共同构建，最终放入MetaData对象的。列对象表示数据表的每个字段，都是用包含名称、数据类型和一些SQL结构与约束特征的Column对象表示。我们将从这里开始建立一些数据表在SQLAlchemy Core部分使用。例2-1如下所示，建立一个网店的饼干库存表。</p>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">sqlalchemy</span> <span class="kn">import</span> <span class="n">Table</span><span class="p">,</span> <span class="n">Column</span><span class="p">,</span> <span class="n">Integer</span><span class="p">,</span> <span class="n">Numeric</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">ForeignKey</span>
+
+<span class="n">cookies</span> <span class="o">=</span> <span class="n">Table</span><span class="p">(</span><span class="s1">&#39;cookies&#39;</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span>
+                <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;cookie_id&#39;</span><span class="p">,</span> <span class="n">Integer</span><span class="p">(),</span> <span class="n">primary_key</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+                <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;cookie_name&#39;</span><span class="p">,</span> <span class="n">String</span><span class="p">(</span><span class="mi">50</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+                <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;cookie_recipe_url&#39;</span><span class="p">,</span> <span class="n">String</span><span class="p">(</span><span class="mi">255</span><span class="p">)),</span>
+                <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;quantity&#39;</span><span class="p">,</span> <span class="n">Integer</span><span class="p">()),</span>
+                <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;unit_cost&#39;</span><span class="p">,</span> <span class="n">Numeric</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+
+<span class="p">)</span>
+
+<span class="nb">list</span><span class="p">(</span><span class="n">cookies</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+</pre></div>
+
+
+<p>建立新表之前，我们需要理解表的基础单元——列。</p>
+<h5>Columns</h5>
+<p>列定义了数据表中的字段，它们通过我们对其关键词参数的设置来表达具体的含义。不同类型的主要参数不同。例如，字符串类型的基本参数是长度，而带小数的数值类型基本参数是精度和长度。其他类型大都没有基本参数。</p>
+<p>有时你也会看到字符串类型没有设置长度。并非所有的数据库都支持这种特性，包括MySQL也不支持。
+列也有一些别的参数来帮助它们建立更丰富的特性。我们可以为列设置是否允许空值或必须具有唯一性（unique）。还可以定义初始值（default），通常这么做是为了日志记录或财务审计的需要，如下所示。</p>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">sqlalchemy</span> <span class="kn">import</span> <span class="n">DateTime</span>
+<span class="n">users</span> <span class="o">=</span> <span class="n">Table</span><span class="p">(</span><span class="s1">&#39;users&#39;</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span>
+                <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;user_id&#39;</span><span class="p">,</span> <span class="n">Integer</span><span class="p">(),</span> <span class="n">primary_key</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+                <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;username&#39;</span><span class="p">,</span> <span class="n">String</span><span class="p">(</span><span class="mi">15</span><span class="p">),</span> <span class="n">nullable</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">unique</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+                <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;email_address&#39;</span><span class="p">,</span> <span class="n">String</span><span class="p">(</span><span class="mi">255</span><span class="p">),</span> <span class="n">nullable</span><span class="o">=</span><span class="bp">False</span><span class="p">),</span>
+                <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;phone&#39;</span><span class="p">,</span> <span class="n">String</span><span class="p">(</span><span class="mi">20</span><span class="p">),</span> <span class="n">nullable</span><span class="o">=</span><span class="bp">False</span><span class="p">),</span>
+                <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;password&#39;</span><span class="p">,</span> <span class="n">String</span><span class="p">(</span><span class="mi">25</span><span class="p">),</span> <span class="n">nullable</span><span class="o">=</span><span class="bp">False</span><span class="p">),</span>
+                <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;created_on&#39;</span><span class="p">,</span> <span class="n">DateTime</span><span class="p">(),</span> <span class="n">default</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">),</span>
+                <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;updated_on&#39;</span><span class="p">,</span> <span class="n">DateTime</span><span class="p">(),</span> <span class="n">default</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">,</span> <span class="n">onupdate</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">)</span>
+<span class="p">)</span>
+
+<span class="nb">list</span><span class="p">(</span><span class="n">users</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+</pre></div>
+
+
+<p>你会发现这里使用datatime.now，而不是datatime.now()。如果我们直接用函数，那么时间可能就是数据表第一次建立的时间。不带()我们就可以在每条记录生成时产生一个新的时间。</p>
+<p>我们通过列关键词参数定义了数据表的结构和约束；但是，列对象有时可能需要和其他表进行关联。当你处理数据库时，你必须告诉SQLAlchemy关于这个数据库内部的模式，结构和约束。假如有一个数据库和SQLAlchemy使用的索引名称模式不同，那么你必须定义索引才能正常使用。下面两个小节将告诉你怎么做。</p>
+<p>Keys and Constraints和Index两节的程序其实都可以在Table构造函数里直接实现，也可以通过特定方法在表建立之后实现，再增加到表中。它们都会作为单独一行语句保存到metadata里面。</p>
+<h4>Keys and Constraints</h4>
+<p>键和约束是用来保证数据在存到数据库之前能够满足一些约束条件的方法。表示键和约束的对象在SQLAlchemy模块里面都有，常用的三个如下所示：</p>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">sqlalchemy</span> <span class="kn">import</span> <span class="n">PrimaryKeyConstraint</span><span class="p">,</span> <span class="n">UniqueConstraint</span><span class="p">,</span> <span class="n">CheckConstraint</span>
+</pre></div>
+
+
+<p>主键是最常用的，表示数据表中一条记录的唯一标识，可以用来保证不同表里相关数据之间正确的关系。前面的例1和例2中，我们用<code>primary_key</code>参数将一列设置为主键。你还可以用若干列构成的元组来定义一个复合主键。这个键在表中被看成是一个内容为元组的列，会按照它们原始顺序进行排列。主键还可以在表构建之后再定义，如下所示。你可以用逗号分隔，增加多列形成一个复合主键。如果我们想在上面例2中显示定义主键，可以这样做：</p>
+<div class="highlight"><pre><span class="n">PrimaryKeyConstraint</span><span class="p">(</span><span class="s1">&#39;user_id&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;user_pk&#39;</span><span class="p">)</span>
+</pre></div>
+
+
+<p>另一个常用的约束就是唯一性约束，确保一个字段里任意两个值不重复，如果在登录系统里面出现两个用户名是一样的，那就麻烦了。我们也可以用下面的方式定义例2中用户名列的唯一性约束：</p>
+<div class="highlight"><pre><span class="n">UniqueConstraint</span><span class="p">(</span><span class="s1">&#39;username&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;uix_username&#39;</span><span class="p">)</span>
+</pre></div>
+
+
+<p>例2里没有用到检查约束类型。这种约束类型是用来保证一列数据与用户定义的条件一致。下面的例子，我们保证unit_cost列永远非负，因为成本不可能小于0。</p>
+<div class="highlight"><pre><span class="n">CheckConstraint</span><span class="p">(</span><span class="s1">&#39;unit_coust &gt;= 0.00&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;unit_coust_positive&#39;</span><span class="p">)</span>
+</pre></div>
+
+
+<p>除了键和约束，我们还想更高效的查询一些字段。这就要介绍索引（Indexes）。</p>
+<h5>Indexes</h5>
+<p>索引是用来加速查询的，在例1里面，我们把cookie_name加上了索引，因为我们知道我们经常需要查询它们。索引创建之后你就会获得一个ix_cookies_cookie_name索引。我们也可以显式定义一个索引。多列的索引可以通过分号分隔名称来建立。你还可以增加一个参数unique=True来保证索引具有唯一性。如果显式声明索引，它们就会在放在对应列后面。下面的做法与例1相同：</p>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">sqlalchemy</span> <span class="kn">import</span> <span class="n">Index</span>
+
+<span class="n">Index</span><span class="p">(</span><span class="s1">&#39;ix_cookies_cookie_name&#39;</span><span class="p">,</span> <span class="s1">&#39;cookie_name&#39;</span><span class="p">)</span>
+</pre></div>
+
+
+<p>我们还可以创建了函数索引，不同的数据库可能用法上会有点儿变化。这样可以让你为一些经常查询不常用信息的需求创建检索。例如，如果你想从饼干的SKU号和名称的组合中找SKU0001 Chocolate Chip信息。我们就可以建立一个复合索引来查询：</p>
+<div class="highlight"><pre><span class="n">Index</span><span class="p">(</span><span class="s1">&#39;ix_test&#39;</span><span class="p">,</span> <span class="n">mytable</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">cookie_sku</span><span class="p">,</span> <span class="n">mytable</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">cookie_name</span><span class="p">)</span>
+</pre></div>
+
+
+<p>下面到了关系型数据库最重要的部分了，就是表的关联关系与定义。</p>
+<h5>Relationships and ForeignKeyConstraints</h5>
+<p>现在我们有了一个约束和索引都正确的表，让我们看看表之间的关系如何建立。我们需要一种方法来跟踪订单，包括记录已销售的饼干和数量的信息。表关系图如下所示： </p>
+<p>例3实现了line_items表order_id列的关系，就是用ForeignKeyConstraint定义两个表的关系。在本例中，我们有很多line_items表示单个订单。但是，如果你深入到这些订单中，你会发现订单与cookies表的cookie_id外键有关联关系。这是因为line_items表其实与orders和cookies表的一些数据都有关联。关联表用来表示另外两个表之间的多对多关系。通常一个外键用来表示一对多关系，但是如果一个表有多个外键，那么这个表很可能是一个关联表。</p>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">sqlalchemy</span> <span class="kn">import</span> <span class="n">ForeignKey</span><span class="p">,</span> <span class="n">Boolean</span>
+<span class="n">orders</span> <span class="o">=</span> <span class="n">Table</span><span class="p">(</span><span class="s1">&#39;orders&#39;</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span>
+            <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;order_id&#39;</span><span class="p">,</span> <span class="n">Integer</span><span class="p">(),</span> <span class="n">primary_key</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+            <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;user_id&#39;</span><span class="p">,</span> <span class="n">ForeignKey</span><span class="p">(</span><span class="s1">&#39;users.user_id&#39;</span><span class="p">)),</span>
+            <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;shipped&#39;</span><span class="p">,</span> <span class="n">Boolean</span><span class="p">(),</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="n">line_items</span> <span class="o">=</span> <span class="n">Table</span><span class="p">(</span><span class="s1">&#39;line_items&#39;</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span>
+                <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;line_items_id&#39;</span><span class="p">,</span> <span class="n">Integer</span><span class="p">(),</span> <span class="n">primary_key</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+                <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;order_id&#39;</span><span class="p">,</span> <span class="n">ForeignKey</span><span class="p">(</span><span class="s1">&#39;orders.order_id&#39;</span><span class="p">)),</span>
+                <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;cookie_id&#39;</span><span class="p">,</span> <span class="n">ForeignKey</span><span class="p">(</span><span class="s1">&#39;cookies.cookie_id&#39;</span><span class="p">)),</span>
+                <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;quantity&#39;</span><span class="p">,</span> <span class="n">Integer</span><span class="p">()),</span>
+                <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;extended_cost&#39;</span><span class="p">,</span> <span class="n">Numeric</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="p">)</span>
+</pre></div>
+
+
+<p>用字符串替换实际的列名可以在多个模块中把表的定义分离，这样就不用担心表加载的顺序了。这是因为，它只会在首次连接表名称和列名称的时候解析字符串执行表查询。如果我们直接用表引用，比如cookies.c.cookie_id，我们的外键在每次模块初始化的时候都要执行一次，如果表加载的顺序特别靠后就会出错。</p>
+<p>你可以显式的调研ForeignKeyConstraint定义，在SQLAlchemy里面可以对已经建好的表建立外键，就像其他的键，约束和索引的创建一样。需要先倒入ForeignKeyConstraint模块然后定义。下面的代码是创建一个ForeignKeyConstraint表示line_items表和orders之间order_id外键。</p>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">sqlalchemy</span> <span class="kn">import</span> <span class="n">ForeignKeyConstraint</span>
+
+<span class="n">ForeignKeyConstraint</span><span class="p">([</span><span class="s1">&#39;order_id&#39;</span><span class="p">],</span> <span class="p">[</span><span class="s1">&#39;orders.order_id&#39;</span><span class="p">])</span>
+</pre></div>
+
+
+<p>前面做的每件事情都是用SQLAlchemy可以理解的方式定义的。如果你的数据库已经存在，而且schema已经建立，你就可以进行查询了。如果你还没建立，下面就介绍如何把数据库建成文件。</p>
+<h5>Persisting the Tables</h5>
+<p>表和模式定义与原数据相关。把模式保存到数据库很简单，用metadata的create_all()方法就可以了：</p>
+<div class="highlight"><pre><span class="n">metadata</span><span class="o">.</span><span class="n">create_all</span><span class="p">(</span><span class="n">engine</span><span class="p">)</span>
+</pre></div>
+
+
+<p>默认情况下，create_all()方法不会重新创建已经存在的数据库，所有运行多次也很安全。相比直接在应用代码里修改数据库，用Alembic那样的迁移工具处理数据库的更新或其他模式是更好的方法。我们将在后面的章节里介绍。现在数据库里面已经有表了，这一章完整的代码如下所示：</p>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">sqlalchemy</span> <span class="kn">import</span> <span class="p">(</span><span class="n">MetaData</span><span class="p">,</span> <span class="n">Table</span><span class="p">,</span> <span class="n">Column</span><span class="p">,</span> <span class="n">Integer</span><span class="p">,</span> <span class="n">Numeric</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span>
+                        <span class="n">Boolean</span><span class="p">,</span> <span class="n">DateTime</span><span class="p">,</span> <span class="n">ForeignKey</span><span class="p">,</span> <span class="n">create_engine</span><span class="p">)</span>
+<span class="n">metadata</span> <span class="o">=</span> <span class="n">MetaData</span><span class="p">()</span>
+<span class="n">cookies</span> <span class="o">=</span> <span class="n">Table</span><span class="p">(</span><span class="s1">&#39;cookies&#39;</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span>
+                <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;cookie_id&#39;</span><span class="p">,</span> <span class="n">Integer</span><span class="p">(),</span> <span class="n">primary_key</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+                <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;cookie_name&#39;</span><span class="p">,</span> <span class="n">String</span><span class="p">(</span><span class="mi">50</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+                <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;cookie_recipe_url&#39;</span><span class="p">,</span> <span class="n">String</span><span class="p">(</span><span class="mi">255</span><span class="p">)),</span>
+                <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;cookie_sku&#39;</span><span class="p">,</span> <span class="n">String</span><span class="p">(</span><span class="mi">55</span><span class="p">)),</span>
+                <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;quantity&#39;</span><span class="p">,</span> <span class="n">Integer</span><span class="p">()),</span>
+                <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;unit_cost&#39;</span><span class="p">,</span> <span class="n">Numeric</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+                <span class="p">)</span>
+<span class="n">users</span> <span class="o">=</span> <span class="n">Table</span><span class="p">(</span><span class="s1">&#39;users&#39;</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span>
+              <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;user_id&#39;</span><span class="p">,</span> <span class="n">Integer</span><span class="p">(),</span> <span class="n">primary_key</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+              <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;customer_number&#39;</span><span class="p">,</span> <span class="n">Integer</span><span class="p">(),</span> <span class="n">autoincrement</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+              <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;username&#39;</span><span class="p">,</span> <span class="n">String</span><span class="p">(</span><span class="mi">15</span><span class="p">),</span> <span class="n">nullable</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">unique</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+              <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;email_address&#39;</span><span class="p">,</span> <span class="n">String</span><span class="p">(</span><span class="mi">255</span><span class="p">),</span> <span class="n">nullable</span><span class="o">=</span><span class="bp">False</span><span class="p">),</span>
+              <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;phone&#39;</span><span class="p">,</span> <span class="n">String</span><span class="p">(</span><span class="mi">20</span><span class="p">),</span> <span class="n">nullable</span><span class="o">=</span><span class="bp">False</span><span class="p">),</span>
+              <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;password&#39;</span><span class="p">,</span> <span class="n">String</span><span class="p">(</span><span class="mi">25</span><span class="p">),</span> <span class="n">nullable</span><span class="o">=</span><span class="bp">False</span><span class="p">),</span>
+              <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;created_on&#39;</span><span class="p">,</span> <span class="n">DateTime</span><span class="p">(),</span> <span class="n">default</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">),</span>
+              <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;updated_on&#39;</span><span class="p">,</span> <span class="n">DateTime</span><span class="p">(),</span>
+                     <span class="n">default</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">,</span> <span class="n">onupdate</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">)</span>
+              <span class="p">)</span>
+<span class="n">orders</span> <span class="o">=</span> <span class="n">Table</span><span class="p">(</span><span class="s1">&#39;orders&#39;</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span>
+               <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;order_id&#39;</span><span class="p">,</span> <span class="n">Integer</span><span class="p">(),</span> <span class="n">primary_key</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+               <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;user_id&#39;</span><span class="p">,</span> <span class="n">ForeignKey</span><span class="p">(</span><span class="s1">&#39;users.user_id&#39;</span><span class="p">)),</span>
+               <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;shipped&#39;</span><span class="p">,</span> <span class="n">Boolean</span><span class="p">(),</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+               <span class="p">)</span>
+<span class="n">line_items</span> <span class="o">=</span> <span class="n">Table</span><span class="p">(</span><span class="s1">&#39;line_items&#39;</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span>
+                   <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;line_items_id&#39;</span><span class="p">,</span> <span class="n">Integer</span><span class="p">(),</span> <span class="n">primary_key</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+                   <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;order_id&#39;</span><span class="p">,</span> <span class="n">ForeignKey</span><span class="p">(</span><span class="s1">&#39;orders.order_id&#39;</span><span class="p">)),</span>
+                   <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;cookie_id&#39;</span><span class="p">,</span> <span class="n">ForeignKey</span><span class="p">(</span><span class="s1">&#39;cookies.cookie_id&#39;</span><span class="p">)),</span>
+                   <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;quantity&#39;</span><span class="p">,</span> <span class="n">Integer</span><span class="p">()),</span>
+                   <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;extended_cost&#39;</span><span class="p">,</span> <span class="n">Numeric</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+                   <span class="p">)</span>
+<span class="n">engine</span> <span class="o">=</span> <span class="n">create_engine</span><span class="p">(</span><span class="s1">&#39;sqlite:///:memory:&#39;</span><span class="p">)</span>
+<span class="n">metadata</span><span class="o">.</span><span class="n">create_all</span><span class="p">(</span><span class="n">engine</span><span class="p">)</span>
+<span class="n">connection</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+</pre></div>
+
+
+<p>本章我们介绍了如何在SQLAlchemy里把元数据当作目录（catalog）来存放表模式和其他数据。我们还定义了带有多列和多约束的表。然后，我们介绍约束的类型和这些约束对列进行的显式定义的方法。其次，我们介绍了默认值的设置和为了查账进行更新值的方法。最后，我们介绍了把模式保存到数据库进行重用的方法。下面我们介绍如何在模式中用SQL表达式语言进行数据的操作。</p>
+<h3>3.SQLAlchemy Core数据操作</h3>
+<p>现在数据库里面有了表，让我们来操作它们。首先我们将演示如何增删改查，然后介绍如果排序，组合以及如何使用关系。我们用SQLAlchemy Core提供的SEL（SQL表达式语言）演示。还是用上一章建立的数据库，首先我们看看如何新建数据。</p>
+<h4>Inserting Data</h4>
+<p>首先，我们在cookies表新建一行我最喜欢的饼干（巧克力味的）。用cookies表的insert()方法，然后在values()语句里面设置各个列的值就可以了。如下所示：</p>
+<div class="highlight"><pre><span class="n">ins</span> <span class="o">=</span> <span class="n">cookies</span><span class="o">.</span><span class="n">insert</span><span class="p">()</span><span class="o">.</span><span class="n">values</span><span class="p">(</span>
+    <span class="n">cookie_name</span><span class="o">=</span><span class="s2">&quot;chocolate chip&quot;</span><span class="p">,</span>
+    <span class="n">cookie_recipe_url</span><span class="o">=</span><span class="s2">&quot;http://some.aweso.me/cookie/recipe.html&quot;</span><span class="p">,</span>
+    <span class="n">cookie_sku</span><span class="o">=</span><span class="s2">&quot;CC01&quot;</span><span class="p">,</span>
+    <span class="n">quantity</span><span class="o">=</span><span class="s2">&quot;12&quot;</span><span class="p">,</span>
+    <span class="n">unit_cost</span><span class="o">=</span><span class="s2">&quot;0.50&quot;</span>
+<span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ins</span><span class="p">))</span>
+</pre></div>
+
+
+<div class="highlight"><pre>INSERT INTO cookies (cookie_name, cookie_recipe_url, cookie_sku, quantity, unit_cost) VALUES (:cookie_name, :cookie_recipe_url, :cookie_sku, :quantity, :unit_cost)
+</pre></div>
+
+
+<p>上面显示了对应的SQL语句。每一列的值都用:column_name代替了，SQLAlchemy的str()函数就是这样显示的。数值都进行过清洗和转义处理，保证数据安全，避免SQL注入攻击。因为不同种类的数据库处理参数值的方言可能有点差别，所以通过编译版本的语句可以看到输入的内容。ins对象的compile()方法会返回一个SQLAlchemy对象，通过params属性就可以看到数值了。</p>
+<div class="highlight"><pre><span class="n">ins</span><span class="o">.</span><span class="n">compile</span><span class="p">()</span><span class="o">.</span><span class="n">params</span>
+</pre></div>
+
+
+<div class="highlight"><pre>{&#39;cookie_name&#39;: &#39;chocolate chip&#39;,
+ &#39;cookie_recipe_url&#39;: &#39;http://some.aweso.me/cookie/recipe.html&#39;,
+ &#39;cookie_sku&#39;: &#39;CC01&#39;,
+ &#39;quantity&#39;: &#39;12&#39;,
+ &#39;unit_cost&#39;: &#39;0.50&#39;}
+</pre></div>
+
+
+<p>ins.compile()通过方言编译数据，但是并没执行，因此我们需要用params属性查看。</p>
+<p>介绍了新建语句的用法之后，我们用connection的execute()方法把数据加入数据表。</p>
+<div class="highlight"><pre><span class="n">result</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">ins</span><span class="p">)</span>
+</pre></div>
+
+
+<p>我们还可以用inserted_primary_key属性查看刚刚新建数据的ID号。</p>
+<div class="highlight"><pre><span class="n">result</span><span class="o">.</span><span class="n">inserted_primary_key</span>
+</pre></div>
+
+
+<div class="highlight"><pre>[1]
+</pre></div>
+
+
+<p>我们简单介绍一下excute()执行的过程。当我们建立前面那条SQL表达式语言的插入语句时，实际上是创建了一个可以快速向下遍历的树状结构。当我们调用excute()方法时，它把刚刚传入的语句和其他任何参数一起编译成对应数据库方言编译器能够识别的语句。编译器通过遍历那个树状结构建成一个普通的SQL语句。这个语句返回到excute()方法，excute()方法通过绑定的连接把语句传递到数据库。数据库服务器就执行SQL语句然后把结果返回给excute()方法。</p>
+<p>insert除了可以作为表对象的实例方法，也可以当作顶层函数使用，这样可以把表对象作为参数，更具灵活性。例如，假如公司的两个部门分别拥有相互独立的库存数据，就可以按照例3-3的形式再插入一行数据。</p>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">sqlalchemy</span> <span class="kn">import</span> <span class="n">insert</span>
+<span class="n">ins</span> <span class="o">=</span> <span class="n">insert</span><span class="p">(</span><span class="n">cookies</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">(</span>
+    <span class="n">cookie_name</span><span class="o">=</span><span class="s2">&quot;chocolate chip&quot;</span><span class="p">,</span>
+    <span class="n">cookie_recipe_url</span><span class="o">=</span><span class="s2">&quot;http://some.aweso.me/cookie/recipe.html&quot;</span><span class="p">,</span>
+    <span class="n">cookie_sku</span><span class="o">=</span><span class="s2">&quot;CC01&quot;</span><span class="p">,</span>
+    <span class="n">quantity</span><span class="o">=</span><span class="s2">&quot;12&quot;</span><span class="p">,</span>
+    <span class="n">unit_cost</span><span class="o">=</span><span class="s2">&quot;0.50&quot;</span>
+<span class="p">)</span>
+</pre></div>
+
+
+<p>虽然insert的表对象方法和更具一般性的函数两种形式结果一样，我还是更喜欢后者，因为它更接近SQL语句的用法。</p>
+<p>连接对象的execute()方法不仅仅只是处理语句，还可以把values当作execute()方法的参数。当语句被编译时，它会把每个关键词参数的键增加到字段列表中，然后再把每个字段对应的值增加到SQL语句的VALUE参数里。</p>
+<div class="highlight"><pre><span class="n">ins</span> <span class="o">=</span> <span class="n">cookies</span><span class="o">.</span><span class="n">insert</span><span class="p">()</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+    <span class="n">ins</span><span class="p">,</span>
+    <span class="n">cookie_name</span><span class="o">=</span><span class="s1">&#39;dark chocolate chip&#39;</span><span class="p">,</span>
+    <span class="n">cookie_recipe_url</span><span class="o">=</span><span class="s1">&#39;http://some.aweso.me/cookie/recipe_dark.html&#39;</span><span class="p">,</span>
+    <span class="n">cookie_sku</span><span class="o">=</span><span class="s1">&#39;CC02&#39;</span><span class="p">,</span>
+    <span class="n">quantity</span><span class="o">=</span><span class="s1">&#39;1&#39;</span><span class="p">,</span>
+    <span class="n">unit_cost</span><span class="o">=</span><span class="s1">&#39;0.75&#39;</span>
+<span class="p">)</span>
+<span class="n">result</span><span class="o">.</span><span class="n">inserted_primary_key</span>
+</pre></div>
+
+
+<div class="highlight"><pre>[2]
+</pre></div>
+
+
+<p>不过这种形式并不常用，但是，它为语句在传到数据库服务器之前的编译和组织方式提供了一个很好的解释。我们可以用放了字段和数值词典的列表一次性插入多个记录。让我们把两种饼干的库存数据插入cookies表。</p>
+<div class="highlight"><pre><span class="n">ins</span> <span class="o">=</span> <span class="n">cookies</span><span class="o">.</span><span class="n">insert</span><span class="p">()</span>
+<span class="n">inventory_list</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span>
+        <span class="s1">&#39;cookie_name&#39;</span><span class="p">:</span> <span class="s1">&#39;peanut butter&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;cookie_recipe_url&#39;</span><span class="p">:</span> <span class="s1">&#39;http://some.aweso.me/cookie/peanut.html&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;cookie_sku&#39;</span><span class="p">:</span> <span class="s1">&#39;PB01&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;quantity&#39;</span><span class="p">:</span> <span class="s1">&#39;24&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;unit_cost&#39;</span><span class="p">:</span> <span class="s1">&#39;0.25&#39;</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s1">&#39;cookie_name&#39;</span><span class="p">:</span> <span class="s1">&#39;oatmeal raisin&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;cookie_recipe_url&#39;</span><span class="p">:</span> <span class="s1">&#39;http://some.okay.me/cookie/raisin.html&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;cookie_sku&#39;</span><span class="p">:</span> <span class="s1">&#39;EWW01&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;quantity&#39;</span><span class="p">:</span> <span class="s1">&#39;100&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;unit_cost&#39;</span><span class="p">:</span> <span class="s1">&#39;1.00&#39;</span>
+    <span class="p">}</span>
+<span class="p">]</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">ins</span><span class="p">,</span> <span class="n">inventory_list</span><span class="p">)</span>
+</pre></div>
+
+
+<p>列表中的每个词典都要有同样的键（keys）。首先方言编译器会编译第一个词典的语句内容，如果后面词典的键与第一条不同就会失败，因为第一条的字段已经建好了。
+现在有了数据，我们就可以查询了。</p>
+<h5>Querying Data</h5>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">sqlalchemy.sql</span> <span class="kn">import</span> <span class="n">select</span>
+<span class="n">s</span> <span class="o">=</span> <span class="n">select</span><span class="p">([</span><span class="n">cookies</span><span class="p">])</span>
+<span class="n">rp</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">rp</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+<span class="n">results</span>
+</pre></div>
+
+
+<div class="highlight"><pre>[(1, &#39;chocolate chip&#39;, &#39;http://some.aweso.me/cookie/recipe.html&#39;, &#39;CC01&#39;, 12, Decimal(&#39;0.50&#39;)),
+ (2, &#39;dark chocolate chip&#39;, &#39;http://some.aweso.me/cookie/recipe_dark.html&#39;, &#39;CC02&#39;, 1, Decimal(&#39;0.75&#39;)),
+ (3, &#39;peanut butter&#39;, &#39;http://some.aweso.me/cookie/peanut.html&#39;, &#39;PB01&#39;, 24, Decimal(&#39;0.25&#39;)),
+ (4, &#39;oatmeal raisin&#39;, &#39;http://some.okay.me/cookie/raisin.html&#39;, &#39;EWW01&#39;, 100, Decimal(&#39;1.00&#39;))]
+</pre></div>
+
+
+<div class="highlight"><pre><span class="k">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">s</span><span class="p">))</span>
+</pre></div>
+
+
+<div class="highlight"><pre>SELECT cookies.cookie_id, cookies.cookie_name, cookies.cookie_recipe_url, cookies.cookie_sku, cookies.quantity, cookies.unit_cost 
+FROM cookies
+</pre></div>
+
+
+<p>和insert用法类似，select也是既可以作为表对象的实例方法，也可以作为更具一般性的顶层函数使用。我更喜欢顶层函数的使用方式，因为和SQL用法一样。</p>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">sqlalchemy.sql</span> <span class="kn">import</span> <span class="n">select</span>
+<span class="n">s</span> <span class="o">=</span> <span class="n">cookies</span><span class="o">.</span><span class="n">select</span><span class="p">()</span>
+<span class="n">rp</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">rp</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+<span class="n">results</span>
+</pre></div>
+
+
+<div class="highlight"><pre>[(1, &#39;chocolate chip&#39;, &#39;http://some.aweso.me/cookie/recipe.html&#39;, &#39;CC01&#39;, 12, Decimal(&#39;0.50&#39;)),
+ (2, &#39;dark chocolate chip&#39;, &#39;http://some.aweso.me/cookie/recipe_dark.html&#39;, &#39;CC02&#39;, 1, Decimal(&#39;0.75&#39;)),
+ (3, &#39;peanut butter&#39;, &#39;http://some.aweso.me/cookie/peanut.html&#39;, &#39;PB01&#39;, 24, Decimal(&#39;0.25&#39;)),
+ (4, &#39;oatmeal raisin&#39;, &#39;http://some.okay.me/cookie/raisin.html&#39;, &#39;EWW01&#39;, 100, Decimal(&#39;1.00&#39;))]
+</pre></div>
+
+
+<h5>ResultProxy</h5>
+<p>ResultProxy是对数据库API光标对象的封装，其主要目的是让数据操作更简单。例如，它可以通过索引，字段名称和列对象让查询操作更简单，演示如例3-8所示。任何一种方法查询数据都很简单。</p>
+<div class="highlight"><pre><span class="n">first_row</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="n">first_row</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+</pre></div>
+
+
+<div class="highlight"><pre>&#39;chocolate chip&#39;
+</pre></div>
+
+
+<div class="highlight"><pre><span class="n">first_row</span><span class="o">.</span><span class="n">cookie_name</span>
+</pre></div>
+
+
+<div class="highlight"><pre>&#39;chocolate chip&#39;
+</pre></div>
+
+
+<div class="highlight"><pre><span class="n">first_row</span><span class="p">[</span><span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">cookie_name</span><span class="p">]</span>
+</pre></div>
+
+
+<div class="highlight"><pre>&#39;chocolate chip&#39;
+</pre></div>
+
+
+<p>上面的输出结果都是results变量第一个记录的数据chocolate chip。接入灵活只是ResultProxy能力的一部分。我们还可以用ResultProxy实现循环。例如，我们可以打印所有饼干的名称。</p>
+<div class="highlight"><pre><span class="n">rp</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">rp</span><span class="p">:</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">cookie_name</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre>chocolate chip
+dark chocolate chip
+peanut butter
+oatmeal raisin
+</pre></div>
+
+
+<p>ResultProxy除了可以循环，或调用fetchall()方法之外，很多其他数据接入方式也可以用。其实，上例中所有的result变量所有的插入数据操作都是用ResultProxy实现的。rowcount()和inserted_primary_key()方法也是ResultProxy获取信息的一种方式。你也可以用下面的方法获取信息：</p>
+<ul>
+<li>first()——如果存在则返回第一条记录并关闭连接</li>
+<li>fetchone()——返回一条记录，光标继续开着，等待新的查询</li>
+<li>scalar()——如果查询结果只有一行一列，就返回一个值</li>
+</ul>
+<p>如果要看结果中所有列名，可以用keys()方法。后面的章节里，我们还会经常使用first，scalar，fetchone，fetchall方法和ResultProxy循环。</p>
+<p>产品代码 写产品代码的时候，我有几条原则：</p>
+<ul>
+<li>first获取一条记录，不用scalar和fetchone，因为这样更清晰</li>
+<li>用ResultProxy循环，不用fetchall和fetchone方法。这样内存开销更新，因为通常我们都是一次处理一条记录</li>
+<li>尽量不要用fetchone，因为它会让连接一直开着</li>
+<li>scalar也要少用，因为当查询返回多余一行一列数据的时候容易出错，这一点在测试的时候经常被忽略</li>
+</ul>
+<p>在上例中，每一次我们查询数据集的时候每条记录的所有列都会返回。而通常我们只需要一部分列就可以。如果数据非常大，这样查询就会非常耗费内存，查询速度就会很慢。SQLAlchemy不会为查询或ResultProxy增加负担；但是，通常查询完成后，你需要看看查询是否消耗了太多内存。下面我们就来介绍如何控制查询的范围。</p>
+<h5>控制查询的列</h5>
+<p>可以用select()方法将要查询的列以列表形式放入。例如，下面代码是只需要查看饼干的名称和质量时的操作。</p>
+<div class="highlight"><pre><span class="n">s</span> <span class="o">=</span> <span class="n">select</span><span class="p">([</span><span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">cookie_name</span><span class="p">,</span> <span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">quantity</span><span class="p">])</span>
+<span class="n">rp</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">rp</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">rp</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+</pre></div>
+
+
+<div class="highlight"><pre>[&#39;cookie_name&#39;, &#39;quantity&#39;]
+</pre></div>
+
+
+<div class="highlight"><pre><span class="n">result</span>
+</pre></div>
+
+
+<div class="highlight"><pre>(&#39;chocolate chip&#39;, 12)
+</pre></div>
+
+
+<p>这样我们就建立了简单的select语句，我们将看看其他改变选择结果的操作。首先我们看看如何改变顺序。</p>
+<h5>Ordering</h5>
+<p>如果在上面例10中你要查看所有的数据结果，你会发现名称排序很混乱。但是，如果我们想让名称按照指定顺序排列，可用select的order_by()语句。</p>
+<div class="highlight"><pre><span class="n">s</span> <span class="o">=</span> <span class="n">select</span><span class="p">([</span><span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">cookie_name</span><span class="p">,</span> <span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">quantity</span><span class="p">])</span>
+<span class="n">s</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">quantity</span><span class="p">)</span>
+<span class="n">rp</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">cookie</span> <span class="ow">in</span> <span class="n">rp</span><span class="p">:</span>
+    <span class="k">print</span><span class="p">(</span><span class="s1">&#39;{} - {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cookie</span><span class="o">.</span><span class="n">quantity</span><span class="p">,</span> <span class="n">cookie</span><span class="o">.</span><span class="n">cookie_name</span><span class="p">))</span>
+</pre></div>
+
+
+<div class="highlight"><pre>1 - dark chocolate chip
+12 - chocolate chip
+24 - peanut butter
+100 - oatmeal raisin
+</pre></div>
+
+
+<p>如果要逆序排列，就在order_by()里面增加desc()。用desc()包裹排序参数即可。</p>
+<p>desc()也可以当成列对象的方法来使用，</p>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">sqlalchemy</span> <span class="kn">import</span> <span class="n">desc</span>
+<span class="n">s</span> <span class="o">=</span> <span class="n">select</span><span class="p">([</span><span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">cookie_name</span><span class="p">,</span> <span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">quantity</span><span class="p">])</span>
+<span class="n">s</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">desc</span><span class="p">(</span><span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">quantity</span><span class="p">))</span>
+<span class="n">rp</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">cookie</span> <span class="ow">in</span> <span class="n">rp</span><span class="p">:</span>
+    <span class="k">print</span><span class="p">(</span><span class="s1">&#39;{} - {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cookie</span><span class="o">.</span><span class="n">quantity</span><span class="p">,</span> <span class="n">cookie</span><span class="o">.</span><span class="n">cookie_name</span><span class="p">))</span>
+</pre></div>
+
+
+<div class="highlight"><pre>100 - oatmeal raisin
+24 - peanut butter
+12 - chocolate chip
+1 - dark chocolate chip
+</pre></div>
+
+
+<p>还可以限制查询记录结果的数量。</p>
+<h5>Limiting</h5>
+<p>前面的例子里，first()和fetchone()方法是用来获得一行记录的。ResultProxy可以提供一行数据，实际中我们经常需要多行数据。如果我们想限制查询数量，我们可以用limit()函数。例如，如果我现在想做销量最好的两种饼干，那么对排序后的查询增加一个限制条件就可以了。</p>
+<div class="highlight"><pre><span class="n">s</span> <span class="o">=</span> <span class="n">select</span><span class="p">([</span><span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">cookie_name</span><span class="p">,</span> <span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">quantity</span><span class="p">])</span>
+<span class="n">s</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">quantity</span><span class="p">)</span>
+<span class="n">s</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">limit</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">rp</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<span class="k">print</span><span class="p">([</span><span class="n">result</span><span class="o">.</span><span class="n">cookie_name</span> <span class="k">for</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">rp</span><span class="p">])</span>
+</pre></div>
+
+
+<div class="highlight"><pre>[&#39;dark chocolate chip&#39;, &#39;chocolate chip&#39;]
+</pre></div>
+
+
+<p>现在我们知道饼干的种类了，我开始关心库存还有多少。很多数据库都有一堆SQL函数对数据进行统计，必然SUM等等，让我们看看这些函数如何使用。</p>
+<h5>Builtin SQL Functions and Labels</h5>
+<p>SQLAlchemy的SQL函数里最常用的是SUM()和COUNT()。使用这个函数之前我们需要导入sqlalchemy.sql.func模块，这些函数只要包裹列对象就可以运行。所以要统计饼干的总量，我们可以这样：</p>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">sqlalchemy</span> <span class="kn">import</span> <span class="n">func</span>
+<span class="n">s</span> <span class="o">=</span> <span class="n">select</span><span class="p">([</span><span class="n">func</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">quantity</span><span class="p">)])</span>
+<span class="n">rp</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">rp</span><span class="o">.</span><span class="n">scalar</span><span class="p">())</span>
+</pre></div>
+
+
+<div class="highlight"><pre>137
+</pre></div>
+
+
+<p>因为Python内置函数也有sum，所以使用SQLAlchemy的sum时，建议导入func用func.sum。</p>
+<p>现在让我们用count函数统计cookie表里有多少条库存记录。</p>
+<div class="highlight"><pre><span class="n">s</span> <span class="o">=</span> <span class="n">select</span><span class="p">([</span><span class="n">func</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">quantity</span><span class="p">)])</span>
+<span class="n">rp</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<span class="n">record</span> <span class="o">=</span> <span class="n">rp</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+<span class="k">print</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="c1"># 显示Resultproxy里的列</span>
+<span class="k">print</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">count_1</span><span class="p">)</span> <span class="c1"># 列名是自动生成的，命名方式是`&lt;函数名&gt;_&lt;位置&gt;`</span>
+</pre></div>
+
+
+<div class="highlight"><pre><span class="k">[&#39;count_1&#39;]</span>
+<span class="err">4</span>
+</pre></div>
+
+
+<p>这个列名有点隐蔽。如果我们想自定义名称，也可以用在count()函数后用label()函数来定义列名。例如，我们想用更好记的名称来定义记录数量。</p>
+<div class="highlight"><pre><span class="n">s</span> <span class="o">=</span> <span class="n">select</span><span class="p">([</span><span class="n">func</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">cookie_name</span><span class="p">)</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="s1">&#39;inventory_count&#39;</span><span class="p">)])</span>
+<span class="n">rp</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<span class="n">record</span> <span class="o">=</span> <span class="n">rp</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+<span class="k">print</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+<span class="k">print</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">inventory_count</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre><span class="k">[&#39;inventory_count&#39;]</span>
+<span class="err">4</span>
+</pre></div>
+
+
+<p>介绍了如何限制行和列的数量之后，我们再看看如何进行数据过滤。</p>
+<h5>Filtering</h5>
+<p>过滤查询和SQL一样用where()函数来实现。通常where()函数有一个列名称，一个操作符和一个值或列。也可以用连接多个where()语句，像SQL里面逻辑操作符AND的作用。下面我们来找名称为chocolate chip的饼干。</p>
+<div class="highlight"><pre><span class="n">s</span> <span class="o">=</span> <span class="n">select</span><span class="p">([</span><span class="n">cookies</span><span class="p">])</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">cookie_name</span> <span class="o">==</span> <span class="s1">&#39;chocolate chip&#39;</span><span class="p">)</span>
+<span class="n">rp</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<span class="n">record</span> <span class="o">=</span> <span class="n">rp</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+<span class="n">record</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="c1"># 显示所有列名和数值</span>
+</pre></div>
+
+
+<div class="highlight"><pre>[(&#39;cookie_id&#39;, 1),
+ (&#39;cookie_name&#39;, &#39;chocolate chip&#39;),
+ (&#39;cookie_recipe_url&#39;, &#39;http://some.aweso.me/cookie/recipe.html&#39;),
+ (&#39;cookie_sku&#39;, &#39;CC01&#39;),
+ (&#39;quantity&#39;, 12),
+ (&#39;unit_cost&#39;, Decimal(&#39;0.50&#39;))]
+</pre></div>
+
+
+<p>我们还可以用where()找包含chocolate的饼干名称。</p>
+<div class="highlight"><pre><span class="n">s</span> <span class="o">=</span> <span class="n">select</span><span class="p">([</span><span class="n">cookies</span><span class="p">])</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">cookie_name</span><span class="o">.</span><span class="n">like</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%c</span><span class="s1">hocolate%&#39;</span><span class="p">))</span>
+<span class="n">rp</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">rp</span><span class="o">.</span><span class="n">fetchall</span><span class="p">():</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">cookie_name</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre>chocolate chip
+dark chocolate chip
+</pre></div>
+
+
+<p>where()语句里我们用cookies.c.cookie_name作为过滤的ClauseElement类型。我们现在停下来，看看ClauseElement类型的其他功能。</p>
+<h5>Operators</h5>
+<p>ClauseElements就是我们在从句中使用的一个元素，通常都是数据表的列；但是，和列不同，ClauseElements有许多功能。在例3-18里面，我们用来like()方法，其实还有很多方法如表3-1所示。每个方法都和标准SQL里面的函数类似。后面会大量使用它们。</p>
+<table>
+<thead>
+<tr>
+<th align="center">方法</th>
+<th align="center">目的</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">between(cleft, cright)</td>
+<td align="center">Find where the column is between cleft and cright</td>
+</tr>
+<tr>
+<td align="center">concat(column_two)</td>
+<td align="center">Concatenate column with column_two</td>
+</tr>
+<tr>
+<td align="center">distinct()</td>
+<td align="center">Find only unique values for column</td>
+</tr>
+<tr>
+<td align="center">in_([list])</td>
+<td align="center">Find where the column is in the list</td>
+</tr>
+<tr>
+<td align="center">is_(None)</td>
+<td align="center">Find where the column is None (commonly used for Null checks with None)</td>
+</tr>
+<tr>
+<td align="center">contains(string)</td>
+<td align="center">Find where the column has string in it (Case-sensitive)</td>
+</tr>
+<tr>
+<td align="center">endswith(string)</td>
+<td align="center">Find where the column ends with string (Case-sensitive)</td>
+</tr>
+<tr>
+<td align="center">like(string)</td>
+<td align="center">Find where the column is like string (Case-sensitive)</td>
+</tr>
+<tr>
+<td align="center">startswith(string)</td>
+<td align="center">Find where the column begins with string (Case-sensitive)</td>
+</tr>
+<tr>
+<td align="center">ilike(string)</td>
+<td align="center">Find where the column is like string (NOT Case-sensitive)</td>
+</tr>
+</tbody>
+</table>
+<p>还有两个相反操作的函数notlike()和notin_()，以及一个不带下划线的函数isnot()。</p>
+<p>如果我们不用这些方法，我们还可以用运算符。大部分运算符都和你的习惯一样，不过我们要介绍一些奇怪的地方。</p>
+<h4>操作符</h4>
+<p>到目前为止我们过滤数据都是通过判断列是否等于一个数值，或者用ClauseElement方法的函数，比如like()；其实我们还可以用很多运算符号来过滤数据。SQLAlchemy提供了大量Python的标准运算符。这包括所有的标准比较运算符（==，!=，&lt;，&gt;，&gt;=），与Python语句里使用方法一致。==操作符在和None比较时还表示IS NULL。算法运算符（+,-,*,/,%）也可用于数据库字符串处理，如例3-19所示。</p>
+<div class="highlight"><pre><span class="n">s</span> <span class="o">=</span> <span class="n">select</span><span class="p">([</span><span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">cookie_name</span><span class="p">,</span> <span class="s1">&#39;SKU-&#39;</span> <span class="o">+</span> <span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">cookie_sku</span><span class="p">])</span>
+<span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre>(&#39;chocolate chip&#39;, &#39;SKU-CC01&#39;)
+(&#39;dark chocolate chip&#39;, &#39;SKU-CC02&#39;)
+(&#39;peanut butter&#39;, &#39;SKU-PB01&#39;)
+(&#39;oatmeal raisin&#39;, &#39;SKU-EWW01&#39;)
+</pre></div>
+
+
+<p>另一个常用操作就是计算多列的数值。通常做财务和统计报表时经常用到，例3-20计算库存金额：</p>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">sqlalchemy</span> <span class="kn">import</span> <span class="n">cast</span>
+<span class="n">s</span> <span class="o">=</span> <span class="n">select</span><span class="p">([</span><span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">cookie_name</span><span class="p">,</span>
+            <span class="n">cast</span><span class="p">((</span><span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">quantity</span> <span class="o">*</span> <span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">unit_cost</span><span class="p">),</span>
+                 <span class="n">Numeric</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="s1">&#39;inv_cost&#39;</span><span class="p">)])</span>
+<span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+    <span class="k">print</span><span class="p">(</span><span class="s1">&#39;{} - {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">cookie_name</span><span class="p">,</span> <span class="n">row</span><span class="o">.</span><span class="n">inv_cost</span><span class="p">))</span>
+</pre></div>
+
+
+<div class="highlight"><pre>chocolate chip - 6.00
+dark chocolate chip - 0.75
+peanut butter - 6.00
+oatmeal raisin - 100.00
+</pre></div>
+
+
+<h5>Boolean Operators</h5>
+<p>SQLAlchemy也支持逻辑运算符（与AND，或OR，非NOT），用位操作符表示（&amp;，|，~）。使用时一定要注意，因为Python自带的逻辑运算符规则。比如，&amp;比&lt;优先级高，当你写A &lt; B &amp; C &lt; D的时候，运算结果是A &lt; (B &amp; C) &lt; D，而你实际想写的是(A &lt; B) &amp; (C &lt; D)。为了清晰表达意思，请用连接词（conjunctions），不要用这些重载运算符。</p>
+<p>通常在处理多个从句时，从句之间存在与或非关系时，应该用连接词。</p>
+<h5>Conjunctions</h5>
+<p>虽然可以把多个where()从句连起来，但是用连接词会让语句更清晰好看。SQLAlchemy的连接词是and_()，or_()和not_()。如果我们想要查询库存和单价满足特定条件的饼干时，可以用and_()实现。</p>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">sqlalchemy</span> <span class="kn">import</span> <span class="n">and_</span><span class="p">,</span> <span class="n">or_</span><span class="p">,</span> <span class="n">not_</span>
+<span class="n">s</span> <span class="o">=</span> <span class="n">select</span><span class="p">([</span><span class="n">cookies</span><span class="p">])</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
+    <span class="n">and_</span><span class="p">(</span>
+        <span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">quantity</span> <span class="o">&gt;</span> <span class="mi">23</span><span class="p">,</span>
+        <span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">unit_cost</span> <span class="o">&lt;</span> <span class="mf">0.40</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+<span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">cookie_name</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre>peanut butter
+</pre></div>
+
+
+<p>or_()函数与and_()相反，包含任何一种情形就可以。如果我们想找到库存在10到50之间，或名称包含chip的饼干时，可以用or_。</p>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">sqlalchemy</span> <span class="kn">import</span> <span class="n">and_</span><span class="p">,</span> <span class="n">or_</span><span class="p">,</span> <span class="n">not_</span>
+<span class="n">s</span> <span class="o">=</span> <span class="n">select</span><span class="p">([</span><span class="n">cookies</span><span class="p">])</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
+    <span class="n">or_</span><span class="p">(</span>
+        <span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">quantity</span><span class="o">.</span><span class="n">between</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">50</span><span class="p">),</span>
+        <span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">cookie_name</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s1">&#39;chip&#39;</span><span class="p">)</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+<span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">cookie_name</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre>chocolate chip
+dark chocolate chip
+peanut butter
+</pre></div>
+
+
+<p>not()连接词类似，只是表示不包含条件的结果。到这里我们已经可以轻松的查询数据了，下面我们看看如何更新数据。</p>
+<h5>Updating Data</h5>
+<p>还有一个数据更新方法，和前面用的insert方法类似，除了它们需要指定一个条件表面要更新的行，语法与insert完全一致。更新方法可以用update()函数或待更新表的update()方法。如果不增加条件，就会更新表中所有行。当我做完新的饼干之后，就要更新库存数据。在例3-23中，我们更新对应饼干的库存，然后计算新的总库存量。</p>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">sqlalchemy</span> <span class="kn">import</span> <span class="n">update</span>
+<span class="n">u</span> <span class="o">=</span> <span class="n">update</span><span class="p">(</span><span class="n">cookies</span><span class="p">)</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">cookie_name</span> <span class="o">==</span> <span class="s1">&#39;chocolate chip&#39;</span><span class="p">)</span>
+<span class="n">u</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">quantity</span><span class="o">=</span><span class="p">(</span><span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">quantity</span> <span class="o">+</span> <span class="mi">120</span><span class="p">))</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">rowcount</span><span class="p">)</span>
+
+<span class="n">s</span> <span class="o">=</span> <span class="n">select</span><span class="p">([</span><span class="n">cookies</span><span class="p">])</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">cookie_name</span> <span class="o">==</span> <span class="s2">&quot;chocolate chip&quot;</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+    <span class="k">print</span><span class="p">(</span><span class="s1">&#39;{:&gt;20}: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">result</span><span class="p">[</span><span class="n">key</span><span class="p">]))</span>
+</pre></div>
+
+
+<div class="highlight"><pre>1
+cookie_id: 1
+cookie_name: chocolate chip
+cookie_recipe_url: http://some.aweso.me/cookie/recipe.html
+cookie_sku: CC01
+quantity: 132
+unit_cost: 0.50
+</pre></div>
+
+
+<p>除了更新数据，还要删除数据。</p>
+<h5>Deleting Data</h5>
+<p>删除数据可以用delete()函数或表的delete()方法。和insert()，update()不同的是，delete()无数值参数，只有一个可选的where()用于设置删除区域（如果没有就删除全表所有数据）。</p>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">sqlalchemy</span> <span class="kn">import</span> <span class="n">delete</span>
+
+<span class="n">u</span> <span class="o">=</span> <span class="n">delete</span><span class="p">(</span><span class="n">cookies</span><span class="p">)</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">cookie_name</span> <span class="o">==</span> <span class="s1">&#39;dark chocolate chip&#39;</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">rowcount</span><span class="p">)</span>
+
+<span class="n">s</span> <span class="o">=</span> <span class="n">select</span><span class="p">([</span><span class="n">cookies</span><span class="p">])</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">cookie_name</span> <span class="o">==</span> <span class="s2">&quot;dark chocolate chip&quot;</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+<span class="k">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">))</span>
+</pre></div>
+
+
+<div class="highlight"><pre>1
+0
+</pre></div>
+
+
+<p>现在让我们回想一下所学的知识，对users，orders，line_items表进行更新。你可以直接复制代码，但是建议你试试其他方法新建数据。</p>
+<div class="highlight"><pre><span class="n">customer_list</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span>
+        <span class="s1">&#39;username&#39;</span><span class="p">:</span> <span class="s1">&#39;cookiemon&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;email_address&#39;</span><span class="p">:</span> <span class="s1">&#39;mon@cookie.com&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;phone&#39;</span><span class="p">:</span> <span class="s1">&#39;111-111-1111&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;password&#39;</span><span class="p">:</span> <span class="s1">&#39;password&#39;</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s1">&#39;username&#39;</span><span class="p">:</span> <span class="s1">&#39;cakeeater&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;email_address&#39;</span><span class="p">:</span> <span class="s1">&#39;cakeeater@cake.com&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;phone&#39;</span><span class="p">:</span> <span class="s1">&#39;222-222-2222&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;password&#39;</span><span class="p">:</span> <span class="s1">&#39;password&#39;</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s1">&#39;username&#39;</span><span class="p">:</span> <span class="s1">&#39;pieguy&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;email_address&#39;</span><span class="p">:</span> <span class="s1">&#39;guy@pie.com&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;phone&#39;</span><span class="p">:</span> <span class="s1">&#39;333-333-3333&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;password&#39;</span><span class="p">:</span> <span class="s1">&#39;password&#39;</span>
+    <span class="p">}</span>
+<span class="p">]</span>
+<span class="n">ins</span> <span class="o">=</span> <span class="n">users</span><span class="o">.</span><span class="n">insert</span><span class="p">()</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">ins</span><span class="p">,</span> <span class="n">customer_list</span><span class="p">)</span>
+</pre></div>
+
+
+<p>有了用户数据，让我们再更新他们的orders，line_items表。</p>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">sqlalchemy</span> <span class="kn">import</span> <span class="n">insert</span>
+<span class="n">ins</span> <span class="o">=</span> <span class="n">insert</span><span class="p">(</span><span class="n">orders</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">user_id</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">order_id</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">ins</span><span class="p">)</span>
+<span class="n">ins</span> <span class="o">=</span> <span class="n">insert</span><span class="p">(</span><span class="n">line_items</span><span class="p">)</span>
+<span class="n">order_items</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span>
+        <span class="s1">&#39;order_id&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="s1">&#39;cookie_id&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="s1">&#39;quantity&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="s1">&#39;extended_cost&#39;</span><span class="p">:</span> <span class="mf">1.00</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s1">&#39;order_id&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="s1">&#39;cookie_id&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="s1">&#39;quantity&#39;</span><span class="p">:</span> <span class="mi">12</span><span class="p">,</span>
+        <span class="s1">&#39;extended_cost&#39;</span><span class="p">:</span> <span class="mf">3.00</span>
+    <span class="p">}</span>
+<span class="p">]</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">ins</span><span class="p">,</span> <span class="n">order_items</span><span class="p">)</span>
+
+<span class="n">ins</span> <span class="o">=</span> <span class="n">insert</span><span class="p">(</span><span class="n">orders</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">user_id</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">order_id</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">ins</span><span class="p">)</span>
+<span class="n">ins</span> <span class="o">=</span> <span class="n">insert</span><span class="p">(</span><span class="n">line_items</span><span class="p">)</span>
+<span class="n">order_items</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span>
+        <span class="s1">&#39;order_id&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="s1">&#39;cookie_id&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="s1">&#39;quantity&#39;</span><span class="p">:</span> <span class="mi">24</span><span class="p">,</span>
+        <span class="s1">&#39;extended_cost&#39;</span><span class="p">:</span> <span class="mf">12.00</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s1">&#39;order_id&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="s1">&#39;cookie_id&#39;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+        <span class="s1">&#39;quantity&#39;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>
+        <span class="s1">&#39;extended_cost&#39;</span><span class="p">:</span> <span class="mf">6.00</span>
+    <span class="p">}</span>
+<span class="p">]</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">ins</span><span class="p">,</span> <span class="n">order_items</span><span class="p">)</span>
+</pre></div>
+
+
+<p>在SQLAlchemy Core的第二章中我们介绍过外键和关系；但是我们还没有用它们做过查询，下面我们就来看看这些关系。</p>
+<h5>Joins</h5>
+<p>用join()和outerjoin()方法进行数据关联。例如，发货之前需要了解用户cookiemon订购了那种饼干。这就需要用3个join来汇总三张表的数据。另外，当用多个join汇总数据时，你可能需要重新组织from后面join关联内容的顺序，SQLAlchemy提供了select_from来实现这个功能。通过select_from我们可以将整个from从句替换成SQLAlchemy支持的形式。</p>
+<div class="highlight"><pre><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">orders</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">order_id</span><span class="p">,</span> <span class="n">users</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">username</span><span class="p">,</span> <span class="n">users</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">phone</span><span class="p">,</span>
+            <span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">cookie_name</span><span class="p">,</span> <span class="n">line_items</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">quantity</span><span class="p">,</span>
+            <span class="n">line_items</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">extended_cost</span><span class="p">]</span>
+<span class="n">cookiemon_orders</span> <span class="o">=</span> <span class="n">select</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span>
+<span class="n">cookiemon_orders</span> <span class="o">=</span> <span class="n">cookiemon_orders</span><span class="o">.</span><span class="n">select_from</span><span class="p">(</span><span class="n">orders</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">users</span><span class="p">)</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                    <span class="n">line_items</span><span class="p">)</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cookies</span><span class="p">))</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">users</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">username</span> <span class="o">==</span>
+                    <span class="s1">&#39;cookiemon&#39;</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">cookiemon_orders</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre>(1, &#39;cookiemon&#39;, &#39;111-111-1111&#39;, &#39;chocolate chip&#39;, 2, Decimal(&#39;1.00&#39;))
+(1, &#39;cookiemon&#39;, &#39;111-111-1111&#39;, &#39;peanut butter&#39;, 12, Decimal(&#39;3.00&#39;))
+</pre></div>
+
+
+<p>上面的SQL语句是这样：</p>
+<div class="highlight"><pre><span class="k">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">cookiemon_orders</span><span class="p">))</span>
+</pre></div>
+
+
+<div class="highlight"><pre>SELECT orders.order_id, users.username, users.phone, cookies.cookie_name, line_items.quantity, line_items.extended_cost 
+FROM orders JOIN users ON users.user_id = orders.user_id JOIN line_items ON orders.order_id = line_items.order_id JOIN cookies ON cookies.cookie_id = line_items.cookie_id 
+WHERE users.username = :username_1
+</pre></div>
+
+
+<p>统计所有用户各自的订单数量也常用，不只是当前的订单。可以通过outerjoin()方法实现，需要注意join的顺序，因为用outerjoin()方法生成的表会返回所有外键匹配结果。</p>
+<div class="highlight"><pre><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">users</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">username</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">orders</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">order_id</span><span class="p">)]</span>
+<span class="n">all_orders</span> <span class="o">=</span> <span class="n">select</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span>
+<span class="n">all_orders</span> <span class="o">=</span> <span class="n">all_orders</span><span class="o">.</span><span class="n">select_from</span><span class="p">(</span><span class="n">users</span><span class="o">.</span><span class="n">outerjoin</span><span class="p">(</span><span class="n">orders</span><span class="p">))</span>
+<span class="n">all_orders</span> <span class="o">=</span> <span class="n">all_orders</span><span class="o">.</span><span class="n">group_by</span><span class="p">(</span><span class="n">users</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">username</span><span class="p">)</span> <span class="c1">#后面介绍分组</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">all_orders</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre>(&#39;cakeeater&#39;, 1)
+(&#39;cookiemon&#39;, 1)
+(&#39;pieguy&#39;, 0)
+</pre></div>
+
+
+<p>现在，我们已经可以通过join实现关联查询了。但是，如果我们有一个像员工与老板关系表，用SQLAlchemy清楚的读取和理解内容需要用alias。</p>
+<h5>Aliases</h5>
+<p>用join的时候，通常要对一个表进行多次引用。在SQL里面，这是通过查询中的aliases实现的。例如，假设我们有下面的schema结构：</p>
+<div class="highlight"><pre><span class="n">employee_table</span> <span class="o">=</span> <span class="n">Table</span><span class="p">(</span>
+    <span class="s1">&#39;employee&#39;</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span>
+    <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="n">Integer</span><span class="p">,</span> <span class="n">primary_key</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+    <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;manager_id&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="n">ForeignKey</span><span class="p">(</span><span class="s1">&#39;employee.id&#39;</span><span class="p">)),</span>
+    <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="n">String</span><span class="p">(</span><span class="mi">255</span><span class="p">)))</span>
+</pre></div>
+
+
+<p>现在假如我们想选择Fred手下的所有员工。在SQL里面，我们会这么做：</p>
+<div class="highlight"><pre><span class="k">SELECT</span> <span class="n">employee</span><span class="p">.</span><span class="n">name</span>
+<span class="k">FROM</span> <span class="n">employee</span><span class="p">,</span> <span class="n">employee</span> <span class="k">AS</span> <span class="n">manager</span>
+<span class="k">WHERE</span> <span class="n">employee</span><span class="p">.</span><span class="n">manager_id</span> <span class="o">=</span> <span class="n">manager</span><span class="p">.</span><span class="n">id</span>
+<span class="k">AND</span> <span class="n">manager</span><span class="p">.</span><span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;Fred&#39;</span>
+</pre></div>
+
+
+<p>SQLAlchemy也允许用alias()方法实现：</p>
+<div class="highlight"><pre><span class="n">manager</span> <span class="o">=</span> <span class="n">employee_table</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="s1">&#39;mgr&#39;</span><span class="p">)</span>
+
+<span class="n">stmt</span> <span class="o">=</span> <span class="n">select</span><span class="p">([</span><span class="n">employee_table</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">name</span><span class="p">],</span>
+             <span class="n">and_</span><span class="p">(</span><span class="n">employee_table</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">id</span><span class="o">==</span><span class="n">manager</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                 <span class="n">manager</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">name</span><span class="o">==</span><span class="s1">&#39;Fred&#39;</span><span class="p">))</span>
+
+<span class="k">print</span><span class="p">(</span><span class="n">stmt</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre>SELECT employee.name 
+FROM employee, employee AS mgr 
+WHERE employee.id = mgr.id AND mgr.name = :name_1
+</pre></div>
+
+
+<p>SQLAlchemy也可以自动选择别名：</p>
+<div class="highlight"><pre><span class="n">manager</span> <span class="o">=</span> <span class="n">employee_table</span><span class="o">.</span><span class="n">alias</span><span class="p">()</span>
+
+<span class="n">stmt</span> <span class="o">=</span> <span class="n">select</span><span class="p">([</span><span class="n">employee_table</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">name</span><span class="p">],</span>
+             <span class="n">and_</span><span class="p">(</span><span class="n">employee_table</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">id</span><span class="o">==</span><span class="n">manager</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                 <span class="n">manager</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">name</span><span class="o">==</span><span class="s1">&#39;Fred&#39;</span><span class="p">))</span>
+
+<span class="k">print</span><span class="p">(</span><span class="n">stmt</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre>SELECT employee.name 
+FROM employee, employee AS employee_1 
+WHERE employee.id = employee_1.id AND employee_1.name = :name_1
+</pre></div>
+
+
+<p>数据分组group_by也是很有用的，下面我们来看看。</p>
+<h5>Grouping</h5>
+<p>SQLAlchemy可以对一个或多个列进行数据分组，然后统计各组的计数项（count），总和（sum）和其他统计参数，与SQL类似。下面我们看看每个客户的订单数：</p>
+<div class="highlight"><pre><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">users</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">username</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">orders</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">order_id</span><span class="p">)]</span>
+<span class="n">all_orders</span> <span class="o">=</span> <span class="n">select</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span>
+<span class="n">all_orders</span> <span class="o">=</span> <span class="n">all_orders</span><span class="o">.</span><span class="n">select_from</span><span class="p">(</span><span class="n">users</span><span class="o">.</span><span class="n">outerjoin</span><span class="p">(</span><span class="n">orders</span><span class="p">))</span>
+<span class="n">all_orders</span> <span class="o">=</span> <span class="n">all_orders</span><span class="o">.</span><span class="n">group_by</span><span class="p">(</span><span class="n">users</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">username</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">all_orders</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre>(&#39;cakeeater&#39;, 1)
+(&#39;cookiemon&#39;, 1)
+(&#39;pieguy&#39;, 0)
+</pre></div>
+
+
+<p>前面的join的例子中我们已经用过，这里再看看group_by的用法。</p>
+<h5>Chaining</h5>
+<p>前面我们已经用过链式表达式，只是那时没有明说。进行数据查询时链式表达式能够清楚地显示查询的逻辑。因此，如果我们想用一个函数获取订单数据，可以如例3-28所示。</p>
+<div class="highlight"><pre><span class="k">def</span> <span class="nf">get_orders_by_customer</span><span class="p">(</span><span class="n">cust_name</span><span class="p">):</span>
+    <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">orders</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">order_id</span><span class="p">,</span> <span class="n">users</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">username</span><span class="p">,</span> <span class="n">users</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">phone</span><span class="p">,</span>
+                <span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">cookie_name</span><span class="p">,</span> <span class="n">line_items</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">quantity</span><span class="p">,</span> 
+                <span class="n">line_items</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">extended_cost</span><span class="p">]</span>
+    <span class="n">cust_orders</span> <span class="o">=</span> <span class="n">select</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span>
+    <span class="n">cust_orders</span> <span class="o">=</span> <span class="n">cust_orders</span><span class="o">.</span><span class="n">select_from</span><span class="p">(</span><span class="n">users</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">orders</span><span class="p">)</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">line_items</span><span class="p">)</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cookies</span><span class="p">))</span>
+    <span class="n">cust_orders</span> <span class="o">=</span> <span class="n">cust_orders</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">users</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">username</span> <span class="o">==</span> <span class="n">cust_name</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">cust_orders</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">result</span>
+
+<span class="n">get_orders_by_customer</span><span class="p">(</span><span class="s1">&#39;cakeeater&#39;</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre>[(2, &#39;cakeeater&#39;, &#39;222-222-2222&#39;, &#39;chocolate chip&#39;, 24, Decimal(&#39;12.00&#39;)),
+ (2, &#39;cakeeater&#39;, &#39;222-222-2222&#39;, &#39;oatmeal raisin&#39;, 6, Decimal(&#39;6.00&#39;))]
+</pre></div>
+
+
+<p>如果我们只想显示已发货或未发货的订单，怎么办？我们可以再写函数来支持其他选项，或者我们可以用链式查询来过滤。推荐后一种方法，尤其是处理复杂查询和制作报表时威力非常强大。</p>
+<div class="highlight"><pre><span class="k">def</span> <span class="nf">get_orders_by_customer</span><span class="p">(</span><span class="n">cust_name</span><span class="p">,</span> <span class="n">shipped</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">details</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">orders</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">order_id</span><span class="p">,</span> <span class="n">users</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">username</span><span class="p">,</span> <span class="n">users</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">phone</span><span class="p">]</span>
+    <span class="n">joins</span> <span class="o">=</span> <span class="n">users</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">orders</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">details</span><span class="p">:</span>
+        <span class="n">columns</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">cookie_name</span><span class="p">,</span> <span class="n">line_items</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">quantity</span><span class="p">,</span>
+                        <span class="n">line_items</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">extended_cost</span><span class="p">])</span>
+        <span class="n">joins</span> <span class="o">=</span> <span class="n">joins</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">line_items</span><span class="p">)</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cookies</span><span class="p">)</span>
+    <span class="n">cust_orders</span> <span class="o">=</span> <span class="n">select</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span>
+    <span class="n">cust_orders</span> <span class="o">=</span> <span class="n">cust_orders</span><span class="o">.</span><span class="n">select_from</span><span class="p">(</span><span class="n">joins</span><span class="p">)</span>
+    <span class="n">cust_orders</span> <span class="o">=</span> <span class="n">cust_orders</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">users</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">username</span> <span class="o">==</span> <span class="n">cust_name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">shipped</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">cust_orders</span> <span class="o">=</span> <span class="n">cust_orders</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">orders</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">shipped</span> <span class="o">==</span> <span class="n">shipped</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">cust_orders</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">result</span>
+
+<span class="n">get_orders_by_customer</span><span class="p">(</span><span class="s1">&#39;cakeeater&#39;</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre>[(2, &#39;cakeeater&#39;, &#39;222-222-2222&#39;)]
+</pre></div>
+
+
+<div class="highlight"><pre><span class="n">get_orders_by_customer</span><span class="p">(</span><span class="s1">&#39;cakeeater&#39;</span><span class="p">,</span> <span class="n">details</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre>[(2, &#39;cakeeater&#39;, &#39;222-222-2222&#39;, &#39;chocolate chip&#39;, 24, Decimal(&#39;12.00&#39;)),
+ (2, &#39;cakeeater&#39;, &#39;222-222-2222&#39;, &#39;oatmeal raisin&#39;, 6, Decimal(&#39;6.00&#39;))]
+</pre></div>
+
+
+<div class="highlight"><pre><span class="n">get_orders_by_customer</span><span class="p">(</span><span class="s1">&#39;cakeeater&#39;</span><span class="p">,</span> <span class="n">shipped</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre>[]
+</pre></div>
+
+
+<div class="highlight"><pre><span class="n">get_orders_by_customer</span><span class="p">(</span><span class="s1">&#39;cakeeater&#39;</span><span class="p">,</span> <span class="n">shipped</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre>[(2, &#39;cakeeater&#39;, &#39;222-222-2222&#39;)]
+</pre></div>
+
+
+<div class="highlight"><pre><span class="n">get_orders_by_customer</span><span class="p">(</span><span class="s1">&#39;cakeeater&#39;</span><span class="p">,</span> <span class="n">shipped</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">details</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre>[(2, &#39;cakeeater&#39;, &#39;222-222-2222&#39;, &#39;chocolate chip&#39;, 24, Decimal(&#39;12.00&#39;)),
+ (2, &#39;cakeeater&#39;, &#39;222-222-2222&#39;, &#39;oatmeal raisin&#39;, 6, Decimal(&#39;6.00&#39;))]
+</pre></div>
+
+
+<p>到此为止，我们已经用SQL表达式语言的例子演示了SQLAlchemy Core。其实，你也可以直接用标准的SQL语言来进行。</p>
+<h5>Raw Queries</h5>
+<p>在SQLAlchemy Core里面可以用原始的SQL语句进行操作，结果也是返回一个代理，后面的操作和SQLAlchemy Core的SQL表达式语法一样。除非必须，一般不推荐使用原始SQL，因为这么做存在安全隐患。下面我们简单演示一下。</p>
+<div class="highlight"><pre><span class="n">result</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s1">&#39;select * from orders&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+<span class="k">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre>[(1, 1, 0), (2, 2, 0)]
+</pre></div>
+
+
+<p>有时候一些SQL小片段可以让语句表述更清晰。下面是用text()函数实现where的条件。</p>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">sqlalchemy</span> <span class="kn">import</span> <span class="n">text</span>
+<span class="n">stmt</span> <span class="o">=</span> <span class="n">select</span><span class="p">([</span><span class="n">users</span><span class="p">])</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">text</span><span class="p">(</span><span class="s2">&quot;username=&#39;cookiemon&#39;&quot;</span><span class="p">))</span>
+<span class="k">print</span><span class="p">(</span><span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">stmt</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">())</span>
+</pre></div>
+
+
+<div class="highlight"><pre>[(1, None, &#39;cookiemon&#39;, &#39;mon@cookie.com&#39;, &#39;111-111-1111&#39;, &#39;password&#39;, datetime.datetime(2015, 9, 1, 21, 37, 37, 531465), datetime.datetime(2015, 9, 1, 21, 37, 37, 531465))]
+</pre></div>
+
+
+<p>通过本章介绍的增删改查等操作，现在你应该已经理解SQLAlchemy Core的SQL表达式用法了，用自己的数据库试试吧。下面我们来介绍SQLAlchemy的异常处理，以及事务处理transactions分组的用法。</p>
+<h3>Exceptions and Transactions</h3>
+<p>前面做数据处理时，大部分工作我们都只用一行语句就搞定了，我们尽量避免做任何可能引起异常的事情，而本章我们会刻意搞点bug来演示异常处理方法。另外，我们还会介绍如何把对需要处理的任务分成单独的事务进行处理，保证每个事务都可以被适当地执行或正确地清理。</p>
+<h4>Exceptions</h4>
+<p>SQLAlchemy会产生许多不同类型的异常；不过这里只重点介绍一些常见的异常：AttributeErrors和IntegrityErrors。通过对常用异常处理方法的学习，你可以掌握其他异常的处理方法。</p>
+<p>下面，请重新开一个Python shell或Notebook，然后用SQLAlchemy Core建立数据表。具体过程如例4-1所示。</p>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">sqlalchemy</span> <span class="kn">import</span> <span class="p">(</span><span class="n">MetaData</span><span class="p">,</span> <span class="n">Table</span><span class="p">,</span> <span class="n">Column</span><span class="p">,</span> <span class="n">Integer</span><span class="p">,</span> <span class="n">Numeric</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span>
+                        <span class="n">DateTime</span><span class="p">,</span> <span class="n">ForeignKey</span><span class="p">,</span> <span class="n">Boolean</span><span class="p">,</span> <span class="n">create_engine</span><span class="p">,</span>
+                        <span class="n">CheckConstraint</span><span class="p">)</span>
+<span class="n">metadata</span> <span class="o">=</span> <span class="n">MetaData</span><span class="p">()</span>
+<span class="n">cookies</span> <span class="o">=</span> <span class="n">Table</span><span class="p">(</span><span class="s1">&#39;cookies&#39;</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span>
+                <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;cookie_id&#39;</span><span class="p">,</span> <span class="n">Integer</span><span class="p">(),</span> <span class="n">primary_key</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+                <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;cookie_name&#39;</span><span class="p">,</span> <span class="n">String</span><span class="p">(</span><span class="mi">50</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+                <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;cookie_recipe_url&#39;</span><span class="p">,</span> <span class="n">String</span><span class="p">(</span><span class="mi">255</span><span class="p">)),</span>
+                <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;cookie_sku&#39;</span><span class="p">,</span> <span class="n">String</span><span class="p">(</span><span class="mi">55</span><span class="p">)),</span>
+                <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;quantity&#39;</span><span class="p">,</span> <span class="n">Integer</span><span class="p">()),</span>
+                <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;unit_cost&#39;</span><span class="p">,</span> <span class="n">Numeric</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span>
+                <span class="n">CheckConstraint</span><span class="p">(</span><span class="s1">&#39;quantity &gt; 0&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;quantity_positive&#39;</span><span class="p">)</span>
+                <span class="p">)</span>
+<span class="n">users</span> <span class="o">=</span> <span class="n">Table</span><span class="p">(</span><span class="s1">&#39;users&#39;</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span>
+              <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;user_id&#39;</span><span class="p">,</span> <span class="n">Integer</span><span class="p">(),</span> <span class="n">primary_key</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+              <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;username&#39;</span><span class="p">,</span> <span class="n">String</span><span class="p">(</span><span class="mi">15</span><span class="p">),</span> <span class="n">nullable</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">unique</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+              <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;email_address&#39;</span><span class="p">,</span> <span class="n">String</span><span class="p">(</span><span class="mi">255</span><span class="p">),</span> <span class="n">nullable</span><span class="o">=</span><span class="bp">False</span><span class="p">),</span>
+              <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;phone&#39;</span><span class="p">,</span> <span class="n">String</span><span class="p">(</span><span class="mi">20</span><span class="p">),</span> <span class="n">nullable</span><span class="o">=</span><span class="bp">False</span><span class="p">),</span>
+              <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;password&#39;</span><span class="p">,</span> <span class="n">String</span><span class="p">(</span><span class="mi">25</span><span class="p">),</span> <span class="n">nullable</span><span class="o">=</span><span class="bp">False</span><span class="p">),</span>
+              <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;created_on&#39;</span><span class="p">,</span> <span class="n">DateTime</span><span class="p">(),</span> <span class="n">default</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">),</span>
+              <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;updated_on&#39;</span><span class="p">,</span> <span class="n">DateTime</span><span class="p">(),</span>
+                     <span class="n">default</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">,</span> <span class="n">onupdate</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">)</span>
+              <span class="p">)</span>
+<span class="n">orders</span> <span class="o">=</span> <span class="n">Table</span><span class="p">(</span><span class="s1">&#39;orders&#39;</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span>
+               <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;order_id&#39;</span><span class="p">,</span> <span class="n">Integer</span><span class="p">()),</span>
+               <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;user_id&#39;</span><span class="p">,</span> <span class="n">ForeignKey</span><span class="p">(</span><span class="s1">&#39;users.user_id&#39;</span><span class="p">)),</span>
+               <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;shipped&#39;</span><span class="p">,</span> <span class="n">Boolean</span><span class="p">(),</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+               <span class="p">)</span>
+<span class="n">line_items</span> <span class="o">=</span> <span class="n">Table</span><span class="p">(</span><span class="s1">&#39;line_items&#39;</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span>
+                   <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;line_items_id&#39;</span><span class="p">,</span> <span class="n">Integer</span><span class="p">(),</span> <span class="n">primary_key</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+                   <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;order_id&#39;</span><span class="p">,</span> <span class="n">ForeignKey</span><span class="p">(</span><span class="s1">&#39;orders.order_id&#39;</span><span class="p">)),</span>
+                   <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;cookie_id&#39;</span><span class="p">,</span> <span class="n">ForeignKey</span><span class="p">(</span><span class="s1">&#39;cookies.cookie_id&#39;</span><span class="p">)),</span>
+                   <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;quantity&#39;</span><span class="p">,</span> <span class="n">Integer</span><span class="p">()),</span>
+                   <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;extended_cost&#39;</span><span class="p">,</span> <span class="n">Numeric</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+                   <span class="p">)</span>
+<span class="n">engine</span> <span class="o">=</span> <span class="n">create_engine</span><span class="p">(</span><span class="s1">&#39;sqlite:///:memory:&#39;</span><span class="p">)</span>
+<span class="n">metadata</span><span class="o">.</span><span class="n">create_all</span><span class="p">(</span><span class="n">engine</span><span class="p">)</span>
+<span class="n">connection</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+
+<span class="n">metadata</span><span class="o">.</span><span class="n">tables</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+</pre></div>
+
+
+<div class="highlight"><pre>dict_keys([&#39;users&#39;, &#39;cookies&#39;, &#39;line_items&#39;, &#39;orders&#39;])
+</pre></div>
+
+
+<h5>AttributeError</h5>
+<p>AttributeError是指获取一个不存在的属性时产生的异常。经常是在连接ResultProxy里没有的一列时发生。在尝试获取一个对象不存在的属性时AttributeError也会发生。在普通的Python代码里也会发生。这里单独拿出来说是因为SQLAlchemy里非常容易出现这类异常，而其产生的根源却很容易忽略。为了演示这类异常，我们在users表里插入一列数据，然后我们查询没有selsect的一列来诱发异常。</p>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">sqlalchemy</span> <span class="kn">import</span> <span class="n">select</span><span class="p">,</span> <span class="n">insert</span>
+<span class="n">ins</span> <span class="o">=</span> <span class="n">insert</span><span class="p">(</span><span class="n">users</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">(</span>
+    <span class="n">username</span><span class="o">=</span><span class="s2">&quot;cookiemon&quot;</span><span class="p">,</span>
+    <span class="n">email_address</span><span class="o">=</span><span class="s2">&quot;mon@cookie.com&quot;</span><span class="p">,</span>
+    <span class="n">phone</span><span class="o">=</span><span class="s2">&quot;111-111-1111&quot;</span><span class="p">,</span>
+    <span class="n">password</span><span class="o">=</span><span class="s2">&quot;password&quot;</span>
+<span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">ins</span><span class="p">)</span>
+
+<span class="n">s</span> <span class="o">=</span> <span class="n">select</span><span class="p">([</span><span class="n">users</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">username</span><span class="p">])</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">username</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">password</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre>    cookiemon
+    ---------------------------------------------------------------------------
+    KeyError                                  Traceback (most recent call last)
+    d:\programfiles\Miniconda3\lib\site-packages\sqlalchemy\engine\result.py in __getitem__(self, key)
+         69             try:
+    ---&gt; 70                 processor, obj, index = self._keymap[key]
+         71             except KeyError:
+
+    KeyError: &#39;password&#39;
+
+    During handling of the above exception, another exception occurred:
+
+    NoSuchColumnError                         Traceback (most recent call last)
+    d:\programfiles\Miniconda3\lib\site-packages\sqlalchemy\engine\result.py in __getattr__(self, name)
+         95             try:
+    ---&gt; 96                 return self[name]
+         97             except KeyError as e:
+
+    d:\programfiles\Miniconda3\lib\site-packages\sqlalchemy\engine\result.py in __getitem__(self, key)
+         71             except KeyError:
+    ---&gt; 72                 processor, obj, index = self._parent._key_fallback(key)
+         73             except TypeError:
+
+    d:\programfiles\Miniconda3\lib\site-packages\sqlalchemy\engine\result.py in _key_fallback(self, key, raiseerr)
+        405                     &quot;Could not locate column in row for column &#39;%s&#39;&quot; %
+    --&gt; 406                     expression._string_or_unprintable(key))
+        407             else:
+
+    NoSuchColumnError: &quot;Could not locate column in row for column &#39;password&#39;&quot;
+
+    During handling of the above exception, another exception occurred:
+
+    AttributeError                            Traceback (most recent call last)
+    &lt;ipython-input-9-c4520631a10a&gt; in &lt;module&gt;()
+          3 for result in results:
+          4     print(result.username)
+    ----&gt; 5     print(result.password)
+
+    d:\programfiles\Miniconda3\lib\site-packages\sqlalchemy\engine\result.py in __getattr__(self, name)
+         96                 return self[name]
+         97             except KeyError as e:
+    ---&gt; 98                 raise AttributeError(e.args[0])
+         99 
+        100 
+
+    AttributeError: Could not locate column in row for column &#39;password&#39;
+</pre></div>
+
+
+<p>在例4-2中我们看到Python抛出了AttributeError并停止了程序，我们可以看到AttributeError是Python里常见的形式。首先显示错异常的类型，然后一个箭头会指明异常发生的位置，紧接着是异常发生源代码。最后一行会显示异常的具体内容，它会显示异常类型，以及为什么发生异常。这里出现异常的原因是ResultProxy里面没有password列，我们只查询了username列。这是在使用SQLAlchemy对象时出现的一个常见Python异常，还有一些SQLAlchemy自己特有的异常。下面就是其中一个：IntegrityError。</p>
+<h5>IntegrityError</h5>
+<p>IntegrityError是另一个SQLAlchemy常见的异常，当我们做了不符合数据表或字段约束条件的事情时就会发生。当你请求的数据是唯一的，比如users表中的username,想创建两个同名用户时就会产生IntegrityError，演示程序如下所示。</p>
+<div class="highlight"><pre><span class="n">s</span> <span class="o">=</span> <span class="n">select</span><span class="p">([</span><span class="n">users</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">username</span><span class="p">])</span>
+
+<span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+</pre></div>
+
+
+<div class="highlight"><pre>[(&#39;cookiemon&#39;,)]
+</pre></div>
+
+
+<div class="highlight"><pre><span class="n">ins</span> <span class="o">=</span> <span class="n">insert</span><span class="p">(</span><span class="n">users</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">(</span>
+    <span class="n">username</span><span class="o">=</span><span class="s2">&quot;cookiemon&quot;</span><span class="p">,</span>
+    <span class="n">email_address</span><span class="o">=</span><span class="s2">&quot;damon@cookie.com&quot;</span><span class="p">,</span>
+    <span class="n">phone</span><span class="o">=</span><span class="s2">&quot;111-111-1111&quot;</span><span class="p">,</span>
+    <span class="n">password</span><span class="o">=</span><span class="s2">&quot;password&quot;</span>
+<span class="p">)</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">ins</span><span class="p">)</span>
+</pre></div>
+
+
+<p>和前面的AttributeError类似。首先显示错异常的类型，然后一个箭头会指明异常发生的位置，紧接着是异常发生源代码。最后一行会显示异常的具体内容，它会显示异常类型，以及为什么发生异常。这里指明了发生的原因：</p>
+<p>UNIQUE constraint failed: users.username
+这就告诉我们在users表的username里面插入同名用户是不允许的。之后的内容是SQLAlchemy表达式转变成的SQL语句，我们在第三章里介绍过，还有我们计划插入却产生异常的数据。程序在这里停止。</p>
+<p>当然会有很多种异常类型，这里介绍的两种是最常见的。SQLAlchemy里所有异常发生都会按照这两种方式产生。具体异常的内容请查看SQLAlchemy文档。</p>
+<p>为了保证程序在发生异常时继续运行，我们需要实现异常处理方法。</p>
+<h5>Handling Errors</h5>
+<p>要防止异常中断程序，我们需要正确地处理异常。这与Python的异常处理方法一样，用try/except代码块实现。例如，我们可以用try/except代码块捕捉异常显示信息，然后让后面的程序继续运行。</p>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">sqlalchemy.exc</span> <span class="kn">import</span> <span class="n">IntegrityError</span>
+
+<span class="n">ins</span> <span class="o">=</span> <span class="n">insert</span><span class="p">(</span><span class="n">users</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">(</span>
+    <span class="n">username</span><span class="o">=</span><span class="s2">&quot;cookiemon&quot;</span><span class="p">,</span>
+    <span class="n">email_address</span><span class="o">=</span><span class="s2">&quot;damon@cookie.com&quot;</span><span class="p">,</span>
+    <span class="n">phone</span><span class="o">=</span><span class="s2">&quot;111-111-1111&quot;</span><span class="p">,</span>
+    <span class="n">password</span><span class="o">=</span><span class="s2">&quot;password&quot;</span>
+<span class="p">)</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">ins</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">IntegrityError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre>(sqlite3.IntegrityError) UNIQUE constraint failed: users.username [SQL: &#39;INSERT INTO users (username, email_address, phone, password, created_on, updated_on) VALUES (?, ?, ?, ?, ?, ?)&#39;] [parameters: (&#39;cookiemon&#39;, &#39;damon@cookie.com&#39;, &#39;111-111-1111&#39;, &#39;password&#39;, &#39;2015-09-01 13:45:18.991258&#39;, &#39;2015-09-01 13:45:18.992259&#39;)]
+</pre></div>
+
+
+<p>虽然和前面例子代码一样，但是因为有try/except处理IntegrityError异常，所有结果就是简单的异常信息。这个例子只是演示了异常打印功能，其实我们可以在异常处理中写任何Python代码。返回异常信息告诉用户刚刚的操作失败了是很有用的做法。异常处理完成后，程序还会继续运行。虽然这里只处理了IntegrityError，但对其他SQLAlchemy异常也适用。</p>
+<p>try/except里面的代码越少越好。因为代码太多可能会出现你意料之外的异常，不符合你捕捉的目标。</p>
+<p>用传统的Python方法可以捕捉一行语句的异常，如果我们有多个数据库语句，彼此之间互相关联，这个方法可能就不适用了。这时，我们需要将那些语句封装成一个数据库事务，SQLAlchemy提供了一个简单的包装来建立对象之间的链接：transactions。</p>
+<h5>Transactions</h5>
+<p>我们不需要学习一堆数据库理论，可以把事务看成是一种确保多个数据库语句打包成一组运行成功或运行失败的处理方式。当启动一个事务的时候，我们记录数据库的状态，然后执行多条SQL语句。如果所有的SQL语句都能顺利执行，数据库就会不断的更新状态，忽略前面的状态，如下图所示。 但是，如果有一条语句运行失败了，整个数据库就要回退（rollback）到原来的状态，如下图所示。 举个我们可能会在之前建立的数据库里操作的例子。当客户买了我们的饼干之后，我们就需要把饼干邮寄给客户，同时更新库存量。但是，如果我们没有足够的饼干库存履行客户的订单需求，怎么办呢？我们就查检查库存，并且不邮寄订单。这就可以用事务解决。</p>
+<p>我们再新建一个Python Shell或Notebook，还用第三章的表，只是为quantity字段增加一个CheckConstraint限制条件，即库存量不能小于0。然后我们创建用户cookiemon，并设置chocolate chip和dark chocolate chip cookie的库存量，其中chocolate chip库存量为12，dark chocolate chip cookie库存量为1，具体程序如下所示。</p>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">sqlalchemy</span> <span class="kn">import</span> <span class="p">(</span><span class="n">MetaData</span><span class="p">,</span> <span class="n">Table</span><span class="p">,</span> <span class="n">Column</span><span class="p">,</span> <span class="n">Integer</span><span class="p">,</span> <span class="n">Numeric</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span>
+                        <span class="n">DateTime</span><span class="p">,</span> <span class="n">ForeignKey</span><span class="p">,</span> <span class="n">Boolean</span><span class="p">,</span> <span class="n">create_engine</span><span class="p">,</span>
+                        <span class="n">CheckConstraint</span><span class="p">)</span>
+
+<span class="n">metadata</span> <span class="o">=</span> <span class="n">MetaData</span><span class="p">()</span>
+<span class="n">cookies</span> <span class="o">=</span> <span class="n">Table</span><span class="p">(</span><span class="s1">&#39;cookies&#39;</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span>
+                <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;cookie_id&#39;</span><span class="p">,</span> <span class="n">Integer</span><span class="p">(),</span> <span class="n">primary_key</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+                <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;cookie_name&#39;</span><span class="p">,</span> <span class="n">String</span><span class="p">(</span><span class="mi">50</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+                <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;cookie_recipe_url&#39;</span><span class="p">,</span> <span class="n">String</span><span class="p">(</span><span class="mi">255</span><span class="p">)),</span>
+                <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;cookie_sku&#39;</span><span class="p">,</span> <span class="n">String</span><span class="p">(</span><span class="mi">55</span><span class="p">)),</span>
+                <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;quantity&#39;</span><span class="p">,</span> <span class="n">Integer</span><span class="p">()),</span>
+                <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;unit_cost&#39;</span><span class="p">,</span> <span class="n">Numeric</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span>
+                <span class="n">CheckConstraint</span><span class="p">(</span><span class="s1">&#39;quantity &gt;= 0&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;quantity_positive&#39;</span><span class="p">)</span>
+                <span class="p">)</span>
+<span class="n">users</span> <span class="o">=</span> <span class="n">Table</span><span class="p">(</span><span class="s1">&#39;users&#39;</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span>
+              <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;user_id&#39;</span><span class="p">,</span> <span class="n">Integer</span><span class="p">(),</span> <span class="n">primary_key</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+              <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;username&#39;</span><span class="p">,</span> <span class="n">String</span><span class="p">(</span><span class="mi">15</span><span class="p">),</span> <span class="n">nullable</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">unique</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+              <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;email_address&#39;</span><span class="p">,</span> <span class="n">String</span><span class="p">(</span><span class="mi">255</span><span class="p">),</span> <span class="n">nullable</span><span class="o">=</span><span class="bp">False</span><span class="p">),</span>
+              <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;phone&#39;</span><span class="p">,</span> <span class="n">String</span><span class="p">(</span><span class="mi">20</span><span class="p">),</span> <span class="n">nullable</span><span class="o">=</span><span class="bp">False</span><span class="p">),</span>
+              <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;password&#39;</span><span class="p">,</span> <span class="n">String</span><span class="p">(</span><span class="mi">25</span><span class="p">),</span> <span class="n">nullable</span><span class="o">=</span><span class="bp">False</span><span class="p">),</span>
+              <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;created_on&#39;</span><span class="p">,</span> <span class="n">DateTime</span><span class="p">(),</span> <span class="n">default</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">),</span>
+              <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;updated_on&#39;</span><span class="p">,</span> <span class="n">DateTime</span><span class="p">(),</span>
+                     <span class="n">default</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">,</span> <span class="n">onupdate</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">)</span>
+              <span class="p">)</span>
+<span class="n">orders</span> <span class="o">=</span> <span class="n">Table</span><span class="p">(</span><span class="s1">&#39;orders&#39;</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span>
+               <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;order_id&#39;</span><span class="p">,</span> <span class="n">Integer</span><span class="p">()),</span>
+               <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;user_id&#39;</span><span class="p">,</span> <span class="n">ForeignKey</span><span class="p">(</span><span class="s1">&#39;users.user_id&#39;</span><span class="p">)),</span>
+               <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;shipped&#39;</span><span class="p">,</span> <span class="n">Boolean</span><span class="p">(),</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+               <span class="p">)</span>
+<span class="n">line_items</span> <span class="o">=</span> <span class="n">Table</span><span class="p">(</span><span class="s1">&#39;line_items&#39;</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span>
+                   <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;line_items_id&#39;</span><span class="p">,</span> <span class="n">Integer</span><span class="p">(),</span> <span class="n">primary_key</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+                   <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;order_id&#39;</span><span class="p">,</span> <span class="n">ForeignKey</span><span class="p">(</span><span class="s1">&#39;orders.order_id&#39;</span><span class="p">)),</span>
+                   <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;cookie_id&#39;</span><span class="p">,</span> <span class="n">ForeignKey</span><span class="p">(</span><span class="s1">&#39;cookies.cookie_id&#39;</span><span class="p">)),</span>
+                   <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;quantity&#39;</span><span class="p">,</span> <span class="n">Integer</span><span class="p">()),</span>
+                   <span class="n">Column</span><span class="p">(</span><span class="s1">&#39;extended_cost&#39;</span><span class="p">,</span> <span class="n">Numeric</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+                   <span class="p">)</span>
+<span class="n">engine</span> <span class="o">=</span> <span class="n">create_engine</span><span class="p">(</span><span class="s1">&#39;sqlite:///:memory:&#39;</span><span class="p">)</span>
+<span class="n">metadata</span><span class="o">.</span><span class="n">create_all</span><span class="p">(</span><span class="n">engine</span><span class="p">)</span>
+<span class="n">connection</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+
+<span class="kn">from</span> <span class="nn">sqlalchemy</span> <span class="kn">import</span> <span class="n">select</span><span class="p">,</span> <span class="n">insert</span><span class="p">,</span> <span class="n">update</span>
+<span class="n">ins</span> <span class="o">=</span> <span class="n">insert</span><span class="p">(</span><span class="n">users</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">(</span>
+    <span class="n">username</span><span class="o">=</span><span class="s2">&quot;cookiemon&quot;</span><span class="p">,</span>
+    <span class="n">email_address</span><span class="o">=</span><span class="s2">&quot;mon@cookie.com&quot;</span><span class="p">,</span>
+    <span class="n">phone</span><span class="o">=</span><span class="s2">&quot;111-111-1111&quot;</span><span class="p">,</span>
+    <span class="n">password</span><span class="o">=</span><span class="s2">&quot;password&quot;</span>
+<span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">ins</span><span class="p">)</span>
+<span class="n">ins</span> <span class="o">=</span> <span class="n">cookies</span><span class="o">.</span><span class="n">insert</span><span class="p">()</span>
+<span class="n">inventory_list</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span>
+        <span class="s1">&#39;cookie_name&#39;</span><span class="p">:</span> <span class="s1">&#39;chocolate chip&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;cookie_recipe_url&#39;</span><span class="p">:</span> <span class="s1">&#39;http://some.aweso.me/cookie/recipe.html&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;cookie_sku&#39;</span><span class="p">:</span> <span class="s1">&#39;CC01&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;quantity&#39;</span><span class="p">:</span> <span class="s1">&#39;12&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;unit_cost&#39;</span><span class="p">:</span> <span class="s1">&#39;0.50&#39;</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s1">&#39;cookie_name&#39;</span><span class="p">:</span> <span class="s1">&#39;dark chocolate chip&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;cookie_recipe_url&#39;</span><span class="p">:</span> <span class="s1">&#39;http://some.aweso.me/cookie/recipe_dark.html&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;cookie_sku&#39;</span><span class="p">:</span> <span class="s1">&#39;CC02&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;quantity&#39;</span><span class="p">:</span> <span class="s1">&#39;1&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;unit_cost&#39;</span><span class="p">:</span> <span class="s1">&#39;0.75&#39;</span>
+    <span class="p">}</span>
+<span class="p">]</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">ins</span><span class="p">,</span> <span class="n">inventory_list</span><span class="p">)</span>
+
+<span class="n">s</span> <span class="o">=</span> <span class="n">select</span><span class="p">([</span><span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">cookie_name</span><span class="p">,</span> <span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">quantity</span><span class="p">])</span>
+<span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+</pre></div>
+
+
+<div class="highlight"><pre>[(&#39;chocolate chip&#39;, 12), (&#39;dark chocolate chip&#39;, 1)]
+</pre></div>
+
+
+<p>现在，我们再定义两个cookiemon的订单，第一条订单是9块chocolate chip，第二条订单是4块chocolate chip和1块dark chocolate chip cookie。我们用插入语句来实现，具体如下所示。</p>
+<div class="highlight"><pre><span class="n">ins</span> <span class="o">=</span> <span class="n">insert</span><span class="p">(</span><span class="n">orders</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">user_id</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">order_id</span><span class="o">=</span><span class="s1">&#39;1&#39;</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">ins</span><span class="p">)</span>
+<span class="n">ins</span> <span class="o">=</span> <span class="n">insert</span><span class="p">(</span><span class="n">line_items</span><span class="p">)</span>
+<span class="n">order_items</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span>
+        <span class="s1">&#39;order_id&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="s1">&#39;cookie_id&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="s1">&#39;quantity&#39;</span><span class="p">:</span> <span class="mi">9</span><span class="p">,</span>
+        <span class="s1">&#39;extended_cost&#39;</span><span class="p">:</span> <span class="mf">4.50</span>
+    <span class="p">}</span>
+<span class="p">]</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">ins</span><span class="p">,</span> <span class="n">order_items</span><span class="p">)</span>
+<span class="n">ins</span> <span class="o">=</span> <span class="n">insert</span><span class="p">(</span><span class="n">orders</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">user_id</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">order_id</span><span class="o">=</span><span class="s1">&#39;2&#39;</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">ins</span><span class="p">)</span>
+<span class="n">ins</span> <span class="o">=</span> <span class="n">insert</span><span class="p">(</span><span class="n">line_items</span><span class="p">)</span>
+<span class="n">order_items</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span>
+        <span class="s1">&#39;order_id&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="s1">&#39;cookie_id&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="s1">&#39;quantity&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="s1">&#39;extended_cost&#39;</span><span class="p">:</span> <span class="mf">0.75</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s1">&#39;order_id&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="s1">&#39;cookie_id&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="s1">&#39;quantity&#39;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+        <span class="s1">&#39;extended_cost&#39;</span><span class="p">:</span> <span class="mf">2.00</span>
+    <span class="p">}</span>
+<span class="p">]</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">ins</span><span class="p">,</span> <span class="n">order_items</span><span class="p">)</span>
+</pre></div>
+
+
+<p>这样我们就有了演示事务的订单数据了，现在我们需要定义一个函数ship_it。这个函数接受一个order_id，然后从库存中去掉对应的购买量，并把订单标记成已发货，shipped=True，如下所示。</p>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">sqlalchemy.exc</span> <span class="kn">import</span> <span class="n">IntegrityError</span>
+<span class="k">def</span> <span class="nf">ship_it</span><span class="p">(</span><span class="n">order_id</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">select</span><span class="p">([</span><span class="n">line_items</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">cookie_id</span><span class="p">,</span> <span class="n">line_items</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">quantity</span><span class="p">])</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">line_items</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">order_id</span> <span class="o">==</span> <span class="n">order_id</span><span class="p">)</span>
+        <span class="n">cookies_to_ship</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">cookie</span> <span class="ow">in</span> <span class="n">cookies_to_ship</span><span class="p">:</span>
+            <span class="n">u</span> <span class="o">=</span> <span class="n">update</span><span class="p">(</span><span class="n">cookies</span><span class="p">)</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">cookie_id</span> <span class="o">==</span> <span class="n">cookie</span><span class="o">.</span><span class="n">cookie_id</span><span class="p">)</span>
+            <span class="n">u</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">quantity</span><span class="o">=</span><span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">quantity</span> <span class="o">-</span> <span class="n">cookie</span><span class="o">.</span><span class="n">quantity</span><span class="p">)</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+        <span class="n">u</span> <span class="o">=</span> <span class="n">update</span><span class="p">(</span><span class="n">orders</span><span class="p">)</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">orders</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">order_id</span> <span class="o">==</span> <span class="n">order_id</span><span class="p">)</span>
+        <span class="n">u</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">shipped</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Shipped order ID: {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">order_id</span><span class="p">))</span>
+    <span class="k">except</span> <span class="n">IntegrityError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+</pre></div>
+
+
+<p>当一条订单发货之后，函数ship_it就会执行动作。让我们对第一条订单执行函数ship_it，然后看看cookies表是否更新了库存。</p>
+<div class="highlight"><pre><span class="n">ship_it</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre>Shipped order ID: 1
+</pre></div>
+
+
+<div class="highlight"><pre><span class="n">s</span> <span class="o">=</span> <span class="n">select</span><span class="p">([</span><span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">cookie_name</span><span class="p">,</span> <span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">quantity</span><span class="p">])</span>
+<span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+</pre></div>
+
+
+<div class="highlight"><pre>[(&#39;chocolate chip&#39;, 3), (&#39;dark chocolate chip&#39;, 1)]
+</pre></div>
+
+
+<p>运行正常。但是现在的库存量不能满足第二条订单；但是，在工作节奏很快的仓库中，这些订单应该可以同时处理。现在我们再用函数ship_it处理一下第二条订单。</p>
+<div class="highlight"><pre><span class="n">ship_it</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre>(sqlite3.IntegrityError) CHECK constraint failed: quantity_positive [SQL: &#39;UPDATE cookies SET quantity=(cookies.quantity - ?) WHERE cookies.cookie_id = ?&#39;] [parameters: (4, 1)]
+</pre></div>
+
+
+<div class="highlight"><pre><span class="n">s</span> <span class="o">=</span> <span class="n">select</span><span class="p">([</span><span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">cookie_name</span><span class="p">,</span> <span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">quantity</span><span class="p">])</span>
+<span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+</pre></div>
+
+
+<div class="highlight"><pre>[(&#39;chocolate chip&#39;, 3), (&#39;dark chocolate chip&#39;, 0)]
+</pre></div>
+
+
+<p>程序中库存量先扣减1块dark chocolate chip cookie，可以正常执行，再扣减4块chocolate chip，因为没有足够的chocolate chip库存导致了IntegrityError异常。但是dark chocolate chip的库存扣减了，这不是我们想看到的。我们这里想要发生整个订单，不允许单独让一部分先发货。用前面介绍的异常处理方法可以解决这个问题，但是，事务提供了更好的处理方式。</p>
+<p>事务通过connection对象的begin()方法启动。这样我们就获得一个事务，可以处理后面所有的语句。如果这些语句都成功执行，我们就可以用commit()方法对数据库进行状态确认。如果不完全成功，我们就用rollback()方法让数据库回退到原始状态。下面让我们用事务把函数ship_it改一下。</p>
+<div class="highlight"><pre><span class="k">def</span> <span class="nf">ship_it</span><span class="p">(</span><span class="n">order_id</span><span class="p">):</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">select</span><span class="p">([</span><span class="n">line_items</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">cookie_id</span><span class="p">,</span> <span class="n">line_items</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">quantity</span><span class="p">])</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">line_items</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">order_id</span> <span class="o">==</span> <span class="n">order_id</span><span class="p">)</span>
+    <span class="n">transaction</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">begin</span><span class="p">()</span>
+    <span class="n">cookies_to_ship</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">cookie</span> <span class="ow">in</span> <span class="n">cookies_to_ship</span><span class="p">:</span>
+            <span class="n">u</span> <span class="o">=</span> <span class="n">update</span><span class="p">(</span><span class="n">cookies</span><span class="p">)</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">cookie_id</span> <span class="o">==</span> <span class="n">cookie</span><span class="o">.</span><span class="n">cookie_id</span><span class="p">)</span>
+            <span class="n">u</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">quantity</span><span class="o">=</span><span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">quantity</span><span class="o">-</span><span class="n">cookie</span><span class="o">.</span><span class="n">quantity</span><span class="p">)</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+        <span class="n">u</span> <span class="o">=</span> <span class="n">update</span><span class="p">(</span><span class="n">orders</span><span class="p">)</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">orders</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">order_id</span> <span class="o">==</span> <span class="n">order_id</span><span class="p">)</span>
+        <span class="n">u</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">shipped</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Shipped order ID: {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">order_id</span><span class="p">))</span>
+        <span class="n">transaction</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+    <span class="k">except</span> <span class="n">IntegrityError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+        <span class="n">transaction</span><span class="o">.</span><span class="n">rollback</span><span class="p">()</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+</pre></div>
+
+
+<p>现在我们把dark chocolate chip的库存重新补成1。</p>
+<div class="highlight"><pre><span class="n">u</span> <span class="o">=</span> <span class="n">update</span><span class="p">(</span><span class="n">cookies</span><span class="p">)</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">cookie_name</span> <span class="o">==</span> <span class="s2">&quot;dark chocolate chip&quot;</span><span class="p">)</span>
+<span class="n">u</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">quantity</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+
+<span class="n">s</span> <span class="o">=</span> <span class="n">select</span><span class="p">([</span><span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">cookie_name</span><span class="p">,</span> <span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">quantity</span><span class="p">])</span>
+<span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+</pre></div>
+
+
+<div class="highlight"><pre>[(&#39;chocolate chip&#39;, 3), (&#39;dark chocolate chip&#39;, 1)]
+</pre></div>
+
+
+<p>再用新的函数ship_it对第二条订单进行处理。程序不会因为异常而停止，只会打印异常信息。</p>
+<div class="highlight"><pre><span class="n">ship_it</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre>(sqlite3.IntegrityError) CHECK constraint failed: quantity_positive [SQL: &#39;UPDATE cookies SET quantity=(cookies.quantity - ?) WHERE cookies.cookie_id = ?&#39;] [parameters: (4, 1)]
+</pre></div>
+
+
+<p>再用库存查看语句看看库存的状态，回退到第二条订单处理之前的状态了。</p>
+<div class="highlight"><pre><span class="n">s</span> <span class="o">=</span> <span class="n">select</span><span class="p">([</span><span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">cookie_name</span><span class="p">,</span> <span class="n">cookies</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">quantity</span><span class="p">])</span>
+<span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+</pre></div>
+
+
+<div class="highlight"><pre>[(&#39;chocolate chip&#39;, 3), (&#39;dark chocolate chip&#39;, 1)]
+</pre></div>
+
+
+<p>这就是事务的作用，短短几行代码就可以让数据库回退到异常发生之前的状态，非常给力吧。</p>
+<ol>
+<li>
+<p><a href="https://www.amazon.com/Essential-SQLAlchemy-Mapping-Python-Databases/dp/149191646X">Essential SQLAlchemy: Mapping Python to Databases</a></p>
+</li>
+<li>
+<p><a href="https://muxuezi.github.io/posts/sqlalchemy-introduce.html#SQLAlchemy%E5%AE%89%E8%A3%85%E4%B8%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E8%BF%9E%E6%8E%A5">sqlalchemy introduce</a></p>
+</li>
+</ol></div>
+    <footer>
+<p class="meta">
+  <span class="byline author vcard">
+    Posted by <span class="fn">
+        <a href="/author/huiming-song.html">Huiming Song</a>
+    </span>
+  </span>
+<time datetime="2017-05-28T00:00:00-05:00" pubdate>Sun 28 May 2017</time>  <span class="categories">
+    <a class='category' href='/category/python.html'>python</a>
+  </span>
+  <span class="categories">
+    <a class="category" href="/tag/python.html">python</a>,    <a class="category" href="/tag/sql.html">sql</a>  </span>
+</p><div class="sharing">
+</div>    </footer>
+  </article>
+
+</div>
+<aside class="sidebar">
+  <section>
+    <h1>Recent Posts</h1>
+    <ul id="recent_posts">
+      <li class="post">
+          <a href="/pages/2017/10/08/an-interesting-random-walk-question-and-simulation-02/">An interesting random walk question and simulation 02</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2017/09/30/an-interesting-question-and-simulation-01/">An interesting question and simulation 01</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2017/09/23/data-engineering-and-modeling-01-predict-defaults-with-inbalanced-data/">Data Engineering and Modeling 01: predict defaults with inbalanced data</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2017/09/10/numpy-introduction-03/">Numpy Introduction 03</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2017/08/20/build-recurrent-neural-network-from-scratch/">Build Recurrent Neural Network from Scratch</a>
+      </li>
+    </ul>
+  </section>
+  <section>
+      
+    <h1>Categories</h1>
+    <ul id="recent_posts">
+        <li><a href="/category/linux.html">Linux</a></li>
+        <li><a href="/category/python.html">Python</a></li>
+        <li><a href="/category/rthers.html">Rthers</a></li>
+    </ul>
+  </section>
+ 
+
+  <section>
+  <h1>Tags</h1>
+    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/re.html">re</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/python.html">python</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/sklearn.html">sklearn</a>  </section>
+
+
+    <section>
+        <h1>Social</h1>
+        <ul>
+            <li><a href="https://www.linkedin.com/pub/huiming-song/24/735/349" target="_blank">Linkedin</a></li>
+        </ul>
+    </section>
+    <section>
+        <h1>Blogroll</h1>
+        <ul>
+            <li><a href="http://easysas.blogspot.com/" target="_blank">my old SAS blog</a></li>
+        </ul>
+    </section>
+
+</aside>    </div>
+  </div>
+  <footer role="contentinfo"><p>
+    Copyright &copy;  2015&ndash;2017  shm &mdash;
+  <span class="credit">Powered by <a href="http://getpelican.com">Pelican</a></span>
+</p></footer>
+  <script src="/theme/js/modernizr-2.0.js"></script>
+  <script src="/theme/js/ender.js"></script>
+  <script src="/theme/js/octopress.js" type="text/javascript"></script>
+    <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-65938411-1']);
+    _gaq.push(['_trackPageview']);
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-65938411-1');
+    ga('send', 'pageview');
+</script>
+  <script type="text/javascript">
+    var disqus_shortname = 'songhuiming';
+    var disqus_identifier = '/pages/2017/05/28/sqlalchemy/';
+    var disqus_url = '/pages/2017/05/28/sqlalchemy/';
+    var disqus_title = 'SQLAlchemy';
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = "//" + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+     })();
+  </script>
+</body>
+</html>

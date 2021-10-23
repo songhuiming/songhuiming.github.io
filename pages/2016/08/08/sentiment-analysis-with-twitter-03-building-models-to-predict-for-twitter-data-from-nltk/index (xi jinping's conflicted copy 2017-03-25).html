@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>pydata</title>
+        <meta charset="utf-8" />
+        <link href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="pydata Full Atom Feed" />
+        <link href="/feeds/python.atom.xml" type="application/atom+xml" rel="alternate" title="pydata Categories Atom Feed" />
+
+
+
+    <meta name="tags" content="python" />
+    <meta name="tags" content="data mining" />
+    <meta name="tags" content="sklearn" />
+
+</head>
+
+<body id="index" class="home">
+        <header id="banner" class="body">
+                <h1><a href="/">pydata <strong>Keep Looking, Don't Settle</strong></a></h1>
+        </header><!-- /#banner -->
+        <nav id="menu"><ul>
+            <li><a href="/functions/archives.html">Archives</a></li>
+        </ul></nav><!-- /#menu -->
+<section id="content" class="body">
+  <header>
+    <h2 class="entry-title">
+      <a href="/pages/2016/08/08/sentiment-analysis-with-twitter-03-building-models-to-predict-for-twitter-data-from-nltk/" rel="bookmark"
+         title="Permalink to sentiment analysis with twitter 03: building models to predict for twitter data from nltk">sentiment analysis with twitter 03: building models to predict for twitter data from nltk</a></h2>
+ 
+  </header>
+  <footer class="post-info">
+    <abbr class="published" title="2016-08-08T00:00:00-05:00">
+      Mon 08 August 2016
+    </abbr>
+    <abbr class="modified" title="2016-08-08T00:00:00-05:00">
+      Mon 08 August 2016
+    </abbr>
+    <address class="vcard author">
+      By           <a class="url fn" href="/author/huiming-song.html">Huiming Song</a>
+    </address>
+  </footer><!-- /.post-info -->
+  <div class="entry-content">
+    <h2>0. Introduction</h2>
+<p>This section is to introduce the libraries from <code>sklearn</code> about classification prediction models.</p>
+<div class="highlight"><pre><span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="kn">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">sklearn.feature_extraction.text</span> <span class="kn">import</span> <span class="n">TfidfVectorizer</span>
+<span class="kn">from</span> <span class="nn">sklearn.feature_extraction.text</span> <span class="kn">import</span> <span class="n">CountVectorizer</span>
+
+<span class="kn">from</span> <span class="nn">sklearn.svm</span> <span class="kn">import</span> <span class="n">SVC</span><span class="p">,</span> <span class="n">LinearSVC</span>
+<span class="kn">from</span> <span class="nn">sklearn.naive_bayes</span> <span class="kn">import</span> <span class="n">MultinomialNB</span>
+<span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">LogisticRegression</span>
+<span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">SGDClassifier</span>
+</pre></div>
+
+
+<p>load the training data from nltk.</p>
+<div class="highlight"><pre><span class="n">mypath</span> <span class="o">=</span> <span class="s1">r&#39;C:\Users\hsong01\nltk_data\corpora\twitter_samples</span><span class="se">\\</span><span class="s1">&#39;</span>
+
+<span class="n">pos</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">open</span> <span class="p">(</span><span class="n">mypath</span> <span class="o">+</span> <span class="s1">r&#39;positive_tweets.json&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">):</span>
+    <span class="n">pos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">line</span><span class="p">))</span>
+
+<span class="n">neg</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">open</span> <span class="p">(</span><span class="n">mypath</span> <span class="o">+</span> <span class="s1">r&#39;negative_tweets.json&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">):</span>
+    <span class="n">neg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">line</span><span class="p">))</span>
+</pre></div>
+
+
+<h4>twitter data explain</h4>
+<div class="highlight"><pre><span class="n">text</span><span class="o">:</span> <span class="n">the</span> <span class="n">text</span> <span class="n">of</span> <span class="n">the</span> <span class="n">tweet</span> <span class="n">itself</span>
+<span class="n">created_at</span><span class="o">:</span> <span class="n">the</span> <span class="n">date</span> <span class="n">of</span> <span class="n">creation</span>
+<span class="n">favorite_count</span><span class="o">,</span> <span class="n">retweet_count</span><span class="o">:</span> <span class="n">the</span> <span class="n">number</span> <span class="n">of</span> <span class="n">favourites</span> <span class="n">and</span> <span class="n">retweets</span>
+<span class="n">favorited</span><span class="o">,</span> <span class="n">retweeted</span><span class="o">:</span> <span class="n">boolean</span> <span class="n">stating</span> <span class="n">whether</span> <span class="n">the</span> <span class="n">authenticated</span> <span class="n">user</span> <span class="o">(</span><span class="n">you</span><span class="o">)</span> <span class="n">have</span> <span class="n">favourited</span> <span class="n">or</span> <span class="n">retweeted</span> <span class="k">this</span> <span class="n">tweet</span>
+<span class="n">lang</span><span class="o">:</span> <span class="n">acronym</span> <span class="k">for</span> <span class="n">the</span> <span class="n">language</span> <span class="o">(</span><span class="n">e</span><span class="o">.</span><span class="na">g</span><span class="o">.</span> <span class="err">“</span><span class="n">en</span><span class="err">”</span> <span class="k">for</span> <span class="n">english</span><span class="o">)</span>
+<span class="n">id</span><span class="o">:</span> <span class="n">the</span> <span class="n">tweet</span> <span class="n">identifier</span>
+<span class="n">place</span><span class="o">,</span> <span class="n">coordinates</span><span class="o">,</span> <span class="n">geo</span><span class="o">:</span> <span class="n">geo</span><span class="o">-</span><span class="n">location</span> <span class="n">information</span> <span class="k">if</span> <span class="n">available</span>
+<span class="n">user</span><span class="o">:</span> <span class="n">the</span> <span class="n">author</span><span class="err">’</span><span class="n">s</span> <span class="n">full</span> <span class="n">profile</span>
+<span class="n">entities</span><span class="o">:</span> <span class="n">list</span> <span class="n">of</span> <span class="n">entities</span> <span class="n">like</span> <span class="n">URLs</span><span class="o">,</span> <span class="err">@</span><span class="o">-</span><span class="n">mentions</span><span class="o">,</span> <span class="n">hashtags</span> <span class="n">and</span> <span class="n">symbols</span>
+<span class="n">in_reply_to_user_id</span><span class="o">:</span> <span class="n">user</span> <span class="n">identifier</span> <span class="k">if</span> <span class="n">the</span> <span class="n">tweet</span> <span class="k">is</span> <span class="n">a</span> <span class="n">reply</span> <span class="n">to</span> <span class="n">a</span> <span class="n">specific</span> <span class="n">user</span>
+<span class="n">in_reply_to_status_id</span><span class="o">:</span> <span class="n">status</span> <span class="n">identifier</span> <span class="n">id</span> <span class="n">the</span> <span class="n">tweet</span> <span class="k">is</span> <span class="n">a</span> <span class="n">reply</span> <span class="n">to</span> <span class="n">a</span> <span class="n">specific</span> <span class="n">status</span>
+</pre></div>
+
+
+<p>formalize the data into pandas dataframe for analysis</p>
+<div class="highlight"><pre><span class="n">colname</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;created_at&quot;</span><span class="p">,</span> <span class="s2">&quot;favorite_count&quot;</span><span class="p">,</span> <span class="s2">&quot;retweet_count&quot;</span><span class="p">,</span> <span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="s2">&quot;place&quot;</span><span class="p">,</span> <span class="s2">&quot;coordinates&quot;</span><span class="p">,</span> <span class="s2">&quot;geo&quot;</span><span class="p">,</span> <span class="s2">&quot;text&quot;</span><span class="p">]</span>
+
+<span class="n">df0</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">dic</span> <span class="ow">in</span> <span class="n">pos</span><span class="p">:</span>
+    <span class="n">ll</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">colname</span><span class="p">:</span>
+        <span class="n">ll</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dic</span><span class="p">[</span><span class="n">c</span><span class="p">])</span>
+    <span class="n">df0</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ll</span><span class="p">)</span>
+
+<span class="n">df1</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">dic</span> <span class="ow">in</span> <span class="n">neg</span><span class="p">:</span>
+    <span class="n">ll</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">colname</span><span class="p">:</span>
+        <span class="n">ll</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dic</span><span class="p">[</span><span class="n">c</span><span class="p">])</span>
+    <span class="n">df1</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ll</span><span class="p">)</span>
+
+
+<span class="n">df0</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">df0</span><span class="p">,</span> <span class="n">columns</span> <span class="o">=</span> <span class="n">colname</span><span class="p">)</span>
+<span class="n">df0</span><span class="p">[</span><span class="s2">&quot;pn&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">df1</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">df1</span><span class="p">,</span> <span class="n">columns</span> <span class="o">=</span> <span class="n">colname</span><span class="p">)</span>
+<span class="n">df1</span><span class="p">[</span><span class="s2">&quot;pn&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">df0</span><span class="p">,</span> <span class="n">df1</span><span class="p">],</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">ignore_index</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span>
+</pre></div>
+
+
+<h2>1. frequency analysis</h2>
+<div class="highlight"><pre><span class="c1"># count the frequency</span>
+<span class="n">count_vect</span> <span class="o">=</span> <span class="n">CountVectorizer</span><span class="p">(</span><span class="n">min_df</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span>  
+<span class="n">df_freq_count</span> <span class="o">=</span> <span class="n">count_vect</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">text</span><span class="p">)</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span>
+
+<span class="c1"># the features(words in twitter) and their order in the freq matrix</span>
+<span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">count_vect</span><span class="o">.</span><span class="n">vocabulary_</span><span class="o">.</span><span class="n">keys</span><span class="p">()[:</span><span class="mi">20</span><span class="p">]:</span>
+    <span class="k">print</span> <span class="s2">&quot;the word is </span><span class="si">%s</span><span class="s2">, ---- and the order is </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">count_vect</span><span class="o">.</span><span class="n">vocabulary_</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+<span class="k">print</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">*</span><span class="mi">2</span>
+
+<span class="c1"># all the words in twitter</span>
+<span class="k">print</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> </span><span class="si">%s</span><span class="s2"> &quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">count_vect</span><span class="o">.</span><span class="n">get_feature_names</span><span class="p">()[:</span><span class="mi">20</span><span class="p">],</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+<span class="k">print</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">*</span><span class="mi">2</span>
+
+<span class="c1"># the frequency matrix which is a sparce matrix</span>
+<span class="k">print</span> <span class="n">df_freq_count</span>
+<span class="k">print</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">*</span><span class="mi">2</span>
+<span class="k">print</span> <span class="s2">&quot;the shape of output matrix is &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">df_freq_count</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre>the word is raining, ---- and the order is 3526
+the word is four, ---- and the order is 1691
+the word is hanging, ---- and the order is 1926
+the word is bringing, ---- and the order is 680
+the word is wednesday, ---- and the order is 4722
+the word is cooking, ---- and the order is 1001
+the word is sobs, ---- and the order is 4005
+the word is lgbt, ---- and the order is 2575
+the word is kids, ---- and the order is 2416
+the word is dnt, ---- and the order is 1256
+the word is music, ---- and the order is 2973
+the word is yahoo, ---- and the order is 4878
+the word is want, ---- and the order is 4684
+the word is absolute, ---- and the order is 128
+the word is travel, ---- and the order is 4458
+the word is feature, ---- and the order is 1576
+the word is sehun, ---- and the order is 3809
+the word is typed, ---- and the order is 4520
+the word is wrong, ---- and the order is 4849
+the word is italy, ---- and the order is 2255
+
+
+
+[u&#39;00&#39;, u&#39;000&#39;, u&#39;01&#39;, u&#39;01282&#39;, u&#39;0345&#39;, u&#39;07&#39;, u&#39;10&#39;, u&#39;100&#39;, u&#39;1000&#39;, u&#39;100k&#39;, u&#39;101&#39;, u&#39;10am&#39;, u&#39;11&#39;, u&#39;110&#39;, u&#39;11am&#39;, u&#39;12&#39;, u&#39;120&#39;, u&#39;12pm&#39;, u&#39;12th&#39;, u&#39;13&#39;]
+
+
+
+
+[[0 0 0 ..., 0 0 0]
+ [0 0 0 ..., 0 0 0]
+ [0 0 0 ..., 0 0 0]
+ ...,
+ [0 0 0 ..., 0 0 0]
+ [0 0 0 ..., 0 0 0]
+ [0 0 0 ..., 0 0 0]]
+
+
+
+the shape of output matrix is (10000L, 4962L)
+</pre></div>
+
+
+<h2>2. tf-idf</h2>
+<div class="highlight"><pre><span class="n">vectorizer</span> <span class="o">=</span> <span class="n">TfidfVectorizer</span><span class="p">(</span><span class="n">min_df</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">use_idf</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span>  
+<span class="n">train_x</span> <span class="o">=</span> <span class="n">vectorizer</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+</pre></div>
+
+
+<h2>3. model</h2>
+<p>build the model and test on the test data with these two tweets:</p>
+<p>test_text = ["today is a sunny day and there are lots of people playing in the park", "wow, it is really bad to miss  your books"]</p>
+<div class="highlight"><pre><span class="n">test_text</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;today is a sunny day and there are lots of people playing in the park&quot;</span><span class="p">,</span> <span class="s2">&quot;wow, it is really bad to miss  your books&quot;</span><span class="p">]</span>
+<span class="n">test_df</span> <span class="o">=</span> <span class="n">vectorizer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">test_text</span><span class="p">)</span>
+
+<span class="c1">## naive bayesian</span>
+<span class="n">clf_nb</span> <span class="o">=</span> <span class="n">MultinomialNB</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_x</span><span class="p">,</span> <span class="n">df</span><span class="o">.</span><span class="n">pn</span><span class="p">)</span>
+<span class="k">print</span> <span class="n">clf_nb</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">test_df</span><span class="p">)</span>
+
+<span class="c1">## SVC</span>
+<span class="n">clf_svc</span> <span class="o">=</span> <span class="n">SVC</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_x</span><span class="p">,</span> <span class="n">df</span><span class="o">.</span><span class="n">pn</span><span class="p">)</span>
+<span class="k">print</span> <span class="n">clf_svc</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">test_df</span><span class="p">)</span>
+
+<span class="c1">## linear svc</span>
+<span class="n">clf_linsvc</span> <span class="o">=</span> <span class="n">LinearSVC</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_x</span><span class="p">,</span> <span class="n">df</span><span class="o">.</span><span class="n">pn</span><span class="p">)</span>
+<span class="k">print</span> <span class="n">clf_linsvc</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">test_df</span><span class="p">)</span>
+
+<span class="c1">## logistic regression</span>
+<span class="n">clf_loigt</span> <span class="o">=</span> <span class="n">LogisticRegression</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_x</span><span class="p">,</span> <span class="n">df</span><span class="o">.</span><span class="n">pn</span><span class="p">)</span>
+<span class="k">print</span> <span class="n">clf_loigt</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">test_df</span><span class="p">)</span>
+
+<span class="c1">## SGDClassifier</span>
+<span class="n">clf_sgd</span> <span class="o">=</span> <span class="n">SGDClassifier</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_x</span><span class="p">,</span> <span class="n">df</span><span class="o">.</span><span class="n">pn</span><span class="p">)</span>
+<span class="k">print</span> <span class="n">clf_sgd</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">test_df</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre><span class="k">[1 0]</span>
+<span class="k">[0 0]</span>
+<span class="k">[1 0]</span>
+<span class="k">[1 0]</span>
+<span class="k">[1 0]</span>
+</pre></div>
+
+
+<p>As is shown, NB/Linear SVC/Logistic Regression/SGDClassifier predict it correctly while SVM did not predict the positive correctly.</p>
+  </div><!-- /.entry-content -->
+</section>
+        <footer id="contentinfo" class="body">
+                <address id="about" class="vcard body">
+                Proudly powered by <a href="http://getpelican.com/">Pelican</a>,
+                which takes great advantage of <a href="http://python.org">Python</a>.
+                </address><!-- /#about -->
+        </footer><!-- /#contentinfo -->
+</body>
+</html>

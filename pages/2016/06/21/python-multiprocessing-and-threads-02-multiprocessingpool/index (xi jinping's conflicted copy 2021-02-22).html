@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>python multiprocessing and threads 02: multiprocessing.Pool &mdash; pydata</title>
+  <meta name="author" content="shm">
+
+
+
+
+
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+    <link href="/favicon.png" rel="icon">
+
+  <link href="/theme/css/main.css" media="screen, projection"
+        rel="stylesheet" type="text/css">
+
+  <link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic"
+        rel="stylesheet" type="text/css">
+  <link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic"
+        rel="stylesheet" type="text/css">
+</head>
+
+<body>
+  <header role="banner"><hgroup>
+  <h1><a href="/">pydata</a></h1>
+    <h2>Keep Looking, Don't Settle</h2>
+</hgroup>
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>
+        MathJax.Hub.Config({
+            config: ["MMLorHTML.js"],
+            extensions: ["tex2jax.js","TeX/AMSmath.js","TeX/AMSsymbols.js"],
+            jax: ["input/TeX"],
+            tex2jax: {
+                inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+                displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+                processEscapes: false
+            },
+            TeX: {
+                TagSide: "right",
+                TagIndent: ".8em",
+                MultLineWidth: "85%",
+                equationNumbers: {
+                   autoNumber: "AMS",
+                },
+                unicode: {
+                   fonts: "STIXGeneral,'Arial Unicode MS'"
+                }
+            },
+            showProcessingMessages: false
+        });
+</script></header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+</ul>
+
+<form class="search" action="/search.html">
+    <input type="text" class="search-query" placeholder="Search" name="q" id="s">
+</form>
+
+<form action="https://www.google.com/search" method="get">
+    <fieldset role="search">
+       <input type="hidden" name="q" value="site:songhuiming.github.io" />
+       <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+    </fieldset>
+</form>
+
+
+<ul class="main-navigation">
+    <li><a href="/functions/archives.html">Archives</a></li>
+      <li >
+        <a href="/category/linux.html">Linux</a>
+      </li>
+      <li class="active">
+        <a href="/category/python.html">Python</a>
+      </li>
+      <li >
+        <a href="/category/rthers.html">Rthers</a>
+      </li>
+</ul></nav>
+  <div id="main">
+    <div id="content">
+<div>
+  <article class="hentry" role="article">
+<header>
+      <h1 class="entry-title">python multiprocessing and threads 02: multiprocessing.Pool</h1>
+    <p class="meta">
+<time datetime="2016-06-21T00:00:00-05:00" pubdate>Tue 21 June 2016</time>    </p>
+</header>
+
+  <div class="entry-content"><p>python的<code>miltiprocessing</code>提供了两种方法实现多进程，一种是<code>multiprocessing.Process</code>,另一种是<code>multiprocessing.Pool</code>.在<code>Pool</code>里面又有两种方法，<code>apply</code>(<code>apply_async</code>) 和 <code>map</code>(<code>map_async</code>)。在这里只比较<code>apply</code>(<code>apply_async</code>) 和 <code>map</code>(<code>map_async</code>)。它们的语法很相似，类似于<code>apply</code>和<code>map</code>的用法。</p>
+<p>它们之间的总结如下表：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th align="center">Multi-args</th>
+<th>Concurrence</th>
+<th align="center">Blocking</th>
+<th align="center">Ordered-results</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>map</code></td>
+<td align="center">no</td>
+<td>yes</td>
+<td align="center">yes</td>
+<td align="center">yes</td>
+</tr>
+<tr>
+<td><code>apply</code></td>
+<td align="center">yes</td>
+<td>no</td>
+<td align="center">yes</td>
+<td align="center">no</td>
+</tr>
+<tr>
+<td><code>map_async</code></td>
+<td align="center">no</td>
+<td>yes</td>
+<td align="center">no</td>
+<td align="center">yes</td>
+</tr>
+<tr>
+<td><code>apply_async</code></td>
+<td align="center">yes</td>
+<td>yes</td>
+<td align="center">no</td>
+<td align="center">no</td>
+</tr>
+</tbody>
+</table>
+<p>In Python 3, a new function <code>starmap</code> can accept multiple arguments.</p>
+<p>主要的区别：</p>
+<ol>
+<li>
+<p>用<code>Pool</code>产生多个进程池以后，<code>map</code>会利用所有的进程，多个进程会同时运行；<code>apply</code>会等一个进程好了再运行另一个进程。所以<code>apply</code>会明显的比<code>map</code>慢很多。</p>
+</li>
+<li>
+<p><code>map</code>传进去的参数是一个list（一批data）；而<code>apply</code>传进去的参数是一个整数（一个data），靠<code>for</code>循环来loop整个list</p>
+</li>
+<li>
+<p><code>apply_async</code>会利用多个进程，进程切换不频繁的时候，它的运行速度能跟map差不多（下面第一个例子，在算CRE EL做monte carlo simulaiton的时候，每一个进程run一个simulation，每个simulation会跑大概10分钟，多个进程同时跑多个similation；因为每个进程都会run大概10分钟，所以进程切换不频繁）</p>
+</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th align="left">run method</th>
+<th align="left">run time (seconds)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">apply</td>
+<td align="left">1209.96</td>
+</tr>
+<tr>
+<td align="left">apply_async</td>
+<td align="left">62.54</td>
+</tr>
+<tr>
+<td align="left">map</td>
+<td align="left">62.30</td>
+</tr>
+<tr>
+<td align="left">map_async</td>
+<td align="left">186.73</td>
+</tr>
+<tr>
+<td align="left">serial run</td>
+<td align="left">299.94</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>但是如果多进程运行的程序耗时很短，进程切换不停，它会比<code>map</code>慢（下面第二个算factorize的例子，每个进程对某一个整数n算factorize，所以花时几短，算完以后再对另一个整数做同样的事，所以进程会切换不停）</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="left">run method</th>
+<th align="center">run time (seconds)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">map</td>
+<td align="center">5.56</td>
+</tr>
+<tr>
+<td align="left">apply_async</td>
+<td align="center">99.41</td>
+</tr>
+<tr>
+<td align="left">apply</td>
+<td align="center">154.40</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>
+<p><code>map_async</code>跟<code>map</code>没有什么区别</p>
+</li>
+<li>
+<p><code>apply_async</code>和<code>map_async</code>返回的结果可能无序，跟输入data的顺序不一致</p>
+</li>
+<li>
+<p><code>apply_async</code>和<code>map_async</code>需要用<code>get()</code>函数来获取结果</p>
+</li>
+</ul>
+<h5>第一个例子，func run的时间会比较长</h5>
+<div class="highlight"><pre><span class="kn">import</span> <span class="nn">multiprocessing</span> <span class="kn">as</span> <span class="nn">mul</span>
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">time</span><span class="o">,</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="kn">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">Tkinter</span>
+<span class="kn">import</span> <span class="nn">timeit</span>
+<span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">Pool</span>
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">time</span><span class="o">,</span> <span class="nn">random</span>
+
+<span class="c1">## Part 1: cre_calc_engine funciton</span>
+<span class="n">rs_dsc_thd</span> <span class="o">=</span> <span class="mf">1.05</span>
+<span class="n">rs_ltv_thd</span> <span class="o">=</span> <span class="mf">0.8</span>
+<span class="n">ref_dsc_thd</span> <span class="o">=</span> <span class="mf">1.25</span>
+<span class="n">ref_ltv_thd</span> <span class="o">=</span> <span class="mf">0.75</span>
+
+<span class="k">def</span> <span class="nf">cre_calc_engine</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kvargs</span><span class="p">):</span>
+    <span class="k">pass</span>
+    <span class="c1"># hide the function here</span>
+
+<span class="k">def</span> <span class="nf">calc</span><span class="p">(</span><span class="n">seed_id</span><span class="p">):</span>
+    <span class="k">global</span> <span class="n">mon_rate_chg</span><span class="p">,</span> <span class="n">mon_noi_chg</span><span class="p">,</span> <span class="n">mon_caprate_chg</span>
+    <span class="n">mon_chg</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">u&#39;mon_rate_chg&#39;</span><span class="p">,</span> <span class="s1">u&#39;mon_noi_chg&#39;</span><span class="p">,</span> <span class="s1">u&#39;mon_caprate_chg&#39;</span><span class="p">])</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">seed</span> <span class="o">=</span> <span class="n">seed_id</span><span class="p">)</span>  <span class="c1"># warning: remove this when do simulation</span>
+    <span class="n">mon_chg</span><span class="o">.</span><span class="n">mon_rate_chg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">120</span><span class="p">)</span> <span class="o">/</span> <span class="mi">5000</span>
+    <span class="n">mon_chg</span><span class="o">.</span><span class="n">mon_noi_chg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">120</span><span class="p">)</span> <span class="o">/</span> <span class="mi">100</span>
+    <span class="n">mon_chg</span><span class="o">.</span><span class="n">mon_caprate_chg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">120</span><span class="p">)</span> <span class="o">/</span> <span class="mi">500</span>
+    <span class="n">mon_rate_chg</span> <span class="o">=</span> <span class="n">mon_chg</span><span class="o">.</span><span class="n">ix</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="n">mon_noi_chg</span> <span class="o">=</span> <span class="n">mon_chg</span><span class="o">.</span><span class="n">ix</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
+    <span class="n">mon_caprate_chg</span> <span class="o">=</span> <span class="n">mon_chg</span><span class="o">.</span><span class="n">ix</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span>
+
+    <span class="n">fin_los</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">new_final</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="nb">vars</span> <span class="o">=</span> <span class="n">new_final</span><span class="o">.</span><span class="n">ix</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="n">final_loss</span> <span class="o">=</span> <span class="n">cre_calc_engine</span><span class="p">(</span><span class="o">*</span><span class="nb">vars</span><span class="p">)</span>
+        <span class="n">fin_los</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">final_loss</span><span class="p">)</span>
+
+    <span class="c1"># new_final[&#39;final_loss&#39;] = fin_los</span>
+    <span class="k">return</span> <span class="n">fin_los</span>
+
+<span class="c1">### 1: apply will execute ONE workers in the POOL ##################################</span>
+<span class="n">new_final</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_pickle</span><span class="p">(</span><span class="s1">r&#39;/home/hsong01/work/ifrs9/cre/new_final&#39;</span><span class="p">)</span>
+
+<span class="n">start</span> <span class="o">=</span> <span class="n">timeit</span><span class="o">.</span><span class="n">default_timer</span><span class="p">()</span>
+<span class="k">if</span> <span class="n">__name__</span><span class="o">==</span><span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="k">print</span> <span class="s2">&quot;parent process </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">()</span>
+    <span class="n">jobs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">loop_i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">20</span><span class="p">):</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">calc</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="p">(</span><span class="n">loop_i</span><span class="p">,</span> <span class="p">))</span>
+        <span class="n">jobs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">job</span> <span class="ow">in</span> <span class="n">jobs</span><span class="p">:</span>
+        <span class="k">print</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">job</span><span class="p">)</span>
+<span class="n">end</span> <span class="o">=</span> <span class="n">timeit</span><span class="o">.</span><span class="n">default_timer</span><span class="p">()</span>
+<span class="k">print</span> <span class="s2">&quot;run time for function apply is </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
+<span class="c1"># run time for function apply is 1209.96147704</span>
+
+
+<span class="c1">### 2: apply_async will execute ALL workers in the POOL but return no order  ######## new_final = pd.read_pickle(r&#39;/home/hsong01/work/ifrs9/cre/new_final&#39;)</span>
+
+<span class="n">start</span> <span class="o">=</span> <span class="n">timeit</span><span class="o">.</span><span class="n">default_timer</span><span class="p">()</span>
+<span class="k">if</span> <span class="n">__name__</span><span class="o">==</span><span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="k">print</span> <span class="s2">&quot;parent process </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">()</span>
+    <span class="n">jobs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">loop_i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">20</span><span class="p">):</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="n">calc</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="p">(</span><span class="n">loop_i</span><span class="p">,</span> <span class="p">))</span>
+        <span class="n">jobs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>    
+    <span class="k">for</span> <span class="n">job</span> <span class="ow">in</span> <span class="n">jobs</span><span class="p">:</span>
+        <span class="k">print</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">job</span><span class="o">.</span><span class="n">get</span><span class="p">())</span>
+<span class="n">end</span> <span class="o">=</span> <span class="n">timeit</span><span class="o">.</span><span class="n">default_timer</span><span class="p">()</span>
+<span class="k">print</span> <span class="s2">&quot;run time for function apply_async is </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
+<span class="c1"># run time for function apply_async is 62.5425729752</span>
+
+
+<span class="c1">### 3: map will execute ALL workers in the POOL and return in order  #################### new_final = pd.read_pickle(r&#39;/home/hsong01/work/ifrs9/cre/new_final&#39;)</span>
+
+<span class="n">start</span> <span class="o">=</span> <span class="n">timeit</span><span class="o">.</span><span class="n">default_timer</span><span class="p">()</span>
+<span class="k">if</span> <span class="n">__name__</span><span class="o">==</span><span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="k">print</span> <span class="s2">&quot;parent process </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">()</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
+    <span class="n">jobs</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">calc</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="mi">20</span><span class="p">))</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">job</span> <span class="ow">in</span> <span class="n">jobs</span><span class="p">:</span>
+        <span class="k">print</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">job</span><span class="p">)</span>
+<span class="n">end</span> <span class="o">=</span> <span class="n">timeit</span><span class="o">.</span><span class="n">default_timer</span><span class="p">()</span>
+<span class="k">print</span> <span class="s2">&quot;run time for map is </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
+<span class="c1"># run time for map is 62.3054320812</span>
+
+
+<span class="c1">### 4: map_async will execute ALL workers in the POOL   ###################################</span>
+<span class="n">new_final</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_pickle</span><span class="p">(</span><span class="s1">r&#39;/home/hsong01/work/ifrs9/cre/new_final&#39;</span><span class="p">)</span>
+
+<span class="n">start</span> <span class="o">=</span> <span class="n">timeit</span><span class="o">.</span><span class="n">default_timer</span><span class="p">()</span>
+<span class="k">if</span> <span class="n">__name__</span><span class="o">==</span><span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="k">print</span> <span class="s2">&quot;parent process </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">()</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
+    <span class="n">jobs</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">map_async</span><span class="p">(</span><span class="n">calc</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="mi">50</span><span class="p">))</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">job</span> <span class="ow">in</span> <span class="n">jobs</span><span class="o">.</span><span class="n">get</span><span class="p">():</span>
+        <span class="k">print</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">job</span><span class="p">)</span>
+<span class="n">end</span> <span class="o">=</span> <span class="n">timeit</span><span class="o">.</span><span class="n">default_timer</span><span class="p">()</span>
+<span class="k">print</span> <span class="s2">&quot;run time for map_async is </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
+<span class="c1"># run time for map_async is 186.737658978</span>
+
+
+<span class="c1">### 5: apply will execute ONE workers in the POOL ##################################</span>
+<span class="n">new_final</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_pickle</span><span class="p">(</span><span class="s1">r&#39;/home/hsong01/work/ifrs9/cre/new_final&#39;</span><span class="p">)</span>
+
+<span class="n">start</span> <span class="o">=</span> <span class="n">timeit</span><span class="o">.</span><span class="n">default_timer</span><span class="p">()</span>
+<span class="n">sss</span> <span class="o">=</span> <span class="p">[</span><span class="n">calc</span><span class="p">(</span><span class="n">iii</span><span class="p">)</span> <span class="k">for</span> <span class="n">iii</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">)]</span>
+<span class="n">end</span> <span class="o">=</span> <span class="n">timeit</span><span class="o">.</span><span class="n">default_timer</span><span class="p">()</span>
+
+<span class="k">print</span> <span class="s2">&quot;run time for serial run is </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
+<span class="c1"># run time for serial run is 299.941666126</span>
+</pre></div>
+
+
+<h5>第二个例子，func fun的时间比较短</h5>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">Process</span><span class="p">,</span> <span class="n">Queue</span><span class="p">,</span> <span class="n">Pool</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">timeit</span>
+
+<span class="k">def</span> <span class="nf">factorize_naive</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; A naive factorization method. Take integer &#39;n&#39;, return list of</span>
+<span class="sd">        factors.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">n</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="n">factors</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="mi">2</span>
+
+    <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">factors</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="n">n</span> <span class="o">%</span> <span class="n">p</span>
+        <span class="k">if</span> <span class="n">r</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">factors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+            <span class="n">n</span> <span class="o">=</span> <span class="n">n</span> <span class="o">/</span> <span class="n">p</span>
+        <span class="k">elif</span> <span class="n">p</span> <span class="o">*</span> <span class="n">p</span> <span class="o">&gt;=</span> <span class="n">n</span><span class="p">:</span>
+            <span class="n">factors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">factors</span>
+        <span class="k">elif</span> <span class="n">p</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="c1"># Advance in steps of 2 over odd numbers</span>
+            <span class="n">p</span> <span class="o">+=</span> <span class="mi">2</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># If p == 2, get to 3</span>
+            <span class="n">p</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">assert</span> <span class="bp">False</span><span class="p">,</span> <span class="s2">&quot;unreachable&quot;</span>
+
+<span class="c1"># function to record the name, parms, and running time</span>
+<span class="k">def</span> <span class="nf">time_wrap</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">wrap</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kvargs</span><span class="p">):</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="n">timeit</span><span class="o">.</span><span class="n">default_timer</span><span class="p">()</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kvargs</span><span class="p">)</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="n">timeit</span><span class="o">.</span><span class="n">default_timer</span><span class="p">()</span>
+        <span class="k">print</span> <span class="s2">&quot;the run time for function </span><span class="si">%s</span><span class="s2"> with params </span><span class="si">%s</span><span class="s2"> is </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>  <span class="n">end</span><span class="o">-</span><span class="n">start</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span>
+    <span class="k">return</span> <span class="n">wrap</span>
+
+
+<span class="nd">@time_wrap</span>
+<span class="k">def</span> <span class="nf">map_calc</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">npool</span><span class="p">):</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span><span class="n">npool</span><span class="p">)</span>
+    <span class="n">jobs</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">factorize_naive</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1000000</span><span class="p">))</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">job</span> <span class="ow">in</span> <span class="n">jobs</span><span class="p">:</span>
+        <span class="n">s</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">job</span><span class="p">)</span>
+    <span class="k">print</span> <span class="n">s</span><span class="p">[:</span><span class="mi">10</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">s</span>
+
+<span class="n">map_calc</span><span class="p">(</span><span class="n">factorize_naive</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+<span class="c1"># the run time for function map_calc is 5.56264591217</span>
+
+
+<span class="nd">@time_wrap</span>
+<span class="k">def</span> <span class="nf">apply_async_calc</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">npool</span><span class="p">):</span>
+    <span class="n">jobs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span><span class="n">npool</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1000000</span><span class="p">):</span>
+        <span class="n">each_run</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="n">factorize_naive</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="p">))</span>
+        <span class="n">jobs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">each_run</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">job</span> <span class="ow">in</span> <span class="n">jobs</span><span class="p">:</span>
+        <span class="n">s</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">job</span><span class="o">.</span><span class="n">get</span><span class="p">())</span>
+    <span class="k">return</span> <span class="n">s</span>
+
+<span class="n">apply_async_calc</span><span class="p">(</span><span class="n">factorize_naive</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+<span class="c1"># the run time for function apply_async_calc with params 6 is 99.409334898</span>
+
+
+<span class="nd">@time_wrap</span>
+<span class="k">def</span> <span class="nf">apply_calc</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">npool</span><span class="p">):</span>
+    <span class="n">jobs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span><span class="n">npool</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1000000</span><span class="p">):</span>
+        <span class="n">each_run</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">factorize_naive</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="p">))</span>
+        <span class="n">jobs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">each_run</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">job</span> <span class="ow">in</span> <span class="n">jobs</span><span class="p">:</span>
+        <span class="n">s</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">job</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">s</span>
+
+<span class="n">apply_calc</span><span class="p">(</span><span class="n">factorize_naive</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+<span class="c1"># the run time for function apply_calc with params 6 is 154.398054838</span>
+</pre></div></div>
+    <footer>
+<p class="meta">
+  <span class="byline author vcard">
+    Posted by <span class="fn">
+        <a href="/author/huiming-song.html">Huiming Song</a>
+    </span>
+  </span>
+<time datetime="2016-06-21T00:00:00-05:00" pubdate>Tue 21 June 2016</time>  <span class="categories">
+    <a class='category' href='/category/python.html'>Python</a>
+  </span>
+  <span class="categories">
+    <a class="category" href="/tag/python.html">python</a>,    <a class="category" href="/tag/base.html">base</a>,    <a class="category" href="/tag/multiprocessing.html">multiprocessing</a>,    <a class="category" href="/tag/map.html">map</a>,    <a class="category" href="/tag/apply.html">apply</a>,    <a class="category" href="/tag/apply_async.html">apply_async</a>  </span>
+</p><div class="sharing">
+</div>    </footer>
+  </article>
+
+</div>
+<aside class="sidebar">
+  <section>
+    <h1>Recent Posts</h1>
+    <ul id="recent_posts">
+      <li class="post">
+          <a href="/pages/2017/10/08/an-interesting-random-walk-question-and-simulation-02/">An interesting random walk question and simulation 02</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2017/09/30/an-interesting-question-and-simulation-01/">An interesting question and simulation 01</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2017/09/23/data-engineering-and-modeling-01-predict-defaults-with-inbalanced-data/">Data Engineering and Modeling 01: predict defaults with inbalanced data</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2017/09/10/numpy-introduction-03/">Numpy Introduction 03</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2017/08/20/build-recurrent-neural-network-from-scratch/">Build Recurrent Neural Network from Scratch</a>
+      </li>
+    </ul>
+  </section>
+  <section>
+      
+    <h1>Categories</h1>
+    <ul id="recent_posts">
+        <li><a href="/category/linux.html">Linux</a></li>
+        <li><a href="/category/python.html">Python</a></li>
+        <li><a href="/category/rthers.html">Rthers</a></li>
+    </ul>
+  </section>
+ 
+
+  <section>
+  <h1>Tags</h1>
+    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/re.html">re</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/python.html">python</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/sklearn.html">sklearn</a>  </section>
+
+
+    <section>
+        <h1>Social</h1>
+        <ul>
+            <li><a href="https://www.linkedin.com/pub/huiming-song/24/735/349" target="_blank">Linkedin</a></li>
+        </ul>
+    </section>
+    <section>
+        <h1>Blogroll</h1>
+        <ul>
+            <li><a href="http://easysas.blogspot.com/" target="_blank">my old SAS blog</a></li>
+        </ul>
+    </section>
+
+</aside>    </div>
+  </div>
+  <footer role="contentinfo"><p>
+    Copyright &copy;  2015&ndash;2017  shm &mdash;
+  <span class="credit">Powered by <a href="http://getpelican.com">Pelican</a></span>
+</p></footer>
+  <script src="/theme/js/modernizr-2.0.js"></script>
+  <script src="/theme/js/ender.js"></script>
+  <script src="/theme/js/octopress.js" type="text/javascript"></script>
+    <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-65938411-1']);
+    _gaq.push(['_trackPageview']);
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-65938411-1');
+    ga('send', 'pageview');
+</script>
+  <script type="text/javascript">
+    var disqus_shortname = 'songhuiming';
+    var disqus_identifier = '/pages/2016/06/21/python-multiprocessing-and-threads-02-multiprocessingpool/';
+    var disqus_url = '/pages/2016/06/21/python-multiprocessing-and-threads-02-multiprocessingpool/';
+    var disqus_title = 'python multiprocessing and threads 02: multiprocessing.Pool';
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = "//" + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+     })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>pydata</title>
+        <meta charset="utf-8" />
+        <link href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="pydata Full Atom Feed" />
+        <link href="/feeds/python.atom.xml" type="application/atom+xml" rel="alternate" title="pydata Categories Atom Feed" />
+
+
+
+    <meta name="tags" content="python" />
+    <meta name="tags" content="base" />
+
+</head>
+
+<body id="index" class="home">
+        <header id="banner" class="body">
+                <h1><a href="/">pydata <strong>Keep Looking, Don't Settle</strong></a></h1>
+        </header><!-- /#banner -->
+        <nav id="menu"><ul>
+            <li><a href="/functions/archives.html">Archives</a></li>
+        </ul></nav><!-- /#menu -->
+<section id="content" class="body">
+  <header>
+    <h2 class="entry-title">
+      <a href="/pages/2016/06/14/python-closure/" rel="bookmark"
+         title="Permalink to python closure">python closure</a></h2>
+ 
+  </header>
+  <footer class="post-info">
+    <abbr class="published" title="2016-06-14T00:00:00-05:00">
+      Tue 14 June 2016
+    </abbr>
+    <abbr class="modified" title="2016-06-14T00:00:00-05:00">
+      Tue 14 June 2016
+    </abbr>
+    <address class="vcard author">
+      By           <a class="url fn" href="/author/huiming-song.html">Huiming Song</a>
+    </address>
+  </footer><!-- /.post-info -->
+  <div class="entry-content">
+    <p>如果一个函数里面定义了另一个函数，这样的函数叫<code>nested function</code>, <code>nested function</code>可以访问它的封闭区域内的变量。比如</p>
+<div class="highlight"><pre><span class="k">def</span> <span class="nf">add_function</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">add_value</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="n">value</span>
+    <span class="k">return</span> <span class="n">add_value</span>
+
+<span class="n">add3</span> <span class="o">=</span> <span class="n">add_function</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="k">print</span> <span class="n">add3</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>  <span class="c1"># output is 13</span>
+</pre></div>
+
+
+<p>now if we delete the function <code>add_function</code>. we can still run <code>add3</code> function and <code>3</code> will be remembered.</p>
+<p>这种数据<code>3</code>和code捆绑在一起的方法叫闭包<code>closure</code></p>
+<h5>什么时候会出现<code>closure</code>?</h5>
+<p>以下三个条件必须满足:
+1. 有一个<code>nested function</code>(function inside a function)
+2. <code>nested function</code>会涉及一个定义在封闭函数内部的值
+3. 最终要返回<code>nested function</code></p>
+<h5>什么时候使用<code>closure</code></h5>
+<p><code>closure</code>避免了使用全局变量。如果一个类(<code>class</code>)只有很少的<code>methods</code>的时候，使用<code>closure</code>会更方便简洁。比如上面的例子，我们可以很快的定义不同的加法函数</p>
+<div class="highlight"><pre><span class="n">add5</span> <span class="o">=</span> <span class="n">add_function</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">add10</span> <span class="o">=</span> <span class="n">add_function</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+
+<span class="k">print</span> <span class="n">add5</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="k">print</span> <span class="n">add10</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+</pre></div>
+
+
+<p>所有的python函数都有一个<code>__closure__</code>属性。</p>
+<div class="highlight"><pre><span class="n">add_function</span><span class="o">.</span><span class="n">__closure__</span>
+<span class="n">add5</span><span class="o">.</span><span class="n">__closure__</span>        <span class="c1"># Out[18]: (&lt;cell at 0x00000000040A09A8: int object at 0x0000000001D58758&gt;,)</span>
+
+<span class="n">add5</span><span class="o">.</span><span class="n">__closure__</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">cell_contents</span>
+</pre></div>
+
+
+<p>Figure 1. tab1: show the plot</p>
+<p><img alt="png" src="/figures/20160614_python_closure_01.PNG" /></p>
+  </div><!-- /.entry-content -->
+</section>
+        <footer id="contentinfo" class="body">
+                <address id="about" class="vcard body">
+                Proudly powered by <a href="http://getpelican.com/">Pelican</a>,
+                which takes great advantage of <a href="http://python.org">Python</a>.
+                </address><!-- /#about -->
+        </footer><!-- /#contentinfo -->
+</body>
+</html>

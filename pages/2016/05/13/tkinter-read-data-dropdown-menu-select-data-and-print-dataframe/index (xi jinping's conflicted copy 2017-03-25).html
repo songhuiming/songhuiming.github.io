@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>pydata</title>
+        <meta charset="utf-8" />
+        <link href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="pydata Full Atom Feed" />
+        <link href="/feeds/programming.atom.xml" type="application/atom+xml" rel="alternate" title="pydata Categories Atom Feed" />
+
+
+
+    <meta name="tags" content="python" />
+
+</head>
+
+<body id="index" class="home">
+        <header id="banner" class="body">
+                <h1><a href="/">pydata <strong>Keep Looking, Don't Settle</strong></a></h1>
+        </header><!-- /#banner -->
+        <nav id="menu"><ul>
+            <li><a href="/functions/archives.html">Archives</a></li>
+        </ul></nav><!-- /#menu -->
+<section id="content" class="body">
+  <header>
+    <h2 class="entry-title">
+      <a href="/pages/2016/05/13/tkinter-read-data-dropdown-menu-select-data-and-print-dataframe/" rel="bookmark"
+         title="Permalink to Tkinter read data, dropdown menu, select data and print dataframe">Tkinter read data, dropdown menu, select data and print dataframe</a></h2>
+ 
+  </header>
+  <footer class="post-info">
+    <abbr class="published" title="2016-05-13T00:00:00-05:00">
+      Fri 13 May 2016
+    </abbr>
+    <address class="vcard author">
+      By           <a class="url fn" href="/author/huiming-song.html">Huiming Song</a>
+    </address>
+  </footer><!-- /.post-info -->
+  <div class="entry-content">
+    <p>这个project主要是用Tkinter来读入csv/excel数据，然后根据读入的数据某一列或者某几列的唯一值建立下拉列表(dropdown menu)，然后根据下拉列表选定的值来选取子数据并且把子数据打印出来</p>
+<p>主要用到的东西</p>
+<ol>
+<li>
+<p>使用<code>tkFileDialog.askopenfilename()</code>产生窗口来读入文件，为了让读入的文件方便调用，把它<code>global</code></p>
+</li>
+<li>
+<p>读入文件确认以后，弹出新的页面，包括下拉列表(<code>tk.OptionMenu</code>)，下拉列表<code>set</code>值(<code>tk.StringVar</code>)，然后要返回选定的值(<code>get</code>)</p>
+</li>
+<li>
+<p>下拉列表的值传递回去用来选择子数据</p>
+</li>
+<li>
+<p>把选定的子数据作为<code>string</code>, <code>pandas</code>很方便的有<code>to_string()</code></p>
+</li>
+<li>
+<p>最后把字符（包括DataFrame）打印出来<code>tex.insert(tk.END, s)</code></p>
+</li>
+<li>
+<p>打印出来很大的话需要scroll <code>tex.see(tk.END)</code></p>
+<p>Graph1. 开始页面，点击Read in Data会弹出读取文件的对话框</p>
+</li>
+</ol>
+<p><img alt="alt text" src="/figures/20160513_tkinter_readcsv_printout_01.PNG" title="Tex1" /></p>
+<div class="highlight"><pre>Graph 2. 读取文件的对话框
+</pre></div>
+
+
+<p><img alt="alt text" src="/figures/20160513_tkinter_readcsv_printout_02.PNG" title="Tex2" /></p>
+<div class="highlight"><pre>Graph 3.  打印出数据(string)
+</pre></div>
+
+
+<p><img alt="alt text" src="/figures/20160513_tkinter_readcsv_printout_03.PNG" title="Tex3" /></p>
+<h5>python code:</h5>
+<div class="highlight"><pre><span class="kn">import</span> <span class="nn">Tkinter</span> <span class="kn">as</span> <span class="nn">tk</span>
+<span class="kn">import</span> <span class="nn">ttk</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="kn">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">tkFileDialog</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">目的： 在startPage上添加一个输入框，然后把输入的值在传递到pageOne打印出来</span>
+
+<span class="sd">步骤: 1.在startPage上添加一个Entry widget作为输入</span>
+<span class="sd">     2.在myFrame添加get_page函数来获取页面</span>
+<span class="sd">     3.最后在pageOne获取页面，从而获得value并打印出来</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+
+<span class="k">class</span> <span class="nc">myFrame1</span><span class="p">(</span><span class="n">tk</span><span class="o">.</span><span class="n">Tk</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">tk</span><span class="o">.</span><span class="n">Tk</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="n">container</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">Frame</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">container</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">side</span> <span class="o">=</span> <span class="s2">&quot;top&quot;</span><span class="p">,</span> <span class="n">fill</span> <span class="o">=</span> <span class="s2">&quot;both&quot;</span><span class="p">,</span> <span class="n">expand</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span>  <span class="c1">#</span>
+        <span class="n">container</span><span class="o">.</span><span class="n">grid_rowconfigure</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">weight</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">container</span><span class="o">.</span><span class="n">grid_columnconfigure</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">weight</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">frames</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="n">frame</span> <span class="o">=</span> <span class="n">startPage</span><span class="p">(</span><span class="n">container</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>  <span class="c1">#startPage继承了container</span>
+        <span class="n">frame</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">row</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">column</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">sticky</span><span class="o">=</span><span class="s2">&quot;nsew&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="p">[</span><span class="n">startPage</span><span class="p">]</span> <span class="o">=</span> <span class="n">frame</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">show_frame</span><span class="p">(</span><span class="n">startPage</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">show_frame</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">page_name</span><span class="p">):</span>
+        <span class="n">frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="p">[</span><span class="n">page_name</span><span class="p">]</span>
+        <span class="n">frame</span><span class="o">.</span><span class="n">tkraise</span><span class="p">()</span>
+
+
+
+
+<span class="k">class</span> <span class="nc">startPage</span><span class="p">(</span><span class="n">tk</span><span class="o">.</span><span class="n">Frame</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">controller</span><span class="p">):</span>
+        <span class="n">tk</span><span class="o">.</span><span class="n">Frame</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">controller</span> <span class="o">=</span> <span class="n">controller</span>
+
+
+        <span class="n">label</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">Label</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span> <span class="o">=</span> <span class="s2">&quot;-------------StartPage: This is the draft -------------------&quot;</span><span class="p">)</span>
+        <span class="n">label</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">pady</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">padx</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span>
+
+        <span class="n">b0</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">Button</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s2">&quot;Read in Data&quot;</span><span class="p">,</span> <span class="n">command</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">readData</span> <span class="p">)</span>
+        <span class="n">b0</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">padx</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">pady</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+        <span class="n">b0</span><span class="o">.</span><span class="n">config</span><span class="p">(</span><span class="n">width</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span> <span class="n">bg</span> <span class="o">=</span> <span class="s1">&#39;GRAY&#39;</span><span class="p">)</span>
+
+        <span class="c1"># 在__init__下面，可以写self.controller或者controller，它们是一样的</span>
+        <span class="c1"># 但是在上面的show_frame（不在__init__下），那么就需要self.frames，要不然找不到frames</span>
+        <span class="n">b1</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">Button</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span> <span class="o">=</span> <span class="s2">&quot;Agree and go to next page&quot;</span><span class="p">,</span> <span class="n">command</span> <span class="o">=</span> <span class="n">test</span><span class="p">)</span>
+        <span class="n">b1</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
+
+
+    <span class="n">tkcalc</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+    <span class="n">tkidname</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;0-----0&#39;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">readData</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">global</span> <span class="n">tkcalc</span>
+        <span class="k">global</span> <span class="n">tkidname</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">tkFileDialog</span><span class="o">.</span><span class="n">askopenfilename</span><span class="p">()</span>
+        <span class="n">tkcalc</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_excel</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">sheetname</span> <span class="o">=</span> <span class="s2">&quot;Sheet1&quot;</span><span class="p">)</span>
+        <span class="n">tkidname</span> <span class="o">=</span>  <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="s1">&#39;------&#39;</span> <span class="o">+</span>  <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">tkcalc</span><span class="o">.</span><span class="n">ix</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">drop_duplicates</span><span class="p">()</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">tolist</span><span class="p">()]</span>
+        <span class="k">print</span> <span class="n">tkcalc</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">test</span><span class="p">():</span>
+
+    <span class="c1"># df = pd.DataFrame(np.random.randn(20, 15), columns=list(&#39;ABCDEFGHIJKLMNO&#39;))</span>
+
+
+
+    <span class="k">def</span> <span class="nf">cbc</span><span class="p">(</span><span class="n">tex</span><span class="p">):</span>
+        <span class="k">return</span> <span class="k">lambda</span> <span class="p">:</span> <span class="n">callback</span><span class="p">(</span><span class="n">tex</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">callback</span><span class="p">(</span><span class="n">tex</span><span class="p">):</span>
+        <span class="n">myreturn</span> <span class="o">=</span> <span class="n">var1</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;------&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">tkcalc</span><span class="o">.</span><span class="n">ix</span><span class="p">[</span><span class="n">tkcalc</span><span class="o">.</span><span class="n">loanid</span> <span class="o">==</span> <span class="nb">int</span><span class="p">(</span><span class="n">myreturn</span><span class="p">),</span> <span class="mi">2</span><span class="p">:]</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">80</span> <span class="o">+</span> <span class="s2">&quot;print of loanid = &quot;</span> <span class="o">+</span> <span class="n">var1</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="o">+</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">60</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">*</span><span class="mi">2</span> <span class="o">+</span> <span class="n">df</span><span class="o">.</span><span class="n">to_string</span><span class="p">(</span><span class="n">index</span> <span class="o">=</span> <span class="bp">False</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">*</span><span class="mi">3</span>
+        <span class="n">tex</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">tk</span><span class="o">.</span><span class="n">END</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span>
+        <span class="n">tex</span><span class="o">.</span><span class="n">see</span><span class="p">(</span><span class="n">tk</span><span class="o">.</span><span class="n">END</span><span class="p">)</span>             <span class="c1"># Scroll if necessary</span>
+
+    <span class="n">popup</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">Tk</span><span class="p">()</span>
+    <span class="n">tex</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">Text</span><span class="p">(</span><span class="n">master</span><span class="o">=</span><span class="n">popup</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">240</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+    <span class="n">tex</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">side</span><span class="o">=</span><span class="s1">&#39;bottom&#39;</span><span class="p">,</span> <span class="n">expand</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span>
+
+    <span class="n">lst1</span> <span class="o">=</span> <span class="n">tkidname</span>
+    <span class="n">var1</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">StringVar</span><span class="p">(</span><span class="n">popup</span><span class="p">)</span>
+    <span class="n">var1</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">lst1</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">dropdown</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">OptionMenu</span><span class="p">(</span><span class="n">popup</span><span class="p">,</span> <span class="n">var1</span><span class="p">,</span> <span class="o">*</span><span class="n">lst1</span><span class="p">)</span>
+    <span class="n">dropdown</span><span class="o">.</span><span class="n">config</span><span class="p">(</span><span class="n">width</span> <span class="o">=</span> <span class="mi">60</span><span class="p">,</span> <span class="n">bg</span> <span class="o">=</span> <span class="s1">&#39;GREEN&#39;</span><span class="p">)</span>
+    <span class="n">dropdown</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">side</span><span class="o">=</span><span class="s1">&#39;top&#39;</span><span class="p">,</span> <span class="n">padx</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">pady</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+
+
+    <span class="n">b</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">Button</span><span class="p">(</span><span class="n">popup</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s2">&quot;Print Select Loan Calculation&quot;</span><span class="p">,</span> <span class="n">command</span><span class="o">=</span><span class="n">cbc</span><span class="p">(</span><span class="n">tex</span><span class="p">)</span> <span class="p">)</span>
+    <span class="n">b</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">padx</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">pady</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+    <span class="n">b</span><span class="o">.</span><span class="n">config</span><span class="p">(</span><span class="n">width</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span> <span class="n">bg</span> <span class="o">=</span> <span class="s1">&#39;GRAY&#39;</span><span class="p">)</span>
+
+    <span class="n">b1</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">Button</span><span class="p">(</span><span class="n">popup</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s1">&#39;Exit Program&#39;</span><span class="p">,</span> <span class="n">command</span><span class="o">=</span><span class="n">popup</span><span class="o">.</span><span class="n">destroy</span><span class="p">)</span>
+    <span class="n">b1</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">padx</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">pady</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+    <span class="n">b1</span><span class="o">.</span><span class="n">config</span><span class="p">(</span><span class="n">width</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span> <span class="n">bg</span> <span class="o">=</span> <span class="s1">&#39;WHITE&#39;</span><span class="p">)</span>
+    <span class="n">popup</span><span class="o">.</span><span class="n">mainloop</span><span class="p">()</span>
+
+
+
+<span class="n">app1</span> <span class="o">=</span> <span class="n">myFrame1</span><span class="p">()</span>
+<span class="n">app1</span><span class="o">.</span><span class="n">mainloop</span><span class="p">()</span>
+
+<span class="c1">### reference</span>
+<span class="c1"># http://stackoverflow.com/questions/14879916/python-tkinter-make-any-output-appear-in-a-text-box-on-gui-not-in-the-shell</span>
+<span class="c1"># https://www.daniweb.com/programming/software-development/threads/391736/how-to-add-a-drop-down-menu-and-return-the-selected-option</span>
+<span class="c1"># http://www.prasannatech.net/2009/06/tkinter-optionmenu-changing-choices.html</span>
+</pre></div>
+  </div><!-- /.entry-content -->
+</section>
+        <footer id="contentinfo" class="body">
+                <address id="about" class="vcard body">
+                Proudly powered by <a href="http://getpelican.com/">Pelican</a>,
+                which takes great advantage of <a href="http://python.org">Python</a>.
+                </address><!-- /#about -->
+        </footer><!-- /#contentinfo -->
+</body>
+</html>

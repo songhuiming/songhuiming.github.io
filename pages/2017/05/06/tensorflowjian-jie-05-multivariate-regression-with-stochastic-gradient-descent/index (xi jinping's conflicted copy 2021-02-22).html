@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Tensorflow简介--05: Multivariate Regression with Stochastic Gradient Descent &mdash; pydata</title>
+  <meta name="author" content="shm">
+
+
+
+
+
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+    <link href="/favicon.png" rel="icon">
+
+  <link href="/theme/css/main.css" media="screen, projection"
+        rel="stylesheet" type="text/css">
+
+  <link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic"
+        rel="stylesheet" type="text/css">
+  <link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic"
+        rel="stylesheet" type="text/css">
+</head>
+
+<body>
+  <header role="banner"><hgroup>
+  <h1><a href="/">pydata</a></h1>
+    <h2>Keep Looking, Don't Settle</h2>
+</hgroup>
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>
+        MathJax.Hub.Config({
+            config: ["MMLorHTML.js"],
+            extensions: ["tex2jax.js","TeX/AMSmath.js","TeX/AMSsymbols.js"],
+            jax: ["input/TeX"],
+            tex2jax: {
+                inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+                displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+                processEscapes: false
+            },
+            TeX: {
+                TagSide: "right",
+                TagIndent: ".8em",
+                MultLineWidth: "85%",
+                equationNumbers: {
+                   autoNumber: "AMS",
+                },
+                unicode: {
+                   fonts: "STIXGeneral,'Arial Unicode MS'"
+                }
+            },
+            showProcessingMessages: false
+        });
+</script></header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+</ul>
+
+<form class="search" action="/search.html">
+    <input type="text" class="search-query" placeholder="Search" name="q" id="s">
+</form>
+
+<form action="https://www.google.com/search" method="get">
+    <fieldset role="search">
+       <input type="hidden" name="q" value="site:songhuiming.github.io" />
+       <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+    </fieldset>
+</form>
+
+
+<ul class="main-navigation">
+    <li><a href="/functions/archives.html">Archives</a></li>
+      <li >
+        <a href="/category/linux.html">Linux</a>
+      </li>
+      <li class="active">
+        <a href="/category/python.html">Python</a>
+      </li>
+      <li >
+        <a href="/category/rthers.html">Rthers</a>
+      </li>
+</ul></nav>
+  <div id="main">
+    <div id="content">
+<div>
+  <article class="hentry" role="article">
+<header>
+      <h1 class="entry-title">Tensorflow简介--05: Multivariate Regression with Stochastic Gradient Descent</h1>
+    <p class="meta">
+<time datetime="2017-05-06T00:00:00-05:00" pubdate>Sat 06 May 2017</time>    </p>
+</header>
+
+  <div class="entry-content"><p>尽管<code>TenforFlow(tf)</code>最主要的功能是进行深度学习,包括<a href="https://en.wikipedia.org/wiki/Convolutional_neural_network">卷积神经网络(CNN)</a>,<a href="https://en.wikipedia.org/wiki/Recurrent_neural_network">循环神经网络(RNN)</a>和<a href="https://en.wikipedia.org/wiki/Deep_learning">深度神经网络(DNN)</a>等等。但是作为一个深度学习框架，其也提供了进行一般统计学习和优化的工具。前面(<a href="http://songhuiming.github.io/pages/2017/02/26/tensorflowjian-jie-01/">1</a>, <a href="http://songhuiming.github.io/pages/2017/02/26/tensorflowjian-jie-02/">2</a>, <a href="http://songhuiming.github.io/pages/2017/02/26/tensorflowjian-jie-03/">3</a>, <a href="http://songhuiming.github.io/pages/2017/03/05/tensorflowjian-jie-04/">4</a>)我们已经介绍了<code>tf</code>的基本设置和各个命令的含义。下面我们使用一个例子来展示怎么使用<code>tf</code>来进行多元回归拟合数据。具体的说，用一个例子来说明怎么借助<code>tf</code>的<code>Stochastic Gradient Descent</code>做多项式回归。下面的动图展示了拟合函数的参数(回归系数)在<code>tf</code>经过多次迭代以后，拟合曲线渐渐逼近真实值的过程。</p>
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+<script>
+        MathJax.Hub.Config({
+            config: ["MMLorHTML.js"],
+            extensions: ["tex2jax.js","TeX/AMSmath.js","TeX/AMSsymbols.js"],
+            jax: ["input/TeX"],
+            tex2jax: {
+                inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+                displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+                processEscapes: false
+            },
+            TeX: {
+                TagSide: "right",
+                TagIndent: ".8em",
+                MultLineWidth: "85%",
+                equationNumbers: {
+                   autoNumber: "AMS",
+                },
+                unicode: {
+                   fonts: "STIXGeneral,'Arial Unicode MS'"
+                }
+            },
+            showProcessingMessages: false
+        });
+</script>
+
+<p><img alt="alt text" src="/figures/tf_multivar_regression.gif" title="Tensorflow fit result on different Epoch" /></p>
+<p>在使用<code>tf</code>的时候，我们需要定义下面几个东西:</p>
+<div class="highlight"><pre>1. 输入和输出数据
+2. 定义参数
+3. 定义损失函数，以及使用什么办法来优化(比如下面使用随机梯度下降的办法)
+</pre></div>
+
+
+<p>首先我们需要调用将要使用的一些packages:</p>
+<div class="highlight"><pre><span class="kn">import</span> <span class="nn">math</span><span class="o">,</span><span class="nn">sys</span><span class="o">,</span><span class="nn">os</span><span class="o">,</span><span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span><span class="o">,</span> <span class="nn">pandas</span> <span class="kn">as</span> <span class="nn">pd</span><span class="o">,</span> <span class="nn">tensorflow</span> <span class="kn">as</span> <span class="nn">tf</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span><span class="p">,</span> <span class="n">rcParams</span><span class="p">,</span> <span class="n">animation</span><span class="p">,</span> <span class="n">rc</span><span class="p">,</span> <span class="n">style</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">ipywidgets</span> <span class="kn">import</span> <span class="n">interact</span><span class="p">,</span> <span class="n">interactive</span><span class="p">,</span> <span class="n">fixed</span>
+<span class="kn">from</span> <span class="nn">ipywidgets.widgets</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="o">%</span><span class="n">precision</span> <span class="mi">4</span>
+<span class="n">np</span><span class="o">.</span><span class="n">set_printoptions</span><span class="p">(</span><span class="n">precision</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+
+<span class="n">style</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s1">&#39;ggplot&#39;</span><span class="p">)</span>
+<span class="o">%</span><span class="n">matplotlib</span> <span class="n">inline</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;figure.figsize&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">9</span><span class="p">)</span>
+<span class="n">rc</span><span class="p">(</span><span class="s1">&#39;animation&#39;</span><span class="p">,</span> <span class="n">html</span><span class="o">=</span><span class="s1">&#39;html5&#39;</span><span class="p">)</span>
+</pre></div>
+
+
+<p>我们的目的是使用<code>tf</code>来进行多元回归(这个例子是多项式)。首先我们需要模拟产生一个样本数据：<span class="math">\(X\)</span>是0到9上的均匀分布的点，<span class="math">\(Y\)</span>是<span class="math">\(X\)</span>的多项式函数， <span class="math">\(y = -50 + 30 \cdot x - 12 \cdot x^2 + x^3 + \epsilon\)</span>. <span class="math">\(X\)</span>和<span class="math">\(Y\)</span>的关系见下图。</p>
+<div class="highlight"><pre><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">99</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">100</span><span class="p">)[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+<span class="n">y</span> <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">polyval</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">12</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="o">-</span><span class="mi">50</span><span class="p">],</span> <span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;X&#39;</span><span class="p">)</span>
+<span class="n">h</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Y&#39;</span><span class="p">)</span>
+<span class="n">h</span><span class="o">.</span><span class="n">set_rotation</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;$y=x^3 - 12 x^2 + 30 x - 50 + \epsilon$&quot;</span><span class="p">)</span>
+</pre></div>
+
+
+<p><img alt="png" src="/figures/20170505_tf_multivar_regression_01.png" /></p>
+<p>做多项式回归的时候选择基函数为<span class="math">\([1, \space x, \space x^2, \space x^3 ]\)</span>,python中可以使用<code>np.power(x, range(4))</code>得到。因为随机梯度下降的时候梯度跟<span class="math">\(X\)</span>的值有关系，所以我们需要对<span class="math">\(X\)</span>的每一列进行标准化让所有的<span class="math">\(X\)</span>的值处在同样的尺度下。</p>
+<p>数据标准化的一个办法是所有的值(我们的例子中是每一列数据)减去均值，除以方差 </p>
+<div class="math">$$ X^{normalized} = \frac{X - \mu(X)}{\sigma(X)}$$</div>
+<p> <code>numpy</code>对应的code是<code>(x - x.mean(axis = 0)) / x.std(axis = 0)</code>.</p>
+<p>另一个办法是每一列数据除以最大值。因为我们的<span class="math">\(X\)</span>都大于0，所以这样做的结果就是把所有的<span class="math">\(X\)</span>变换到<span class="math">\([0, 1]\)</span>区间上。<code>numpy</code>对应的code是<code>x / np.max(x, axis = 0)</code>.</p>
+<div class="highlight"><pre><span class="n">pol_order</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="n">pol_order</span><span class="p">))</span>
+
+<span class="k">def</span> <span class="nf">normalized_</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">x</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span><span class="p">))</span> <span class="o">/</span> <span class="n">x</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">normalized</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="n">l</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">l</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">normalized_</span><span class="p">(</span><span class="n">x</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:])),</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="n">normalized</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</pre></div>
+
+
+<p>normalized过的<span class="math">\(X\)</span>和<span class="math">\(Y\)</span>的关系为</p>
+<p><img alt="png" src="/figures/20170505_tf_multivar_regression_02.png" /></p>
+<p>把上面定义好的data分为training和test两部分：</p>
+<div class="highlight"><pre><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">99</span><span class="p">)</span>
+<span class="n">order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">permutation</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+<span class="n">portion</span> <span class="o">=</span> <span class="mi">20</span>
+<span class="n">test_x</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">order</span><span class="p">[:</span><span class="n">portion</span><span class="p">]]</span>
+<span class="n">test_y</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="n">order</span><span class="p">[:</span><span class="n">portion</span><span class="p">]]</span>
+<span class="n">train_x</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">order</span><span class="p">[</span><span class="n">portion</span><span class="p">:]]</span>
+<span class="n">train_y</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="n">order</span><span class="p">[</span><span class="n">portion</span><span class="p">:]]</span>
+</pre></div>
+
+
+<p>下面开始定义模型。<code>tf</code>通过数据流程图来定义模型，然后编译执行。</p>
+<p>我们从定义输入(实际值)输出开始。如前所述，这是通过占位符(placehold)来定义.placehold有两个必须的参数，第一个是数据类型，通常为浮点类型(float).第二个是输入输出的数据的维度。假如我们的输入X是一个(m, n)维的矩阵，我们可以把第二个参数定义为[m, n]。我们用[<code>None</code> n]来表示待定的维度，这样我们可以使用<code>batch</code>来部分的输入数据，而不是全部m个数据。这样做的原因是如果m很大，机器的内存可能处理不了。这时候把数据分为很多batch，每次输入部分的数据(一个batch)来拟合，保证内存不会溢出。我们还可以添加第三个参数<code>name</code>，用来在<code>TensorBoard</code>中展示名字。</p>
+<div class="highlight"><pre><span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">name_scope</span><span class="p">(</span><span class="s2">&quot;Input/Output&quot;</span><span class="p">):</span>
+    <span class="n">inputs</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="p">[</span><span class="bp">None</span><span class="p">,</span> <span class="n">pol_order</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;X&quot;</span><span class="p">)</span>
+    <span class="n">outputs</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="p">[</span><span class="bp">None</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Yhat&quot;</span><span class="p">)</span>
+</pre></div>
+
+
+<p>接下来定义模型表达式。模型的参数变量通过<code>tf.Variable</code>来定义，跟<code>tf.placehold</code>的定义很相似，不同的地方在于<code>tf.Variable</code>的值会随着拟合而发生变化。线性模型的表达式为<span class="math">\(Y=X \times W\)</span>。所以参数W的维度与X的列数相等。矩阵X和W相乘由<code>tf.matmul</code>定义。</p>
+<div class="highlight"><pre><span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">name_scope</span><span class="p">(</span><span class="s2">&quot;Model&quot;</span><span class="p">):</span>
+    <span class="n">W</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">pol_order</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;W&quot;</span><span class="p">)</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">W</span><span class="p">)</span>
+</pre></div>
+
+
+<p>最后定义损失函数和它的最优化函数。通常对线性回归模型我们都是要最小化均方误差。损失函数定义为平方损失<span class="math">\(L = \sum_{i=1}^{n}(y_i - f(x_{i}|W)) ^2\)</span>。 把回归函数写成矩阵的形式为<span class="math">\(Y = X \cdot W\)</span>，那么损失函数也可以表达为矩阵相乘<span class="math">\(L = (Y - XW)'(Y-XW)\)</span>. 要最小化损失函数，我们首先求解出梯度为</p>
+<div class="math">$$ \begin{aligned}
+ \frac{\partial L}{\partial W}  &amp; = \frac{\partial ( (Y - XW)'(Y-XW))}{\partial W}  \\\\
+ &amp; = \frac{\partial (Y'Y - 2W'X'Y  + W'X'XW)}{\partial W} \\\\
+ &amp;= -2X'(Y - XW)
+\end{aligned}$$</div>
+<p><code>tf</code>(包括<code>sklearn</code>)都是通过数值办法来最小化损失函数的，而不是通过解析解，尽管我们知道对线性模型回归参数<span class="math">\(W\)</span>参在解析解<span class="math">\(\hat{W} = (X'X)^{-1}X'Y\)</span>. 具体就是让W每次沿着它的梯度方向变化一点点(learning rate),然后反复迭代，直到达到我们的收敛条件或者停止条件。在第一篇中我们介绍过梯度下降的原理：假如损失函数是一座山，我们现在站在山坡上朝四周看看，然后找一个方向能让我们走一点点路但是下降的最快，那个方向就是梯度的方向。</p>
+<p><code>tf</code>提供了很多最优化(不同的梯度下降)的办法，参见<a href="https://www.tensorflow.org/api_guides/python/train#Optimizers">Optimizers</a>.对某些数据使用梯度下降的时候会出现鞍点，导致<code>GradientDescentOptimizer</code>可能会找不到最优点或者只是local的最优点。这时应该尝试别的最优化的办法。在我们的例子中，<code>GradientDescentOptimizer</code>找不到最优解， 但是<code>AdamOptimizer</code>可以找到最优解。</p>
+<p><code>learning rate</code>的参数设置为<code>trainable=False</code>表示每次迭代的时候<code>learning rate</code>本身不变化。<code>learning rate</code>太小会导致迭代步骤太多，计算所需要的时间就会很长。<code>learning rate</code>太大也会有问题：在你将要靠近最优点的时候，因为下一步跨的太大，导致跨过了最优点(overshoot)。比较好的办法是：刚开始迭代的时候<code>learning rate</code>可以大一些，然后随着渐渐靠近最优点，<code>learning rate</code>应该渐渐减小。</p>
+<div class="highlight"><pre><span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">name_scope</span><span class="p">(</span><span class="s2">&quot;SGD&quot;</span><span class="p">):</span>
+    <span class="n">learning_rate</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">trainable</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+    <span class="n">cost_op</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="n">y</span><span class="o">-</span><span class="n">outputs</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="n">train_op</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">AdamOptimizer</span><span class="p">(</span><span class="n">learning_rate</span><span class="p">)</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">cost_op</span><span class="p">)</span>
+</pre></div>
+
+
+<p>到此为止我们已经准备好了计算流程图，下面我们开始定义对话(<code>session</code>)来执行数据流程图。数据流程图中的每个节点(<code>operation</code> or <code>op</code>)在计算过程当中会获得<code>tensor</code>，每个<code>tensor</code>是一个多为数组。对话将图的<code>op</code>分到cpu或者gpu进行计算。计算完后以<code>tensor</code>返回，在python中其类型为<code>np.ndarray</code>。</p>
+<div class="highlight"><pre>1. `sess.as_default()`定义了默认对话, `sess.run()` 和 `sess.eval()` 只能在这个对话下面执行
+2. `sess.run()`如果执行`operation`的话(比如`cost_op`)，需要提供输入值`feed_dict={inputs: train_x, outputs: train_y}`
+3. 对tensor来说，`tensor.eval()` == `sess.run(tensor)`
+</pre></div>
+
+
+<div class="highlight"><pre><span class="n">tolerance</span> <span class="o">=</span> <span class="mf">1e-5</span>
+
+<span class="n">epochs</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">last_cost</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">alpha</span> <span class="o">=</span> <span class="mf">0.3</span>
+<span class="n">max_epochs</span> <span class="o">=</span> <span class="mi">50000</span>
+
+<span class="n">sess</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span> <span class="c1"># default session</span>
+
+<span class="c1"># make default session, run() and eval() should be executed in this session</span>
+<span class="k">with</span> <span class="n">sess</span><span class="o">.</span><span class="n">as_default</span><span class="p">():</span> 
+    <span class="n">init</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">initialize_all_variables</span><span class="p">()</span>
+    <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">init</span><span class="p">)</span>
+    <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="n">learning_rate</span><span class="p">,</span> <span class="n">alpha</span><span class="p">))</span>
+    <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+        <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">train_op</span><span class="p">,</span> <span class="n">feed_dict</span><span class="o">=</span><span class="p">{</span><span class="n">inputs</span><span class="p">:</span> <span class="n">train_x</span><span class="p">,</span> <span class="n">outputs</span><span class="p">:</span> <span class="n">train_y</span><span class="p">})</span>
+
+        <span class="k">if</span> <span class="n">epochs</span><span class="o">%</span><span class="mi">100</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+            <span class="n">cost</span> <span class="o">=</span> <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">cost_op</span><span class="p">,</span> <span class="n">feed_dict</span><span class="o">=</span><span class="p">{</span><span class="n">inputs</span><span class="p">:</span> <span class="n">train_x</span><span class="p">,</span> <span class="n">outputs</span><span class="p">:</span> <span class="n">train_y</span><span class="p">})</span>
+            <span class="k">print</span> <span class="p">(</span><span class="s2">&quot;Epoch: </span><span class="si">%d</span><span class="s2"> - Error: </span><span class="si">%.4f</span><span class="s2">&quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">cost</span><span class="p">))</span>
+
+            <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">last_cost</span> <span class="o">-</span> <span class="n">cost</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">tolerance</span> <span class="ow">or</span> <span class="n">epochs</span> <span class="o">&gt;</span> <span class="n">max_epochs</span><span class="p">:</span>
+                <span class="k">print</span> <span class="p">(</span><span class="s2">&quot;Stop Criteria Reached. Break!&quot;</span><span class="p">)</span>
+                <span class="k">break</span>
+            <span class="n">last_cost</span> <span class="o">=</span> <span class="n">cost</span>
+
+        <span class="n">epochs</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="n">w</span> <span class="o">=</span> <span class="n">W</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>  <span class="c1"># fetch the value of tensor</span>
+    <span class="k">print</span> <span class="p">(</span><span class="s2">&quot;w =&quot;</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span>
+    <span class="k">print</span> <span class="p">(</span><span class="s2">&quot;Test Cost =&quot;</span><span class="p">,</span> <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">cost_op</span><span class="p">,</span> <span class="n">feed_dict</span><span class="o">=</span><span class="p">{</span><span class="n">inputs</span><span class="p">:</span> <span class="n">test_x</span><span class="p">,</span> <span class="n">outputs</span><span class="p">:</span> <span class="n">test_y</span><span class="p">}))</span>
+</pre></div>
+
+
+<div class="highlight"><pre><span class="n">Epoch</span><span class="o">:</span> <span class="mi">100</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">1110.4116</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">200</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">321.6223</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">300</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">167.4508</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">400</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">144.2539</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">500</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">135.3392</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">600</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">126.8727</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">700</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">118.1265</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">800</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">109.2254</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">900</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">100.3067</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">1000</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">91.4902</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">1100</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">82.8799</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">1200</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">74.5638</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">1300</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">66.6154</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">1400</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">59.0937</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">1500</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">52.0441</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">1600</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">45.4990</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">1700</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">39.4793</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">1800</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">33.9944</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">1900</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">29.0440</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">2000</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">24.6189</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">2100</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">20.7023</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">2200</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">17.2708</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">2300</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">14.2958</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">2400</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">11.7446</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">2500</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">9.5815</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">2600</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">7.7693</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">2700</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">6.2698</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">2800</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">5.0450</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">2900</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">4.0584</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">3000</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">3.2750</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">3100</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">2.6623</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">3200</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">2.1907</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">3300</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">1.8338</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">3400</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">1.5684</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">3500</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">1.3748</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">3600</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">1.2362</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">3700</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">1.1391</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">3800</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">1.0725</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">3900</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">1.0279</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">4000</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">0.9986</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">4100</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">0.9800</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">4200</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">0.9685</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">4300</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">0.9615</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">4400</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">0.9574</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">4500</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">0.9551</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">4600</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">0.9538</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">4700</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">0.9531</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">4800</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">0.9528</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">4900</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">0.9526</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">5000</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">0.9525</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">5100</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">0.9525</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">5200</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">0.9525</span>
+<span class="n">Epoch</span><span class="o">:</span> <span class="mi">5300</span> <span class="o">-</span> <span class="n">Error</span><span class="o">:</span> <span class="mf">0.9525</span>
+<span class="n">Stop</span> <span class="n">Criteria</span> <span class="n">Reached</span><span class="o">.</span> <span class="n">Break</span><span class="o">!</span>
+<span class="n">w</span> <span class="o">=</span> <span class="o">[[</span> <span class="o">-</span><span class="mf">56.3677</span><span class="o">]</span>
+ <span class="o">[</span>  <span class="mf">78.7995</span><span class="o">]</span>
+ <span class="o">[-</span><span class="mf">293.1844</span><span class="o">]</span>
+ <span class="o">[</span> <span class="mf">209.9559</span><span class="o">]]</span>
+<span class="n">Test</span> <span class="n">Cost</span> <span class="o">=</span> <span class="mf">1.12171</span>
+</pre></div>
+
+
+<p>最终，损失函数在training上面收敛到0.9525，循环达到了停止的条件。这时候损失函数在test上的值为1.12177</p>
+<p>最后的拟合函数为 </p>
+<div class="math">$$ y = -56.3677 + 78.8013 \cdot x - 293.1888 \cdot x^2  + 209.9586 \cdot x^3$$</div>
+<p>用于拟合的数据的前5行为</p>
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>y</th>
+      <th>x_0</th>
+      <th>x_1</th>
+      <th>x_2</th>
+      <th>x_3</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>-32.780156</td>
+      <td>1.0</td>
+      <td>1.645531</td>
+      <td>2.074123</td>
+      <td>2.392560</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>-40.784224</td>
+      <td>1.0</td>
+      <td>-1.576245</td>
+      <td>-1.106391</td>
+      <td>-0.877834</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>-59.082880</td>
+      <td>1.0</td>
+      <td>-0.155892</td>
+      <td>-0.426134</td>
+      <td>-0.551511</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>-73.715893</td>
+      <td>1.0</td>
+      <td>0.155892</td>
+      <td>-0.124437</td>
+      <td>-0.313780</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>-32.524330</td>
+      <td>1.0</td>
+      <td>-0.848747</td>
+      <td>-0.900180</td>
+      <td>-0.822070</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<p>拟合函数的图像为</p>
+<p><img alt="png" src="/figures/20170505_tf_multivar_regression_03.png" /></p>
+<p><img alt="alt text" src="/figures/tf_multivar_regression.gif" title="Tensorflow fit result on different Epoch" /></p>
+<p>最后说明的是，我们用多元线性回归的例子来演示怎么使用<code>tf</code>. 对于这个问题，python的机器学习package <code>sklearn</code> 可以提供更快捷的结果。</p>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">sklearn</span> <span class="kn">import</span> <span class="n">linear_model</span>
+<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">mean_squared_error</span>
+
+<span class="n">reg</span> <span class="o">=</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">LinearRegression</span><span class="p">()</span>
+<span class="n">reg</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_x</span><span class="p">,</span> <span class="n">train_y</span><span class="p">)</span>
+<span class="k">print</span> <span class="p">(</span><span class="s2">&quot;The regression coefficient is </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">reg</span><span class="o">.</span><span class="n">coef_</span><span class="p">))</span>
+
+<span class="k">print</span> <span class="p">(</span><span class="s2">&quot;The MSE from sklearn is: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">mean_squared_error</span><span class="p">(</span><span class="n">test_y</span><span class="p">,</span> <span class="n">reg</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">test_x</span><span class="p">))))</span>
+</pre></div>
+
+
+<div class="highlight"><pre>The regression coefficient is [[   0.       78.8177 -293.2297  209.9838]]
+The MSE from sklearn is: 1.12222708205
+</pre></div>
+
+
+<h3>Reference</h3>
+<ol>
+<li><a href="https://www.tensorflow.org/get_started/mnist/mechanics">TensorFlow Mechanics 101</a></li>
+<li><a href="https://www.tensorflow.org/versions/r0.11/api_docs/python/client/session_management">Session management</a></li>
+<li><a href="http://stackoverflow.com/questions/33610685/in-tensorflow-what-is-the-difference-between-session-run-and-tensor-eval">what is the difference between Session.run() and Tensor.eval()</a></li>
+</ol>
+<script type="text/javascript">if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width < 768) ? "left" : align;
+        indent = (screen.width < 768) ? "0em" : indent;
+        linebreak = (screen.width < 768) ? 'true' : linebreak;
+    }
+    
+    var mathjaxscript = document.createElement('script');
+    var location_protocol = (false) ? 'https' : document.location.protocol;
+    if (location_protocol !== 'http' && location_protocol !== 'https') location_protocol = 'https:';
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript'; 
+    mathjaxscript.src = location_protocol + '//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js','mhchem.js'], equationNumbers: { autoNumber: 'AMS' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+</script></div>
+    <footer>
+<p class="meta">
+  <span class="byline author vcard">
+    Posted by <span class="fn">
+        <a href="/author/huiming-song.html">Huiming Song</a>
+    </span>
+  </span>
+<time datetime="2017-05-06T00:00:00-05:00" pubdate>Sat 06 May 2017</time>  <span class="categories">
+    <a class='category' href='/category/python.html'>python</a>
+  </span>
+  <span class="categories">
+    <a class="category" href="/tag/python.html">python</a>,    <a class="category" href="/tag/tensorflow.html">tensorflow</a>,    <a class="category" href="/tag/deep-learning.html">deep learning</a>  </span>
+</p><div class="sharing">
+</div>    </footer>
+  </article>
+
+</div>
+<aside class="sidebar">
+  <section>
+    <h1>Recent Posts</h1>
+    <ul id="recent_posts">
+      <li class="post">
+          <a href="/pages/2017/10/08/an-interesting-random-walk-question-and-simulation-02/">An interesting random walk question and simulation 02</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2017/09/30/an-interesting-question-and-simulation-01/">An interesting question and simulation 01</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2017/09/23/data-engineering-and-modeling-01-predict-defaults-with-inbalanced-data/">Data Engineering and Modeling 01: predict defaults with inbalanced data</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2017/09/10/numpy-introduction-03/">Numpy Introduction 03</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2017/08/20/build-recurrent-neural-network-from-scratch/">Build Recurrent Neural Network from Scratch</a>
+      </li>
+    </ul>
+  </section>
+  <section>
+      
+    <h1>Categories</h1>
+    <ul id="recent_posts">
+        <li><a href="/category/linux.html">Linux</a></li>
+        <li><a href="/category/python.html">Python</a></li>
+        <li><a href="/category/rthers.html">Rthers</a></li>
+    </ul>
+  </section>
+ 
+
+  <section>
+  <h1>Tags</h1>
+    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/re.html">re</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/python.html">python</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/sklearn.html">sklearn</a>  </section>
+
+
+    <section>
+        <h1>Social</h1>
+        <ul>
+            <li><a href="https://www.linkedin.com/pub/huiming-song/24/735/349" target="_blank">Linkedin</a></li>
+        </ul>
+    </section>
+    <section>
+        <h1>Blogroll</h1>
+        <ul>
+            <li><a href="http://easysas.blogspot.com/" target="_blank">my old SAS blog</a></li>
+        </ul>
+    </section>
+
+</aside>    </div>
+  </div>
+  <footer role="contentinfo"><p>
+    Copyright &copy;  2015&ndash;2017  shm &mdash;
+  <span class="credit">Powered by <a href="http://getpelican.com">Pelican</a></span>
+</p></footer>
+  <script src="/theme/js/modernizr-2.0.js"></script>
+  <script src="/theme/js/ender.js"></script>
+  <script src="/theme/js/octopress.js" type="text/javascript"></script>
+    <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-65938411-1']);
+    _gaq.push(['_trackPageview']);
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-65938411-1');
+    ga('send', 'pageview');
+</script>
+  <script type="text/javascript">
+    var disqus_shortname = 'songhuiming';
+    var disqus_identifier = '/pages/2017/05/06/tensorflowjian-jie-05-multivariate-regression-with-stochastic-gradient-descent/';
+    var disqus_url = '/pages/2017/05/06/tensorflowjian-jie-05-multivariate-regression-with-stochastic-gradient-descent/';
+    var disqus_title = 'Tensorflow简介--05: Multivariate Regression with Stochastic Gradient Descent';
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = "//" + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+     })();
+  </script>
+</body>
+</html>

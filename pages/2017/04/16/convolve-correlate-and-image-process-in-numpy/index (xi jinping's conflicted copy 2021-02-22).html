@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>convolve, correlate and image process in numpy &mdash; pydata</title>
+  <meta name="author" content="shm">
+
+
+
+
+
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+    <link href="/favicon.png" rel="icon">
+
+  <link href="/theme/css/main.css" media="screen, projection"
+        rel="stylesheet" type="text/css">
+
+  <link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic"
+        rel="stylesheet" type="text/css">
+  <link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic"
+        rel="stylesheet" type="text/css">
+</head>
+
+<body>
+  <header role="banner"><hgroup>
+  <h1><a href="/">pydata</a></h1>
+    <h2>Keep Looking, Don't Settle</h2>
+</hgroup>
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>
+        MathJax.Hub.Config({
+            config: ["MMLorHTML.js"],
+            extensions: ["tex2jax.js","TeX/AMSmath.js","TeX/AMSsymbols.js"],
+            jax: ["input/TeX"],
+            tex2jax: {
+                inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+                displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+                processEscapes: false
+            },
+            TeX: {
+                TagSide: "right",
+                TagIndent: ".8em",
+                MultLineWidth: "85%",
+                equationNumbers: {
+                   autoNumber: "AMS",
+                },
+                unicode: {
+                   fonts: "STIXGeneral,'Arial Unicode MS'"
+                }
+            },
+            showProcessingMessages: false
+        });
+</script></header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+</ul>
+
+<form class="search" action="/search.html">
+    <input type="text" class="search-query" placeholder="Search" name="q" id="s">
+</form>
+
+<form action="https://www.google.com/search" method="get">
+    <fieldset role="search">
+       <input type="hidden" name="q" value="site:songhuiming.github.io" />
+       <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+    </fieldset>
+</form>
+
+
+<ul class="main-navigation">
+    <li><a href="/functions/archives.html">Archives</a></li>
+      <li >
+        <a href="/category/linux.html">Linux</a>
+      </li>
+      <li class="active">
+        <a href="/category/python.html">Python</a>
+      </li>
+      <li >
+        <a href="/category/rthers.html">Rthers</a>
+      </li>
+</ul></nav>
+  <div id="main">
+    <div id="content">
+<div>
+  <article class="hentry" role="article">
+<header>
+      <h1 class="entry-title">convolve, correlate and image process in numpy</h1>
+    <p class="meta">
+<time datetime="2017-04-16T22:03:00-05:00" pubdate>Sun 16 April 2017</time>    </p>
+</header>
+
+  <div class="entry-content"><div class="highlight"><pre><span class="o">%</span><span class="n">matplotlib</span> <span class="n">inline</span>
+<span class="kn">import</span> <span class="nn">math</span><span class="o">,</span><span class="nn">sys</span><span class="o">,</span><span class="nn">os</span><span class="o">,</span><span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span><span class="o">,</span> <span class="nn">pandas</span> <span class="kn">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">numpy.linalg</span> <span class="kn">import</span> <span class="n">norm</span>
+<span class="kn">from</span> <span class="nn">PIL</span> <span class="kn">import</span> <span class="n">Image</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span><span class="p">,</span> <span class="n">rcParams</span><span class="p">,</span> <span class="n">rc</span>
+<span class="kn">from</span> <span class="nn">scipy.ndimage</span> <span class="kn">import</span> <span class="n">imread</span>
+<span class="kn">from</span> <span class="nn">skimage.measure</span> <span class="kn">import</span> <span class="n">block_reduce</span>
+<span class="kn">import</span> <span class="nn">cPickle</span> <span class="kn">as</span> <span class="nn">pickle</span>
+<span class="kn">from</span> <span class="nn">scipy.ndimage.filters</span> <span class="kn">import</span> <span class="n">correlate</span><span class="p">,</span> <span class="n">convolve</span>
+<span class="kn">from</span> <span class="nn">ipywidgets</span> <span class="kn">import</span> <span class="n">interact</span><span class="p">,</span> <span class="n">interactive</span><span class="p">,</span> <span class="n">fixed</span>
+<span class="kn">from</span> <span class="nn">ipywidgets.widgets</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="n">rc</span><span class="p">(</span><span class="s1">&#39;animation&#39;</span><span class="p">,</span> <span class="n">html</span><span class="o">=</span><span class="s1">&#39;html5&#39;</span><span class="p">)</span>
+<span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;figure.figsize&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">6</span>
+<span class="o">%</span><span class="n">precision</span> <span class="mi">4</span>
+<span class="n">np</span><span class="o">.</span><span class="n">set_printoptions</span><span class="p">(</span><span class="n">precision</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+</pre></div>
+
+
+<h2>1. convolve and correlate in numpy</h2>
+<h3>1.1. convolve of two vectors</h3>
+<p>The convolution of two vectors, u and v, represents the area of overlap under the points as v slides across u. Algebraically, convolution is the same operation as multiplying polynomials whose coefficients are the elements of u and v.</p>
+<p>Let m = length(u) and n = length(v) . Then w is the vector of length m+n-1 whose kth element is
+<span class="math">\(w(k)=\sum_j u(j)v(k−j+1)\)</span>.</p>
+<p>The sum is over all the values of j that lead to legal subscripts for u(j) and v(k-j+1), specifically j = max(1,k+1-n):1:min(k,m). When m = n, this gives</p>
+<div class="highlight"><pre>w(1) = u(1)*v(1)
+w(2) = u(1)*v(2)+u(2)*v(1)
+w(3) = u(1)*v(3)+u(2)*v(2)+u(3)*v(1)
+...
+w(n) = u(1)*v(n)+u(2)*v(n-1)+ ... +u(n)*v(1)
+...
+w(2*n-1) = u(n)*v(n)
+</pre></div>
+
+
+<div class="highlight"><pre><span class="n">np</span><span class="o">.</span><span class="n">convolve</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">])</span>
+</pre></div>
+
+
+<div class="highlight"><pre>array([ 3, 10, 13, 10])
+</pre></div>
+
+
+<div class="highlight"><pre>3 = 1 * 3
+10 = 1 * 4 + 2 * 3
+13 = 1 * 5 + 2 * 4
+10 = 2 * 5
+</pre></div>
+
+
+<div class="highlight"><pre><span class="n">convolve</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">])</span>
+</pre></div>
+
+
+<div class="highlight"><pre>array([15, 19])
+</pre></div>
+
+
+<h3>1.2. correlate of two vectors</h3>
+<div class="highlight"><pre>c_{av}[k] = sum_n a[n+k] * conj(v[n])
+
+The definition of correlation above is not unique and sometimes correlation may be defined differently. Another common definition is:
+
+c&#39;_{av}[k] = sum_n a[n] conj(v[n+k])
+which is related to c_{av}[k] by c&#39;_{av}[k] = c_{av}[-k].
+</pre></div>
+
+
+<p><code>numpy.correlate(a, v, mode='valid', old_behavior=False)[source]</code></p>
+<p>Cross-correlation of two 1-dimensional sequences.</p>
+<p>This function computes the correlation as generally defined in signal processing texts:
+     <code>z[k] = sum_n a[n] * conj(v[n+k])</code>
+  with a and v sequences being zero-padded where necessary and conj being the conjugate.</p>
+<div class="highlight"><pre><span class="n">np</span><span class="o">.</span><span class="n">correlate</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">],</span> <span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;full&#39;</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre>array([ 6, 17, 32, 23, 12])
+</pre></div>
+
+
+<div class="highlight"><pre> 0 lag: 32 = 1 * 4 + 2 * 5 + 3 * 6
+ 1 lag: 23 = 2 * 4 + 3 * 5
+ 2 lag: 12 = 3 * 4
+-1 lag: 17 = 1 * 5 + 2 * 6
+-2 lag: 6 = 1 * 6
+</pre></div>
+
+
+<div class="highlight"><pre><span class="n">correlate</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">])</span>
+</pre></div>
+
+
+<div class="highlight"><pre>array([21, 32, 41])
+</pre></div>
+
+
+<div class="highlight"><pre><span class="n">np</span><span class="o">.</span><span class="n">correlate</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">],</span> <span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;full&#39;</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre>array([ 5, 14, 11,  6])
+</pre></div>
+
+
+<div class="highlight"><pre> 0 lag: not same length, not available
+ 1 lag: 11 = 1 *3 + 2 * 4
+ 2 lag:  6 = 2 * 3
+-1 lag: 14 = 1 * 4 + 2 * 5
+-2 lag:  5 = 1 * 5
+</pre></div>
+
+
+<h2>2. read and plot image in matplotlib</h2>
+<h3>2.1. Color image</h3>
+<p><a href="https://en.wikipedia.org/wiki/Channel_(digital_image)">An image from a standard digital camera will have a red, green and blue channel(RGB)</a>. A <a href="https://en.wikipedia.org/wiki/Grayscale">grayscale</a> image has just one channel.</p>
+<p>So if a color image is read in, the data will have three dimensions: width, height and chanels. And number of chanels(the 3rd dimension) all the time is three. For a grayscale image, the number of chanels will be one.</p>
+<p>For example, the following Cherry blossom will have dimension of (, , ) and the third dimension is 3.</p>
+<div class="highlight"><pre><span class="c1"># read in an image and show the image inline</span>
+<span class="n">im</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">imread</span><span class="p">(</span><span class="s2">&quot;heben.jpg&quot;</span><span class="p">)</span><span class="c1">#r&quot;Vd-Orig.png&quot;) </span>
+<span class="k">print</span> <span class="n">im</span><span class="o">.</span><span class="n">shape</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">im</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre>(213L, 237L, 3L)
+
+
+
+
+
+&lt;matplotlib.image.AxesImage at 0x13775860&gt;
+</pre></div>
+
+
+<p><img alt="png" src="/figures/output_12_2.png" /></p>
+<div class="highlight"><pre><span class="n">im</span><span class="p">[:</span><span class="mi">10</span><span class="p">,</span> <span class="p">:</span><span class="mi">10</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+</pre></div>
+
+
+<div class="highlight"><pre>array([[247, 247, 247, 247, 247, 247, 247, 247, 249, 249],
+       [247, 247, 247, 247, 247, 247, 247, 247, 249, 249],
+       [248, 248, 248, 248, 248, 248, 248, 248, 249, 249],
+       [248, 248, 248, 248, 248, 248, 248, 248, 249, 249],
+       [249, 249, 249, 249, 249, 249, 249, 249, 249, 249],
+       [249, 249, 249, 249, 249, 249, 249, 249, 249, 249],
+       [249, 249, 249, 249, 249, 249, 249, 249, 249, 249],
+       [250, 250, 250, 250, 250, 250, 250, 250, 249, 249],
+       [248, 248, 248, 248, 248, 248, 248, 248, 248, 248],
+       [248, 248, 248, 248, 248, 248, 248, 248, 248, 248]], dtype=uint8)
+</pre></div>
+
+
+<p>We can also only show one chanel of the image. For example, the following is only the 3rd chanel of the image.</p>
+<div class="highlight"><pre><span class="c1"># only show the third chanel (index 2)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">im</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;uint8&quot;</span><span class="p">))</span>
+</pre></div>
+
+
+<div class="highlight"><pre>&lt;matplotlib.image.AxesImage at 0x1971e898&gt;
+</pre></div>
+
+
+<p><img alt="png" src="/figures/output_15_1.png" /></p>
+<div class="highlight"><pre><span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">im</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;uint8&quot;</span><span class="p">))</span>
+</pre></div>
+
+
+<div class="highlight"><pre>&lt;matplotlib.image.AxesImage at 0x163bca58&gt;
+</pre></div>
+
+
+<p><img alt="png" src="/figures/output_16_1.png" /></p>
+<p>Another useful method is to plot the red(or green, blue) chanel only in the graph. To do that, we will keep only that chanel data, and set the rest of the chanel as 0.</p>
+<div class="highlight"><pre><span class="n">tmp_im</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+<span class="n">tmp_im</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">im</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">tmp_im</span><span class="p">)</span>
+<span class="n">tmp_im</span><span class="p">[:</span><span class="mi">3</span><span class="p">,</span> <span class="p">:</span><span class="mi">3</span><span class="p">,</span> <span class="p">:]</span>
+</pre></div>
+
+
+<div class="highlight"><pre>array([[[ 247.,    0.,    0.],
+        [ 247.,    0.,    0.],
+        [ 247.,    0.,    0.]],
+
+       [[ 247.,    0.,    0.],
+        [ 247.,    0.,    0.],
+        [ 247.,    0.,    0.]],
+
+       [[ 248.,    0.,    0.],
+        [ 248.,    0.,    0.],
+        [ 248.,    0.,    0.]]])
+</pre></div>
+
+
+<p><img alt="png" src="/figures/output_18_1.png" /></p>
+<div class="highlight"><pre><span class="k">def</span> <span class="nf">plti</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span> <span class="c1"># turn off axis</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>  
+
+<span class="n">im</span> <span class="o">=</span> <span class="n">im</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:]</span>  <span class="c1"># slice</span>
+<span class="n">plti</span><span class="p">(</span><span class="n">im</span><span class="p">)</span>
+</pre></div>
+
+
+<p><img alt="png" src="/figures/output_19_0.png" /></p>
+<div class="highlight"><pre><span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">nrows</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">ncols</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span> 
+
+<span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">zi</span><span class="o">//</span><span class="n">figures</span><span class="o">/</span><span class="p">[</span><span class="n">png</span><span class="p">](</span><span class="o">/</span><span class="n">figures</span><span class="o">/</span><span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span> <span class="n">axs</span><span class="p">):</span>  
+    <span class="n">tmp_im</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> 
+    <span class="n">tmp_im</span><span class="p">[:,:,</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="n">im</span><span class="p">[:,:,</span><span class="n">c</span><span class="p">]</span> 
+    <span class="n">one_channel</span> <span class="o">=</span> <span class="n">im</span><span class="p">[:,:,</span><span class="n">c</span><span class="p">]</span><span class="o">.</span><span class="n">flatte</span><span class="o">//</span><span class="n">figures</span><span class="o">/</span><span class="p">[</span><span class="n">png</span><span class="p">](</span><span class="o">/</span><span class="n">figures</span><span class="o">/</span><span class="p">)</span> 
+    <span class="k">print</span><span class="p">(</span><span class="s2">&quot;channel&quot;</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="s2">&quot; max = &quot;</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">one_channel</span><span class="p">),</span> <span class="s2">&quot;min = &quot;</span><span class="p">,</span> <span class="n">mi</span><span class="o">//</span><span class="n">figures</span><span class="o">/</span><span class="p">[</span><span class="n">png</span><span class="p">](</span><span class="o">/</span><span class="n">figures</span><span class="o">/</span><span class="n">one_channel</span><span class="p">))</span>  
+    <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">tmp_im</span><span class="p">)</span>  
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span> 
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+
+
+<div class="highlight"><pre>(&#39;channel&#39;, 0, &#39; max = &#39;, 255, &#39;min = &#39;, 15)
+(&#39;channel&#39;, 1, &#39; max = &#39;, 255, &#39;min = &#39;, 1)
+(&#39;channel&#39;, 2, &#39; max = &#39;, 255, &#39;min = &#39;, 0)
+</pre></div>
+
+
+<p><img alt="png" src="/figures/output_20_1.png" /></p>
+<h3>2.2. Grayscale image</h3>
+<p>To convert a color image to grayscale, the 3 chanels data of RGB will be weighted sumed to one dimension. The weights is the average of the 3 chanels data by <code>np.mea//figures/[png](/figures/im, axis = (0, 1))</code>. </p>
+<div class="highlight"><pre><span class="n">im_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mea</span><span class="o">//</span><span class="n">figures</span><span class="o">/</span><span class="p">[</span><span class="n">png</span><span class="p">](</span><span class="o">/</span><span class="n">figures</span><span class="o">/</span><span class="n">im</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+<span class="k">print</span> <span class="n">im_mean</span> <span class="o">/</span> <span class="nb">sum</span><span class="p">(</span><span class="n">im_mean</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">to_grayscale</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">c_</span><span class="p">[</span><span class="mf">0.3445</span><span class="p">,</span> <span class="mf">0.3081</span><span class="p">,</span> <span class="mf">0.3474</span><span class="p">]):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Transforms a colour image to a greyscale image by</span>
+<span class="sd">    taking the mean of the RGB values, weighted</span>
+<span class="sd">    by the matrix weights</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">tile</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span> <span class="n">reps</span><span class="o">=</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">im</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">tile</span> <span class="o">*</span> <span class="n">im</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="n">img</span> <span class="o">=</span> <span class="n">to_grayscale</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">c_</span><span class="p">[</span><span class="mf">0.3957</span><span class="p">,</span> <span class="mf">0.325</span><span class="p">,</span> <span class="mf">0.2793</span><span class="p">])</span>
+
+<span class="n">plti</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;Greys&#39;</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre>[ 0.4002  0.3167  0.2831]
+</pre></div>
+
+
+<p><img alt="png" src="/figures/output_22_1.png" /></p>
+<h2>3. Convolve over image</h2>
+<p>In image processing, <a href="https://en.wikipedia.org/wiki/Kernel_(image_processing)">convolution matrix</a> is a matrix that each element will be multiplied by the part of the matrix that is been convolved. </p>
+<p>For example, matrix A is of dimension 10*10,  matrix B which is the conversion matrix of dimension 3 * 3. The convolution of B over A means for each 3 * 3 subset in A(or maybe zero padding of A), do the elementwise multiply between the subset and B, then the sum of the multiply will be the corresponding element in the output matrix. More details will be introduced later.</p>
+<p>There will be some corresponding question when we do the above calculation: 1. how to pick the dimension of B? 2. How many stride shall we skip when selecting the subset? 3. what kind of zero-padding shall be used? These questions will be answered later.</p>
+<p>The following is an example of convolution matrix called window with shape 5 * 5, with all elements equal and the sum is 1.Since its weights are all the same, this will mask the image.  </p>
+<div class="highlight"><pre><span class="c1">### convolve to mask the image</span>
+
+<span class="kn">from</span> <span class="nn">scipy.signal</span> <span class="kn">import</span> <span class="n">convolve2d</span>
+<span class="kn">from</span> <span class="nn">scipy.ndimage.interpolation</span> <span class="kn">import</span> <span class="n">zoom</span>
+
+<span class="n">im_small</span> <span class="o">=</span> <span class="n">zoom</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+
+<span class="k">def</span> <span class="nf">convolve_all_colours</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">window</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convolves im with window, over all three colour channels</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ims</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+        <span class="n">im_conv_d</span> <span class="o">=</span> <span class="n">convolve2d</span><span class="p">(</span><span class="n">im</span><span class="p">[:,:,</span><span class="n">d</span><span class="p">],</span> <span class="n">window</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;same&quot;</span><span class="p">,</span> <span class="n">boundary</span><span class="o">=</span><span class="s2">&quot;symm&quot;</span><span class="p">)</span>
+        <span class="n">ims</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">im_conv_d</span><span class="p">)</span>
+
+    <span class="n">im_conv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">ims</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;uint8&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">im_conv</span>
+
+<span class="n">n</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">window</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">n</span><span class="p">,</span><span class="n">n</span><span class="p">))</span>
+<span class="n">window</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">window</span><span class="p">)</span>
+<span class="n">plti</span><span class="p">(</span><span class="n">convolve_all_colours</span><span class="p">(</span><span class="n">im_small</span><span class="p">,</span> <span class="n">window</span><span class="p">))</span>
+</pre></div>
+
+
+<p><img alt="png" src="/figures/output_24_0.png" /></p>
+<p>Some more interesting convolution matrix: edge detection</p>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">import</span> <span class="nn">scipy</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">misc</span><span class="p">,</span> <span class="n">ndimage</span>
+
+<span class="k">def</span> <span class="nf">detect_edges</span><span class="p">(</span><span class="n">image</span><span class="p">,</span><span class="n">masks</span><span class="p">):</span>
+    <span class="n">edges</span><span class="o">=</span><span class="n">zeros</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">mask</span> <span class="ow">in</span> <span class="n">masks</span><span class="p">:</span>
+        <span class="n">edges</span><span class="o">=</span><span class="n">maximum</span><span class="p">(</span><span class="n">scipy</span><span class="o">.</span><span class="n">ndimage</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">mask</span><span class="p">),</span> <span class="n">edges</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">edges</span>
+
+<span class="n">image</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">imread</span><span class="p">(</span><span class="s2">&quot;lenna.png&quot;</span><span class="p">)</span>
+
+<span class="n">Faler</span><span class="o">=</span><span class="p">[</span> <span class="p">[[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]],</span> 
+        <span class="p">[[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span>
+    <span class="p">[[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">],[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">],[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span>
+    <span class="p">[[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]]</span> <span class="p">]</span>
+
+<span class="n">edges</span><span class="o">=</span><span class="n">detect_edges</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">Faler</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">edges</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="highlight"><pre>&lt;matplotlib.image.AxesImage at 0x1be16f28&gt;
+</pre></div>
+
+
+<p><img alt="png" src="/figures/output_26_1.png" /></p>
+<div class="highlight"><pre><span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">correlate</span><span class="p">(</span><span class="n">im</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]]))</span>
+</pre></div>
+
+
+<div class="highlight"><pre>&lt;matplotlib.image.AxesImage at 0x1b7a9908&gt;
+</pre></div>
+
+
+<p><img alt="png" src="/figures/output_27_1.png" /></p>
+<div class="highlight"><pre><span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">correlate</span><span class="p">(</span><span class="n">im</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]]))</span>
+</pre></div>
+
+
+<div class="highlight"><pre>&lt;matplotlib.image.AxesImage at 0x132a69e8&gt;
+</pre></div>
+
+
+<p><img alt="png" src="/figures/output_28_1.png" /></p>
+<div class="highlight"><pre><span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">correlate</span><span class="p">(</span><span class="n">im</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">]]))</span>
+</pre></div>
+
+
+<div class="highlight"><pre>&lt;matplotlib.image.AxesImage at 0x1233a320&gt;
+</pre></div>
+
+
+<p><img alt="png" src="/figures/output_29_1.png" /></p>
+<div class="highlight"><pre><span class="n">im1</span> <span class="o">=</span> <span class="n">correlate</span><span class="p">(</span><span class="n">im</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
+<span class="n">im2</span> <span class="o">=</span> <span class="n">convolve</span><span class="p">(</span><span class="n">im</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">2</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">rot90</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]],</span><span class="mi">2</span><span class="p">))</span>
+
+<span class="k">print</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">im1</span><span class="p">,</span> <span class="n">im2</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">im1</span><span class="p">)</span> 
+</pre></div>
+
+
+<div class="highlight"><pre>True
+
+
+
+
+
+&lt;matplotlib.image.AxesImage at 0xf6fa860&gt;
+</pre></div>
+
+
+<p><img alt="png" src="/figures/output_30_2.png" /></p>
+<div class="highlight"><pre><span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">im2</span><span class="p">)</span>   
+</pre></div>
+
+
+<div class="highlight"><pre>&lt;matplotlib.image.AxesImage at 0x10505470&gt;
+</pre></div>
+
+
+<p><img alt="png" src="/figures/output_31_1.png" /></p>
+<h3>Reference</h3>
+<ol>
+<li><a href="http://www.degeneratestate.org/posts/2016/Oct/23/image-processing-with-numpy/">image processing with numpy</a></li>
+</ol>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">signal</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">misc</span>
+<span class="k">print</span> <span class="n">ascent</span><span class="o">.</span><span class="n">shape</span>
+<span class="n">scharr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span> <span class="o">-</span><span class="mi">3</span><span class="o">-</span><span class="mi">3j</span><span class="p">,</span> <span class="mi">0</span><span class="o">-</span><span class="mi">10j</span><span class="p">,</span>  <span class="o">+</span><span class="mi">3</span> <span class="o">-</span><span class="mi">3j</span><span class="p">],</span>
+                   <span class="p">[</span><span class="o">-</span><span class="mi">10</span><span class="o">+</span><span class="mi">0j</span><span class="p">,</span> <span class="mi">0</span><span class="o">+</span> <span class="mi">0j</span><span class="p">,</span> <span class="o">+</span><span class="mi">10</span> <span class="o">+</span><span class="mi">0j</span><span class="p">],</span>
+                   <span class="p">[</span> <span class="o">-</span><span class="mi">3</span><span class="o">+</span><span class="mi">3j</span><span class="p">,</span> <span class="mi">0</span><span class="o">+</span><span class="mi">10j</span><span class="p">,</span>  <span class="o">+</span><span class="mi">3</span> <span class="o">+</span><span class="mi">3j</span><span class="p">]])</span> <span class="c1"># Gx + j*Gy</span>
+<span class="n">grad</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">convolve2d</span><span class="p">(</span><span class="n">ascent</span><span class="p">,</span> <span class="n">scharr</span><span class="p">,</span> <span class="n">boundary</span><span class="o">=</span><span class="s1">&#39;symm&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;same&#39;</span><span class="p">)</span>
+
+
+
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+<span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax_orig</span><span class="p">,</span> <span class="n">ax_mag</span><span class="p">,</span> <span class="n">ax_ang</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">15</span><span class="p">))</span>
+<span class="n">ax_orig</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">ascent</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">)</span>
+<span class="n">ax_orig</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Original&#39;</span><span class="p">)</span>
+<span class="n">ax_orig</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+<span class="n">ax_mag</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">grad</span><span class="p">),</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">)</span>
+<span class="n">ax_mag</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Gradient magnitude&#39;</span><span class="p">)</span>
+<span class="n">ax_mag</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+<span class="n">ax_ang</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">angle</span><span class="p">(</span><span class="n">grad</span><span class="p">),</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;hsv&#39;</span><span class="p">)</span> <span class="c1"># hsv is cyclic, like angles</span>
+<span class="n">ax_ang</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Gradient orientation&#39;</span><span class="p">)</span>
+<span class="n">ax_ang</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+
+
+<div class="highlight"><pre>(512L, 512L)
+</pre></div>
+
+
+<p><img alt="png" src="/figures/output_33_1.png" /></p>
+<script type="text/javascript">if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width < 768) ? "left" : align;
+        indent = (screen.width < 768) ? "0em" : indent;
+        linebreak = (screen.width < 768) ? 'true' : linebreak;
+    }
+    
+    var mathjaxscript = document.createElement('script');
+    var location_protocol = (false) ? 'https' : document.location.protocol;
+    if (location_protocol !== 'http' && location_protocol !== 'https') location_protocol = 'https:';
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript'; 
+    mathjaxscript.src = location_protocol + '//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js','mhchem.js'], equationNumbers: { autoNumber: 'AMS' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+</script></div>
+    <footer>
+<p class="meta">
+  <span class="byline author vcard">
+    Posted by <span class="fn">
+        <a href="/author/huiming-song.html">Huiming Song</a>
+    </span>
+  </span>
+<time datetime="2017-04-16T22:03:00-05:00" pubdate>Sun 16 April 2017</time>  <span class="categories">
+    <a class='category' href='/category/python.html'>python</a>
+  </span>
+  <span class="categories">
+    <a class="category" href="/tag/python.html">python</a>,    <a class="category" href="/tag/numpy.html">numpy</a>  </span>
+</p><div class="sharing">
+</div>    </footer>
+  </article>
+
+</div>
+<aside class="sidebar">
+  <section>
+    <h1>Recent Posts</h1>
+    <ul id="recent_posts">
+      <li class="post">
+          <a href="/pages/2017/10/08/an-interesting-random-walk-question-and-simulation-02/">An interesting random walk question and simulation 02</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2017/09/30/an-interesting-question-and-simulation-01/">An interesting question and simulation 01</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2017/09/23/data-engineering-and-modeling-01-predict-defaults-with-inbalanced-data/">Data Engineering and Modeling 01: predict defaults with inbalanced data</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2017/09/10/numpy-introduction-03/">Numpy Introduction 03</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2017/08/20/build-recurrent-neural-network-from-scratch/">Build Recurrent Neural Network from Scratch</a>
+      </li>
+    </ul>
+  </section>
+  <section>
+      
+    <h1>Categories</h1>
+    <ul id="recent_posts">
+        <li><a href="/category/linux.html">Linux</a></li>
+        <li><a href="/category/python.html">Python</a></li>
+        <li><a href="/category/rthers.html">Rthers</a></li>
+    </ul>
+  </section>
+ 
+
+  <section>
+  <h1>Tags</h1>
+    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/re.html">re</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/python.html">python</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/sklearn.html">sklearn</a>  </section>
+
+
+    <section>
+        <h1>Social</h1>
+        <ul>
+            <li><a href="https://www.linkedin.com/pub/huiming-song/24/735/349" target="_blank">Linkedin</a></li>
+        </ul>
+    </section>
+    <section>
+        <h1>Blogroll</h1>
+        <ul>
+            <li><a href="http://easysas.blogspot.com/" target="_blank">my old SAS blog</a></li>
+        </ul>
+    </section>
+
+</aside>    </div>
+  </div>
+  <footer role="contentinfo"><p>
+    Copyright &copy;  2015&ndash;2017  shm &mdash;
+  <span class="credit">Powered by <a href="http://getpelican.com">Pelican</a></span>
+</p></footer>
+  <script src="/theme/js/modernizr-2.0.js"></script>
+  <script src="/theme/js/ender.js"></script>
+  <script src="/theme/js/octopress.js" type="text/javascript"></script>
+    <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-65938411-1']);
+    _gaq.push(['_trackPageview']);
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-65938411-1');
+    ga('send', 'pageview');
+</script>
+  <script type="text/javascript">
+    var disqus_shortname = 'songhuiming';
+    var disqus_identifier = '/pages/2017/04/16/convolve-correlate-and-image-process-in-numpy/';
+    var disqus_url = '/pages/2017/04/16/convolve-correlate-and-image-process-in-numpy/';
+    var disqus_title = 'convolve, correlate and image process in numpy';
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = "//" + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+     })();
+  </script>
+</body>
+</html>

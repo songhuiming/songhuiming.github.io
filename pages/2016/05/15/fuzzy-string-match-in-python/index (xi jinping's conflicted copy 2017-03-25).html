@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>pydata</title>
+        <meta charset="utf-8" />
+        <link href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="pydata Full Atom Feed" />
+        <link href="/feeds/programming.atom.xml" type="application/atom+xml" rel="alternate" title="pydata Categories Atom Feed" />
+
+
+
+    <meta name="tags" content="python" />
+    <meta name="tags" content="data mining" />
+
+</head>
+
+<body id="index" class="home">
+        <header id="banner" class="body">
+                <h1><a href="/">pydata <strong>Keep Looking, Don't Settle</strong></a></h1>
+        </header><!-- /#banner -->
+        <nav id="menu"><ul>
+            <li><a href="/functions/archives.html">Archives</a></li>
+        </ul></nav><!-- /#menu -->
+<section id="content" class="body">
+  <header>
+    <h2 class="entry-title">
+      <a href="/pages/2016/05/15/fuzzy-string-match-in-python/" rel="bookmark"
+         title="Permalink to fuzzy string match in python">fuzzy string match in python</a></h2>
+ 
+  </header>
+  <footer class="post-info">
+    <abbr class="published" title="2016-05-15T00:00:00-05:00">
+      Sun 15 May 2016
+    </abbr>
+    <address class="vcard author">
+      By           <a class="url fn" href="/author/huiming-song.html">Huiming song</a>
+    </address>
+  </footer><!-- /.post-info -->
+  <div class="entry-content">
+    <p>sometimes we have to match the data by name because there might be issues on the matching id. But when match by name, we might have some issues like: strict word matching will not match "apple iphone" and "iphone apple" as the same, but theyshould be treated as the same in fact. This is an example how to do fuzzy match to solve this kind of question.</p>
+<p>An example of the output result:
+<img alt="test" src="/figures/20160516_fuzzy_match.PNG" /></p>
+<div class="highlight"><pre><span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">fuzzywuzzy</span> <span class="kn">import</span> <span class="n">fuzz</span>
+<span class="kn">from</span> <span class="nn">fuzzywuzzy</span> <span class="kn">import</span> <span class="n">process</span>
+
+
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">test sample data is from</span>
+<span class="sd">http://bigdata-doctor.com/wp-content/uploads/2015/02/source1.csv</span>
+<span class="sd">http://bigdata-doctor.com/wp-content/uploads/2015/02/source2.csv</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="k">def</span> <span class="nf">readdata</span><span class="p">(</span><span class="n">datapath</span><span class="p">):</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">datapath</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span>
+    <span class="n">fr</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="n">testdata</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">fr</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;;&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+            <span class="k">print</span> <span class="n">text</span>
+            <span class="n">testdata</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">())</span>
+    <span class="k">return</span> <span class="n">testdata</span>
+
+<span class="k">def</span> <span class="nf">tslt_spec</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="c1"># x1 = re.sub(&#39;[^a-zA-Z0-9 \n\.]&#39;, &#39;&#39;, x)       # replace special char to blank</span>
+    <span class="n">x1</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s1">&#39;[^a-zA-Z0-9 </span><span class="se">\n</span><span class="s1">]&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>           <span class="c1"># replace special char to blank</span>
+    <span class="n">x2</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s1">&#39; +&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="n">x1</span><span class="p">)</span>                      <span class="c1"># multiple blanks to one blank</span>
+    <span class="n">x3</span> <span class="o">=</span> <span class="n">x2</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>                                 <span class="c1"># remove heading/tailing blanks</span>
+    <span class="n">x4</span> <span class="o">=</span> <span class="n">x3</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>         <span class="c1"># remove the tailing numbers if there is, &#39;SOUTH COAST 9999837411&#39;</span>
+    <span class="k">return</span> <span class="n">x4</span>
+
+<span class="n">ls1</span> <span class="o">=</span> <span class="n">readdata</span><span class="p">(</span><span class="s1">r&#39;C:\Users\hsong01\Downloads\source1.txt&#39;</span><span class="p">)</span>
+<span class="n">ls2</span> <span class="o">=</span> <span class="n">readdata</span><span class="p">(</span><span class="s1">r&#39;C:\Users\hsong01\Downloads\source2.txt&#39;</span><span class="p">)</span>
+<span class="n">ls1</span> <span class="o">=</span> <span class="p">[</span><span class="n">tslt_spec</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">ls1</span><span class="p">]</span>
+<span class="n">ls2</span> <span class="o">=</span> <span class="p">[</span><span class="n">tslt_spec</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">ls2</span><span class="p">]</span>
+
+
+<span class="n">result</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">ls2</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">mi</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">ls1</span><span class="p">,</span> <span class="n">limit</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">print</span> <span class="s1">&#39;Target String:-- &#39;</span> <span class="o">+</span> <span class="n">i</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;Matched String:-- &#39;</span> <span class="o">+</span> <span class="n">mi</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">60</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;match_accuracy:-- &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">mi</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">result</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">mi</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">print</span> <span class="n">i</span>
+
+
+<span class="nb">len</span><span class="p">([</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">90</span><span class="p">])</span>
+</pre></div>
+  </div><!-- /.entry-content -->
+</section>
+        <footer id="contentinfo" class="body">
+                <address id="about" class="vcard body">
+                Proudly powered by <a href="http://getpelican.com/">Pelican</a>,
+                which takes great advantage of <a href="http://python.org">Python</a>.
+                </address><!-- /#about -->
+        </footer><!-- /#contentinfo -->
+</body>
+</html>

@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>tensorflow简介--04 &mdash; pydata</title>
+  <meta name="author" content="shm">
+
+
+
+
+
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+    <link href="/favicon.png" rel="icon">
+
+  <link href="/theme/css/main.css" media="screen, projection"
+        rel="stylesheet" type="text/css">
+
+  <link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic"
+        rel="stylesheet" type="text/css">
+  <link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic"
+        rel="stylesheet" type="text/css">
+</head>
+
+<body>
+  <header role="banner"><hgroup>
+  <h1><a href="/">pydata</a></h1>
+    <h2>Keep Looking, Don't Settle</h2>
+</hgroup>
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>
+        MathJax.Hub.Config({
+            config: ["MMLorHTML.js"],
+            extensions: ["tex2jax.js","TeX/AMSmath.js","TeX/AMSsymbols.js"],
+            jax: ["input/TeX"],
+            tex2jax: {
+                inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+                displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+                processEscapes: false
+            },
+            TeX: {
+                TagSide: "right",
+                TagIndent: ".8em",
+                MultLineWidth: "85%",
+                equationNumbers: {
+                   autoNumber: "AMS",
+                },
+                unicode: {
+                   fonts: "STIXGeneral,'Arial Unicode MS'"
+                }
+            },
+            showProcessingMessages: false
+        });
+</script></header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+</ul>
+
+<form class="search" action="/search.html">
+    <input type="text" class="search-query" placeholder="Search" name="q" id="s">
+</form>
+
+<form action="https://www.google.com/search" method="get">
+    <fieldset role="search">
+       <input type="hidden" name="q" value="site:songhuiming.github.io" />
+       <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+    </fieldset>
+</form>
+
+
+<ul class="main-navigation">
+    <li><a href="/functions/archives.html">Archives</a></li>
+      <li >
+        <a href="/category/linux.html">Linux</a>
+      </li>
+      <li class="active">
+        <a href="/category/python.html">Python</a>
+      </li>
+      <li >
+        <a href="/category/rthers.html">Rthers</a>
+      </li>
+</ul></nav>
+  <div id="main">
+    <div id="content">
+<div>
+  <article class="hentry" role="article">
+<header>
+      <h1 class="entry-title">tensorflow简介--04</h1>
+    <p class="meta">
+<time datetime="2017-03-05T10:03:00-06:00" pubdate>Sun 05 March 2017</time>    </p>
+</header>
+
+  <div class="entry-content"><h2>Logistic Regression回顾</h2>
+<p>我们已经学习了给定一些features，比如房屋面积，怎么通过TF的线性回归来预测数值型的结果，比如说房屋价格。</p>
+<p>但是有时候我们需要进行分类，而不是预测一个数值。比如：给定一些数字的图片，我们希望能识别出0，1，...9.或者给了一首歌，我们希望能识别这是摇滚音乐，乡村音乐或者其他。这种分类的模型识别的结果我们叫<em>class</em>.我们可以用TF中的logistic regression来做分类。</p>
+<p>下面我们会讨论用logistic regression来做数字图形识别，也就是分类成0，1，...9.</p>
+<h2>logistic regression详细介绍</h2>
+<p>好消息是我们在前面线性回归提到的好多概念在logistic regression继续适用。我们可以使用改进的<em>y=W.x + b</em>。 下面我们看看这两个回归的详细比较</p>
+<p><img alt="png" src="/figures/20170305_tensorflow_intro_p4_01.png" /></p>
+<h5>不一样的地方</h5>
+<ul>
+<li>输出的结果(y)：线性回归里面这是一个标量值，比如$50K。在logistic regression里面，这是一个关于类的整数，比如0， 1， 2等等。</li>
+<li>features(x)： 线性回归里面每个feature对应列向量的一个元素。在logistic regression的2-维图像里面，这是一个2维的向量，向量的每个元素表示图片的一个像素。每个像素有一个0-255之间的值，表示对应的灰度：0表示黑色，255表示白色。旁边的值表示不同的灰度。</li>
+<li>损失函数(cost):线性回归里面我们用的真实值和预测值的平方和。logistic regression里面将会是一个预测正确或者错误的函数。</li>
+</ul>
+<h5>相似的地方</h5>
+<ul>
+<li>training：两个回归的目的都是找出权重(W)和截距(b， biases)的值</li>
+<li>输出结果:两个回归的结果都是用找出的W和b来预测结果(y)</li>
+</ul>
+<h2>协调logistic和linear regression</h2>
+<p>要让<em>y = W.B + x</em>在ligistic regression也工作，我们需要做一些变换来协调上面提到的不同。</p>
+<h3>Feature (x)的变换</h3>
+<p>我们可以把logistic regression里的二维的图片的features通过这个办法转化为一维的：把图片的像素矩阵的每一行都粘接到第一行的后面。如下图所示</p>
+<p><img alt="png" src="/figures/20170305_tensorflow_intro_p4_02.png" /></p>
+<p>（译注：实际这儿指的是矩阵变成一个行向量，numpy中如果x是一个矩阵，x.flatten（）就得到我们要的结果）</p>
+<h3>y的变换</h3>
+<p>logistic regression中我们不能把y当成标量，因为标量的预测是连续整数，而我们的结果的类是[0, 1, 2， ...]</p>
+<p>要克服这一点，y会被变换为一个列向量（下图为了节省地方，表示成行向量），列向量的每个元素表示logistic regression模型认为结果是那个给定的类的得分。在下面的例子中，预测的结果是类1，因为1的得分最高，为33.</p>
+<p><img alt="png" src="/figures/20170305_tensorflow_intro_p4_03.png" /></p>
+<p>对给定的图片，要得到得分向量，图片的每一个像素，根据它的灰度值，都会被算出一系列的得分（对每个类)用来表示这个像素认为图片被分类到某个类的可能性。对每个类，每个像素的得分的和就是预测向量。</p>
+<p><img alt="png" src="/figures/20170305_tensorflow_intro_p4_04.png" /></p>
+<h3>损失函数的变换</h3>
+<p>因为结果不是数值型的值，我们不能用衡量预测值和真实值的距离的那种数值型的损失函数。这种损失函数，对图像‘1’，会认为预测结果为‘7’（7-1=6）比预测结果为‘2’（2-1=1）更错的严重，尽管实际上两个都是错的。</p>
+<p>我们要用的损失函数<em>cross entropy(H)</em>包含下面几步：</p>
+<ol>
+<li>
+<p>把真实的图像的类（y‘）转换为一个one-hot向量，这个向量是一个概率分布</p>
+</li>
+<li>
+<p>把预测向量（y）转换为一个概率分布</p>
+</li>
+<li>
+<p>用cross entropy函数来算出损失，这个损失是两个概率分布的距离</p>
+</li>
+</ol>
+<h4>stwp 1. one-hot向量</h4>
+<p>因为我们已经把预测值（y）转换为得分向量了，我们需要把真实值（y）也转换为向量。列向量的每一个元素都是0，只有一个元素是1，这个元素就是真实的类所在的那个位置。这就是one-hot向量，下面是0-9的one-hot向量</p>
+<p><img alt="png" src="/figures/20170305_tensorflow_intro_p4_05.png" /></p>
+<p>（译注：其实就是产生了一个dummy向量，sklearn的两个变换，其中一个就是one-hot变换）</p>
+<p>假设真实的（y’）图片为1，那么one-hot向量就是[0, 1, 0, 0, 0, 0, 0, 0, 0, 0], 预测向量 (y) 为 [1.3, 33, 2, 1.2, 3.2, 0.5, 3, 9.2, 1], 把它们画出来比较一下：</p>
+<p><img alt="png" src="/figures/20170305_tensorflow_intro_p4_06.png" /></p>
+<h4>step 2. 概率分布和softmax</h4>
+<p>要数学化的比较两个图片的相似度，cross entropy是一个很好的比较尺度。（<a href="https://colah.github.io/posts/2015-09-Visual-Information/">这儿</a>有一个很好的详细的例子）</p>
+<p>要使用cross entropy，我们需要把真实结果向量（y'）和预测结果向量(y)都转换为概率分布。这儿的概率分布指</p>
+<ul>
+<li>每个类的概率值在0和1之间</li>
+<li>对所有类的概率和为1</li>
+</ul>
+<p>真实结果向量（y'）是one-hot向量，已经满足这两个条件。</p>
+<p>对预测值（y），我们可以用softmax把它转换为概率分布</p>
+<p><img alt="png" src="/figures/20170305_tensorflow_intro_p4_07.png" /></p>
+<p>这是一个简单的两步过程（下面S1 和 S2），预测向量（y）的每个值先取指数值，然后除以指数值的总和。</p>
+<p><img alt="png" src="/figures/20170305_tensorflow_intro_p4_08.png" /></p>
+<p>注意softmax（y）的图像跟预测值（y）的图像很相似，只是最大值更大，最小值更小</p>
+<p><img alt="png" src="/figures/20170305_tensorflow_intro_p4_09.png" /></p>
+<h4>setp 3. cross entropy</h4>
+<p>我们现在可以来计算预测向量（y）的概率分布和真实向量（y'）的cross entropy(H)
+了。</p>
+<p>cross entropy的公式为</p>
+<p><img alt="png" src="/figures/20170305_tensorflow_intro_p4_10.png" /></p>
+<p>要快速理解这个复杂的公式，我们把它分为三部分。注意下面的公式H中，我们用y_i来表示‘y向量的第i个元素’</p>
+<p><img alt="png" src="/figures/20170305_tensorflow_intro_p4_11.png" /></p>
+<ul>
+<li>蓝色： 真实结果向量，y_i'</li>
+<li>红色： 预测向量的概率分布(softmax(y_i))的log值</li>
+<li>绿色： 对每个图像的分类i，i=0到9，上面红色和蓝色的乘积的和</li>
+</ul>
+<p>下面的例子可以用来帮助理解。</p>
+<p>蓝色的部分是ont-hot真实结果(y')向量</p>
+<p><img alt="png" src="/figures/20170305_tensorflow_intro_p4_12.png" /></p>
+<p>红色部分是从预测向量y的推导得到，也就是从softmax(y)到-log(softmax(y))</p>
+<p><img alt="png" src="/figures/20170305_tensorflow_intro_p4_13.png" /></p>
+<p>如果你想进一步了解为什么用-log(softmax(y))来代替softmax(y)，请看这个<a href="https://www.youtube.com/watch?v=F8g_6TXKlxw">视频</a> 或者<a href="http://www.slideshare.net/KhorSoonHin/gentlest-introduction-to-tensorflow-part-3">文件</a></p>
+<p>cross entropy(H)，下图中的绿色部分，是蓝色和红色部分的乘积，然后把它们加起来</p>
+<p><img alt="png" src="/figures/20170305_tensorflow_intro_p4_14.png" /></p>
+<p>因为蓝色部分是one-hot向量，只有一个对应真实分类的元素是1，别的元素都是0.所以H可以简化为</p>
+<div class="highlight"><pre>Cross Entropy (H) = -log(softmax(y_i))
+Where:
+- y_i: Predicted score/probability for correct image class
+</pre></div>
+
+
+<h2>归纳</h2>
+<p>根据上面的三个变换，我们可以使用线性模型的技术来做logistic regression。下面的代码逐行比较了<a href="http://songhuiming.github.io/pages/2017/02/26/tensorflowjian-jie-03/">线性模型</a>部分和logistic regression部分的区别</p>
+<p><img alt="png" src="/figures/20170305_tensorflow_intro_p4_15.png" /></p>
+<ol>
+<li>
+<p>Feature(x)变为一维的feature</p>
+</li>
+<li>
+<p>预测向量(y_)和真实向量(y)变为one-hot向量</p>
+</li>
+<li>
+<p>损失函数从均方误差损失变为cross entropy</p>
+</li>
+</ol>
+<p>下面是不同的地方的总结</p>
+<p><img alt="png" src="/figures/20170305_tensorflow_intro_p4_16.png" /></p>
+<h2>总结</h2>
+<p>给定几个feature的时候，线性模型可以用来预测数值型的结果。logistic regression可以用来分类。</p>
+<p>我们用例子演示了怎么通过三个改变，从线性回归y = W.x + b做logistic regression。三个改变为: (1) feature向量 (2)预测值/真实结果向量 (3)损失函数</p>
+<p>通过上面介绍的one-hot向量，softmax，已经cross entropy，下面你可以很轻松的阅读google官方的关于图片分类的<a href="https://www.tensorflow.org/get_started/mnist/beginners">简易教程</a>了.</p>
+<h3>Reference</h3>
+<ol>
+<li><a href="https://medium.com/all-of-us-are-belong-to-machines/gentlest-intro-to-tensorflow-4-logistic-regression-2afd0cabc54#.6erqpbxxl">Gentlest Intro to Tensorflow #4: Logistic Regression</a></li>
+</ol></div>
+    <footer>
+<p class="meta">
+  <span class="byline author vcard">
+    Posted by <span class="fn">
+        <a href="/author/huiming-song.html">Huiming Song</a>
+    </span>
+  </span>
+<time datetime="2017-03-05T10:03:00-06:00" pubdate>Sun 05 March 2017</time>  <span class="categories">
+    <a class='category' href='/category/python.html'>Python</a>
+  </span>
+  <span class="categories">
+    <a class="category" href="/tag/python.html">python</a>,    <a class="category" href="/tag/tensorflow.html">tensorflow</a>,    <a class="category" href="/tag/deep-learning.html">deep learning</a>  </span>
+</p><div class="sharing">
+</div>    </footer>
+  </article>
+
+</div>
+<aside class="sidebar">
+  <section>
+    <h1>Recent Posts</h1>
+    <ul id="recent_posts">
+      <li class="post">
+          <a href="/pages/2017/10/08/an-interesting-random-walk-question-and-simulation-02/">An interesting random walk question and simulation 02</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2017/09/30/an-interesting-question-and-simulation-01/">An interesting question and simulation 01</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2017/09/23/data-engineering-and-modeling-01-predict-defaults-with-inbalanced-data/">Data Engineering and Modeling 01: predict defaults with inbalanced data</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2017/09/10/numpy-introduction-03/">Numpy Introduction 03</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2017/08/20/build-recurrent-neural-network-from-scratch/">Build Recurrent Neural Network from Scratch</a>
+      </li>
+    </ul>
+  </section>
+  <section>
+      
+    <h1>Categories</h1>
+    <ul id="recent_posts">
+        <li><a href="/category/linux.html">Linux</a></li>
+        <li><a href="/category/python.html">Python</a></li>
+        <li><a href="/category/rthers.html">Rthers</a></li>
+    </ul>
+  </section>
+ 
+
+  <section>
+  <h1>Tags</h1>
+    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/re.html">re</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/python.html">python</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/sklearn.html">sklearn</a>  </section>
+
+
+    <section>
+        <h1>Social</h1>
+        <ul>
+            <li><a href="https://www.linkedin.com/pub/huiming-song/24/735/349" target="_blank">Linkedin</a></li>
+        </ul>
+    </section>
+    <section>
+        <h1>Blogroll</h1>
+        <ul>
+            <li><a href="http://easysas.blogspot.com/" target="_blank">my old SAS blog</a></li>
+        </ul>
+    </section>
+
+</aside>    </div>
+  </div>
+  <footer role="contentinfo"><p>
+    Copyright &copy;  2015&ndash;2017  shm &mdash;
+  <span class="credit">Powered by <a href="http://getpelican.com">Pelican</a></span>
+</p></footer>
+  <script src="/theme/js/modernizr-2.0.js"></script>
+  <script src="/theme/js/ender.js"></script>
+  <script src="/theme/js/octopress.js" type="text/javascript"></script>
+    <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-65938411-1']);
+    _gaq.push(['_trackPageview']);
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-65938411-1');
+    ga('send', 'pageview');
+</script>
+  <script type="text/javascript">
+    var disqus_shortname = 'songhuiming';
+    var disqus_identifier = '/pages/2017/03/05/tensorflowjian-jie-04/';
+    var disqus_url = '/pages/2017/03/05/tensorflowjian-jie-04/';
+    var disqus_title = 'tensorflow简介--04';
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = "//" + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+     })();
+  </script>
+</body>
+</html>

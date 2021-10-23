@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <title>pydata</title>
+        <meta charset="utf-8" />
+        <link href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="pydata Full Atom Feed" />
+        <link href="/feeds/python.atom.xml" type="application/atom+xml" rel="alternate" title="pydata Categories Atom Feed" />
+
+
+
+    <meta name="tags" content="python" />
+    <meta name="tags" content="base" />
+    <meta name="tags" content="multiprocessing" />
+
+</head>
+
+<body id="index" class="home">
+        <header id="banner" class="body">
+                <h1><a href="/">pydata <strong>Keep Looking, Don't Settle</strong></a></h1>
+        </header><!-- /#banner -->
+        <nav id="menu"><ul>
+            <li><a href="/functions/archives.html">Archives</a></li>
+        </ul></nav><!-- /#menu -->
+<section id="content" class="body">
+  <header>
+    <h2 class="entry-title">
+      <a href="/pages/2016/06/18/python-multiprocessing-and-threads-01/" rel="bookmark"
+         title="Permalink to python multiprocessing and threads 01">python multiprocessing and threads 01</a></h2>
+ 
+  </header>
+  <footer class="post-info">
+    <abbr class="published" title="2016-06-18T00:00:00-05:00">
+      Sat 18 June 2016
+    </abbr>
+    <abbr class="modified" title="2016-06-18T00:00:00-05:00">
+      Sat 18 June 2016
+    </abbr>
+    <address class="vcard author">
+      By           <a class="url fn" href="/author/huiming-song.html">Huiming Song</a>
+    </address>
+  </footer><!-- /.post-info -->
+  <div class="entry-content">
+    <h3>1. <code>Multiprocessing</code> v.s. <code>Threading</code> in Python</h3>
+<p><code>multiprocessing</code>会开多线程(process)，各个线程有独立的memory；<code>threading</code>开多进程(threads)，他们共享内存。python开多进程比开多线程要快，但是多进程会被<code>GIL</code>堵住，如果是高CPU使用的环境多进程反而会非常慢，因为需要时间来切换进程。如果I/O很多，开多进程会显著提高速度。</p>
+<p>The <code>threading</code> module uses <code>threads</code>, the <code>multiprocessing</code> uses processes. The difference is that threads run in the same memory space, while processes have separate memory. This makes it a bit harder to share objects between processes with multiprocessing. Since threads use the same memory, precautions have to be taken or two threads will write to the same memory at the same time. This is what the global interpreter lock is for.</p>
+<p>Spawning processes is a bit slower than spawning threads. Once they are running, there is not much difference.</p>
+<h5><code>Multiprocessing</code></h5>
+<h6>Pros</h6>
+<ul>
+<li>Separate memory space</li>
+<li>Code is usually straightforward</li>
+<li>Takes advantage of multiple CPUs &amp; cores</li>
+<li>Avoids GIL limitations for cPython</li>
+<li>Eliminates most needs for synchronization primitives unless if you use shared memory (instead, it's more of a communication model for IPC)</li>
+<li>Child processes are interruptible/killable</li>
+<li>Python <code>multiprocessing</code> module includes useful abstractions with an interface much like <code>threading.Thread</code></li>
+<li>A must with cPython for CPU-bound processing</li>
+</ul>
+<h6>Cons</h6>
+<ul>
+<li>IPC a little more complicated with more overhead (communication model vs. shared memory/objects)</li>
+<li>Larger memory footprint</li>
+</ul>
+<h5>Threading</h5>
+<h6>Pros</h6>
+<ul>
+<li>Lightweight - low memory footprint</li>
+<li>Shared memory - makes access to state from another context easier</li>
+<li>Allows you to easily make responsive UIs</li>
+<li>cPython C extension modules that properly release the GIL will run in parallel</li>
+<li>Great option for I/O-bound applications</li>
+</ul>
+<h6>Cons</h6>
+<ul>
+<li>cPython - subject to the GIL</li>
+<li>Not interruptible/killable</li>
+<li>If not following a command queue/message pump model (using the <code>Queue</code> module), then manual use of synchronization primitives become a necessity (decisions are needed for the granularity of locking)</li>
+<li>Code is usually harder to understand and to get right - the potential for race conditions increases dramatically</li>
+</ul>
+<p><a href="http://stackoverflow.com/questions/3044580/multiprocessing-vs-threading-python">Multiprocessing vs Threading Python</a></p>
+<h3>2. <code>multiprocessing.Process</code> v.s. <code>multiprocessing.Pool</code></h3>
+<p>开多线程有两个办法，既可以<code>multiprocessing.Process</code>,也可以使用<code>multiprocessing.Pool</code>.按照下面这个reference的说法，<code>multiprocessing.Process</code>会一个进程run一个worker，<code>multiprocessing.Pool</code>会交替run，但是结果应该一样。</p>
+<p><a href="http://stackoverflow.com/questions/18176178/python-multiprocessing-process-or-pool-for-what-i-am-doing">Python Multiprocessing Process or Pool for what I am doing?</a></p>
+<h3>3. <code>apply</code>, <code>apply_async</code> v.s. <code>map</code>, <code>map_async</code></h3>
+<p><code>multiprocessing.Pool</code>又有<code>apply</code> <code>(apply_async)</code>或者<code>map</code> <code>(map_async)</code>，我自己的测试是<code>apply</code>只会启动一个进程，运行结束才会启动下一个进程，即使在<code>pool</code>里面设置<code>10</code>个进程的参数；<code>apply_async</code>会同时启动<code>10</code>个进程，但是结果会无序，很可能会跟输入的data顺序不一样；<code>map</code>会启动<code>10</code>个进程，结果会原来的data一样。<code>map</code>跟<code>map_async</code>没什么区别。</p>
+<h5><code>apply</code> v.s. <code>apply_async</code></h5>
+<p><code>Pool.apply</code> is like Python <code>apply</code>, except that the function call is performed in a separate process. <code>Pool.apply</code> blocks until the function is completed.</p>
+<p><code>Pool.apply_async</code> is also like Python's built-in <code>apply</code>, except that the call returns immediately instead of waiting for the result. An <code>ApplyResult</code> object is returned. You call its <code>get()</code> method to retrieve the result of the function call. The <code>get()</code> method blocks until the function is completed. Thus, <code>pool.apply(func, args, kwargs)</code> is equivalent to <code>pool.apply_async(func, args, kwargs).get()</code>.</p>
+<h5><code>apply</code> v.s. <code>map</code></h5>
+<p><code>pool.apply(f, args)</code>: f is only executed in ONE of the workers of the pool. So ONE of the processes in the pool will run f(args).</p>
+<p><code>pool.map(f, iterable)</code>: This method chops the iterable into a number of chunks which it submits to the process pool as separate tasks. So you take advantage of all the processes in the pool.</p>
+<p><a href="http://stackoverflow.com/questions/8533318/python-multiprocessing-pool-when-to-use-apply-apply-async-or-map">Python multiprocessing.Pool: when to use apply, apply_async or map?</a></p>
+<h3>Reference</h3>
+<ol>
+<li><a href="http://stackoverflow.com/questions/3044580/multiprocessing-vs-threading-python">Multiprocessing vs Threading Python</a>  总结   </li>
+<li><a href="http://eli.thegreenplace.net/2012/01/16/python-parallelizing-cpu-bound-tasks-with-multiprocessing/">Python - parallelizing CPU-bound tasks with multiprocessing </a>        实际计算时间比较</li>
+<li><a href="http://www.liaoxuefeng.com/wiki/0014316089557264a6b348958f449949df42a6d3a2e542c000/001431927781401bb47ccf187b24c3b955157bb12c5882d000">多进程</a>   进程/线程比较</li>
+<li><a href="http://cloga.info/python/2014/01/12/PythonMultiprocessingintro/">Python多进程模块Multiprocessing介绍</a>      map/apply怎么用</li>
+<li><a href="http://www.liaoxuefeng.com/wiki/0014316089557264a6b348958f449949df42a6d3a2e542c000/00143208573480558080fa77514407cb23834c78c6c7309000">异步</a>    </li>
+<li><a href="http://stackoverflow.com/questions/18176178/python-multiprocessing-process-or-pool-for-what-i-am-doing">Python Multiprocessing Process or Pool for what I am doing?</a>       multiprocessing.Process multiprocessing.Pool</li>
+<li><a href="http://stackoverflow.com/questions/8533318/python-multiprocessing-pool-when-to-use-apply-apply-async-or-map">Python multiprocessing.Pool: when to use apply, apply_async or map?</a>             -apply-apply-async-or-map</li>
+</ol>
+  </div><!-- /.entry-content -->
+</section>
+        <footer id="contentinfo" class="body">
+                <address id="about" class="vcard body">
+                Proudly powered by <a href="http://getpelican.com/">Pelican</a>,
+                which takes great advantage of <a href="http://python.org">Python</a>.
+                </address><!-- /#about -->
+        </footer><!-- /#contentinfo -->
+</body>
+</html>
