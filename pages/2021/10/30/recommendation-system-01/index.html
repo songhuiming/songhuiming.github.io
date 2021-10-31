@@ -189,15 +189,15 @@
   输出： n个items的概率</p>
 <p>input X 可以是 dense feature（观看时长，距离上次观看的间隔时间），也可以是sparse feature（国家，观看历史等）。</p>
 <p><img alt="DNN for recommendaiton system" src="https://developers.google.cn/machine-learning/recommendation/images/LossFunction.svg" /></p>
-<p>DNN的最后一个hidden layer的输出 <span class="math">\(\phi(x)\)</span> 为 d 维的向量，然后再通过一个矩阵 V <span class="math">\(V \in n \time d\)</span> 来得到一个n维的向量，向量每一个值表示一个item的概率。</p>
+<p>DNN的最后一个hidden layer的输出 <span class="math">\(\phi(x)\)</span> 为 d 维的向量，然后再通过一个矩阵 V <span class="math">\(V \in n \times d\)</span> 来得到一个n维的向量，向量每一个值表示一个item的概率。</p>
 <p>loss funciton是模型输出 phat 和 真实值 y 的函数。比如cross entropy。</p>
-<p>模型的目的是学习得到embedding,对每一个item j，得到一个向量 <span class="math">\(v_j \in R^d\)</span> (n个item，那么 <span class="math">\(V \in n \time d\)</span>)。在softmax模型下，V就是模型的系数。</p>
-<p>对query embedding，对query i，模型不是要得到一个embedding <span class="math">\(U_{i}\)</span>，而是学习到了一个函数 &lt;img <span class="math">\(\phi(\cdot)\)</span>
-, 把输入的x map到一个d维的向量 &lt;img <span class="math">\(\phi(x)\)</span></p>
+<p>模型的目的是学习得到embedding,对每一个item j，得到一个向量 <span class="math">\(v_j \in \mathbb{R}^d\)</span> (n个item，那么 <span class="math">\(V \in n \times d\)</span>)。在softmax模型下，V就是模型的系数。</p>
+<p>对query embedding，对query i，模型不是要得到一个embedding <span class="math">\(U_{i}\)</span>，而是学习到了一个函数  <span class="math">\(\phi(\cdot)\)</span>
+, 把输入的x map到一个d维的向量  <span class="math">\(\phi(x)\)</span></p>
 <p>再进一步，我们能不能build两个DNN，
-  1. 第一个DNN用来找到一个函数&lt;img <span class="math">\(\phi(x_{item}) \in \mathbb{R}^{d}\)</span>把item map到d维空间
-  2. 第二个DNN用来找到一个函数&lt;img <span class="math">\(\psi(x_{query}) \in \mathbb{R}^{d}\)</span>把query map到d维空间 </p>
-<p>最后就可以使用内积 &lt; <img <span class="math">\(\phi(x_{item})\)</span>, <img <span class="math">\(\psi(x_{query})\)</span> > 来得到query i 和 item j的相关性的值。</p>
+  1. 第一个DNN用来找到一个函数 <span class="math">\(\phi(x_{item}) \in \mathbb{R}^{d}\)</span>把item map到d维空间
+  2. 第二个DNN用来找到一个函数 <span class="math">\(\psi(x_{query}) \in \mathbb{R}^{d}\)</span>把query map到d维空间 </p>
+<p>最后就可以使用内积 &lt; <span class="math">\(\phi(x_{item})\)</span>,  <span class="math">\(\psi(x_{query})\)</span> &gt; 来得到query i 和 item j的相关性的值。</p>
 <h2>Train the model</h2>
 <p>The training data includes the user's query and the user's side features, and the items that the user has been interested before for each user. The forward and backward propagation is based on the design of the DNN. The minium of the loss funciton can be achieved by stochastic gradient descending algorithm.  </p>
 <h2>Negative sampling</h2>
@@ -205,7 +205,7 @@
 <p>Negative sampling will do</p>
 <ol>
 <li>All positive items (the ones that appear in the target label)</li>
-<li>A sample of negative items (j in 1 2 3 。。。n)</li>
+<li>A sample of negative items (j in 1, 2, 3, ... n)</li>
 </ol>
 <p>An example from Youtube recommendation:
 <img alt="youtube" src="https://github.com/songhuiming/draft-blogs/blob/main/figures/20211030_recommendation_01_youtube.png" /></p>
