@@ -157,20 +157,26 @@
 <p><img alt="二维embedding" src="https://developers.google.cn/machine-learning/recommendation/images/2Dmatrix.svg" /></p>
 <h2>5.2. <a href="https://developers.google.cn/machine-learning/recommendation/collaborative/matrix">Matrix Factorization</a></h2>
 <p>Assume feedback matrix <span class="math">\(A \in \mathbb{R}^{m \times n}\)</span>, m x n matrix. m means m user, and n means n items. </p>
-<p>Matrix Factorization is to get a matrix U and matrix V, such that
-    1. U is matrix m x d, each row is an user's embedding
-    2. V is matrix n x d, each row is an item's embedding</p>
+<p>Matrix Factorization is to get a matrix U and matrix V, such that</p>
+<div class="highlight"><pre>1. U is matrix m x d, each row is an user&#39;s embedding
+2. V is matrix n x d, each row is an item&#39;s embedding
+</pre></div>
+
+
 <p>Our goal is to factorize the ratings matrix <span class="math">\(A\)</span> into the product of a user embedding matrix <span class="math">\(U\)</span> and movie embedding matrix <span class="math">\(V\)</span>, such that <span class="math">\(A \approx UV^\top\)</span> with</p>
 <div class="math">$$U = \begin{bmatrix} u_{1} \\ \hline \vdots \\ \hline u_{N} \end{bmatrix}$$</div>
 <div class="math">$$V = \begin{bmatrix} v_{1} \\ \hline \vdots \\ \hline v_{M} \end{bmatrix}$$</div>
 <p>.</p>
-<p>Here
-    - <span class="math">\(N\)</span> is the number of users,
-    - <span class="math">\(M\)</span> is the number of movies,
-    - <span class="math">\(A_{ij}\)</span> is the rating of the <span class="math">\(j\)</span>th movies by the <span class="math">\(i\)</span>th user,
-    - each row <span class="math">\(U_i\)</span> is a <span class="math">\(d\)</span>-dimensional vector (embedding) representing user <span class="math">\(i\)</span>,
-    - each row <span class="math">\(V_j\)</span> is a <span class="math">\(d\)</span>-dimensional vector (embedding) representing movie <span class="math">\(j\)</span>,
-    - the prediction of the model for the <span class="math">\((i, j)\)</span> pair is the dot product <span class="math">\(\langle U_i, V_j \rangle\)</span>.</p>
+<p>Here</p>
+<div class="highlight"><pre><span class="x">- </span><span class="p">$</span><span class="nv">N</span><span class="p">$</span><span class="x"> is the number of users,</span>
+<span class="x">- </span><span class="p">$</span><span class="nv">M</span><span class="p">$</span><span class="x"> is the number of movies,</span>
+<span class="x">- </span><span class="p">$</span><span class="nv">A_</span><span class="err">{</span><span class="x">ij}</span><span class="p">$</span><span class="x"> is the rating of the </span><span class="p">$</span><span class="nv">j</span><span class="p">$</span><span class="nv">th</span><span class="x"> movies by the </span><span class="p">$</span><span class="nv">i</span><span class="p">$</span><span class="nv">th</span><span class="x"> user,</span>
+<span class="x">- each row </span><span class="p">$</span><span class="nv">U_i</span><span class="p">$</span><span class="x"> is a </span><span class="p">$</span><span class="nv">d</span><span class="p">$</span><span class="x">-dimensional vector (embedding) representing user </span><span class="p">$</span><span class="nv">i</span><span class="p">$</span><span class="x">,</span>
+<span class="x">- each row </span><span class="p">$</span><span class="nv">V_j</span><span class="p">$</span><span class="x"> is a </span><span class="p">$</span><span class="nv">d</span><span class="p">$</span><span class="x">-dimensional vector (embedding) representing movie </span><span class="p">$</span><span class="nv">j</span><span class="p">$</span><span class="x">,</span>
+<span class="x">- the prediction of the model for the </span><span class="p">$(</span><span class="err">i</span><span class="p">,</span> <span class="err">j</span><span class="p">)$</span><span class="x"> pair is the dot product </span><span class="p">$</span><span class="x">\langle U_i, V_j \rangle</span><span class="p">$</span><span class="x">.</span>
+</pre></div>
+
+
 <p>embedding matrix U and V has <span class="math">\(UV^T\)</span> as approx of feedback matrix A. A has dim <span class="math">\(m \times n\)</span>, the new U V has dim = <span class="math">\(（m+n）\times d\)</span>. Usually d is small, which means we will use low dim matrix to approx the original A. Singular value decomposion (SVD) is not a good method here because A is sparse most of the time.</p>
 <div class="highlight"><pre>1. Stochastic gradient descent (SGD) is a generic method to minimize loss functions.
 2. Weighted Alternating Least Squares (WALS) is specialized to this particular objective.
