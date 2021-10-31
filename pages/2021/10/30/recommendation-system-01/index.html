@@ -117,45 +117,45 @@
 <p>A mapping from a discrete set (in this case, the set of queries, or the set of items to recommend) to a vector space called the embedding space. Many recommendation systems rely on learning an appropriate embedding representation of the queries and items.</p>
 <h1>2. Recommendation Systems Overview</h1>
 <p><img alt="image" src="https://developers.google.cn/machine-learning/recommendation/images/Process.svg" /></p>
-<h2>Candidate Generation / Retrival</h2>
+<h2>2.1. Candidate Generation / Retrival</h2>
 <p>In this first stage, the system starts from a potentially huge corpus and generates a much smaller subset of candidates. For example, the candidate generator in YouTube reduces billions of videos down to hundreds or thousands. The model needs to evaluate queries quickly given the enormous size of the corpus. A given model may provide multiple candidate generators, each nominating a different subset of candidates.</p>
-<h2>Scoring</h2>
+<h2>2.2. Scoring</h2>
 <p>Next, another model scores and ranks the candidates in order to select the set of items (on the order of 10) to display to the user. Since this model evaluates a relatively small subset of items, the system can use a more precise model relying on additional queries.</p>
-<h2>Re-ranking</h2>
+<h2>2.3. Re-ranking</h2>
 <p>Finally, the system must take into account additional constraints for the final ranking. For example, the system removes items that the user explicitly disliked or boosts the score of fresher content. Re-ranking can also help ensure diversity, freshness, and fairness.</p>
 <p>We will discuss each of these stages over the course of the class and give examples from different recommendation systems, such as YouTube.</p>
-<h1>Candidate Generation Overview</h1>
+<h1>3. Candidate Generation Overview</h1>
 <div class="highlight"><pre>1. content-based filtering: recommendate based on the similarity of items
-
 2. collaborative filtering： if user A and user B are similar, then recommend user A&#39;s items to user B.
 </pre></div>
 
 
-<h2>Embedding Space: map item and query to a <span class="math">\(d\)</span> dimension space</h2>
+<h2>3.1. Embedding Space: map item and query to a <span class="math">\(d\)</span> dimension space</h2>
 <p>Map each item and each query (or context) to an embedding vector in a common embedding space . Typically, the embedding space is low-dimensional <span class="math">\(E = \mathbb{R}^{d}\)</span> (that is,  is much smaller than the size of the corpus), and captures some latent structure of the item or query set.</p>
-<h2>Similarity Measures：based on embedding to find item, or find the related items and querys</h2>
+<h2>3.2. Similarity Measures：based on embedding to find item, or find the related items and querys</h2>
 <p>A similarity measure is a function <span class="math">\(s: E X E -&gt; \mathbb{R}\)</span> that takes a pair of embeddings and returns a scalar measuring their similarity. The embeddings can be used for candidate generation as follows: given a query embedding <span class="math">\(q \in E\)</span>, the system looks for item embeddings <span class="math">\(x \in E\)</span> that are close to <span class="math">\(q\)</span>, that is, embeddings with high similarity <span class="math">\(s(q, x)\)</span>.</p>
 <p><span class="math">\(cos(x,y)\)</span>: the anger between two vectors. Below C and item has the least anger degree.</p>
 <p><span class="math">\(dot(x, y)\)</span>：dot product, the length of vector 1 times the length of vector 2, then times cos(anger). A is the longest.</p>
 <p>Eculidian distance ||x - y||: which is the distance of two vectors. B and query has the shortest dist.</p>
 <p><img alt="看看那个距离是对的" src="https://developers.google.cn/machine-learning/recommendation/images/Similarity.svg" /></p>
-<h2>Which Similarity Measure to Choose?</h2>
+<h2>3.3. Which Similarity Measure to Choose?</h2>
 <p>If use dot prod, the bigger the norm of the vector, the more likely it will be selected. The item has more frequency are usually have embedding with bigger norm, which will result in the common items (or most viewed videos) are more likely to be recommended. </p>
-<h1>Content-based Filtering</h1>
-<h1><a href="https://developers.google.cn/machine-learning/recommendation/collaborative/basics">Collaborative Filtering</a></h1>
-<h2>Basics</h2>
+<h1>4. Content-based Filtering</h1>
+<p>Which recommend based on similar items. Ignore here sicne it is easy. </p>
+<h1>5. <a href="https://developers.google.cn/machine-learning/recommendation/collaborative/basics">Collaborative Filtering</a></h1>
+<h2>5.1. Basics</h2>
 <p>Take an example to recommend movies to the customer. One row is one customer, and one column is one movie. The target is: for a given customer, recommend movies to him based on the customers that are clsoe to him.</p>
 <p>Suppose movies has these features: name, rating, introduction</p>
-<h3>1-d embedding</h3>
+<h3>5.1.1. 1-d embedding</h3>
 <p>Suppose we can score the movie from -1 to 1 based on if it is for kids or for adults. -1 means for kids and 1 means only for adults. With this each movie will have a score from -1 to 1. In the same way, we can score the customers based on they are kids or adults. </p>
 <p><img alt="一维embedding" src="https://developers.google.cn/machine-learning/recommendation/images/1D.svg" /></p>
 <p>Now in the (user，item) feedback matrix we have the "like" from the user to the movie.
 <img alt="一维embedding" src="https://developers.google.cn/machine-learning/recommendation/images/1Dmatrix.svg" /></p>
-<h3>二维embedding</h3>
+<h3>5.1.2. 2-d embedding</h3>
 <p>Most of the time, 1-d cannot describe the complexity of the movie. We may need 2-d or high dimension to describe. Suppose we have another dimenison to describe the movie is Arthose or Blockbuster.</p>
 <p><img alt="二维embedding" src="https://developers.google.cn/machine-learning/recommendation/images/2D.svg" /></p>
 <p><img alt="二维embedding" src="https://developers.google.cn/machine-learning/recommendation/images/2Dmatrix.svg" /></p>
-<h2><a href="https://developers.google.cn/machine-learning/recommendation/collaborative/matrix">Matrix Factorization</a></h2>
+<h2>5.2. <a href="https://developers.google.cn/machine-learning/recommendation/collaborative/matrix">Matrix Factorization</a></h2>
 <p>Assume feedback matrix <span class="math">\(A \in \mathbb{R}^{m \times n}\)</span>, m x n matrix. m means m user, and n means n items. </p>
 <p>Matrix Factorization is to get a matrix U and matrix V, such that
     1. U is matrix m x d, each row is an user's embedding
@@ -182,7 +182,7 @@
 
 <p><a href="https://colab.research.google.com/github/google/eng-edu/blob/main/ml/recommendation-systems/recommendation-systems.ipynb?utm_source=ss-recommendation-systems&amp;utm_campaign=colab-external&amp;utm_medium=referral&amp;utm_content=recommendation-systems">使用colab来练习怎么做推荐系统</a></p>
 <p><a href="https://www.kaggle.com/grouplens/movielens-20m-dataset?select=tag.csv">kaggle data link</a></p>
-<h1><a href="https://developers.google.cn/machine-learning/recommendation/dnn/softmax">Recommendation with Deep Neural Network (DNN) Models</a></h1>
+<h1>6. <a href="https://developers.google.cn/machine-learning/recommendation/dnn/softmax">Recommendation with Deep Neural Network (DNN) Models</a></h1>
 <p>DNN can put item feature and user feature into a network modle to learn embeddings.</p>
 <h2>Softmax DNN for Recommendation</h2>
 <div class="highlight"><pre><span class="n">input</span><span class="o">:</span> <span class="n">user</span> <span class="n">query</span>  
