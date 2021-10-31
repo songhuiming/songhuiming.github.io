@@ -144,69 +144,72 @@
 <h1>Content-based Filtering</h1>
 <h1><a href="https://developers.google.cn/machine-learning/recommendation/collaborative/basics">Collaborative Filtering</a></h1>
 <h2>Basics</h2>
-<p>比如给用户推荐电影。每一行是一个用户，每一列是一部电影。目的是对某个用户，根据和他类似的用户的记录来给他推荐电影。</p>
-<p>假设电影由这些feature：名字，分数，简介</p>
-<h3>一维embedding</h3>
-<p>比如说电影适合儿童还是适合大人，打分从-1到1。越适合儿童就越靠近-1，越只适合大人就越靠近1. 这样每个电影都有一个分数。
-<img alt="一维embedding" src="https://developers.google.cn/machine-learning/recommendation/images/1D.svg" /></p>
-<p>把用户喜欢哪些电影在（user，item）的matrix中标记出来
+<p>Take an example to recommend movies to the customer. One row is one customer, and one column is one movie. The target is: for a given customer, recommend movies to him based on the customers that are clsoe to him.</p>
+<p>Suppose movies has these features: name, rating, introduction</p>
+<h3>1-d embedding</h3>
+<p>Suppose we can score the movie from -1 to 1 based on if it is for kids or for adults. -1 means for kids and 1 means only for adults. With this each movie will have a score from -1 to 1. In the same way, we can score the customers based on they are kids or adults. </p>
+<p><img alt="一维embedding" src="https://developers.google.cn/machine-learning/recommendation/images/1D.svg" /></p>
+<p>Now in the (user，item) feedback matrix we have the "like" from the user to the movie.
 <img alt="一维embedding" src="https://developers.google.cn/machine-learning/recommendation/images/1Dmatrix.svg" /></p>
 <h3>二维embedding</h3>
-<p>一维可能不足以表达电影的复杂度，我们需要二维，比如再加上文艺片还是动作片这个维度
-<img alt="二维embedding" src="https://developers.google.cn/machine-learning/recommendation/images/2D.svg" /></p>
+<p>Most of the time, 1-d cannot describe the complexity of the movie. We may need 2-d or high dimension to describe. Suppose we have another dimenison to describe the movie is Arthose or Blockbuster.</p>
+<p><img alt="二维embedding" src="https://developers.google.cn/machine-learning/recommendation/images/2D.svg" /></p>
 <p><img alt="二维embedding" src="https://developers.google.cn/machine-learning/recommendation/images/2Dmatrix.svg" /></p>
 <h2><a href="https://developers.google.cn/machine-learning/recommendation/collaborative/matrix">Matrix Factorization</a></h2>
-<p>假设feedback matrix <span class="math">\(A \in R^(m \times n)\)</span>, m x n维的矩阵。m表示m个user，n表示n个item。 </p>
-<p>Matrix Factorization是来学习得到一个矩阵 U 和矩阵 V ，满足
-    1. U 是 m x d 维度的矩阵，每一行表示一个 user 的 embedding
-    2. V 是 n x d 维度的矩阵，每一行表示一个 item 的 embedding</p>
+<p>Assume feedback matrix <span class="math">\(A \in \mathbb{R}^{m \times n}\)</span>, m x n matrix. m means m user, and n means n items. </p>
+<p>Matrix Factorization is to get a matrix U and matrix V, such that
+    1. U is matrix m x d, each row is an user's embedding
+    2. V is matrix n x d, each row is an item's embedding</p>
 <p>Our goal is to factorize the ratings matrix <span class="math">\(A\)</span> into the product of a user embedding matrix <span class="math">\(U\)</span> and movie embedding matrix <span class="math">\(V\)</span>, such that <span class="math">\(A \approx UV^\top\)</span> with</p>
 <div class="math">$$U = \begin{bmatrix} u_{1} \\ \hline \vdots \\ \hline u_{N} \end{bmatrix}$$</div>
 <div class="math">$$V = \begin{bmatrix} v_{1} \\ \hline \vdots \\ \hline v_{M} \end{bmatrix}$$</div>
 <p>.</p>
 <p>Here
-- <span class="math">\(N\)</span> is the number of users,
-- <span class="math">\(M\)</span> is the number of movies,
-- <span class="math">\(A_{ij}\)</span> is the rating of the <span class="math">\(j\)</span>th movies by the <span class="math">\(i\)</span>th user,
-- each row <span class="math">\(U_i\)</span> is a <span class="math">\(d\)</span>-dimensional vector (embedding) representing user <span class="math">\(i\)</span>,
-- each row <span class="math">\(V_j\)</span> is a <span class="math">\(d\)</span>-dimensional vector (embedding) representing movie <span class="math">\(j\)</span>,
-- the prediction of the model for the <span class="math">\((i, j)\)</span> pair is the dot product <span class="math">\(\langle U_i, V_j \rangle\)</span>.</p>
-<p>embedding矩阵U和V使得<span class="math">\(UV^T\)</span>是feedback matrix A 的很好的近似。原来A的大小为mn，新的U V的大小为 （m+n）d，通常d比较小，这样相当于在一个低维空间上来近似原来的矩阵。奇异值分解（SVD）不是一个很好的办法，因为A通常非常sparse。</p>
+    - <span class="math">\(N\)</span> is the number of users,
+    - <span class="math">\(M\)</span> is the number of movies,
+    - <span class="math">\(A_{ij}\)</span> is the rating of the <span class="math">\(j\)</span>th movies by the <span class="math">\(i\)</span>th user,
+    - each row <span class="math">\(U_i\)</span> is a <span class="math">\(d\)</span>-dimensional vector (embedding) representing user <span class="math">\(i\)</span>,
+    - each row <span class="math">\(V_j\)</span> is a <span class="math">\(d\)</span>-dimensional vector (embedding) representing movie <span class="math">\(j\)</span>,
+    - the prediction of the model for the <span class="math">\((i, j)\)</span> pair is the dot product <span class="math">\(\langle U_i, V_j \rangle\)</span>.</p>
+<p>embedding matrix U and V has <span class="math">\(UV^T\)</span> as approx of feedback matrix A. A has dim <span class="math">\(m \times n\)</span>, the new U V has dim = <span class="math">\(（m+n）\times d\)</span>. Usually d is small, which means we will use low dim matrix to approx the original A. Singular value decomposion (SVD) is not a good method here because A is sparse most of the time.</p>
 <div class="highlight"><pre>1. Stochastic gradient descent (SGD) is a generic method to minimize loss functions.
 2. Weighted Alternating Least Squares (WALS) is specialized to this particular objective.
 
-1. 优点 - 不需要掌握特别的知识，Serendipity （模型来帮助用户找到喜欢的东西），容易开始
-2. 缺点 - 不能处理新的item（因为大家都没有见过），不能出来side features （比如年龄，上网地址，等等）- 建立高维的feedback matrix A
+1. pros: no special pre-knowledge, Serendipity (model help to get likes), easy to start
+2. cons: cannot handle new item, cannot use side features (age, address)- high dim feedback matrix A
 </pre></div>
 
 
 <p><a href="https://colab.research.google.com/github/google/eng-edu/blob/main/ml/recommendation-systems/recommendation-systems.ipynb?utm_source=ss-recommendation-systems&amp;utm_campaign=colab-external&amp;utm_medium=referral&amp;utm_content=recommendation-systems">使用colab来练习怎么做推荐系统</a></p>
-<p><a href="https://www.kaggle.com/grouplens/movielens-20m-dataset?select=tag.csv">kaggle上的data链接</a></p>
-<h1><a href="https://developers.google.cn/machine-learning/recommendation/dnn/softmax">Recommendation with Deep Neural Network （DNN模型） Models</a></h1>
-<p>DNN模型可以把item feature和user feature放进模型里面来学习embedding。</p>
-<h2>Softmax DNN for Recommendation，使用softmax</h2>
-<p>输入： user query<br />
-  输出： n个items的概率</p>
-<p>input X 可以是 dense feature（观看时长，距离上次观看的间隔时间），也可以是sparse feature（国家，观看历史等）。</p>
+<p><a href="https://www.kaggle.com/grouplens/movielens-20m-dataset?select=tag.csv">kaggle data link</a></p>
+<h1><a href="https://developers.google.cn/machine-learning/recommendation/dnn/softmax">Recommendation with Deep Neural Network (DNN) Models</a></h1>
+<p>DNN can put item feature and user feature into a network modle to learn embeddings.</p>
+<h2>Softmax DNN for Recommendation</h2>
+<div class="highlight"><pre><span class="n">input</span><span class="o">:</span> <span class="n">user</span> <span class="n">query</span>  
+<span class="n">output</span><span class="o">:</span> <span class="n">prob</span> <span class="n">of</span> <span class="n">n</span> <span class="n">items</span>
+</pre></div>
+
+
+<p>input X can be dense feature (watch time length, time since last watch), it can also be sparse feature (country, watch history).</p>
 <p><img alt="DNN for recommendaiton system" src="https://developers.google.cn/machine-learning/recommendation/images/LossFunction.svg" /></p>
-<p>DNN的最后一个hidden layer的输出 <span class="math">\(\phi(x)\)</span> 为 d 维的向量，然后再通过一个矩阵 V <span class="math">\(V \in n \times d\)</span> 来得到一个n维的向量，向量每一个值表示一个item的概率。</p>
-<p>loss funciton是模型输出 phat 和 真实值 y 的函数。比如cross entropy。</p>
-<p>模型的目的是学习得到embedding,对每一个item j，得到一个向量 <span class="math">\(v_j \in \mathbb{R}^d\)</span> (n个item，那么 <span class="math">\(V \in n \times d\)</span>)。在softmax模型下，V就是模型的系数。</p>
-<p>对query embedding，对query i，模型不是要得到一个embedding <span class="math">\(U_{i}\)</span>，而是学习到了一个函数  <span class="math">\(\phi(\cdot)\)</span>
-, 把输入的x map到一个d维的向量  <span class="math">\(\phi(x)\)</span></p>
-<p>再进一步，我们能不能build两个DNN，
-  1. 第一个DNN用来找到一个函数 <span class="math">\(\phi(x_{item}) \in \mathbb{R}^{d}\)</span>把item map到d维空间
-  2. 第二个DNN用来找到一个函数 <span class="math">\(\psi(x_{query}) \in \mathbb{R}^{d}\)</span>把query map到d维空间 </p>
-<p>最后就可以使用内积 &lt; <span class="math">\(\phi(x_{item})\)</span>,  <span class="math">\(\psi(x_{query})\)</span> &gt; 来得到query i 和 item j的相关性的值。</p>
+<p>Last hidden layer of DNN output is <span class="math">\(\phi(x)\)</span>, which is a vector with dim = d. It will times a matrix V <span class="math">\(V \in n \times d\)</span> to get a vector with dim = n. Each value is the probability for item.</p>
+<p>Loss funciton is the function of  model output <span class="math">\(\hat{p}\)</span> and the true item y. We can use cross entropy.</p>
+<p>The purpose of the model is to learn embedding, s.t. for each item j, there is an vector <span class="math">\(v_j \in \mathbb{R}^d\)</span> (n items, then <span class="math">\(V \in n \times d\)</span>). With softmax model, V are the parameters of the model.</p>
+<p>For query embedding, for query i, model is not to get embedding <span class="math">\(U_{i}\)</span>, but to learn the function <span class="math">\(\phi(\cdot)\)</span>, which will map input x  to a d-dim vector <span class="math">\(\phi(x)\)</span></p>
+<p>Furthermore, can we build two DNN:
+    1. 1st DNN is to get function <span class="math">\(\phi(x_{item}) \in \mathbb{R}^{d}\)</span>, map item to d-dim space
+    2. 2nd DNN is to get funciton <span class="math">\(\psi(x_{query}) \in \mathbb{R}^{d}\)</span>, map query  to d-dim space</p>
+<p>Finally we can use dot product &lt; <span class="math">\(\phi(x_{item})\)</span>, <span class="math">\(\psi(x_{query})\)</span> &gt; to get the correlation between query i and item j.</p>
 <h2>Train the model</h2>
 <p>The training data includes the user's query and the user's side features, and the items that the user has been interested before for each user. The forward and backward propagation is based on the design of the DNN. The minium of the loss funciton can be achieved by stochastic gradient descending algorithm.  </p>
 <h2>Negative sampling</h2>
-<p>当有n个items的时候，输出概率为 <span class="math">\(\hat(p) \in \mathbb{R}^{n}\)</span>. 因为n非常大，从而导致在loss function的时候反向求导的计算非常多。（在NLP里面，根据中心词求旁边相邻单词的概率的时候，也用到negative sampling。同样的是因为候选单词的个数太多了）</p>
-<p>Negative sampling will do</p>
-<ol>
-<li>All positive items (the ones that appear in the target label)</li>
-<li>A sample of negative items (j in 1, 2, 3, ... n)</li>
-</ol>
+<p>When there are n items, the output prob from DNN is <span class="math">\(\hat{p} \in \mathbb{R}^{n}\)</span>. Since n is very big, which will result in lots of calcualation in backpropagation.(In NLP, when clac the prob of neighbors words given the central word, it also uses negative smapling because of word size is also very big). </p>
+<p>Negative sampling will do: </p>
+<div class="highlight"><pre>1. All positive items (the ones that appear in the target label)
+2. A sample of negative items (j in 1, 2, 3, ... n)
+</pre></div>
+
+
 <p>An example from Youtube recommendation:
 <img alt="youtube" src="https://github.com/songhuiming/draft-blogs/blob/main/figures/20211030_recommendation_01_youtube.png" /></p>
 <h1>Reference</h1>
