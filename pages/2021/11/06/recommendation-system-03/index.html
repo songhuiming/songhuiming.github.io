@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Recommendation System 03 &mdash; pydata</title>
+  <meta name="author" content="shm">
+
+
+
+
+
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+    <link href="/favicon.png" rel="icon">
+
+  <link href="/theme/css/main.css" media="screen, projection"
+        rel="stylesheet" type="text/css">
+
+  <link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic"
+        rel="stylesheet" type="text/css">
+  <link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic"
+        rel="stylesheet" type="text/css">
+</head>
+
+<body>
+  <header role="banner"><hgroup>
+  <h1><a href="/">pydata</a></h1>
+    <h2>Keep Looking, Don't Settle</h2>
+</hgroup>
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>
+        MathJax.Hub.Config({
+            config: ["MMLorHTML.js"],
+            extensions: ["tex2jax.js","TeX/AMSmath.js","TeX/AMSsymbols.js"],
+            jax: ["input/TeX"],
+            tex2jax: {
+                inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+                displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+                processEscapes: false
+            },
+            TeX: {
+                TagSide: "right",
+                TagIndent: ".8em",
+                MultLineWidth: "85%",
+                equationNumbers: {
+                   autoNumber: "AMS",
+                },
+                unicode: {
+                   fonts: "STIXGeneral,'Arial Unicode MS'"
+                }
+            },
+            showProcessingMessages: false
+        });
+</script></header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+</ul>
+
+<form class="search" action="/search.html">
+    <input type="text" class="search-query" placeholder="Search" name="q" id="s">
+</form>
+
+<form action="https://www.google.com/search" method="get">
+    <fieldset role="search">
+       <input type="hidden" name="q" value="site:songhuiming.github.io" />
+       <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+    </fieldset>
+</form>
+
+
+<ul class="main-navigation">
+    <li><a href="/functions/archives.html">Archives</a></li>
+      <li >
+        <a href="/category/career-growth.html">Career growth</a>
+      </li>
+      <li >
+        <a href="/category/linux.html">Linux</a>
+      </li>
+      <li class="active">
+        <a href="/category/python.html">Python</a>
+      </li>
+      <li >
+        <a href="/category/rthers.html">Rthers</a>
+      </li>
+</ul></nav>
+  <div id="main">
+    <div id="content">
+<div>
+  <article class="hentry" role="article">
+<header>
+      <h1 class="entry-title">Recommendation System 03</h1>
+    <p class="meta">
+<time datetime="2021-11-06T00:00:00-05:00" pubdate>Sat 06 November 2021</time>    </p>
+</header>
+
+  <div class="entry-content"><p>Purpose: achieve the return as much as possible (reduce the regret)</p>
+<p>Suppose we want to show the advertisements to the customer and we want to maximize the CTR (click through rate). Let's simplify the situation as there are 3 ads: ad1, ad2 and ad3, the average CTR for them is <span class="math">\(\mu_1 = 0.1, \mu_2 = 0.09, \mu_3=0.0\)</span>. If we can show the ads 300 times, then which ad shall we show? In this case, surely we will display ad1 300 times since it is most likely to be clicked by the customer.</p>
+<p>But if we not know the value of <span class="math">\(\mu_1, \mu_2, \mu_3\)</span>, what shall we do?</p>
+<h2>Exploration only</h2>
+<p>Since we don't know which ad will higher ctr, so we may just randomly select an ad to display. In this case, ad1, ad2 and ad3 will be displayed 100 times each. This is called exploration only which means doing it randomly. But it is not good since there is better way: after some random trials (let's say 50 times), we may calcuate the average ctr for each ad, and we may find ad1 has higher ctr than the rest. Then we should display ad1 in the rest 250 times.</p>
+<div class="highlight"><pre><span class="k">class</span> <span class="nc">Ad</span><span class="p">():</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mu</span> <span class="o">=</span> <span class="n">mu</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigma</span> <span class="o">=</span> <span class="n">sigma</span>
+
+    <span class="k">def</span> <span class="nf">ctr_sample</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mu</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">explore</span><span class="p">(</span><span class="n">ads</span><span class="p">,</span> <span class="n">ntotal</span><span class="o">=</span><span class="mi">300</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    ads is a list of random variables</span>
+<span class="sd">        each represents the distribution of the corresponding ad</span>
+<span class="sd">    ntotal: is the total number of trials we can test</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">rewards</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ntotal</span><span class="p">):</span>
+        <span class="n">rewards</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">ads</span><span class="p">)</span><span class="o">.</span><span class="n">ctr_sample</span><span class="p">())</span>
+    <span class="k">return</span> <span class="n">rewards</span>
+
+<span class="n">ad1</span><span class="p">,</span> <span class="n">ad2</span><span class="p">,</span> <span class="n">ad3</span> <span class="o">=</span> <span class="n">Ads</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.03</span><span class="p">),</span> <span class="n">Ads</span><span class="p">(</span><span class="mf">0.09</span><span class="p">,</span> <span class="mf">0.03</span><span class="p">),</span> <span class="n">Ads</span><span class="p">(</span><span class="mf">0.08</span><span class="p">,</span> <span class="mf">0.03</span><span class="p">)</span> 
+</pre></div>
+
+
+<div class="highlight"><pre>
+</pre></div>
+
+
+<h2>Epsilon-greedy bandit</h2>
+<p>Rather than choosing the ads randomly, we will try some random choice to explore. After we collect some information, we will exploit to the most highly returned ad. </p>
+<ol>
+<li>Begin by randomly choosing an ad for each visitor and observing whether it receives a click. </li>
+<li>As each ad is chosen and the click observed, keep track of the CTR (empirical CTR). </li>
+<li>Start assigning “most” visitors to your top performing ad by empirical CTR at that point in time, otherwise randomly choose among your other ads. </li>
+<li>As the empirical CTR changes with more trials, continue updating which ad you assign to most visitors. </li>
+</ol>
+<p>The key parameter we decide upon for an epsilon-greedy bandit is <span class="math">\(\epsilon\)</span>. <span class="math">\(\epsilon\)</span> manages the exploration / exploitation trade-off by determining what proportion of ads we assign to exploration <span class="math">\(\epsilon\)</span>, and exploitation, <span class="math">\(1 - \epsilon\)</span>. For example, if <span class="math">\(\epsilon = 0.1\)</span>, means 10% of the 300 total trials will be used for exploration (30 times).</p>
+<p>Let's denote <span class="math">\(P_t(i)\)</span> as the probability to choose ad <span class="math">\(i\)</span> in the <span class="math">\(t_{th}\)</span> trial, <span class="math">\(K\)</span> as the number of ads, and <span class="math">\(N_t(i)\)</span> is the number of trials for ad <span class="math">\(i\)</span> in the <span class="math">\(t\)</span> trials. </p>
+<div class="highlight"><pre><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">seaborn</span> <span class="kn">as</span> <span class="nn">sns</span>
+<span class="kn">import</span> <span class="nn">random</span>
+
+<span class="k">class</span> <span class="nc">EpsilonGreedyBandit</span><span class="p">():</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">true_ctr</span><span class="p">,</span> <span class="n">epsilon</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">epsilon</span> <span class="o">=</span> <span class="n">epsilon</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_ads</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">true_ctr</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ad_ids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_ads</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_ads</span><span class="p">,</span> <span class="mi">1</span><span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_ads</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clicks</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_ads</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trials</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_ads</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">true_ctr</span> <span class="o">=</span> <span class="n">true_ctr</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">empirical_ctr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_ads</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">choose_ad</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Choose ad to display based on the updated weights</span>
+<span class="sd">        1. Choose the current best ad with prob 1-epislon</span>
+<span class="sd">        2. Or randomly explore with prob epislon/(num_ads - 1)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ad_ids</span><span class="p">,</span> <span class="n">size</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">ad</span>
+
+    <span class="k">def</span> <span class="nf">click</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ad</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Customer click with prob = true_ctr</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">click</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">binomial</span><span class="p">(</span><span class="n">size</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">true_ctr</span><span class="p">[</span><span class="n">ad</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">click</span>
+
+
+    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ad</span><span class="p">,</span> <span class="n">click</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        For given ad, update the values</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clicks</span><span class="p">[</span><span class="n">ad</span><span class="p">]</span> <span class="o">+=</span> <span class="n">click</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trials</span><span class="p">[</span><span class="n">ad</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">empirical_ctr</span><span class="p">[</span><span class="n">ad</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">clicks</span><span class="p">[</span><span class="n">ad</span><span class="p">]</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">trials</span><span class="p">[</span><span class="n">ad</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">clicks</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">[:]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">epsilon</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_ads</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">best_ad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">empirical_ctr</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">[</span><span class="n">best_ad</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">epsilon</span>
+
+    <span class="k">def</span> <span class="nf">run_trial</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">ad</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">choose_ad</span><span class="p">()</span>
+        <span class="n">click</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="n">ad</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">ad</span><span class="p">,</span> <span class="n">click</span><span class="p">)</span>
+
+
+<span class="c1"># Run an example</span>
+
+<span class="n">emp_ctr</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">ctr</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.09</span><span class="p">,</span> <span class="mf">0.08</span><span class="p">]</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">6</span><span class="p">):</span>
+    <span class="n">egb</span> <span class="o">=</span> <span class="n">EpsilonGreedyBandit</span><span class="p">(</span><span class="n">ctr</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="o">**</span><span class="n">i</span><span class="p">):</span>
+        <span class="n">egb</span><span class="o">.</span><span class="n">run_trial</span><span class="p">()</span>
+
+    <span class="n">emp_ctr</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">egb</span><span class="o">.</span><span class="n">empirical_ctr</span><span class="p">)</span>
+
+<span class="n">emp_ctr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">emp_ctr</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ctr</span><span class="p">)):</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">emp_ctr</span><span class="p">[:,</span> <span class="n">i</span><span class="p">],</span> <span class="n">label</span> <span class="o">=</span> <span class="s2">&quot;CTR for ad&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Epsilon Greedy Bandit CTR Simulation&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+
+
+<p><img alt="multi armd bandit 01" src="/figures/20211106_multi_armd_bandit_01.png" />
+As we can see, the empirical CTR will concerge to the true CTR and the best ad will be chosen.</p>
+<h2>Upper confidence bound (UCB)</h2>
+<p>In Epsilon-greedy bandit, we only choose the ad based on the empirical_ctr. This might be a little risky since you may lose some information. Let's say there are two ads, after some trials, ad1 has empirical_ctr=0.1, and ad2 has empirical_ctr=0.11. In this case, our algorithm will choose ad2 to exploit since it has higher empirical_ctr. But if ad1 is only shown once, and ad2 has already been shown 20 times. Under this scenario, shall we give ad1 a little more change since it is only being shown 1 time?</p>
+<p>UCB is the complement method. In UCB, the best ad is chosen based on who has the highest <span class="math">\(\mbox{empirical_ctr} + \sqrt{{2 ln(t)}/{N_t(i)}}\)</span>. </p>
+<p><span class="math">\(N_t(i)\)</span> is the number of trials for ad <span class="math">\(i\)</span> in the <span class="math">\(t\)</span> trials. In the scenario above, ad1 was only shown 1 time, so <span class="math">\(N_t(1) = 1\)</span> and <span class="math">\(N_t(2)=20\)</span> since ad2 was shown 20 times. Because <span class="math">\(N_t(i)\)</span> is in the denominator, as it higher (already shown more time), the corresponding has less likelihood to be selected again unless it has very high empirical_ctr.</p>
+<h2>Thompson sampling bandits</h2>
+<p>Thompson sampling bandits (Bayesian bandits) is to chose the action that maximize the expected reward. It aims to tackle the exploration-exploitation trade off in a Bayesian way.</p>
+<p>Let denote the action of click or not as a random variable <span class="math">\(X, X=1\)</span> means click and <span class="math">\(0\)</span> means not. If we consider CTR as a parameter <span class="math">\(p\)</span> which is unknown, that is <span class="math">\(P(X=1) = p\)</span>. In fact, <span class="math">\(X\)</span> has Bernoulli distribution <span class="math">\(P(X=x|p) = p^x (1-p)^{1-x}\)</span>. In this scenario, the conjugate prior for <span class="math">\(p\)</span> is beta distribution <span class="math">\(p \sim Beta(a, b) = p^{a-1} (1-p)^{b-1}\)</span>. The posterior distribution is also Beta distribution <span class="math">\(\sim Beta(a+x, b+1-x) = p^{a-1+x} (1-p)^{b-1 + 1-x }\)</span>. That is, if the ad is clicked <span class="math">\(x = 1\)</span>, so <span class="math">\(a\)</span> will add 1. Otherwise <span class="math">\(b\)</span> will add 1. If we have 10 ads, then we will have 10 posterior beta distributions with their own <span class="math">\(a\)</span> and <span class="math">\(b\)</span>. To update the simulation, for each step, we will sample a random value (which is <span class="math">\(p\)</span>) from each of the posterior distribution and pick the ad with the max sampled <span class="math">\(p\)</span> to show.</p>
+<p>The general idea is: suppose at time <span class="math">\(t\)</span> (already run <span class="math">\(t\)</span> trials in total),  <span class="math">\(N_t(i)\)</span> is the number of trials for ad <span class="math">\(i\)</span> in the <span class="math">\(t\)</span> trials. The posterior probability for ad i is given by the formula above. To do the simulation, we only need these steps:</p>
+<ol>
+<li>Randomly draw a CTR from each ad’s posterior beta distribution.</li>
+<li>Choose the ad with the highest drawn CTR.</li>
+<li>If a click is observed increment <span class="math">\(a\)</span> by 1, otherwise increment <span class="math">\(b\)</span> by 1. (<span class="math">\(\alpha\)</span> and <span class="math">\(\beta\)</span> in the Beta distribution.)</li>
+</ol>
+<div class="highlight"><pre><span class="k">class</span> <span class="nc">ThompsonSamplingBandit</span><span class="p">():</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">true_ctr</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_ads</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">true_ctr</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ad_ids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_ads</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clicks</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_ads</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alphas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_ads</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">betas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_ads</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trials</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_ads</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">true_ctr</span> <span class="o">=</span> <span class="n">true_ctr</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">empirical_ctr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_ads</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">choose_ad</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">beta_draws</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_ads</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">ad</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ad_ids</span><span class="p">:</span>
+            <span class="n">draw</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">beta</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alphas</span><span class="p">[</span><span class="n">ad</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">betas</span><span class="p">[</span><span class="n">ad</span><span class="p">],</span> <span class="n">size</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">beta_draws</span><span class="p">[</span><span class="n">ad</span><span class="p">]</span> <span class="o">=</span> <span class="n">draw</span>
+        <span class="n">best_ad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">beta_draws</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">best_ad</span>
+
+    <span class="k">def</span> <span class="nf">click</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ad</span><span class="p">):</span>
+        <span class="n">click</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">binomial</span><span class="p">(</span><span class="n">size</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">true_ctr</span><span class="p">[</span><span class="n">ad</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">click</span>
+
+    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ad</span><span class="p">,</span> <span class="n">click</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trials</span><span class="p">[</span><span class="n">ad</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clicks</span><span class="p">[</span><span class="n">ad</span><span class="p">]</span> <span class="o">+=</span> <span class="n">click</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">empirical_ctr</span><span class="p">[</span><span class="n">ad</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">clicks</span><span class="p">[</span><span class="n">ad</span><span class="p">]</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">trials</span><span class="p">[</span><span class="n">ad</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">click</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">alphas</span><span class="p">[</span><span class="n">ad</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">betas</span><span class="p">[</span><span class="n">ad</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="k">def</span> <span class="nf">run_trial</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">ad</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">choose_ad</span><span class="p">()</span>
+        <span class="n">click</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="n">ad</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">ad</span><span class="p">,</span> <span class="n">click</span><span class="p">)</span>
+
+<span class="n">tsb</span> <span class="o">=</span> <span class="n">ThompsonSamplingBandit</span><span class="p">(</span><span class="n">true_ctr</span> <span class="o">=</span> <span class="p">[</span><span class="o">.</span><span class="mi">2</span><span class="p">,</span> <span class="o">.</span><span class="mi">15</span><span class="p">,</span> <span class="o">.</span><span class="mi">1</span><span class="p">])</span>
+<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">200000</span><span class="p">):</span>
+    <span class="n">tsb</span><span class="o">.</span><span class="n">run_trial</span><span class="p">()</span>
+
+<span class="k">print</span><span class="p">(</span><span class="n">tsb</span><span class="o">.</span><span class="n">empirical_ctr</span><span class="p">)</span>
+
+<span class="c1"># array([0.20028314, 0.14479638, 0.09352518])</span>
+
+<span class="n">emp_ctr</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">ctr</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.15</span><span class="p">,</span> <span class="mf">0.08</span><span class="p">]</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">6</span><span class="p">):</span>
+    <span class="n">egb</span> <span class="o">=</span> <span class="n">ThompsonSamplingBandit</span><span class="p">(</span><span class="n">ctr</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="o">**</span><span class="n">i</span><span class="p">):</span>
+        <span class="n">egb</span><span class="o">.</span><span class="n">run_trial</span><span class="p">()</span>
+
+    <span class="n">emp_ctr</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">egb</span><span class="o">.</span><span class="n">empirical_ctr</span><span class="p">)</span>
+
+<span class="n">emp_ctr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">emp_ctr</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ctr</span><span class="p">)):</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">emp_ctr</span><span class="p">[:,</span> <span class="n">i</span><span class="p">],</span> <span class="n">label</span> <span class="o">=</span> <span class="s2">&quot;CTR for ad&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Thompson Sampling Bandit CTR simulation&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+
+
+<p><img alt="multi armd bandit 01" src="/figures/20211106_multi_armd_bandit_02.png" /></p>
+<p>However, in reality, <span class="math">\(p\)</span> is not simply a random value, itself maybe a function of different variables / setups. Let’s assume we use logistic regression f to model <span class="math">\(p\)</span>. That is, <span class="math">\(p = f(variables, weights)\)</span> and we denote weights as <span class="math">\(w\)</span> which is a vector with <span class="math">\(dim=d\)</span>. Now we need to find <span class="math">\(w\)</span> to optimize CTR. The conjugate prior for <span class="math">\(w\)</span> is normal distribution. And the corresponding posterior of <span class="math">\(w\)</span> is also normal distribution. After we observed (x, y), w and the posterior will be updated.</p>
+<p>In a more general case, the number of variables and <span class="math">\(w\)</span> of logistic regression may also be random. In this case, we cannot use fixed number of <span class="math">\(dim=d\)</span> priors of normal distribution. We need to extend it to Gaussian processes. </p>
+<p>Now we will define the Bayesian Optimization problem.</p>
+<p>Objection: <span class="math">\(max_{x \in A}  f(x), where x \in R^d\)</span></p>
+<ol>
+<li>output: Objection function <span class="math">\(f\)</span> is continuous</li>
+<li>Input: complexity depends on dim <span class="math">\(d\)</span></li>
+<li>Restriction of <span class="math">\(A\)</span>: hyper-rectangle <span class="math">\(\{ x \in R^d: a_i \le x_i \le b_i \}\)</span> or simplex <span class="math">\(\{ x \in R^d: \sum_{i} x_i = 1 \}\)</span></li>
+<li><span class="math">\(f\)</span>: usually <span class="math">\(f\)</span> is very complicated, it is not linear or convex. It is called black-box.</li>
+<li>Evaluation: usually there is restriction on the number of trials to evaluate <span class="math">\(f\)</span>. derivative-free</li>
+<li>Target: the target is to find global optimizaion <span class="math">\(x^\*\)</span> to max <span class="math">\(f\)</span>. It is called global optimization.</li>
+<li>With these, Bayesian optimization is also called black-box derivative-free global optimization.  </li>
+</ol>
+<p>It mainly includes two parts: Gaussian Process Regression and Acquisition Function</p>
+<ol>
+<li>GPR: based on prior and observations to calculate the posterior distribution</li>
+<li>AF: from the posterior of GPR to get surrogate to find next point to be evaluated</li>
+</ol>
+<p>To be continued.</p>
+<script type="text/javascript">if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width < 768) ? "left" : align;
+        indent = (screen.width < 768) ? "0em" : indent;
+        linebreak = (screen.width < 768) ? 'true' : linebreak;
+    }
+    
+    var mathjaxscript = document.createElement('script');
+    var location_protocol = (false) ? 'https' : document.location.protocol;
+    if (location_protocol !== 'http' && location_protocol !== 'https') location_protocol = 'https:';
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript'; 
+    mathjaxscript.src = location_protocol + '//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js','mhchem.js'], equationNumbers: { autoNumber: 'AMS' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+</script></div>
+    <footer>
+<p class="meta">
+  <span class="byline author vcard">
+    Posted by <span class="fn">
+        <a href="/author/huiming-song.html">Huiming Song</a>
+    </span>
+  </span>
+<time datetime="2021-11-06T00:00:00-05:00" pubdate>Sat 06 November 2021</time>  <span class="categories">
+    <a class='category' href='/category/python.html'>python</a>
+  </span>
+  <span class="categories">
+    <a class="category" href="/tag/python.html">python</a>  </span>
+</p><div class="sharing">
+</div>    </footer>
+  </article>
+
+</div>
+<aside class="sidebar">
+  <section>
+    <h1>Recent Posts</h1>
+    <ul id="recent_posts">
+      <li class="post">
+          <a href="/pages/2021/11/06/recommendation-system-02/">Recommendation System 02</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2021/11/06/recommendation-system-03/">Recommendation System 03</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2021/10/30/recommendation-system-01/">Recommendation System 01</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2021/10/22/zhi-chang-hua-ti-bei-mei-hua-ren-gao-guan-zong-jie-de-zhi-chang-shang-sheng-fang-fa/">职场话题——北美华人高管总结的职场上升方法</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2019/07/27/2019-07-27-week-30-gong-ju-he-ji/">2019-07-27 Week 30 工具合集</a>
+      </li>
+    </ul>
+  </section>
+  <section>
+      
+    <h1>Categories</h1>
+    <ul id="recent_posts">
+        <li><a href="/category/career-growth.html">career growth</a></li>
+        <li><a href="/category/linux.html">Linux</a></li>
+        <li><a href="/category/python.html">python</a></li>
+        <li><a href="/category/rthers.html">Rthers</a></li>
+    </ul>
+  </section>
+ 
+
+  <section>
+  <h1>Tags</h1>
+    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/re.html">re</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/python.html">python</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/sklearn.html">sklearn</a>  </section>
+
+
+    <section>
+        <h1>Social</h1>
+        <ul>
+            <li><a href="https://www.linkedin.com/pub/huiming-song/24/735/349" target="_blank">Linkedin</a></li>
+        </ul>
+    </section>
+    <section>
+        <h1>Blogroll</h1>
+        <ul>
+            <li><a href="http://easysas.blogspot.com/" target="_blank">my old SAS blog</a></li>
+        </ul>
+    </section>
+
+</aside>    </div>
+  </div>
+  <footer role="contentinfo"><p>
+    Copyright &copy;  2015&ndash;2021  shm &mdash;
+  <span class="credit">Powered by <a href="http://getpelican.com">Pelican</a></span>
+</p></footer>
+  <script src="/theme/js/modernizr-2.0.js"></script>
+  <script src="/theme/js/ender.js"></script>
+  <script src="/theme/js/octopress.js" type="text/javascript"></script>
+    <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-65938411-1']);
+    _gaq.push(['_trackPageview']);
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-65938411-1');
+    ga('send', 'pageview');
+</script>
+  <script type="text/javascript">
+    var disqus_shortname = 'songhuiming';
+    var disqus_identifier = '/pages/2021/11/06/recommendation-system-03/';
+    var disqus_url = '/pages/2021/11/06/recommendation-system-03/';
+    var disqus_title = 'Recommendation System 03';
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = "//" + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+     })();
+  </script>
+</body>
+</html>
