@@ -4,7 +4,7 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>leetcode 63. Unique Paths II &mdash; pydata</title>
+  <title>Recommendation System 04 - Gaussian process regression &mdash; pydata</title>
   <meta name="author" content="shm">
 
 
@@ -95,38 +95,86 @@
 <div>
   <article class="hentry" role="article">
 <header>
-      <h1 class="entry-title">leetcode 63. Unique Paths II</h1>
+      <h1 class="entry-title">Recommendation System 04 - Gaussian process regression</h1>
     <p class="meta">
-<time datetime="2018-03-03T00:00:00-06:00" pubdate>Sat 03 March 2018</time>    </p>
+<time datetime="2021-12-26T19:08:00-06:00" pubdate>Sun 26 December 2021</time>    </p>
 </header>
 
-  <div class="entry-content"><p>题目大意:从一个<span class="math">\(m \times n\)</span>的有障碍物的格子上左上角走到右下角，只能向右或者向下走，总共有多少种不同的走法？</p>
-<p>63题和62题很相似，只是格子有障碍物。解决的办法是如果有障碍物，那么那个格子的可行办法是0.</p>
-<p><a href="https://leetcode.com/problems/unique-paths/description/">62. Unique Paths</a></p>
-<p><a href="https://leetcode.com/problems/unique-paths-ii/description/">63. Unique Paths II</a></p>
-<p><a href="https://leetcode.com/problems/minimum-path-sum/description/">64. Minimum Path Sum</a></p>
-<p>使用递推(动态规划)的办法：</p>
-<div class="highlight"><pre><span class="k">class</span> <span class="nc">Solution</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">uniquePathsWithObstacles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obstacleGrid</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">grid</span> <span class="o">=</span> <span class="n">obstacleGrid</span>
-        <span class="n">m</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">obstacleGrid</span><span class="p">)</span>
-        <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">obstacleGrid</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">f</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">m</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">obstacleGrid</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span>
-        <span class="k">def</span> <span class="nf">dp</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
-            <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">m</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
-                <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
-                    <span class="k">if</span> <span class="n">y</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">x</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-                        <span class="k">continue</span>
-                    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="n">y</span> <span class="o">-</span> <span class="mi">1</span><span class="p">][</span><span class="n">x</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="n">y</span><span class="p">][</span><span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-                    <span class="k">else</span><span class="p">:</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="n">y</span><span class="p">][</span><span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="n">y</span> <span class="o">-</span> <span class="mi">1</span><span class="p">][</span><span class="n">x</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="n">y</span><span class="p">][</span><span class="n">x</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
-        <span class="n">dp</span><span class="p">(</span><span class="n">m</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="n">m</span><span class="p">][</span><span class="n">n</span><span class="p">]</span>
-</pre></div>
-
-
+  <div class="entry-content"><p>Before we start Bayesian, we will give a brief introduction of Gaussian Process Regression. </p>
+<p>Suppose there are data <span class="math">\((X_i, y_i), i = 1 \cdots n\)</span>. If we want to learn the relation between <span class="math">\(X\)</span> and <span class="math">\(y\)</span>, we have learned to build a linear regression or a decision tree based model to fit the data. The fitted funciton is like <span class="math">\(y = f(x | \theta)\)</span> where <span class="math">\(\theta\)</span> is the parameter.</p>
+<p>Gaussian process regression is infinite number of regression functions. Each function is like one regresson function. All these fitted functions together will not only give the fitted value, but also the variance.</p>
+<h2>Gaussian process</h2>
+<p>A Gaussian process is a collection of random variables, where any finite number of these are jointly normal distribution which is defined by: 1) the mean function <span class="math">\(m(x)\)</span> and 2) the covariance function <span class="math">\(k(x, x')\)</span>. The function <span class="math">\(\mbox{f}(x) \sim \mbox{GP}(m(x), k(x, x'))\)</span> means
+</p>
+<div class="math">$$ 
+\begin{eqnarray} 
+\mathbb{E}(\mbox{f}(\mathbf{x})) &amp;=&amp; \mbox{m}(\mathbf{x})  \tag{1} 
+\end{eqnarray}
+$$</div>
+<div class="math">$$
+\begin{eqnarray} 
+\mathbb{E}\left(\left(\mbox{f}(\mathbf{x})-\mbox{m}(\mathbf{x})\right)(f(\mathbf{x}')-\mbox{m}(\mathbf{x}'))\right) &amp;=&amp; k(\mathbf{x}, \mathbf{x}')  \tag{2} 
+\end{eqnarray}
+$$</div>
+<p>So the Gaussian process can be expressed as
+</p>
+<div class="math">$$
+f \left(x\right) \sim \mathcal{GP} \left( \mbox{m}(\mathbf{x}),k(\mathbf{x}, \mathbf{x}') \right)
+$$</div>
+<p>高斯过程的任意有限个样本的联合分布为联合正太分布。</p>
+<p>Here for simplify and without loss of generality, we assume the mean is 0. That is,</p>
+<div class="math">$$
+\begin{eqnarray} 
+\mbox{m}(\mathbf{x}) &amp;=&amp; 0 \tag{3} 
+\end{eqnarray}
+$$</div>
+<div class="math">$$
+\begin{eqnarray} 
+k(\mathbf{x}, \mathbf{x}')  
+&amp;=&amp;\mbox{exp}\left[-\frac{1}{2}\left(\mathbf{x}-\mathbf{x}'\right)^{T}\left(\mathbf{x}-\mathbf{x}'\right)\right] \tag{4} 
+\end{eqnarray}
+$$</div>
+<h2>Gaussian process regression</h2>
+<p>Suppose we have <span class="math">\(n\)</span> observations  <span class="math">\(\left(X_i, y_i=f(X_i)\right), i = 1 \cdots n\)</span>, we want to get the prediction given the new data point <span class="math">\(X^*\)</span>. Let's denote the <span class="math">\(n\)</span> observations as <span class="math">\(\mathbf{X}=[X_1, X_2, \ldots, X_n]\)</span> and <span class="math">\(\mathbf{f} = [f(X_{1}), f(X_{2}),\ldots, f(X_{n})]\)</span>. Based on the property of Gaussian process, the new function value <span class="math">\(f^* = f(X^*)\)</span> is jointly normally distributed with the <span class="math">\(n\)</span> observations
+</p>
+<div class="math">$$
+\begin{equation} 
+Pr\left(\begin{bmatrix}\label{eq:GP_Joint} 
+\mathbf{f}\\f^{*}\end{bmatrix}\right) = \mbox{Norm}\left[\mathbf{0}, \begin{bmatrix}\mathbf{K}[\mathbf{X},\mathbf{X}] &amp; \mathbf{K}[\mathbf{X},X^{*}]\\ \mathbf{K}[X^{*},\mathbf{X}]&amp; \mathbf{K}[X^{*},X^{*}]\end{bmatrix}\right] \tag{5} 
+\end{equation}
+$$</div>
+<p>
+where <span class="math">\(\mathbf{K}[\mathbf{X},\mathbf{X}]\)</span> is a <span class="math">\(n \times n\)</span> matric where the element <span class="math">\((i, j)\)</span> is given by the variance function <span class="math">\(k(X_i, X_j)\)</span>, <span class="math">\(\mathbf{K}(\mathbf{X},X^{*})\)</span> is a <span class="math">\(t \times 1\)</span> vector.</p>
+<p>Based on the property of joint normal distribution, the conditonal distribution of one element given the rest is also normally distributed with the univariate normal distribution funciton
+</p>
+<div class="math">$$
+\begin{equation}\label{eq:gp_posterior} 
+Pr(f^*|\mathbf{f}) = \mbox{Norm}(\mu(X^{*}),\sigma^{2}(X^{*})), \tag{6} 
+\end{equation}
+$$</div>
+<p>
+where 
+</p>
+<div class="math">$$
+\begin{eqnarray}\label{eq:GP_Conditional} 
+\mu(X^{*})&amp;=&amp; \mathbf{K}[X^{*},\mathbf{X}]\mathbf{K}[\mathbf{X},\mathbf{X}]^{-1}\mathbf{f}\nonumber \\ 
+\sigma^{2}(X^{*})&amp;=&amp;k(X^{*},X^{*})\!-\!\mathbf{K}[X^{*}, \mathbf{X}]\mathbf{K}[\mathbf{X},\mathbf{X}]^{-1}\mathbf{K}[\mathbf{X},X^{*}]. \tag{7} 
+\end{eqnarray}
+$$</div>
+<p>The formula gives the distribution of the prediction <span class="math">\(f(X^*)\)</span> of the new point <span class="math">\(X^*\)</span>. As you can see, now <span class="math">\(f(X^*)\)</span> is not a point prediction but a random variable with mean=<span class="math">\(\mu(X^{*})\)</span> and variance=<span class="math">\(\sigma^{2}(X^{*})\)</span>. If we want to make a point prediction, then the best prediction will be =<span class="math">\(\mu(X^{*})\)</span>. </p>
+<p><img alt="img1" src="/figures/20211230_gaussian_process_01.png" /></p>
+<p>Next we will give an example of how Gaussian process regression is developed and what it looks like. </p>
+<p><img alt="img2" src="/figures/20211230_gaussian_process_01.png" />
+The mean of the Gaussian process regression (red line) is close to the tune function <span class="math">\(y =f(x)= x\cdot \mbox{sin}(x)\)</span>. At the points where there is an observation (blue solid dot), the predicted value is exactly the same as the observation. So there is no variance on these points. For the area there is no observatons (the left side), the variance is higher than the area where there are some observations. </p>
+<h1>Reference</h1>
+<ol>
+<li><a href="https://www.aidanscannell.com/post/gaussian-process-regression/">Gaussian Process Regression</a></li>
+<li><a href="https://distill.pub/2019/visual-exploration-gaussian-processes/">A Visual Exploration of Gaussian Processes</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/139478368">PR Ⅲ：从高斯分布到高斯过程、高斯过程回归、贝叶斯优化</a></li>
+<li><a href="https://www.borealisai.com/en/blog/tutorial-8-bayesian-optimization/">Bayesian optimization</a></li>
+<li><a href="https://scikit-learn.org/stable/auto_examples/gaussian_process/plot_gpr_noisy_targets.html#sphx-glr-auto-examples-gaussian-process-plot-gpr-noisy-targets-py">Gaussian Processes regression: basic introductory example</a></li>
+<li><a href="https://scikit-learn.org/stable/auto_examples/gaussian_process/plot_gpr_prior_posterior.html#sphx-glr-auto-examples-gaussian-process-plot-gpr-prior-posterior-py">Illustration of prior and posterior Gaussian process for different kernels</a></li>
+</ol>
 <script type="text/javascript">if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
     var align = "center",
         indent = "0em",
@@ -190,11 +238,11 @@
         <a href="/author/huiming-song.html">Huiming Song</a>
     </span>
   </span>
-<time datetime="2018-03-03T00:00:00-06:00" pubdate>Sat 03 March 2018</time>  <span class="categories">
-    <a class='category' href='/category/python.html'>python</a>
+<time datetime="2021-12-26T19:08:00-06:00" pubdate>Sun 26 December 2021</time>  <span class="categories">
+    <a class='category' href='/category/python.html'>Python</a>
   </span>
   <span class="categories">
-    <a class="category" href="/tag/python.html">python</a>,    <a class="category" href="/tag/leetcode.html">leetcode</a>,    <a class="category" href="/tag/dynamic-programming.html">dynamic programming</a>  </span>
+    <a class="category" href="/tag/python.html">python</a>,    <a class="category" href="/tag/data-mining.html">data mining</a>,    <a class="category" href="/tag/sklearn.html">sklearn</a>  </span>
 </p><div class="sharing">
 </div>    </footer>
   </article>
@@ -280,9 +328,9 @@
 </script>
   <script type="text/javascript">
     var disqus_shortname = 'songhuiming';
-    var disqus_identifier = '/pages/2018/03/03/leetcode-63-unique-paths-ii/';
-    var disqus_url = '/pages/2018/03/03/leetcode-63-unique-paths-ii/';
-    var disqus_title = 'leetcode 63. Unique Paths II';
+    var disqus_identifier = '/pages/2021/12/26/recommendation-system-04-gaussian-process-regression/';
+    var disqus_url = '/pages/2021/12/26/recommendation-system-04-gaussian-process-regression/';
+    var disqus_title = 'Recommendation System 04 - Gaussian process regression';
     (function() {
       var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
       dsq.src = "//" + disqus_shortname + '.disqus.com/embed.js';
