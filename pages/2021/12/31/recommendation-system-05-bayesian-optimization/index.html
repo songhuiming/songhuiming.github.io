@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Recommendation System 05 - Bayesian Optimization &mdash; pydata</title>
+  <meta name="author" content="shm">
+
+
+
+
+
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+    <link href="/favicon.png" rel="icon">
+
+  <link href="/theme/css/main.css" media="screen, projection"
+        rel="stylesheet" type="text/css">
+
+  <link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic"
+        rel="stylesheet" type="text/css">
+  <link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic"
+        rel="stylesheet" type="text/css">
+</head>
+
+<body>
+  <header role="banner"><hgroup>
+  <h1><a href="/">pydata</a></h1>
+    <h2>Keep Looking, Don't Settle</h2>
+</hgroup>
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>
+        MathJax.Hub.Config({
+            config: ["MMLorHTML.js"],
+            extensions: ["tex2jax.js","TeX/AMSmath.js","TeX/AMSsymbols.js"],
+            jax: ["input/TeX"],
+            tex2jax: {
+                inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+                displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+                processEscapes: false
+            },
+            TeX: {
+                TagSide: "right",
+                TagIndent: ".8em",
+                MultLineWidth: "85%",
+                equationNumbers: {
+                   autoNumber: "AMS",
+                },
+                unicode: {
+                   fonts: "STIXGeneral,'Arial Unicode MS'"
+                }
+            },
+            showProcessingMessages: false
+        });
+</script></header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+</ul>
+
+<form class="search" action="/search.html">
+    <input type="text" class="search-query" placeholder="Search" name="q" id="s">
+</form>
+
+<form action="https://www.google.com/search" method="get">
+    <fieldset role="search">
+       <input type="hidden" name="q" value="site:songhuiming.github.io" />
+       <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+    </fieldset>
+</form>
+
+
+<ul class="main-navigation">
+    <li><a href="/functions/archives.html">Archives</a></li>
+      <li >
+        <a href="/category/career-growth.html">Career growth</a>
+      </li>
+      <li >
+        <a href="/category/linux.html">Linux</a>
+      </li>
+      <li class="active">
+        <a href="/category/python.html">Python</a>
+      </li>
+      <li >
+        <a href="/category/rthers.html">Rthers</a>
+      </li>
+</ul></nav>
+  <div id="main">
+    <div id="content">
+<div>
+  <article class="hentry" role="article">
+<header>
+      <h1 class="entry-title">Recommendation System 05 - Bayesian Optimization</h1>
+    <p class="meta">
+<time datetime="2021-12-31T19:08:00-06:00" pubdate>Fri 31 December 2021</time>    </p>
+</header>
+
+  <div class="entry-content"><p>If we have a function <span class="math">\(f\)</span>, and the objective is to find the point value that can maximize the value of the function. For example, when training DNN, what learning rate or other hyperparameters should we choose to make the loss function as small as possible. Another very practical example: in the allocation of advertisements, when the shopper input a query, the system will propose the corresponding possible advertisements for the allocation system to find the best one to show. Which advertisement will be displayed to the shopper in the end? This is related to many factors, such as the relevance of the advertisement to the query, the click-through rate of the advertisement, the placement of the advertisement, the bid price of the advertisement, and so on. According to these, we will get a comprehensive function, the function <span class="math">\(f\)</span> is the return of all shopper query's potential advertisements. Our topic is to maximize this return, while ensuring that advertising does not affect the shopper's shopping experience.</p>
+<p>Because <span class="math">\(f\)</span> is very complicated, this problem is usually difficult to solve directly (for example, it has many factors) or very expensive (for example, it takes a lot of time to try all learning rates, considering it is continuous) or because of many constraints, leading to <span class="math">\(f\)</span> There is no explicit expression.</p>
+<p>What should we do at this time? In <a href="https://songhuiming.github.io/pages/2021/12/26/recommendation-system-04-gaussian-process-regression/">the previous blog</a>, we introduced the construction of a Gaussian process regression based on the limited observation points to surrogate the real <span class="math">\(f\)</span> and the uncertainty. </p>
+<h3>Acquisition function</h3>
+<p>Now we need to think about how to get more observation points to tune the Gaussian process and fit the data. The acuqisition function takes the mean and the variance at each point of the GPR function and computes a value that indicates how desirable it is to sample next at this position. A good acquisition function should trade off the exploration and exploitation. With acquisiton function, we don't need the real observations but the point based on the acquisition function (usaally the point that max the acquisition funciton, see details below). With this, the main steps for Bayesian Optimization are:</p>
+<ol>
+<li>Choose a surrogate function (here we use Gaussian process regression) to model the true function <span class="math">\(f\)</span> and define its prior distribution (the kernal function of Gaussian process)</li>
+<li>Based on the given observations, calcualte the posterior distribution through Bayesian formula</li>
+<li>Calculate the acuqisition function <span class="math">\(\alpha(x)\)</span>, and determine the next point that maximize the acquisition funciton <span class="math">\(x^* = \mbox{arg max}_x \alpha(x)\)</span> </li>
+<li>Add the new point to the observations and update the posterior</li>
+<li>Repeat the process</li>
+</ol>
+<p><img alt="img1" src="/figures/20211230_bayesian_optimization_01.png" /></p>
+<h2>1. Objective function</h2>
+<p>Function <span class="math">\(f\)</span> like a black box usually is not unknown and expensive to evaluate. That is, the explicit expression of <span class="math">\(f\)</span> is unknown and it can only be evaluated based on the test points. Most of the time, only the noisy observations are available.</p>
+<p>Usually Gaussian Process (GP) with  mean = <span class="math">\(\mu(x)\)</span> and a covariance kernel <span class="math">\(k(x, x')\)</span> is used to surrogate it. That is, for any <span class="math">\(k\)</span> observed points, they have multivariate normal distribution wtih mean = <span class="math">\((\mu(x_0), \ldots, \mu(x_k))\)</span> and covariance matrix <span class="math">\(\Sigma $ with $\Sigma_{ij} = k(x_i, x_j)\)</span>. GP surrogate model for <span class="math">\(f\)</span> means <span class="math">\((f(x_1), \ldots, f(x_k))\)</span> is multivariate normal with mean and variance determined by  <span class="math">\(\mu(x)\)</span> and <span class="math">\(k(x, x')\)</span>.  </p>
+<h2>2. Acquisition Function</h2>
+<table>
+<thead>
+<tr>
+<th>Syntax</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="math">\(X_n\)</span></td>
+<td>n observed data</td>
+</tr>
+<tr>
+<td><span class="math">\(Y_n\)</span></td>
+<td>n observed value</td>
+</tr>
+<tr>
+<td><span class="math">\(\hat{y_n^*}\)</span></td>
+<td>max of the n observed value</td>
+</tr>
+<tr>
+<td><span class="math">\(y^*, x^*\)</span></td>
+<td>final global max and global optimial point</td>
+</tr>
+</tbody>
+</table>
+<p>Some of the popular acuqisition functions are like:</p>
+<h3>2.1. Probability Improvement (PI)</h3>
+<p>PI is to find next <span class="math">\(x_{next}\)</span> s.t. <span class="math">\(f(x)\)</span> will be greater than the maximum from the expirical (denoted with <span class="math">\(y_n^*\)</span>) with a small increse of <span class="math">\(\epsilon\)</span>. Here <span class="math">\(f(x)\)</span> is like a random variable from the posterior distribution <span class="math">\(f(x) \sim N(\mu_n(x), \sigma_n(x))\)</span> </p>
+<ol>
+<li>Select the maximum <span class="math">\(\hat{y_n^*} = \mbox{max}_{i \le n}f(x_i)\)</span> based on <span class="math">\(Y_n\)</span></li>
+<li>For any query point <span class="math">\(x\)</span>, put <span class="math">\(x, X_n, Y_n\)</span> into GP to get the function <span class="math">\(f\)</span> at <span class="math">\(f(x)\)</span>'s distribution with mean <span class="math">\(\mu_n(x)\)</span> and <span class="math">\(\sigma_n(x)\)</span>, which is normal <span class="math">\(f(x) \sim \mathcal{N}(\mu_n(x), \sigma_n(x))\)</span> </li>
+<li>Get <span class="math">\(x_{next}\)</span> which maximize the PI. <span class="math">\(x_{next} = \mbox{argmax PI}_n(x) = \mbox{argmax P} (f(x) \ge \hat{y_n^*} + \epsilon)\)</span></li>
+<li>Calc <span class="math">\(f(x_{next})\)</span>, update <span class="math">\(X_n, Y_n\)</span> by <span class="math">\(x_{next}, f(x_{next})\)</span> and repeat from step 1. </li>
+</ol>
+<div class="math">$$\mbox{argmax PI}_n(x) = \mbox{argmax P} (f(x) \ge \hat{y_n^*} + \epsilon) \\
+= \mbox{argmax P} \left( \frac{f(x) - \mu_n(x)}{\sigma_n(x)} \ge \frac{\hat{y_n^*} + \epsilon - \mu_n(x)}{\sigma_n(x)} \right) \\
+= \mbox{argmax P} \left( \frac{f(x) - \mu_n(x)}{\sigma_n(x)} \le \frac{\mu_n(x) - \hat{y_n^*} - \epsilon}{\sigma_n(x)} \right) \\
+= \mbox{argmax} \Phi\left( \frac{\mu_n(x) - \hat{y_n^*} - \epsilon}{\sigma_n(x)} \right)
+$$</div>
+<p>The parameter <span class="math">\(\epsilon\)</span> is to control exploration and exploitation. </p>
+<h3>2.2. Expected Improvement (EI)</h3>
+<p>When use PI to find the next evaluation point <span class="math">\(x_{next}\)</span>, it cares about the probability of function value <span class="math">\(f(x) \ge \hat{y_n^*} + \epsilon\)</span>. In fact, we should also cares about the distance of function value at evaluation point to the global optimization <span class="math">\(y^8 =f(x^*)\)</span>. That is
+</p>
+<div class="math">$$
+\mbox{arg min}_x \mbox{EI}(x) = \mbox{arg min}_x \mathbb{E}_{f(x) \sim \mathcal{N}(\mu_n(x), \sigma_n(x))}(f(x) - y^*)
+$$</div>
+<p>Since the global optimization point <span class="math">\(y^*\)</span> is unknown, so we use this surrogate to replace the above function
+</p>
+<div class="math">$$
+\mbox{arg max}_x \mbox{EI}(x) = \mbox{arg max}_x \mathbb{E}_{f(x) \sim \mathcal{N}(\mu_n(x), \sigma_n(x))}\left(\mbox{max}\left(f(x) - \hat{y_n^*}, 0 \right)\right)
+$$</div>
+<p>PI cares about the probability while EI cares about how much it is. The detailed steps will be:</p>
+<ol>
+<li>Select the maximum <span class="math">\(\hat{y_n^*} = \mbox{max}_{i \le n}f(x_i)\)</span> based on <span class="math">\(Y_n\)</span></li>
+<li>For any query point <span class="math">\(x\)</span>, put <span class="math">\(x, X_n, Y_n\)</span> into GP to get the function <span class="math">\(f\)</span> at <span class="math">\(f(x)\)</span>'s distribution with mean <span class="math">\(\mu_n(x)\)</span> and <span class="math">\(\sigma_n(x)\)</span>, which is normal <span class="math">\(f(x) \sim \mathcal{N}(\mu_n(x), \sigma_n(x))\)</span> </li>
+<li>define <span class="math">\(a^+=\mbox{max}(a, 0)\)</span> and expected distance <span class="math">\(\Delta_n(x) = \mu_n(x) - \hat{y_n^*}\)</span></li>
+<li>The max expectation improvement point <span class="math">\(x_{next} = \mbox{arg max}_x \mathbb{E}_{f(x) \sim \mathcal{N}(\mu_n(x), \sigma_n(x))}\left(\left(f(x) - \hat{y_n^*} \right)^+\right)\)</span></li>
+<li>After getting <span class="math">\(x_{next}\)</span>, put the new data point <span class="math">\((x_{next}, f(x_{next}))\)</span> into the observations and repeat the processes above.</li>
+</ol>
+<h3>2.3. Thompson Sampling</h3>
+<p>In PI and EI, the next point <span class="math">\(x_{next}\)</span> is a single point to maximize some acquisition function. Rather than using one point, it is also possible to draw some points from the posterior distribution such that these points could represent the posterior function. Thompson sampling explots this by drawing such a sample from the posterior distribution and thenchoose the next point <span class="math">\(x_{next}\)</span>. Thompson Sampling balances expolration and exploitation in this way:</p>
+<ol>
+<li>Locations with large variance have higher uncertainty. Optimizing such samples will help exploration. </li>
+<li>Samples from current data points have no uncertainty. So if sampling from the surrogate posterior will help exploitation. </li>
+</ol>
+<h3>2.4. Upper Confidence Bound (UCB)</h3>
+<p>UCB is the most straightforward method. It is defined as
+</p>
+<div class="math">$$
+\mbox{UCB}(x^*) = \mu(x^*) + \beta * \sigma(x^*)
+$$</div>
+<p>
+This setup will favor the region that <span class="math">\(\mu(x^*)\)</span> is large (for exploitation) or regions that <span class="math">\(\sigma(x^*)\)</span> (for exploration) is large. The parameter <span class="math">\(\beta\)</span> is to trade off these two tendencies. </p>
+<h3>2.5. Others</h3>
+<p>Some other acquisition funciton are like Knowledge Gradient and Entropy Search. </p>
+<h2>3. Other surrogate functions</h2>
+<p>In addition to the Gaussian process, there are some other functions that can work as the surrogate function. For example, <a href="https://www.cs.ubc.ca/~hutter/papers/10-TR-SMAC.pdf">random forest</a> is used for sequential model based algorithm; <a href="https://proceedings.neurips.cc/paper/2011/file/86e8f7ab32cfd12577bc2619bc635690-Paper.pdf">Tree-Parzen estimator</a> works to model the linklihood of the data rather than the posterior.</p>
+<h2>4. tools</h2>
+<p><a href="https://scikit-optimize.github.io/stable/">scikit-loptimize</a> provides some examples how to do <a href="https://scikit-optimize.github.io/stable/auto_examples/bayesian-optimization.html">Bayesian optimization</a>. <a href="https://github.com/fmfn/BayesianOptimization">This Bayesian optimization tool</a> also provides the function to implement the global optimization with Gaussian process. <a href="https://botorch.org/">BoTorch</a> provides a scalable tool to implement Bayesian optimization with pyTorch which can leverage GPU to boost the training speed.</p>
+<h2>5. An simple example</h2>
+<p>To be continued with BOTorch example.</p>
+<h1>Reference</h1>
+<ol>
+<li><a href="https://distill.pub/2020/bayesian-optimization/">Exploring Bayesian Optimization</a></li>
+<li><a href="https://www.aidanscannell.com/post/gaussian-process-regression/">Gaussian Process Regression</a></li>
+<li><a href="https://www.borealisai.com/en/blog/tutorial-8-bayesian-optimization/">Bayesian optimization</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/139478368">PR Ⅲ：从高斯分布到高斯过程、高斯过程回归、贝叶斯优化</a></li>
+<li><a href="https://github.com/pytorch/botorch">pytorch/botorch</a></li>
+<li><a href="https://github.com/GPflow/GPflowOpt">GPflow/GPflowOpt</a></li>
+<li><a href="https://github.com/scikit-optimize/scikit-optimize">scikit-optimize/scikit-optimize</a></li>
+</ol>
+<script type="text/javascript">if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width < 768) ? "left" : align;
+        indent = (screen.width < 768) ? "0em" : indent;
+        linebreak = (screen.width < 768) ? 'true' : linebreak;
+    }
+    
+    var mathjaxscript = document.createElement('script');
+    var location_protocol = (false) ? 'https' : document.location.protocol;
+    if (location_protocol !== 'http' && location_protocol !== 'https') location_protocol = 'https:';
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript'; 
+    mathjaxscript.src = location_protocol + '//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js','mhchem.js'], equationNumbers: { autoNumber: 'AMS' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+</script></div>
+    <footer>
+<p class="meta">
+  <span class="byline author vcard">
+    Posted by <span class="fn">
+        <a href="/author/huiming-song.html">Huiming Song</a>
+    </span>
+  </span>
+<time datetime="2021-12-31T19:08:00-06:00" pubdate>Fri 31 December 2021</time>  <span class="categories">
+    <a class='category' href='/category/python.html'>Python</a>
+  </span>
+  <span class="categories">
+    <a class="category" href="/tag/python.html">python</a>,    <a class="category" href="/tag/data-mining.html">data mining</a>,    <a class="category" href="/tag/sklearn.html">sklearn</a>,    <a class="category" href="/tag/pytorch.html">pytorch</a>  </span>
+</p><div class="sharing">
+</div>    </footer>
+  </article>
+
+</div>
+<aside class="sidebar">
+  <section>
+    <h1>Recent Posts</h1>
+    <ul id="recent_posts">
+      <li class="post">
+          <a href="/pages/2021/12/31/recommendation-system-05-bayesian-optimization/">Recommendation System 05 - Bayesian Optimization</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2021/12/26/recommendation-system-04-gaussian-process-regression/">Recommendation System 04 - Gaussian process regression</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2021/11/06/recommendation-system-03/">Recommendation System 03</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2021/11/06/recommendation-system-02/">Recommendation System 02</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2021/10/30/recommendation-system-01/">Recommendation System 01</a>
+      </li>
+    </ul>
+  </section>
+  <section>
+      
+    <h1>Categories</h1>
+    <ul id="recent_posts">
+        <li><a href="/category/career-growth.html">career growth</a></li>
+        <li><a href="/category/linux.html">Linux</a></li>
+        <li><a href="/category/python.html">Python</a></li>
+        <li><a href="/category/rthers.html">Rthers</a></li>
+    </ul>
+  </section>
+ 
+
+  <section>
+  <h1>Tags</h1>
+    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/re.html">re</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/python.html">python</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/sklearn.html">sklearn</a>  </section>
+
+
+    <section>
+        <h1>Social</h1>
+        <ul>
+            <li><a href="https://www.linkedin.com/pub/huiming-song/24/735/349" target="_blank">Linkedin</a></li>
+        </ul>
+    </section>
+    <section>
+        <h1>Blogroll</h1>
+        <ul>
+            <li><a href="http://easysas.blogspot.com/" target="_blank">my old SAS blog</a></li>
+        </ul>
+    </section>
+
+</aside>    </div>
+  </div>
+  <footer role="contentinfo"><p>
+    Copyright &copy;  2015&ndash;2021  shm &mdash;
+  <span class="credit">Powered by <a href="http://getpelican.com">Pelican</a></span>
+</p></footer>
+  <script src="/theme/js/modernizr-2.0.js"></script>
+  <script src="/theme/js/ender.js"></script>
+  <script src="/theme/js/octopress.js" type="text/javascript"></script>
+    <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-65938411-1']);
+    _gaq.push(['_trackPageview']);
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-65938411-1');
+    ga('send', 'pageview');
+</script>
+  <script type="text/javascript">
+    var disqus_shortname = 'songhuiming';
+    var disqus_identifier = '/pages/2021/12/31/recommendation-system-05-bayesian-optimization/';
+    var disqus_url = '/pages/2021/12/31/recommendation-system-05-bayesian-optimization/';
+    var disqus_title = 'Recommendation System 05 - Bayesian Optimization';
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = "//" + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+     })();
+  </script>
+</body>
+</html>
