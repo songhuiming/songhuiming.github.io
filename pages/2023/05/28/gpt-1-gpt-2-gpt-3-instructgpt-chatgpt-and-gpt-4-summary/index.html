@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary &mdash; pydata</title>
+  <meta name="author" content="shm">
+
+
+
+
+
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+    <link href="/favicon.png" rel="icon">
+
+  <link href="/theme/css/main.css" media="screen, projection"
+        rel="stylesheet" type="text/css">
+
+  <link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic"
+        rel="stylesheet" type="text/css">
+  <link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic"
+        rel="stylesheet" type="text/css">
+</head>
+
+<body>
+  <header role="banner"><hgroup>
+  <h1><a href="/">pydata</a></h1>
+    <h2>Keep Looking, Don't Settle</h2>
+</hgroup>
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script>
+        MathJax.Hub.Config({
+            config: ["MMLorHTML.js"],
+            extensions: ["tex2jax.js","TeX/AMSmath.js","TeX/AMSsymbols.js"],
+            jax: ["input/TeX"],
+            tex2jax: {
+                inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+                displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+                processEscapes: false
+            },
+            TeX: {
+                TagSide: "right",
+                TagIndent: ".8em",
+                MultLineWidth: "85%",
+                equationNumbers: {
+                   autoNumber: "AMS",
+                },
+                unicode: {
+                   fonts: "STIXGeneral,'Arial Unicode MS'"
+                }
+            },
+            showProcessingMessages: false
+        });
+</script></header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+</ul>
+
+<form class="search" action="/search.html">
+    <input type="text" class="search-query" placeholder="Search" name="q" id="s">
+</form>
+
+<form action="https://www.google.com/search" method="get">
+    <fieldset role="search">
+       <input type="hidden" name="q" value="site:songhuiming.github.io" />
+       <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+    </fieldset>
+</form>
+
+
+<ul class="main-navigation">
+    <li><a href="/functions/archives.html">Archives</a></li>
+      <li >
+        <a href="/category/career-growth.html">Career growth</a>
+      </li>
+      <li >
+        <a href="/category/linux.html">Linux</a>
+      </li>
+      <li class="active">
+        <a href="/category/python.html">Python</a>
+      </li>
+      <li >
+        <a href="/category/rthers.html">Rthers</a>
+      </li>
+</ul></nav>
+  <div id="main">
+    <div id="content">
+<div>
+  <article class="hentry" role="article">
+<header>
+      <h1 class="entry-title">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</h1>
+    <p class="meta">
+<time datetime="2023-05-28T00:00:00-05:00" pubdate>Sun 28 May 2023</time>    </p>
+</header>
+
+  <div class="entry-content"><h2>1. GPT-1</h2>
+<p><a href="https://s3-us-west-2.amazonaws.com/openai-assets/research-covers/language-unsupervised/language_understanding_paper.pdf">Improving Language Understandingby Generative Pre-Training</a></p>
+<h3>What the problem GPT-1 solve?</h3>
+<p>Before GPT-1, NLP was usually a supervised model. For each task, there are some labeled data, and then develop a suoervised model based on these labeled data. There are several problems with this approach: First, labeled data is required. But NLP does not like CV which has a well-labeled data imagenet. Second, the models trained by these different tasks are not very general. For example, it is difficult to directly use the model trained by translation on classification. </p>
+<p>GPT-1 puts forward some ideas: First, there are a lot of texts without labels in reality, can we use these large amount of unlabeled data? Second, is it possible to pre-train a general model that can be transfered to handle different tasks? However, leveraging the unlabeled data is challenging for 2 main reasons. First, what objective function should be used to optimize to learn the text representation that can be transferable? Second, there is no consensus on the model to transfer these learned representations to the target task. </p>
+<p>GPT-1 used the semi-supervised approach to achieve this objective: it used a self-supervised (which is called unsupervised in the paper) pre-trained model to learn the text representation from the large amount of ublabeled data, and it used supervised models to fine-tune for each sub-task with annotated training data. I'd call it self-supervised rather than unsupervised as in ML, unsupervised model usually means the data has no labels and the task are more like clustering. Here the semi-supervised only means it does not need manual labelled data but just predict the next token (word) from the tokens (words) up to current time. More details will be introduced in the models details below.</p>
+<p>For model structure, GPT-1 uses <code>Transformer decoder</code> because they think it provides a more structured memory for handling the long-term dependencies in text which results in robust transfer performance across different tasks. Compared to BERT which is also based on Transformer but it uses <code>Transformer encoder</code>. This means GPT-1 chooses a more difficult way than BERT because decode only uses informaiton until <span class="math">\(t\)</span> to predict the next token at <span class="math">\(t+1\)</span>, while encoder will leverage the information before and after the masked token to predict, which is easier and performance might be better because the tokens afterwards have already been seen to make the prediciton. That is why GPT is called unidirectional (from left to right) while BERT is called Bi-directionsl (use words before and after the masked token to predict).</p>
+<h3>How does GPT-1 work (model framework)?</h3>
+<p>As introduced above, GPT-1 includes two stages. The first stage is learning a high-capacity language
+model on a large corpus of text. This is followed by a fine-tuning stage, where we adapt the model to
+a discriminative task with labeled data.</p>
+<h4>1. Unsupervisded (self-supervised) pre-trained model</h4>
+<p>This task is to predict the token <span class="math">\(u_i\)</span> based on the previous <span class="math">\(k\)</span> tokens <span class="math">\((u_{i-k}, \cdots, u_{i-1})\)</span>. Given the tokens <span class="math">\(\mathcal{U} = \{u_1, \cdots, u_n \}\)</span>, the objective is to maximize the probability likelihood to predict the next word
+</p>
+<div class="math">$$
+L_1(\mathcal{U}) = \sum_i \log P(u_i | u_{i-k}, \cdots, u_{i-1}; \Theta)
+$$</div>
+<p>
+where <span class="math">\(k\)</span> is the size of the context window and the conditional probability <span class="math">\(P\)</span> is a NN model with parameters <span class="math">\(\Theta\)</span>. The bigger the <span class="math">\(k\)</span>, the longer of the previous text that the model will see. So a bigger <span class="math">\(k\)</span> usually enable the model to learn and remember better.</p>
+<ol>
+<li>
+<p>Since <span class="math">\(L_1(\mathcal{U}) = \sum_i \log P(u_i | u_{i-k}, \cdots, u_{i-1}; \Theta) = \log \prod_i P(u_i | u_{i-k}, \cdots, u_{i-1}; \Theta)\)</span> and <span class="math">\(\prod_i P(u_i | u_{i-k}, \cdots, u_{i-1}; \Theta)\)</span> is the joint probability of the prediciton for each word. So maximizing this joint probability is to find the <span class="math">\(\Theta\)</span> so that the predicted words are the same as the input text. </p>
+</li>
+<li>
+<p>As in the formula above, here GPT-1 choose to predict the next word based on the previous <span class="math">\(k\)</span> words, while BERT will use the words before and after the target word. This makes the task in GPT a little more difficult than BERT, and thus its performance may not be as good as BERT in some tasks (which is verified in BERT paper pubished several months after GPT-1). </p>
+</li>
+</ol>
+<p>In the experiment, the model is a multi-layer Transfromer decoder. It applies a multi-head self-attention operation over the input tokens followed by position-wise feedforward layers. Through this transformation, the author cleverly found an objective to optimize.</p>
+<div class="math">$$ \begin{aligned}
+ &amp; h_0 = U W_c + W_p \\
+ &amp; h_l = \mbox{transformer_block} (h_{l-1}), \forall i \in [1, n]  \\
+ &amp; P(u) = \mbox{softmax} (h_n W_e^{T})
+\end{aligned}$$</div>
+<p>where <span class="math">\(U = (u_{-k}, \cdots, u_{-1})\)</span> is the context token vector, <span class="math">\(h_0\)</span> is the mapping projection of <span class="math">\(U\)</span>, <span class="math">\(W_c\)</span> is the token embedding and <span class="math">\(W_p\)</span> is the position embedding. </p>
+<h4>2. Supervised fine-tuning</h4>
+<p>After the generative model is trained from the unlabelled data, GPT-1 fine tuned the pre-trained model on the subtasks by adding a task specific layer after the last layer of the pre-trained model. The parameters from the pre-trained model are adapted to the supervised subtasks by fine-tuning on the labeled data <span class="math">\(\mathcal{C}\)</span>, in which each instance is a sequence of input tokens <span class="math">\(x^1, \cdots, x^m\)</span> along  a label <span class="math">\(y\)</span>. The inputs are passed throught the pre-trained transformer block to get the activation <span class="math">\(h_l^m\)</span>, which is fed into a linear layer with softmax to predict the probability for <span class="math">\(y\)</span>:
+</p>
+<div class="math">$$
+P(y|x^1, \cdots, x^m) = \mbox{softmax}(h_l^m W_y)
+$$</div>
+<p>
+The objective is to maximize the likelihood
+</p>
+<div class="math">$$
+L_2(\mathcal{C}) = \sum_{(x, y)} \log (P(y|x^1, \cdots, x^m))
+$$</div>
+<p><strong>Auxiliary training objective</strong>: rather than maximizing the likelihood funciton separately, the authors find that including language modeling as an auxiliary objective to the fine-tuning helped improving the generalizaiton of the supervised model and accelerating the convergance. So the final objective is to maximize the added two objective funciton with parameter <span class="math">\(\lambda\)</span>
+</p>
+<div class="math">$$
+L_3(\mathcal{C}) = L_2(\mathcal{C})+ \lambda * L_1(\mathcal{C})
+$$</div>
+<h4>3. Supervised model tasks and input transformation</h4>
+<p>The input to the transformer decode is a sequence of tokens. For the subtasks like classification, it can be directly input to the transformer decoder. For other tasks like Entailment, Similarity and Multiple choices, the data was re-structured by adding some special tokens to indicate the <code>Start, Delim and Extract</code> (<code>&lt;BOS&gt;, &lt;EOS&gt;, &lt;PAD&gt;</code> etc) as is shown in the Figure 1 below. After the data being re-structured to the uniformly format, it will be split to tokens as the input to transformer decoder as is shown in Figure 2. </p>
+<p>As the previous section described, in the fine-tuning step, the objective is the auxiliary objective which is the added two objective from the next word prediction in the pre-training model and the classification task in the fine-tuning tasks. So the output from the transformer in the fine-tuning task include two parts: text prediction and the output for classifier (See Figure 2).</p>
+<p><img alt="Figure 1" src="/figures/20230508_GPT_02.png" /></p>
+<p><img alt="Figure 2" src="/figures/20230508_GPT_01.png" /></p>
+<h3>Analysis and discussion</h3>
+<p>The experiment results will be ignored here. But in the Analysis section the authors provides some useful informaion why they choose transformer rather than the other languages models like LSTM.</p>
+<p>The first observation is that the more number of layers transferred from the pre-trained model to the fine-tuning tasks, the better the performance (accuracy) is. That is, one way to improve the model performance is to increase the number of model layers (and the layer size = d_model). That is what GPT-2/3/4 will do.</p>
+<p>The second observation is that transformer can learn to improve its language model capability with the more structured attentional memory (My understanding is that transformer has much more parameters and the attention mechanism can help to selectively remember the useful information). The author verifies this by zero-shot learning. That is, use the pre-trained model directly without fine-tuning on the subtasks. The performance of transformer is more stable and better than LSTM. That is also what GPT-2 will focus on.</p>
+<h2>2. GPT-2</h2>
+<p><a href="https://d4mucfpksywv.cloudfront.net/better-language-models/language_models_are_unsupervised_multitask_learners.pdf">Language Models are Unsupervised Multitask Learners</a></p>
+<h3>What the problem GPT-2 solve?</h3>
+<p>As discussed at the end of GPT-1 (and also stimulated by BERT?), the pre-trained model performance can be improved with more complex model (more layer - deeper, higher layer size - wider). It also can be used in the target tasks directly (zero-shot learning) and beat the performance of LSTM. That is GPT-2. Similar to GPT-1, GPT-2 is also the self-supervised model with transformer decoder but much more parameters. And GPT-2 mainly focus on zero-shot learning.</p>
+<p>Why zero-shot? BERT which was introduced after GPT-1 outperformed GPT-1 in many tasks. In the last section of GPT-1, it shows the pre-trained model performance could be improved with bigger model. But if just purely increasing the parameters, the value of the GPT-2 paper may not mean too much. So GPT-2 wants to discuss from the other aspect that the model can do zero-shot: without additional training, the model can performs good in some tasks. This also shows that the gpt model has a strong generalization ability, which in fact is lacked in BERT.</p>
+<h3>How does GPT-2 work (model framework)?</h3>
+<p>Because it doesn't have fine-tuning tasks, GPT-2 does not need the special tokens like (<code>&lt;BOS&gt;, &lt;EOS&gt;</code> as GPT-1 did. Instead, GPT-2 uses a <code>promot</code> to control the input to the model. A prompt is a small piece of text provided to the model, and the model will generate the additional text based on this input. The prompt is task specific and depends on the specific input sequence and task.</p>
+<p>In contrast, GPT-2 uses a prompt to control the input to the model. A prompt is a small piece of text that is provided to the model as an initial input, and the model generates additional text based on this input. The prompt is task-specific and depends on the specific input sequence and task. For example, to translate to French, the prompt is like "translate to french", followed by Engligh sentences, and then French sentences. So the example data is a sequence like <code>(translate to french, english text, french text)</code>. </p>
+<h4>1. Data</h4>
+<p>Because GPT-2 has much more parameters than GPT-1, it requires more training data. To build a large and diverse dateset to collect the natual language demonstrations of tasks, the authors used the Common Crawl data. But the quality of this data set is low, so they picked the relatively higher quality subset from this data: the posts from reddit with at least 3 karma. Another dataset is WenText which is extracted from Dragnet and Newspaper content. The data is cleaned and split by Byte Pair Encoding (BPE). </p>
+<h4>2. Model</h4>
+<p>The model is almost the same as GPT-1 which is transformer decoder, with layer norm was moved to each sub-block and an additional layer norm was added after the final self-attention block. </p>
+<p>There are different setups of the number of transformer layers and the d_model. </p>
+<table>
+<thead>
+<tr>
+<th>Parameters</th>
+<th>Layers</th>
+<th>d_model</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>117M</td>
+<td>12</td>
+<td>768</td>
+</tr>
+<tr>
+<td>345M</td>
+<td>24</td>
+<td>1024</td>
+</tr>
+<tr>
+<td>762M</td>
+<td>36</td>
+<td>1280</td>
+</tr>
+<tr>
+<td>1542M</td>
+<td>48</td>
+<td>1600</td>
+</tr>
+</tbody>
+</table>
+<h4>3. Zero-shot learning performance on the NLP tasks</h4>
+<p><img alt="Table 3" src="/figures/20230508_GPT_03.png" /></p>
+<p>From the experiment it shows that: 1) GPT-2 with zero-shot can outperform most of the other SOTA zero-shot models on the NLP tasks (with the corresponding datasets). 2) As the number of parameters increased, GPT-2 performance also increased. The largest model almost beat all the SOTA models on these tasks.</p>
+<h3>Analysis and discussion</h3>
+<p>GPT-2 has similar performance as the supervised model on some tasks like reading comprehension and its performance is not far away from humen performance, but on the other tasks like QA it still does not work well and is no better than random, especially it's far away from human performance. When compared with the other self-supervised pre-trained models like BERT with similar number of parameters, GPT-2 does not beat their performance on the sub-tasks. That means although zero-shot learning can provide a strong pre-trained model, it may still need some fine-tuning on the specific tasks to boost its performance on the specific tasks. The quesiton is, does it need as much labelled data as the fine-tuning in each subtask or it just needs a small amount of labeled data? The following paper GPT-3 shows only a small data already (few-shot learning or even one-shot learning) helps a lot to improve the performane.</p>
+<p><img alt="Figure 4" src="/figures/20230508_GPT_04.png" /></p>
+<p>The second observaiton is that model performance still increases as the number of parameters increases (more layers and larger layer size). As the plot shown above, with the number of parameters increased in LM from 117M to 1542M, the perplexity decreased in both the training data and the test data. That also what GPT-3 will do: increase the number of model parameters and increase the training data size at the same time. </p>
+<p>The last finding is that GPT-2 can write news articles. Although the author did not spend too much space discussing this feature, this feature is one of the main reasons why the GPT series will shine in the future - it can generate contents. We will discuss this below. </p>
+<h2>3. GPT-3</h2>
+<h3>What the problem GPT-3 solve?</h3>
+<p>Models trained on the specific target task usually need task-specific dataset and task-specific fine-tuning, and thus need some labeled data. There are some limitations for this: 1) specific data for each task limits the generalizaiton of the trained model. And for many tasks it is hard to collect a large supervised training dataset; 2) the model performance may depends on the data: the potential of the trained model has a relation with the expressiveness of the model and the narrowness of the training distribution. When large model is fine-tuned on the parrow task distribution, large models do not necessarily generalize better. In other words, the fine-tuned model performing better does not mean the large pre-trained model is better. It may be just because the fine-tuning training data has overlaps witht the evaluaiton data; 3) humans can learn more efficiently without large amount of data.</p>
+<p>To solve these concerns, GPT-3 proposed these ideas: </p>
+<p>First: It trained a model with broad set of skills and pattern recognizaiton abiities at training time, and relies on this ability in inference time for the new tasks. Specifically, GPT-3 trains a good model with great generalizaiton capability (meta-learning) and it does not update the parameters in the large pre-trained model for the subtasks (in-context learning), but only update the output weight for that task (usually it is the last last layer) with a few data samples (few-shot learning). </p>
+<p>It is like adding a layer for the specific task. In few-shot learning, the big model parameters will not be updated so that the generalization capability and the pattern recognizaiton capability from the pre-trained model will be retained. It only updates the paramters of the last layer for that specific task with a few samples for that specific task. For example, if it is a classificaiton task, it will have a layer for calssificaion and the paramters for that layer will be upated by the calssificaiton task data. The other paramters in the pre-trained models are frozen.</p>
+<p><img alt="Figure 5" src="/figures/20230508_GPT_05.png" /></p>
+<p>For examle in the Figure above, the big training data may have already many cases like the math sum, text work correction or translate from one language to another. In the pre-trained model, it will learn from these data to understand the task and develop a broad set of skills and pattern recognizaiton capabilities (self-supervised here with SGD). After it is learned, the big pre-trained model parameters will not be updated. It learns this capability and rapidly adapt to or recognize the task in infreence time. </p>
+<p>Second: it trained a big model with 100 times more data and 10 times more parameters to learn. GPT-3 has 175 billion parameters and is evaluated under 3 conditions: 1) few-shot learning, which uses 10 to 100 data points to tune for the specific task. 2) one-shot learning, where only one data is used; and 3) zero-shot learning, where no additional data is used. </p>
+<h3>How does GPT-3 work (model framework)?</h3>
+<h4>1. Data</h4>
+<p>GPT-2 uses reddit data from Common Crawl (CW) datasets. In GPT-3, as the model increased 10x time, the whole Common Crawl dataset was used. They also remove the duplicates of the data by comparing the two sets of the dataset. As the quality of this data is low, the authors used a model to filter out the low quality data. </p>
+<p>The final data includes filtered Common Crawl, WebText2, Books1, Books2 and Wikipedia. As the CW data quality is not high, the sampling weights for CW is set low compared to its big size. </p>
+<h4>2. Model and Approach</h4>
+<p>The model that GPT-3 used is still transformer decoder which predicts the next token based on the previous tokens. It is similar to GPT-2 structure but using alternating dense and locally banded sparse attention patterns in the layers of transformer.</p>
+<p>The authors explains the details of the approach they used, which includes few-shot, one-shot and zero shot, together with fine-tuning which they did not use, as shown in the Figure below.</p>
+<p><img alt="Figure 6" src="/figures/20230508_GPT_06.png" /></p>
+<p><strong>Fine-tuning</strong>: fine-tuning is to collect thousands of data points for each task to refresh the parameters in the model. It usually has strong performance on the benchmark data, but it needs a new large dataset for each task. GPT-3 can be fine-tuned and it might be a promosing direction in the future. In fact, in the following work of InstructGPT, the authors begin to tune the parameters based on the feedback from human annotations.</p>
+<p><strong>Few-shot</strong>: the model will be given a few samples data of the task at the inference time, but no weights of the pre-trained model will be updated. For example, in the inference time of translation from English to French, first it will be given the task description, then some examples (10 to 100) from English to French will be given. And then a prompt will be given, the model will automatically generate the French translation based on the input in prompt. The advantage here is that only a limited number of input data is needed. The disadvantage is that the performance of few-shot learning usually is not as good as the SOTA fine-tuned model. </p>
+<p><strong>One-shot</strong>: it's similar to few-shot setup, but just one sample data is given after the task description. This is close to how the tasks are communicated to human. When asking human to do something, it is common to give an example of the task.</p>
+<p><strong>Zero-shot</strong>: there is no data after the task description. From the model using aspect, this is the easiest way to go. But it is also the most challenging setup for model to understand the task as no example is given. </p>
+<p>One potential cave for few-shot or one-shot is: how can it remember or understand the previous input data informaion when there is new input data? For example, if 10 data points are used in few-shot for the first time, if there are another 15 data points for the second time, it seems the setup of few-shot learning cannot link the input inforation from the first 10 and the second 15 data points.</p>
+<p>The experiment result part will be ignored. Generally it discussed GPT-3 performance on more than 10 tasks.</p>
+<h3>Limitations</h3>
+<p>Some limitations in GPT-3 are discussed and the potential improvements are also discussed for future work.</p>
+<p>First, it is hard and expensive to train considering the large amount of parameters and the training dataset. It requires huge computing resources and time to train the model.</p>
+<p>Second, GPT-3 has weakness in some NLP tasks like text synthesis and some comparison tasks like if two words are used in the same way in the sentence. GPT-3 has difficulty for some common sense physics quesitons to human. For example, it is hard for GPR-3 to answer "If I put cheese into the fridge, will it melt"? </p>
+<p>GPT-3 using unidirectional approaach may have structure and algorithmic limitaion coampred to the bidirection approach. As introduced in GPT-1, this may affect GPT performance in some tasks, like fill-in-the-blank tasks, tasks that involves looking back and comparing two pieces of content, or tasks that require re-reading. Alls these tasks will be easier when the context information before and after the token is known. So expanding the bidirection function in GPT model will be a promising direction for future research (learn from BERT?). </p>
+<p>A more fundmental limiation for GPT-3 is that it is a language model based on text data, so the pre-trained model has no idea about the other domains of experience. Like it cannot handle video data or real-world physical interactions. One promising direction is to include learning objective from humans and fine-tuned with reinforcement learning (that is what <code>InstructGPT/ChatGPT</code> will do), and to add additional modalities such as images and videos (that is what <code>GPT-4</code> will do, it will accepct images or pdf files to descirbe or summarize the input file).</p>
+<h2>4. InstructGPT / ChatGPT</h2>
+<h3>What the problem InstructGPT solve?</h3>
+<p>GPT3 limitation:
+First, it does not remember the previous few-shot inputs. ChatGPT can continuous rememnber what you chated with it before and based on that context information to continue the multi-round chat with you.</p>
+<p>Second, as the model becomes bigger and bigger, the output from GPT-3 sometimes is hard to control. For example, if you ask about What is Gaussian Process, it may generate some low quality text to you. Or sometimes model may generate some harmful informaiton like biased, racist or gender discriminative text. </p>
+<p>Third, language model use self-supervised method to pre-train a big generalization model. As there is no labeled data in self-supervised model, if you want the model to answer some question like "what is Gaussian Process", the training data should have included this information so that the model can learn it. So, in order to let the model have enough generalizaiton capability, the training data text should be big enough.</p>
+<p>The reasons for these unintended behaviors are mainly <code>because the language models's objective is trying to predict the next token (that is that GPT-1/2/3 did, using transformer decoder to predict the next word given the previous tokens), which is different from the objective to follow the user's instruction helpfully and safely</code>. To overcome these limitations, InstructGPT used the labeled data to fine-tune GPT-3 model to align the language model with reinforcement learning from human feedback (RLHF) to fine-tune GPT-3 to follow the human written instructions and use human preferences as the reward signal to fine-tune the model. </p>
+<h3>How does InstructGPT work (model setup)?</h3>
+<p>InstructGPT include fine-tune GPT-3 with labeled data to train a supervised fine-tune(SFT model) to generate outputs, a reward model (RM) to compare the diffent answers generated from SFT, and  reinforcement learning on the reward model to guide the SFT generation. </p>
+<p><img alt="InstructGPT Figure2.png" src="/figures/20230508_InstructGPT_1.png" /></p>
+<p>Step 1. Sample a prompt from the prompt dataset, and then human (or the model) write the answer for that sampled promot. After the promot and the answer is ready, it will be send to fine-tune GPT-3 with supervised learning (SFT). The challenge here is that it is expensive to get human prepare the answers for the prompts. With this model, it can learn how to generate the answers based from the SFT.</p>
+<p>Step 2. When a promot is give, it first use GPT-3 to generagte several answers for the given promot. For example, if 4 answers are generated, they will be marked as A, B, C, D. Then human will just need to rank the answers (e.g., A&gt;B&gt;C=D). In this way, human does not need to write the answers but only just rank the model generated answers. With this comparison data, InstructGPT trains a reward model to compare the 4 <code>&lt;prompt, answer&gt;</code> pairs so that the ranking relation can be larned in the reward model (RM). With this model, it can be used to compare the generated answers and calcualte the reward. </p>
+<p>Step 3. Now they can use the RM to guide the SFT model to generate better results to achieve higher RM reward. InstructGPT use the output of the RM as a scalar reward and fine-tune the supervised policy to optimize this reward. The trained model is called InstructGPT.</p>
+<p>Accordingly, there are 3 datasets: 1) SFT dataset (13k prompts) to train the SFT model; 2) RM dataset (33k prompts) with labeler rankings of model output to train the RM model; and 3) PPO dataset (31k prompts) without human labels as input for RLHF fine-tuning. </p>
+<h4>More details about the models</h4>
+<p><strong>SFT</strong>: it is a supervised model by fine-tuning GPT-3 on the SFT data in which eash data point is a promot and the answers by the labelers. AS there are only 13k data, the model overfits after 1 epoch. However, training for more epochs will help in the RM score model.</p>
+<p><strong>RM</strong>: first, it replaces the last layer of SFT model (which is softmax layer) by a linear layer to output a scalar reward. So for each input <code>&lt;prompt, answer&gt;</code> to the modified SFT model, it will output a scalar value (reward). If one prompt has <span class="math">\(K\)</span> answers, to compare them pairwisely, there will be <span class="math">\(C(K,2)\)</span> combinations. For two answers <span class="math">\(y_w\)</span> and <span class="math">\(y_l\)</span>, if <span class="math">\(y_w\)</span> is better than <span class="math">\(y_l\)</span>,  the purpose is to discriminate the two answers as much as possible, so the loss function is a logit loss of the delta of the two reward <span class="math">\((r(x, y_w) - r(x, y_l))\)</span>. The authors mentions that they used the pairwise answers comparision (where there are <span class="math">\(C(K, 2)\)</span> pairs of data) rather than to select the best answer will help to avoid overfiting.</p>
+<p><strong>RL</strong>: The purpose of RL is to learn a better GPT-3 model <span class="math">\(\pi_{\phi}^{RL}\)</span> to generate the answers. The objective function is designed to guide the model towards generating responses that adhere to the given instructions or constraints provided by users. </p>
+<div class="math">$$ \begin{aligned}
+ \mbox{objective}(\phi) = &amp; E_{(x, y) \sim D_{\pi_{\phi}^{RL}}}[r_{\theta}(x, y) - \beta \log (\pi_{\phi}^{RL}(y|x) / \pi^{SFT}(y|x))] \\
+ &amp; + \gamma E_{x\sim D_{pretrain}}[\log(\pi_{\phi}^{RL}(x))]
+\end{aligned}$$</div>
+<p>It has 3 terms. The meaning of each term is:</p>
+<p>The first term <span class="math">\(E_{(x, y) \sim D_{\pi_{\phi}^{RL}}}[r_{\theta}(x, y)]\)</span> in the objective funciton says that for the new model generated answer <span class="math">\(y\)</span>, it tries to maximize the expectation of the reward model. <span class="math">\(\pi_{\phi}^{SFT}\)</span> is the SFT model from the labeler written data. <span class="math">\(\pi_{\phi}^{RL}\)</span> is the model learned from RL with the generated data, where <span class="math">\(\phi\)</span> is the parameter. It is initialized as the SFT model. <span class="math">\((x, y) \sim \pi_{\phi}^{RL}\)</span> means putting prompt <span class="math">\(x\)</span> into the model <span class="math">\(\pi_{\phi}^{RL}\)</span> to generate answer <span class="math">\(y\)</span>, and then put the generated pair <span class="math">\((x,y)\)</span> into the trained RM to calculate reward, and the final target is to maximize this reward. In this way the new model <span class="math">\(\pi_{\phi}^{RL}\)</span> will be close to the best model from the labeler.</p>
+<p>The second term in the objective is the expection of <span class="math">\(\beta \log (\pi_{\phi}^{RL}(y|x) / \pi_{\phi}^{SFT}(y|x))\)</span>, which is KL divergence. The purpose of adding this term is that: after many interations, <span class="math">\(\pi_{\phi}^{RL}\)</span> and <span class="math">\( \pi_{\phi}^{SFT}\)</span> could be more and more different. However, the reward model <span class="math">\(r_{\theta} $ is trained from the first SFT and the corresponding $y\)</span>. Now if the new model and the original SFT model are different, then the reward model will not work any more to evaluate. Adding this penalized term is to make sure the RM model can still be effective to evaluate the new model <span class="math">\(\pi_{\phi}^{RL}\)</span>. This is what "PPO" means.</p>
+<p>The third term <span class="math">\(\gamma E_{x\sim D_{pretrain}}[\log(\pi_{\phi}^{RL}(x))]\)</span>. That is, for the pretrained data of GPT-3, it calcualtes the loss and adds it to the objective. If <span class="math">\(\gamma = 0\)</span>, it is called PPO-ptx model.</p>
+<p><strong>What ChatGPT did?</strong> ChatGPT use the same method as InstructGPT but with slight difference in the data collection setup. ChatGPT use multi-round dialogue data and fine-tuned from the model in GPT-3.5. </p>
+<h2>5. GPT-4</h2>
+<p>OpenAI <a href="https://arxiv.org/pdf/2303.08774.pdf">GPT-4 Technical Report</a></p>
+<p>GPT-4 is a transformer-style model pretrained to predict next token in a document. GPT-4 is a large multimodela model that can accept both image and text input prompts and output text. It was fine-tuned with RLHF (See above in InstructGPT) to improve the model's broader general knowledge and advanced reasoning capabilities</p>
+<p>GPT-4 training was stable. As the model is very big, it may fail during training process because of many reasons: loss does not converge, gradients exploding, hardware issues like machine failed, network connection broken. All these will bring lots of engineering challenge for model training.  </p>
+<p>Training performance can be predicted ahead of time. OpenAI developed the infrastructure and optimization that have very predictable behavior across multiple scales such that they can predict the final loss of the very large model GPT-4 by extrapolating from models trained with the same methodology but with <span class="math">\(10^{-4}\)</span>x less compute.</p>
+<p><img alt="GPT-4-1-training-loss-prediciton" src="/figures/20230528-GPT-4-1-training-loss-prediciton.png" /></p>
+<p>Capability. GPT-4 improves significantly compared to GPT-3.5. It exhibits human level performance on the majority the professional and academic exams. The model’s capabilities on exams appear to stem primarily from the pre-training process and are not significantly affected by RLHF.</p>
+<p><img alt="GPT-4-2-exam-results.png" src="/figures/20230528-GPT-4-2-exam-results.png" /></p>
+<p>Steerability. GPT-4 allow users to use "system" message to customize the experience within bounds. Generally "system" message tells GPT-4 to follow the users's instruction to provide additional information, instructions, or context during the conversation.</p>
+<p>Overall, the tech report did not touch too much details about the model, the training data and how OpenAI trained the complicated model.  </p>
+<script type="text/javascript">if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width < 768) ? "left" : align;
+        indent = (screen.width < 768) ? "0em" : indent;
+        linebreak = (screen.width < 768) ? 'true' : linebreak;
+    }
+    
+    var mathjaxscript = document.createElement('script');
+    var location_protocol = (false) ? 'https' : document.location.protocol;
+    if (location_protocol !== 'http' && location_protocol !== 'https') location_protocol = 'https:';
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript'; 
+    mathjaxscript.src = location_protocol + '//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js','mhchem.js'], equationNumbers: { autoNumber: 'AMS' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+</script></div>
+    <footer>
+<p class="meta">
+  <span class="byline author vcard">
+    Posted by <span class="fn">
+        <a href="/author/huiming-song.html">Huiming Song</a>
+    </span>
+  </span>
+<time datetime="2023-05-28T00:00:00-05:00" pubdate>Sun 28 May 2023</time>  <span class="categories">
+    <a class='category' href='/category/python.html'>python</a>
+  </span>
+  <span class="categories">
+    <a class="category" href="/tag/python.html">python</a>,    <a class="category" href="/tag/ai.html">AI</a>,    <a class="category" href="/tag/llm.html">LLM</a>  </span>
+</p><div class="sharing">
+</div>    </footer>
+  </article>
+
+</div>
+<aside class="sidebar">
+  <section>
+    <h1>Recent Posts</h1>
+    <ul id="recent_posts">
+      <li class="post">
+          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2021/12/31/recommendation-system-05-bayesian-optimization/">Recommendation System 05 - Bayesian Optimization</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2021/12/26/recommendation-system-04-gaussian-process-regression/">Recommendation System 04 - Gaussian process regression</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2021/12/22/zhi-chang-hua-ti-guan-yu-zhi-chang-communications-skillde-yi-dian-gan-xiang-zhuan-zai/">职场话题——关于职场communications skill的一点感想 (转载)</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2021/12/22/zhi-chang-hua-ti-zhi-chang-chang-jian-8da-chang-jing-gou-tong-zhuan-zai/">职场话题——职场常见8大场景沟通(转载)</a>
+      </li>
+    </ul>
+  </section>
+  <section>
+      
+    <h1>Categories</h1>
+    <ul id="recent_posts">
+        <li><a href="/category/career-growth.html">career growth</a></li>
+        <li><a href="/category/linux.html">Linux</a></li>
+        <li><a href="/category/python.html">python</a></li>
+        <li><a href="/category/rthers.html">Rthers</a></li>
+    </ul>
+  </section>
+ 
+
+  <section>
+  <h1>Tags</h1>
+    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/re.html">re</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/python.html">python</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/sklearn.html">sklearn</a>  </section>
+
+
+    <section>
+        <h1>Social</h1>
+        <ul>
+            <li><a href="https://www.linkedin.com/pub/huiming-song/24/735/349" target="_blank">Linkedin</a></li>
+        </ul>
+    </section>
+    <section>
+        <h1>Blogroll</h1>
+        <ul>
+            <li><a href="http://easysas.blogspot.com/" target="_blank">my old SAS blog</a></li>
+        </ul>
+    </section>
+
+</aside>    </div>
+  </div>
+  <footer role="contentinfo"><p>
+    Copyright &copy;  2015&ndash;2023  shm &mdash;
+  <span class="credit">Powered by <a href="http://getpelican.com">Pelican</a></span>
+</p></footer>
+  <script src="/theme/js/modernizr-2.0.js"></script>
+  <script src="/theme/js/ender.js"></script>
+  <script src="/theme/js/octopress.js" type="text/javascript"></script>
+    <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-65938411-1']);
+    _gaq.push(['_trackPageview']);
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-65938411-1');
+    ga('send', 'pageview');
+</script>
+  <script type="text/javascript">
+    var disqus_shortname = 'songhuiming';
+    var disqus_identifier = '/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/';
+    var disqus_url = '/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/';
+    var disqus_title = 'GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary';
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = "//" + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+     })();
+  </script>
+</body>
+</html>
