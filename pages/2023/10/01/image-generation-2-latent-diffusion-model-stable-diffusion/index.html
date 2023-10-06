@@ -148,11 +148,13 @@ To sovle this, latent diffusion model (stable diffusion) was introduced to proje
 <h3>3. Conditioning mechanism to generate image from prompt/condition</h3>
 <p>To generate contents from input like prompt <span class="math">\(y\)</span>, the model will not only depends on the time step <span class="math">\(t\)</span>, but also the input <span class="math">\(y\)</span>, that is the conditional distribution of <span class="math">\(p(z_t | y)\)</span>. Accordingly, <span class="math">\(\epsilon_{\theta}(z_t, t)\)</span> is not only the funcion of <span class="math">\(z_t\)</span> and <span class="math">\(t\)</span>, but also with input <span class="math">\(y\)</span>. That is, <span class="math">\(\epsilon_{\theta}(z_t, t, y)\)</span>.</p>
 <p><img alt="stable diffusion 01" src="/figures/20231001_stable_diffusion_model_01.png" /></p>
-<p>Notations for the figure above:
-1. <span class="math">\(x\)</span>: input of the image. If RGB, its dimension is <span class="math">\(H \times W \times 3\)</span>
-2. <span class="math">\(\mathcal{E}\)</span> and <span class="math">\(\mathcal{D}\)</span> are the encoder and decoder, where <span class="math">\(\mathcal{E}\)</span> is to project the image to a low dimension space <span class="math">\(z = \mathcal{E}(x)\)</span> which will save the calculation in the later steps, and  <span class="math">\(\mathcal{D}\)</span> is to project from the latent space to the image.
-3. <span class="math">\(\tau_{\theta}\)</span> is the encoder to project the conditional input (e.g., prompt text) to the intermediate space
-4. <span class="math">\(\epsilon_{\theta}(z_t, t, \tau_{\theta}(y)\)</span> is the conditional denosing autoencoder to denoise from <span class="math">\(z_t\)</span> to <span class="math">\(z_{t-1}\)</span></p>
+<p><strong>Notations for the figure above</strong>:</p>
+<ol>
+<li><span class="math">\(x\)</span>: input of the image. If RGB, its dimension is <span class="math">\(H \times W \times 3\)</span></li>
+<li><span class="math">\(\mathcal{E}\)</span> and <span class="math">\(\mathcal{D}\)</span> are the encoder and decoder, where <span class="math">\(\mathcal{E}\)</span> is to project the image to a low dimension space <span class="math">\(z = \mathcal{E}(x)\)</span> which will save the calculation in the later steps, and  <span class="math">\(\mathcal{D}\)</span> is to project from the latent space to the image.</li>
+<li><span class="math">\(\tau_{\theta}\)</span> is the encoder to project the conditional input (e.g., prompt text) to the intermediate space</li>
+<li><span class="math">\(\epsilon_{\theta}(z_t, t, \tau_{\theta}(y)\)</span> is the conditional denosing autoencoder to denoise from <span class="math">\(z_t\)</span> to <span class="math">\(z_{t-1}\)</span></li>
+</ol>
 <p>The authors develop the attention mechanism to model the cross-attention relationships among the inputs by augmenting the UNet backbone with cross-attention mechanism. The attention is between the condition encoder <span class="math">\(\tau_{\theta}(y)\)</span> and the each intermediate representation layer <span class="math">\(i\)</span> of UNet. To do this, they first build an encoder <span class="math">\(\tau_{\theta}\)</span> to project <span class="math">\(y\)</span> to intermedidate representation <span class="math">\(\tau_{\theta}(y) \in \mathbb{R}^{M \times d_{\tau}}\)</span>. The cross-attention is between the <span class="math">\(\tau_{\theta}(y)\)</span> and the projection of the latent space <span class="math">\(\varphi_i(z_t) \in \mathbb{R}^{N \times d_{\epsilon}^i}\)</span> in the UNet with attention defined as 
 </p>
 <div class="math">$$ \text{Attention}(Q, K, V) = \text{softmax}\left( \frac{QK^{T}}{\sqrt{d}} \right) \cdot V$$</div>
