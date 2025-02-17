@@ -128,7 +128,7 @@
 </script>
 
 <h2>1. What the problem to solve?</h2>
-<p>春节回去的时候正好碰上DeepSeek发布新的模型，一时间各路媒体讨论的沸沸扬扬。最重要的应该是亮点：第一个是媲美其他主流模型的benchmark分数；第二个是说训练速度快了很多，使用了少的多的GPU时间。可是各路讨论多是繁华之论，振奋人心，而没有具体的DS为什么好，怎么好的。回来的第一个周末，花了周末的时间读了一下DS V3的论文。之所以选择V3因为R1是之于V3进行了RL和SFT来增强模型的推理能力，基本的模型还是V3，而且DS V3的论文也更详细。文章的第二部分讲述了DS在模型的架构上（science）有一些什么样的改进，第三部分讲述了在模型的训练上（engineering）有什么改进，然后两部分讲了pretraining和posttraining以及evaluation相关的东西。</p>
+<p>春节回去的时候正好碰上DS发布新的模型，一时间各路媒体讨论的沸沸扬扬。最重要的应该是亮点：第一个是媲美其他主流模型的benchmark分数；第二个是说训练速度快了很多，使用了少的多的GPU时间。可是各路讨论多是繁华之论，振奋人心，而没有具体的DS为什么好，怎么好的。回来的第一个周末，花了周末的时间读了一下DS V3的论文。之所以选择V3因为R1是之于V3进行了RL和SFT来增强模型的推理能力，基本的模型还是V3，而且DS V3的论文也更详细。文章的第二部分讲述了DS在模型的架构上（science）有一些什么样的改进，第三部分讲述了在模型的训练上（engineering）有什么改进，然后两部分讲了pretraining和posttraining以及evaluation相关的东西。</p>
 <h2>2. How to solve?</h2>
 <h3>2.1. Basic Architecture</h3>
 <p>模型的基本架构里面主要有两点：1是把原来的Attention改成了Multi-head Latent Attention；2是把原来的FFN改成了DeepSeekMoE。具体如下：</p>
@@ -153,24 +153,15 @@
 \end{equation}</div>
 <p>
 $$</p>
-<p>这里 <span class="math">\( W^{DKV} \in \mathbb{R}^{d_c \times d} $ 是一个降维投影矩阵; $\( W^{UK}, W^{UV} \in \mathbb{R}^{d_h n_h \times d_c} \)\)</span> 是对应的 keys 和 values 的升维矩阵。 </p>
+<p>这里 <span class="math">\( W^{DKV} \in \mathbb{R}^{d_c \times d} $ 是一个降维投影矩阵; $W^{UK}, W^{UV} \in \mathbb{R}^{d_h n_h \times d_c}\)</span> 是对应的 keys 和 values 的升维矩阵。 </p>
 <p>对Query，也有同样的处理来降维
-$$
 </p>
-<div class="math">\begin{equation}
-    c_t^Q = W^{DQ} h_t,
-\end{equation}</div>
-<div class="math">\begin{equation}
-    [q_{t,1}^{C}, q_{t,2}^{C}, ..., q_{t,n_h}^{C}] = q_t^C = W^{UQ} c_t^Q,
-\end{equation}</div>
-<div class="math">\begin{equation}
-    [q_{t,1}^{R}, q_{t,2}^{R}, ..., q_{t,n_h}^{R}] = q_t^R = \text{RoPE}(W^{QR} c_t^Q),
-\end{equation}</div>
-<div class="math">\begin{equation}
-    q_{t,i} = [q_{t,i}^{C}, q_{t,i}^{R}],
-\end{equation}</div>
-<p>
-$$</p>
+<div class="math">$$
+     &amp;&amp; c_t^Q = W^{DQ} h_t,
+     &amp;&amp; [q_{t,1}^{C}, q_{t,2}^{C}, ..., q_{t,n_h}^{C}] = q_t^C = W^{UQ} c_t^Q, 
+     &amp;&amp; [q_{t,1}^{R}, q_{t,2}^{R}, ..., q_{t,n_h}^{R}] = q_t^R = \text{RoPE}(W^{QR} c_t^Q),
+     &amp;&amp; q_{t,i} = [q_{t,i}^{C}, q_{t,i}^{R}],
+$$</div>
 <h4>2.1.2. DeepSeekMoE with Auxiliary-Loss-Free Load Balancing</h4>
 <h5>Basic Architecture of DeepSeekMoE</h5>
 <p>在2017年的Attention论文里面，decoder先是计算Attention，然后再计算FFN从而predict最后的token。DS里面，FFN被进一步改成了MoE。MoE的意思是模型是由一些列的Expert构成。每个Expert可以是一个MLP，一侧CNN或者其他的神经网络模型。或者每个Expert可以是一个tansformer的encoder。每个 Expert 负责学习不同的数据模式，MoE 通过 Gating Network 选择合适的Expert，使得不同的数据被送往最擅长Expert家处理。每预测下一个token的时候，MoE不是使用某一个Expert，也不是使用所有的Expert，而是选择其中的Top <span class="math">\(K\)</span> 个Expert来进行预测。选哪 <span class="math">\(K\)</span> 个Expert是通过一个Gate网络来确定。通常 <span class="math">\(K \ll N\)</span>，所以MoE是一个稀疏网络。使用MoE第一个好处是通过更精细化的划分，模型有更大的灵活性，不同的Expert可以学习不同的数据。比如如果 <span class="math">\(N=16\)</span>，<span class="math">\(K=2\)</span>，那么就有 <span class="math">\(C(16, 2)=160\)</span> 个组合。如果每个Expert再split成4个小的Expert，那么总共的组合就是 <span class="math">\(C(64, 8)=4,426,165,368\)</span>。这样极大的增加了模型的灵活性。第二个好处是节省计算资源，因为每次只需要激活很少的Expert来参加计算，而不像transfomer那样所有的参数都参加计算。也就是说，MoE可以训练一个更大更多参数的模型，从而记住更多的知识，但是每次实际只有很少一部分参数参加计算。而且应为每个Expert是独立的模型，没有共享参数，所以他们可以并行进行计算。</p>
@@ -180,8 +171,8 @@ $$</p>
 <p>具体的DeepSeekMoE架构如下
 <a href="https://github.com/songhuiming/draft-blogs/blob/main/figures/20250211.03.deepseek.moe.png">!image 20250211.03.deepseek.moe.PNG</a></p>
 <p>假设每个Expert <span class="math">\(i\)</span> 的中心是 <span class="math">\(\mathbf{e}_{i}\)</span>，首先计算 <span class="math">\(\color{blue}{s_{i,t} = \sigma(\mathbf{u}_t^\top \mathbf{e}_i)}\)</span> 作为 token <span class="math">\(t\)</span> 与 Expert <span class="math">\(i\)</span> 的相似度： <span class="math">\(\mathbf{e}_i\)</span> 作为Expert <span class="math">\(i\)</span> 的中心向量，通过与token的输入 <span class="math">\(\mathbf{u}_t\)</span> 进行点积，再经过 sigmoid 计算出 token 对该Expert的 affinity，从而决定 token 是否被路由到该Expert。</p>
-<p><span class="math">\(g'_{i,t}\)</span> 是Expert <span class="math">\(i\)</span>的gating value，根据所有的Expert的 <span class="math">\(s{i,t}\)</span>的值，来选择最高的 <span class="math">\(K_r\)</span>个。</p>
-<p>然后算出这 <span class="math">\(K_r\)</span>个Expert的权重 <span class="math">\(\color{blue}{g_{i,t} = \frac{g'_{i,t}}{\sum_{j=1}^{N_r} g_{j,t}}}\)</span>。尽管这儿的公式是<span class="math">\(N_r\)</span>个相加，但是实际上有<span class="math">\(N_r - K_r\)</span>个为0.</p>
+<p><span class="math">\(g^{\prime}_{i,t}\)</span> 是Expert <span class="math">\(i\)</span>的gating value，根据所有的Expert的 <span class="math">\(s{i,t}\)</span>的值，来选择最高的 <span class="math">\(K_r\)</span>个。</p>
+<p>然后算出这 <span class="math">\(K_r\)</span>个Expert的权重 <span class="math">\(\color{blue}{g_{i,t} = \frac{g^{\prime}_{i,t}}{\sum_{j=1}^{N_r} g'_{j,t}}}\)</span>。尽管这儿的公式是<span class="math">\(N_r\)</span>个相加，但是实际上有<span class="math">\(N_r - K_r\)</span>个为0.</p>
 <p>最后得到新的output为 <span class="math">\(\color{blue}{\mathbf{h}'_t = \mathbf{u}_t + \sum_{i=1}^{N_s} \text{FFN}^{(s)}_i(\mathbf{u}_t) + \sum_{i=1}^{N_r} g_{i,t} \text{FFN}^{(r)}_i(\mathbf{u}_t)}\)</span>. 注意的是，这里面从 <span class="math">\(N_r\)</span> 个Expert里面选择了 <span class="math">\(K_r\)</span>个来进行计算，<span class="math">\(K_r \ll N_r $，从而节约了大量的计算。同时，相比较于一般的MoE，DS使用了 $N_s\)</span>个 shared Expert，这些Expert参加所有的token的运算。</p>
 <h5>Auxiliary-Loss-Free Load Balancing in DeepSeek-V3</h5>
 <p>实际运行的时候，可能会出现这种情况：模型的token大部分都是有某几个expert来predict，剩下来的expert使用率会比较少，导致expert负载不均衡。以前的MOE使用auxiliary loss来让expert负载均衡。通过惩罚imbalanced expert utilization （加上更多的loss）来来达到均衡负载的目的。但是这样做有两个问题：1）Too strong auxiliary loss hurts model performance by interfering with learning objectives. 2）Difficult to tune: Balancing between efficiency and accuracy requires careful hyperparameter tuning.</p>
