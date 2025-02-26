@@ -1,5 +1,156 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata by Huiming - python</title><link href="/" rel="alternate"></link><link href="/feeds/python.atom.xml" rel="self"></link><id>/</id><updated>2025-02-18T00:00:00-06:00</updated><subtitle>Keep Looking, Don't Settle</subtitle><entry><title>DeepSeek V3-2</title><link href="/pages/2025/02/18/deepseek-v3-2/" rel="alternate"></link><published>2025-02-18T00:00:00-06:00</published><updated>2025-02-18T00:00:00-06:00</updated><author><name>Huiming Song</name></author><id>tag:None,2025-02-18:/pages/2025/02/18/deepseek-v3-2/</id><summary type="html">&lt;h2&gt;1. What the problem to solve?&lt;/h2&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata by Huiming - python</title><link href="/" rel="alternate"></link><link href="/feeds/python.atom.xml" rel="self"></link><id>/</id><updated>2025-02-23T00:00:00-06:00</updated><subtitle>Keep Looking, Don't Settle</subtitle><entry><title>DeepSeek V3 papre notes</title><link href="/pages/2025/02/23/deepseek-v3-papre-notes/" rel="alternate"></link><published>2025-02-23T00:00:00-06:00</published><updated>2025-02-23T00:00:00-06:00</updated><author><name>Huiming Song</name></author><id>tag:None,2025-02-23:/pages/2025/02/23/deepseek-v3-papre-notes/</id><summary type="html">&lt;h2&gt;To be updated&lt;/h2&gt;
+&lt;p&gt;copy form Chinese version&lt;/p&gt;
+&lt;h2&gt;1. What the problem to solve?&lt;/h2&gt;
+&lt;p&gt;春节回去的时候正好碰上DeepSeek发布新的模型，一时间各路媒体讨论的沸沸扬扬，几乎上升到国运的高度。讨 …&lt;/p&gt;</summary><content type="html">&lt;h2&gt;To be updated&lt;/h2&gt;
+&lt;p&gt;copy form Chinese version&lt;/p&gt;
+&lt;h2&gt;1. What the problem to solve?&lt;/h2&gt;
+&lt;p&gt;春节回去的时候正好碰上DeepSeek发布新的模型，一时间各路媒体讨论的沸沸扬扬，几乎上升到国运的高度。讨论的最重要的应该是两点：第一个是媲美其他主流模型的benchmark分数；第二个是说训练速度快了很多，使用了少的多的GPU时间。可是各路讨论多是繁华之论以及振奋人心的消息，而没有具体的DS为什么好，怎么好的。回来的第一个周末，花了周末的时间读了一下DS V3的论文。之所以选择V3因为R1是之于V3进行了RL和SFT来增强模型的推理能力，基本的模型还是V3，而且DS V3的论文也更详细。文章的第二部分讲述了DS在模型的架构上（science）有一些什么样的改进，第三部分讲述了在模型的训练上（engineering）有什么改进，然后两部分讲了pretraining和posttraining以及evaluation相关的东西。&lt;/p&gt;
+&lt;h2&gt;2. How to solve?&lt;/h2&gt;
+&lt;h3&gt;2.1. Basic Architecture&lt;/h3&gt;
+&lt;p&gt;模型的基本架构里面主要有两点：1是把原来的Attention改成了Multi-head Latent Attention；2是把原来的FFN改成了DeepSeekMoE。这样做的目的一是减少了计算量；二是减少了cache的data，从而节约了GPU的内存。具体如下：&lt;/p&gt;
+&lt;p&gt;DeekSeek模型架构
+&lt;img alt="20250216_01_deepseek_v3_architecture.png" src="/figures/20250216_01_deepseek_v3_architecture.png"&gt;&lt;/p&gt;
+&lt;h4&gt;2.1.1. Multi-head latent attention (MLA)&lt;/h4&gt;
+&lt;p&gt;相比较于原始的&lt;a href="https://arxiv.org/abs/1706.03762"&gt;Attention&lt;/a&gt;模型里面介绍的注意力机制, DS使用Multi-head latent attention (MLA)的架构，跟原来的Multi-head attention不一样的是这里面从 &lt;span class="math"&gt;\(h_t\)&lt;/span&gt; 来计算 &lt;span class="math"&gt;\(k, q, v\)&lt;/span&gt; 的时候，先进行降维，把 &lt;span class="math"&gt;\(h_t \in \mathbb{R}^d\)&lt;/span&gt; 投影到一个低维空间 &lt;span class="math"&gt;\(\color{blue}{c_t^{KV} = W^{DKV} h_t}\)&lt;/span&gt; ，然后再升维到 &lt;span class="math"&gt;\(\color{blue}{k_t^C=W^{UK}c_t^{KV}}\)&lt;/span&gt; ；以及投影到一个低维的 &lt;span class="math"&gt;\(\color{blue}{c_t^Q=W^{DQ}h_t}\)&lt;/span&gt;，然后再升维到 &lt;span class="math"&gt;\(\color{blue}{q_t^C = W^{UQ} c_t^Q}\)&lt;/span&gt;。这样的话在进行inference的时候只要保存低维的 &lt;span class="math"&gt;\(\color{blue}{c_t^{KV}}\)&lt;/span&gt; 和 &lt;span class="math"&gt;\(\color{blue}{c_t^Q}\)&lt;/span&gt;. 比如说，原来的 &lt;span class="math"&gt;\(\text{dim}(h_t) = 7168\)&lt;/span&gt;, 通过一个降维矩阵 &lt;span class="math"&gt;\(\text{dim}(W^{DKV})=4096 \times 7186\)&lt;/span&gt;把它降到4096维，那么需要保存的矩阵 &lt;span class="math"&gt;\(\color{blue}{c_t^{KV}}\)&lt;/span&gt;就小了很多。 具体地说，&lt;/p&gt;
+&lt;div class="math"&gt;\begin{aligned}
+&amp;amp;  \textcolor{blue}{c_t^{KV}} = W^{DKV} h_t, \\
+&amp;amp;  [k_{t,1}^{C}, k_{t,2}^{C}, ..., k_{t,n_h}^{C}] = k_t^C = W^{UK} c_t^{KV}, \\
+&amp;amp;  \textcolor{blue}{k_t^R} = \text{RoPE}(W^{KR} h_t), \\
+&amp;amp;  k_{t,i} = \left[k_{t,i}^{C}; k_t^R \right], \\
+&amp;amp;  [v_{t,1}^{C}, v_{t,2}^{C}, ..., v_{t,n_h}^{C}] = v_t^C = W^{UV} c_t^{KV},
+\end{aligned}&lt;/div&gt;
+&lt;p&gt;这里 &lt;span class="math"&gt;\( W^{DKV} \in \mathbb{R}^{d_c \times d} $ 是一个降维投影矩阵; $W^{UK}, W^{UV} \in \mathbb{R}^{d_h n_h \times d_c}\)&lt;/span&gt; 是对应的 keys 和 values 的升维矩阵。在做inference的时候，只需要&lt;span class="math"&gt;\(\textcolor{blue}{c_t^{KV}}\)&lt;/span&gt;和&lt;span class="math"&gt;\(\textcolor{blue}{k_t^R}\)&lt;/span&gt;，即节省了计算量，也节约了内存。&lt;/p&gt;
+&lt;p&gt;对Query，也有同样的处理来降维
+&lt;/p&gt;
+&lt;div class="math"&gt;\begin{aligned}
+&amp;amp; \textcolor{blue}{c_t^Q} = W^{DQ} h_t, \\
+&amp;amp; [q_{t,1}^{C}, q_{t,2}^{C}, ..., q_{t,n_h}^{C}] = q_t^C = W^{UQ} c_t^Q, \\
+&amp;amp; [q_{t,1}^{R}, q_{t,2}^{R}, ..., q_{t,n_h}^{R}] = q_t^R = \text{RoPE}(W^{QR} c_t^Q), \\
+&amp;amp; q_{t,i} = [q_{t,i}^{C}, q_{t,i}^{R}],
+\end{aligned}&lt;/div&gt;
+&lt;h4&gt;2.1.2. DeepSeekMoE with Auxiliary-Loss-Free Load Balancing&lt;/h4&gt;
+&lt;h5&gt;Basic Architecture of DeepSeekMoE&lt;/h5&gt;
+&lt;p&gt;在2017年的Attention论文里面，decoder先是计算Attention，然后再计算FFN从而predict最后的token。DS里面，FFN被进一步改成了MoE。MoE的意思是模型是由一些列的Expert构成。每个Expert可以是一个MLP，一个CNN或者其他的神经网络模型，或者每个Expert可以是一个tansformer的encoder/decoder。每个 Expert 负责学习不同的数据模式，MoE 通过 Gating Network 选择合适的Expert，使得不同的数据被送往最擅长Expert家处理。每预测下一个token的时候，MoE不是使用某一个Expert，也不是使用所有的Expert，而是选择其中的Top &lt;span class="math"&gt;\(K\)&lt;/span&gt; 个Expert来进行预测。选哪 &lt;span class="math"&gt;\(K\)&lt;/span&gt; 个Expert是通过一个Gating网络来确定。通常 &lt;span class="math"&gt;\(K \ll N\)&lt;/span&gt;，所以MoE是一个稀疏网络。使用MoE第一个好处是通过更精细化的划分，模型有更大的灵活性，不同的Expert可以学习不同的数据。比如如果 &lt;span class="math"&gt;\(N=16\)&lt;/span&gt;，&lt;span class="math"&gt;\(K=2\)&lt;/span&gt;，那么就有 &lt;span class="math"&gt;\(C(16, 2)=160\)&lt;/span&gt; 个组合。如果每个Expert再split成4个小的Expert，那么总共的组合就是 &lt;span class="math"&gt;\(C(64, 8)=4,426,165,368\)&lt;/span&gt;。这样极大的增加了模型的灵活性。第二个好处是节省计算资源，因为每次只需要激活很少的Expert来参加计算，而不像transfomer那样所有的参数都参加计算。也就是说，MoE可以训练一个更大更多参数的模型，从而记住更多的知识，但是每次实际只有很少一部分参数参加计算。而且应为每个Expert是独立的模型，没有共享参数，所以他们可以并行进行计算。&lt;/p&gt;
+&lt;p&gt;MoE的架构见下图
+&lt;img alt="20250216_03_deepseek_v2_moe.png" src="/figures/20250216_03_deepseek_v2_moe.png"&gt;&lt;/p&gt;
+&lt;p&gt;在DS的FFN里面，DeepSeekMoE在MOE的基础上更进一步：1）他们把Expert进一步细化，然后既有一些Expert用来做routing，具体地说，对routingd的Expert，预测只是route到这些Expert的某一些上面。同时，他们还有一些Expert是共享Expert，也就是说，在预测的时候，他们每次都是被使用。2）DS优化了Expert的选择，使用affinity score来选择专家。3）DS的Expert更finer，同时也更稀疏。这样进一步降低了运算成本。&lt;/p&gt;
+&lt;p&gt;DeepSeekMoE的架构见下图
+&lt;img alt="20250216_02_original_moe.png" src="/figures/20250216_02_original_moe.png"&gt;&lt;/p&gt;
+&lt;p&gt;假设每个Expert &lt;span class="math"&gt;\(i\)&lt;/span&gt; 的中心是 &lt;span class="math"&gt;\(\mathbf{e}_{i}\)&lt;/span&gt;，首先计算 &lt;span class="math"&gt;\(\color{blue}{s_{i,t} = \sigma(\mathbf{u}_t^\top \mathbf{e}_i)}\)&lt;/span&gt; 作为 token &lt;span class="math"&gt;\(t\)&lt;/span&gt; 与 Expert &lt;span class="math"&gt;\(i\)&lt;/span&gt; 的相似度： &lt;span class="math"&gt;\(\mathbf{e}_i\)&lt;/span&gt; 作为Expert &lt;span class="math"&gt;\(i\)&lt;/span&gt; 的中心向量，通过与token的输入 &lt;span class="math"&gt;\(\mathbf{u}_t\)&lt;/span&gt; 进行点积，再经过 sigmoid 计算出 token 对该Expert的 affinity，从而决定 token 是否被路由到该Expert。&lt;/p&gt;
+&lt;p&gt;&lt;span class="math"&gt;\(g^{\prime}_{i,t}\)&lt;/span&gt; 是Expert &lt;span class="math"&gt;\(i\)&lt;/span&gt;的gating value，根据所有的Expert的 &lt;span class="math"&gt;\(s_{i,t}\)&lt;/span&gt;的值，来选择最高的 &lt;span class="math"&gt;\(K_r\)&lt;/span&gt;个。
+&lt;/p&gt;
+&lt;div class="math"&gt;$$
+    g'_{i,t} =
+    \begin{cases} 
+        s_{i,t}, &amp;amp; s_{i,t} \in \text{Topk}(\{s_{j,t} | 1 \leq j \leq N_r\}, K_r), \\
+        0, &amp;amp; \text{otherwise},
+    \end{cases}
+$$&lt;/div&gt;
+&lt;p&gt;然后算出这 &lt;span class="math"&gt;\(K_r\)&lt;/span&gt;个Expert的权重 &lt;span class="math"&gt;\(\color{blue}{g_{i,t} = \frac{g^{\prime}_{i,t}}{\sum_{j=1}^{N_r} g'_{j,t}}}\)&lt;/span&gt;。尽管这儿的公式看分母是&lt;span class="math"&gt;\(N_r\)&lt;/span&gt;个&lt;span class="math"&gt;\(g'_{i,t}\)&lt;/span&gt;相加，但是实际上有&lt;span class="math"&gt;\(N_r - K_r\)&lt;/span&gt;个为0.&lt;/p&gt;
+&lt;p&gt;最后得到新的output为 &lt;span class="math"&gt;\(\color{blue}{\mathbf{h}'_t = \mathbf{u}_t + \sum_{i=1}^{N_s} \text{FFN}^{(s)}_i(\mathbf{u}_t) + \sum_{i=1}^{N_r} g_{i,t} \text{FFN}^{(r)}_i(\mathbf{u}_t)}\)&lt;/span&gt;. 注意的是，这里面从 &lt;span class="math"&gt;\(N_r\)&lt;/span&gt; 个Expert里面选择了 &lt;span class="math"&gt;\(K_r\)&lt;/span&gt;个来进行计算，&lt;span class="math"&gt;\(K_r \ll N_r\)&lt;/span&gt;，从而节约了大量的计算。同时，相比较于一般的MoE，DS使用了 &lt;span class="math"&gt;\(N_s\)&lt;/span&gt;个 shared Expert，这些Expert参加所有的token的运算。通过引入共享专家，模型可以在不同任务之间共享通用知识，避免每个专家都独立学习相似的内容，从而减少了知识冗余。&lt;/p&gt;
+&lt;h5&gt;Auxiliary-Loss-Free Load Balancing in DeepSeek-V3&lt;/h5&gt;
+&lt;p&gt;实际运行的时候，可能会出现这种情况：模型的token大部分都是有某几个Expert来predict，剩下来的Expert使用率会比较少，导致Expert负载不均衡。以前的MOE使用auxiliary loss来让Expert负载均衡。通过惩罚imbalanced Expert utilization （加上更多的loss）来来达到均衡负载的目的。但是这样做有两个问题：1）Too strong auxiliary loss hurts model performance by interfering with learning objectives. 2）Difficult to tune: Balancing between efficiency and accuracy requires careful hyperparameter tuning.&lt;/p&gt;
+&lt;p&gt;DS提出了Auxiliary-Loss-Free Load Balancing来达到balanced routing of tokens to different Experts.具体的说实在gating function里面添加一个bias的项，通过bias的值来平衡Expert的调用。&lt;/p&gt;
+&lt;p&gt;具体的说，在计算权重&lt;span class="math"&gt;\(g'_{i,t}\)&lt;/span&gt;的时候，对每个token和Expert的affinity score都添加了一个bias &lt;span class="math"&gt;\(b_i\)&lt;/span&gt;，变成&lt;span class="math"&gt;\(s_{i,t} + b_i \in \text{Topk}(\{s_{j,t} + b_j | 1 \leq j \leq N_r\}, K_r)\)&lt;/span&gt;, 当某个Expert &lt;span class="math"&gt;\(j\)&lt;/span&gt;出现overload的时候，就把对应的&lt;span class="math"&gt;\(b_j\)&lt;/span&gt;减小&lt;span class="math"&gt;\(\gamma\)&lt;/span&gt; 。这样的话新的&lt;span class="math"&gt;\(s_{j,t} + b_j\)&lt;/span&gt;就会减小一点，这样的话 &lt;span class="math"&gt;\(\textcolor{blue}{Top k}\)&lt;/span&gt; 个选择的时候这个Expert就会排名靠后一点，更可能不会被选中因为&lt;span class="math"&gt;\(g'_{i,t} = 0\)&lt;/span&gt;。&lt;/p&gt;
+&lt;h5&gt;Complementary Sequence-Wise Auxiliary Loss&lt;/h5&gt;
+&lt;p&gt;DeepSeek-V3 主要依赖 Auxiliary-Loss-Free 负载均衡策略来确保 Experts 间的负载均衡。然而，为了防止单个序列内部的极端不平衡，DeepSeek-V3 还引入了 Complementary Sequence-Wise Auxiliary Loss. 通常MoE模型的负载均衡都在batch level进行，但是对一个batch的多个sequence，某个sequence 内部某些Expert可能用的很多，而其他Expert用的很少。DS的想法是要在每个sequence level，也尽可能的让Expert utilization均衡，负载不会过于集中或稀疏。同时该损失的强度非常低，以避免对模型性能产生负面影响。&lt;/p&gt;
+&lt;p&gt;下面我们主要来理解原文中的公式，为什么这个公式就能够均衡 Sequence level的Expert 负载。&lt;/p&gt;
+&lt;div class="math"&gt;\begin{aligned}
+&amp;amp; \mathcal{L}_{\text{Bal}} = \alpha \sum_{i=1}^{N_r} f_i P_i, \\
+&amp;amp; f_i = \frac{N_r}{K_r T} \sum_{t=1}^{T} \mathbb{1} \left(s_{i,t} \in \text{Topk}(\{s_{j,t} | 1 \leq j \leq N_r\}, K_r) \right), \\
+&amp;amp; s'_{i,t} = \frac{s_{i,t}}{\sum_{j=1}^{N_r} s_{j,t}}, \\
+&amp;amp; P_i = \frac{1}{T} \sum_{t=1}^{T} s'_{i,t}
+\end{aligned}&lt;/div&gt;
+&lt;p&gt;&lt;span class="math"&gt;\(P_i\)&lt;/span&gt;是看在 sequence 上面 Expert 的使用是不是比较均衡。如果不均衡的话，&lt;span class="math"&gt;\(P_i\)&lt;/span&gt;的值就会比较大。具体原因：首先看&lt;span class="math"&gt;\(s^{\prime}_{i,t}\)&lt;/span&gt; 和 &lt;span class="math"&gt;\(P_i\)&lt;/span&gt;。对归一化的affinity score &lt;span class="math"&gt;\(s^{\prime}_{i,t} = \frac{s_{i,t}}{\sum_{j=1}^{N_r} s_{j,t}}\)&lt;/span&gt;, 计算Expert &lt;span class="math"&gt;\(i\)&lt;/span&gt; 在整个sequence (Sequence 的长度为 &lt;span class="math"&gt;\(T\)&lt;/span&gt;) 上面的的平均得分 &lt;span class="math"&gt;\(P_i = \frac{1}{T} \sum_{t=1}^{T} s^{\prime}_{i,t}\)&lt;/span&gt;: 如果Expert &lt;span class="math"&gt;\(i\)&lt;/span&gt; 在sequence的很多token &lt;span class="math"&gt;\(t\)&lt;/span&gt;上被选中，那么对应的 &lt;span class="math"&gt;\(s_{i,t}\)&lt;/span&gt; 就会被其他的&lt;span class="math"&gt;\(s_{j,t}\)&lt;/span&gt;大 (&lt;span class="math"&gt;\(s_{i,t} \gg s_{j,t}\)&lt;/span&gt; for &lt;span class="math"&gt;\(j \neq i\)&lt;/span&gt;), 而 &lt;span class="math"&gt;\(s^{\prime}_{i,t}\)&lt;/span&gt; 是 &lt;span class="math"&gt;\(s_{i,t}\)&lt;/span&gt;对所有的 Expert的归一化值，那么&lt;span class="math"&gt;\(s^{\prime}_{i,t}\)&lt;/span&gt;就相应的比较大。而&lt;span class="math"&gt;\(P_i\)&lt;/span&gt;是&lt;span class="math"&gt;\(s^{\prime}_{i,t}\)&lt;/span&gt;在整个 sequence 上的平均值，所以它也会比较大。最后相对应的损失函数 &lt;span class="math"&gt;\(\mathcal{L}_{\text{Bal}} = \alpha \sum_{i=1}^{N_r} f_i P_i\)&lt;/span&gt; 就比较大。&lt;/p&gt;
+&lt;p&gt;&lt;span class="math"&gt;\(f_i\)&lt;/span&gt; 是 Expert &lt;span class="math"&gt;\(i\)&lt;/span&gt; 被使用的频率的归一化值。公式 &lt;span class="math"&gt;\(f_i = \frac{N_r}{K_r T} \sum_{t=1}^{T} \mathbb{1} \left(s_{i,t} \in \text{Topk}(\{s_{j,t} | 1 \leq j \leq N_r\}, K_r) \right)\)&lt;/span&gt; 统计了每个 Expert &lt;span class="math"&gt;\(i\)&lt;/span&gt; 在当前序列 &lt;span class="math"&gt;\(T\)&lt;/span&gt; 个token中被使用的频率 （&lt;span class="math"&gt;\(\sum_{t=1}^{T} \mathbb{1} \left(s_{i,t} \in \text{Topk}(\{s_{j,t} | 1 \leq j \leq N_r\}, K_r) \right)\)&lt;/span&gt;），然后做了归一化 &lt;span class="math"&gt;\(\frac{N_r}{K_r T}\)&lt;/span&gt;. 同样，如果 Expert &lt;span class="math"&gt;\(i\)&lt;/span&gt; 在这个 sequence 中被调用的次数很多，那么这个值也会更大。&lt;/p&gt;
+&lt;p&gt;最后，损失函数公式里的 &lt;span class="math"&gt;\(\alpha\)&lt;/span&gt; 是个取值很小的超参数。它的值很小是为了不过度影响主要训练目标。&lt;/p&gt;
+&lt;h3&gt;2.2. Multi-Token Prediction (MTP)&lt;/h3&gt;
+&lt;p&gt;DS还使用了MTP，而不是像一般的pre-training那样仅仅只预测 next token（2017的Attention文章就是只predict next token）。这有两个好处：1. 同时预测多个token可以提高data的使用效率。2. 让模型在准备representation的时候能够考虑的更长远。跟原始的MTP文章不同的是，DS不是同时predict &lt;span class="math"&gt;\(D\)&lt;/span&gt; 个token (输出一个 &lt;span class="math"&gt;\(D \times V\)&lt;/span&gt; 的矩阵， 其中 &lt;span class="math"&gt;\(V\)&lt;/span&gt; 是词表大小); 换个表达方式，对应的prediction 和损失函数是 &lt;span class="math"&gt;\(L_n = -\sum_t \log P_{\theta} (x_{t+n:t+1} \mid x_{t:1})\)&lt;/span&gt;.  DS是sequentially predict additional token。&lt;/p&gt;
+&lt;p&gt;MTP from Gloeckle et al. (2024), which is  &lt;span class="math"&gt;\(D \times V\)&lt;/span&gt; 的矩阵
+&lt;img alt="20250216_04_deepseek_orig_MTP.png" src="/figures/20250216_04_deepseek_orig_MTP.png"&gt;&lt;/p&gt;
+&lt;p&gt;DS的MTP模块结构用一句话来简单概括就是：DS的MTP使用 &lt;span class="math"&gt;\(D\)&lt;/span&gt; 个sequential modules来预测 &lt;span class="math"&gt;\(D\)&lt;/span&gt; 个tokens。这 &lt;span class="math"&gt;\(D\)&lt;/span&gt; 个modules 共享 embedding &lt;span class="math"&gt;\(\text{Emb}(\cdot)\)&lt;/span&gt;，共享输出头 &lt;span class="math"&gt;\(\text{OutHead}(\cdot)\)&lt;/span&gt; 。 第 &lt;span class="math"&gt;\(k\)&lt;/span&gt; 个token的 MTP 模块有一个专用的 transformer 块 &lt;span class="math"&gt;\(\text{TRM}_k(\cdot)\)&lt;/span&gt;，以及一个投影矩阵 &lt;span class="math"&gt;\(M_k \in \mathbb{R}^{d \times 2d}\)&lt;/span&gt;  &lt;/p&gt;
+&lt;p&gt;DeepSeek V3 MTP: Use D MTP module and &lt;span class="math"&gt;\(k\)&lt;/span&gt;-th module predict &lt;span class="math"&gt;\(k\)&lt;/span&gt;-depth token
+&lt;img alt="20250216_05_deepseek_v3_MTP.png" src="/figures/20250216_05_deepseek_v3_MTP.png"&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;prediction&lt;/strong&gt;：对于输入sequence的第 &lt;span class="math"&gt;\(i\)&lt;/span&gt; 个token &lt;span class="math"&gt;\(t_i\)&lt;/span&gt;，在第 &lt;span class="math"&gt;\(k\)&lt;/span&gt; 个prediction depth (也就是下面要 predict &lt;span class="math"&gt;\(t_{i+k+1}\)&lt;/span&gt;)，MTP module： 1）首先得到 &lt;span class="math"&gt;\(i\)&lt;/span&gt;-th token  在第 &lt;span class="math"&gt;\((k-1)\)&lt;/span&gt;-th 深度的表示 &lt;span class="math"&gt;\(\mathbf{h}_i^{k-1} \in \mathbb{R}^{d}\)&lt;/span&gt;， 以及第 &lt;span class="math"&gt;\((i+k)\)&lt;/span&gt;-th 个 token 的 embediding  &lt;span class="math"&gt;\(Emb(t_{i+k}) \in \mathbb{R}^{d}\)&lt;/span&gt;；  2）然后把他们concat起来（长度为 &lt;span class="math"&gt;\(2d\)&lt;/span&gt;），再通过 RMSNorm 和 投影矩阵 &lt;span class="math"&gt;\(M_k \in \mathbb{R}^{d \times 2d}\)&lt;/span&gt;} 来生成新的表示 
+&lt;span class="math"&gt;\(h’^k_i = M_k [\text{RMSNorm}(\mathbf{h}_i^{k-1}); \text{RMSNorm}(Emb(t_{i+k}))]\)&lt;/span&gt;；3）然后 &lt;span class="math"&gt;\(\mathbf{h}’^k_i\)&lt;/span&gt;  作为输入到第 &lt;span class="math"&gt;\(k\)&lt;/span&gt;-th  个transformer 模块  &lt;span class="math"&gt;\(\text{TRM}_k(\cdot)\)&lt;/span&gt; ，生成当前深度的输出表示 &lt;span class="math"&gt;\(\mathbf{h}^k_{1:T-k} = TRM_k(\mathbf{h}’^{k}_{1:T-k})\)&lt;/span&gt;；最后使用 &lt;span class="math"&gt;\(\text{OutHead}\)&lt;/span&gt; 将 &lt;span class="math"&gt;\(\mathbf{h}^k_i\)&lt;/span&gt; 转换成预测概率 &lt;span class="math"&gt;\(p_{i+k+1} = OutHead(\mathbf{h}^k_i) \in \mathbb{R}^{V}\)&lt;/span&gt;。&lt;/p&gt;
+&lt;p&gt;我的理解：&lt;/p&gt;
+&lt;p&gt;1) 传统的next token prediction：&lt;span class="math"&gt;\(t_1\)&lt;/span&gt;-&amp;gt; &lt;span class="math"&gt;\(h_1\)&lt;/span&gt; -&amp;gt; &lt;span class="math"&gt;\(\hat{t}_2\)&lt;/span&gt;, &lt;span class="math"&gt;\(t_2\)&lt;/span&gt; -&amp;gt; &lt;span class="math"&gt;\(h_2\)&lt;/span&gt; -&amp;gt; &lt;span class="math"&gt;\(\hat{t}_3\)&lt;/span&gt;, .... 也就是main model做的事情.&lt;/p&gt;
+&lt;p&gt;2) 在DS的 &lt;span class="math"&gt;\(k\)&lt;/span&gt;-th MTP 模块中，模型会根据第 &lt;span class="math"&gt;\((k-1)\)&lt;/span&gt;-depth 的 MTP representation &lt;span class="math"&gt;\(h_i^{k-1}\)&lt;/span&gt; 和 token &lt;span class="math"&gt;\(t_{i+k}\)&lt;/span&gt; 的embedding来的到 &lt;span class="math"&gt;\(k\)&lt;/span&gt;-depth 的representaion &lt;span class="math"&gt;\(\mathbf{h}_i^k\)&lt;/span&gt;，从而更进一步来预测 &lt;span class="math"&gt;\((k+1)\)&lt;/span&gt;-th token。下面用 &lt;span class="math"&gt;\(k=1, 2, 3\)&lt;/span&gt; 作为例子来说明是怎么工作的。 具体来说, 对输入 token &lt;span class="math"&gt;\(i\)&lt;/span&gt; :&lt;/p&gt;
+&lt;p&gt;在 &lt;span class="math"&gt;\(k=1\)&lt;/span&gt; 的时候，先把 &lt;span class="math"&gt;\(t_i\)&lt;/span&gt; 的representaion &lt;span class="math"&gt;\(h_i^{k-1}=h_i^0\)&lt;/span&gt; （from main model） 和 token &lt;span class="math"&gt;\(t_{i+1}\)&lt;/span&gt; (&lt;span class="math"&gt;\(i+k=i+1\)&lt;/span&gt;) 的embedding concat在一起得到 &lt;span class="math"&gt;\(h’^1_i\)&lt;/span&gt;，然后输入 &lt;span class="math"&gt;\(TRM_1\)&lt;/span&gt;， 得到 &lt;span class="math"&gt;\(\mathbf{h}^1_{1:T-1} = TRM_1(\mathbf{h}’^{1}_{1:T-1})\)&lt;/span&gt;， 最后得到token &lt;span class="math"&gt;\(t_{i+2}\)&lt;/span&gt; 的prediction 分布 &lt;span class="math"&gt;\(p_{i+2}\)&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;在 &lt;span class="math"&gt;\(k=2\)&lt;/span&gt; 的时候，先把 &lt;span class="math"&gt;\(t_i\)&lt;/span&gt; 的representaion &lt;span class="math"&gt;\(h_i^{k-1}=h_i^1\)&lt;/span&gt; （from &lt;span class="math"&gt;\(k=1\)&lt;/span&gt; MTP module） 和 token &lt;span class="math"&gt;\(t_{i+2}\)&lt;/span&gt; ( &lt;span class="math"&gt;\(i+k=i+2\)&lt;/span&gt; ) 的embedding concat在一起得到 &lt;span class="math"&gt;\(h’^2_i\)&lt;/span&gt;，然后输入 &lt;span class="math"&gt;\(TRM_2\)&lt;/span&gt;， 得到 &lt;span class="math"&gt;\(\mathbf{h}^2_{1:T-2} = TRM_2(\mathbf{h}’^{2}_{1:T-2})\)&lt;/span&gt;， 最后得到token &lt;span class="math"&gt;\(t_{i+3}\)&lt;/span&gt;  的prediction 分布 &lt;span class="math"&gt;\(p_{i+3}\)&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;在 &lt;span class="math"&gt;\(k=3\)&lt;/span&gt; 的时候，先把 &lt;span class="math"&gt;\(t_i\)&lt;/span&gt; 的representaion &lt;span class="math"&gt;\(h_i^{k-1}=h_i^2\)&lt;/span&gt; （from &lt;span class="math"&gt;\(k=2\)&lt;/span&gt; MTP module） 和 token &lt;span class="math"&gt;\(t_{i+3}\)&lt;/span&gt; ( &lt;span class="math"&gt;\(i+k=i+3\)&lt;/span&gt; ) 的embedding concat在一起得到 &lt;span class="math"&gt;\(h’^3_i\)&lt;/span&gt;，然后输入 &lt;span class="math"&gt;\(\text{TRM}_3\)&lt;/span&gt;， 得到 &lt;span class="math"&gt;\(\mathbf{h}^3_{1:T-3} = TRM_3(\mathbf{h}’^{3}_{1:T-3})\)&lt;/span&gt;， 最后得到token &lt;span class="math"&gt;\(t_{i+4}\)&lt;/span&gt;  的prediction 分布 &lt;span class="math"&gt;\(p_{i+4}\)&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;MTP 的目标函数&lt;/strong&gt; 对每个predict depth k，其损失函数仍然是cross-entropy，定义为 &lt;span class="math"&gt;\(\mathcal{L}_{\text{MTP}}^k\)&lt;/span&gt; = &lt;span class="math"&gt;\(\mathcal{L}_{\text{MTP}}^k\)&lt;/span&gt; = &lt;span class="math"&gt;\(\text{CrossEntropy}(P_{2+k:T+1}^{k}, t_{2+k:T+1})\)&lt;/span&gt; = &lt;span class="math"&gt;\(-\frac{1}{T} \sum_{i=2+k}^{T+1} \log p_i^k[t_i]\)&lt;/span&gt;。其中 &lt;span class="math"&gt;\(T\)&lt;/span&gt; 是输入序列的长度, &lt;span class="math"&gt;\(t_i\)&lt;/span&gt; 是输入序列的第 &lt;span class="math"&gt;\(i\)&lt;/span&gt;-th 个真实值,  &lt;span class="math"&gt;\(p_i^k[t_i]\)&lt;/span&gt; 是第&lt;span class="math"&gt;\(k\)&lt;/span&gt;-th 个 MTP 模块对  &lt;span class="math"&gt;\(t_i\)&lt;/span&gt; 的prediciton probability.&lt;/p&gt;
+&lt;p&gt;最终 MTP 的损失函数是对所有的预测深度 (&lt;span class="math"&gt;\(k\)&lt;/span&gt; 从1 到&lt;span class="math"&gt;\(D\)&lt;/span&gt;) 的平均 乘以权重 &lt;span class="math"&gt;\(\lambda\)&lt;/span&gt; ，&lt;span class="math"&gt;\(\mathcal{L}_{\text{MTP}}\)&lt;/span&gt; = &lt;span class="math"&gt;\(\frac{\lambda}{D} \sum_{k=1}^{D} \mathcal{L}_{\text{MTP}}^k\)&lt;/span&gt; &lt;/p&gt;
+&lt;p&gt;从DS的paper公式25看，&lt;span class="math"&gt;\(\mathcal{L}_{\text{MTP}}\)&lt;/span&gt; 只是 MTP 的损失函数。最终的损失函数应该还要加上 &lt;span class="math"&gt;\(\mathcal{L}_{\text{Main}}\)&lt;/span&gt;。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;MTP 在推理的时候怎么用呢？&lt;/strong&gt; MTP的主要目的是用来提高 main model的表现，在推理的时候，并不要使用MTP，而只是使用 main model来predict next token。&lt;/p&gt;
+&lt;h3&gt;未完待续&lt;/h3&gt;
+&lt;h3&gt;Reference&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;a href="https://github.com/deepseek-ai/DeepSeek-V3/blob/main/DeepSeek_V3.pdf"&gt;DeepSeek-V3 Technical Report&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;script type="text/javascript"&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width &lt; 768) ? "left" : align;
+        indent = (screen.width &lt; 768) ? "0em" : indent;
+        linebreak = (screen.width &lt; 768) ? 'true' : linebreak;
+    }
+
+    var mathjaxscript = document.createElement('script');
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript';
+    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-AMS-MML_HTMLorMML';
+
+    var configscript = document.createElement('script');
+    configscript.type = 'text/x-mathjax-config';
+    configscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js','mhchem.js'], equationNumbers: { autoNumber: 'none' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    messageStyle: 'normal'," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        availableFonts: ['STIX', 'TeX']," +
+        "        preferredFont: 'STIX'," +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+&lt;/script&gt;</content><category term="python"></category><category term="python"></category><category term="AI"></category><category term="LLM"></category><category term="AIG"></category></entry><entry><title>DeepSeek V3</title><link href="/pages/2025/02/16/deepseek-v3/" rel="alternate"></link><published>2025-02-16T00:00:00-06:00</published><updated>2025-02-16T00:00:00-06:00</updated><author><name>Huiming Song</name></author><id>tag:None,2025-02-16:/pages/2025/02/16/deepseek-v3/</id><summary type="html">&lt;h2&gt;1. What the problem to solve?&lt;/h2&gt;
 &lt;p&gt;春节回去的时候正好碰上DeepSeek发布新的模型，一时间各路媒体讨论的沸沸扬扬，几乎上升到国运的高度。讨论的最重要的应 …&lt;/p&gt;</summary><content type="html">&lt;h2&gt;1. What the problem to solve?&lt;/h2&gt;
 &lt;p&gt;春节回去的时候正好碰上DeepSeek发布新的模型，一时间各路媒体讨论的沸沸扬扬，几乎上升到国运的高度。讨论的最重要的应该是两点：第一个是媲美其他主流模型的benchmark分数；第二个是说训练速度快了很多，使用了少的多的GPU时间。可是各路讨论多是繁华之论以及振奋人心的消息，而没有具体的DS为什么好，怎么好的。回来的第一个周末，花了周末的时间读了一下DS V3的论文。之所以选择V3因为R1是之于V3进行了RL和SFT来增强模型的推理能力，基本的模型还是V3，而且DS V3的论文也更详细。文章的第二部分讲述了DS在模型的架构上（science）有一些什么样的改进，第三部分讲述了在模型的训练上（engineering）有什么改进，然后两部分讲了pretraining和posttraining以及evaluation相关的东西。&lt;/p&gt;
 &lt;h2&gt;2. How to solve?&lt;/h2&gt;
@@ -146,145 +297,7 @@ $$&lt;/div&gt;
     (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
     (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
 }
-&lt;/script&gt;</content><category term="python"></category><category term="python"></category><category term="AI"></category><category term="LLM"></category><category term="AIG"></category></entry><entry><title>DeepSeek V3</title><link href="/pages/2025/02/16/deepseek-v3/" rel="alternate"></link><published>2025-02-16T00:00:00-06:00</published><updated>2025-02-16T00:00:00-06:00</updated><author><name>Huiming Song</name></author><id>tag:None,2025-02-16:/pages/2025/02/16/deepseek-v3/</id><summary type="html">&lt;script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"&gt;&lt;/script&gt;
-&lt;script&gt;
-        MathJax.Hub.Config({
-            config: ["MMLorHTML.js"],
-            extensions: ["tex2jax.js","TeX/AMSmath.js","TeX/AMSsymbols.js"],
-            jax: ["input/TeX"],
-            tex2jax: {
-                inlineMath: [ ['$','$'], ["\\(","\\)"] ],
-                displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
-                processEscapes: false
-            },
-            TeX: {
-                TagSide: "right",
-                TagIndent: ".8em",
-                MultLineWidth: "85%",
-                equationNumbers: {
-                   autoNumber: "AMS",
-                },
-                unicode: {
-                   fonts: "STIXGeneral,'Arial Unicode MS'"
-                }
-            },
-            showProcessingMessages: false
-        });
-&lt;/script&gt;
-
-&lt;h2&gt;1. What the problem to solve?&lt;/h2&gt;
-&lt;p&gt;春节回 …&lt;/p&gt;</summary><content type="html">&lt;script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"&gt;&lt;/script&gt;
-&lt;script&gt;
-        MathJax.Hub.Config({
-            config: ["MMLorHTML.js"],
-            extensions: ["tex2jax.js","TeX/AMSmath.js","TeX/AMSsymbols.js"],
-            jax: ["input/TeX"],
-            tex2jax: {
-                inlineMath: [ ['$','$'], ["\\(","\\)"] ],
-                displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
-                processEscapes: false
-            },
-            TeX: {
-                TagSide: "right",
-                TagIndent: ".8em",
-                MultLineWidth: "85%",
-                equationNumbers: {
-                   autoNumber: "AMS",
-                },
-                unicode: {
-                   fonts: "STIXGeneral,'Arial Unicode MS'"
-                }
-            },
-            showProcessingMessages: false
-        });
-&lt;/script&gt;
-
-&lt;h2&gt;1. What the problem to solve?&lt;/h2&gt;
-&lt;p&gt;春节回去的时候正好碰上DeepSeek发布新的模型，一时间各路媒体讨论的沸沸扬扬，几乎上升到国运的高度。讨论的最重要的应该是两点：第一个是媲美其他主流模型的benchmark分数；第二个是说训练速度快了很多，使用了少的多的GPU时间。可是各路讨论多是繁华之论以及振奋人心的消息，而没有具体的DS为什么好，怎么好的。回来的第一个周末，花了周末的时间读了一下DS V3的论文。之所以选择V3因为R1是之于V3进行了RL和SFT来增强模型的推理能力，基本的模型还是V3，而且DS V3的论文也更详细。文章的第二部分讲述了DS在模型的架构上（science）有一些什么样的改进，第三部分讲述了在模型的训练上（engineering）有什么改进，然后两部分讲了pretraining和posttraining以及evaluation相关的东西。&lt;/p&gt;
-&lt;h2&gt;2. How to solve?&lt;/h2&gt;
-&lt;h3&gt;2.1. Basic Architecture&lt;/h3&gt;
-&lt;p&gt;模型的基本架构里面主要有两点：1是把原来的Attention改成了Multi-head Latent Attention；2是把原来的FFN改成了DeepSeekMoE。这样做的目的一是减少了计算量；二是减少了cache的data，从而节约了GPU的内存。具体如下：&lt;/p&gt;
-&lt;p&gt;DeekSeek模型架构
-&lt;img alt="20250216_01_deepseek_v3_architecture.png" src="/figures/20250216_01_deepseek_v3_architecture.png"&gt;&lt;/p&gt;
-&lt;h4&gt;2.1.1. Multi-head latent attention (MLA)&lt;/h4&gt;
-&lt;p&gt;相比较于原始的&lt;a href="https://arxiv.org/abs/1706.03762"&gt;Attention&lt;/a&gt;模型里面介绍的注意力机制, DS使用Multi-head latent attention (MLA)的架构，跟原来的Multi-head attention不一样的是这里面从 &lt;span class="math"&gt;\(h_t\)&lt;/span&gt; 来计算 &lt;span class="math"&gt;\(k, q, v\)&lt;/span&gt; 的时候，先进行降维，把 &lt;span class="math"&gt;\(h_t \in \mathbb{R}^d\)&lt;/span&gt; 投影到一个低维空间 &lt;span class="math"&gt;\(\color{blue}{c_t^{KV} = W^{DKV} h_t}\)&lt;/span&gt; ，然后再升维到 &lt;span class="math"&gt;\(\color{blue}{k_t^C=W^{UK}c_t^{KV}}\)&lt;/span&gt; ；以及投影到一个低维的 &lt;span class="math"&gt;\(\color{blue}{c_t^Q=W^{DQ}h_t}\)&lt;/span&gt;，然后再升维到 &lt;span class="math"&gt;\(\color{blue}{q_t^C = W^{UQ} c_t^Q}\)&lt;/span&gt;。这样的话在进行inference的时候只要保存低维的 &lt;span class="math"&gt;\(\color{blue}{c_t^{KV}}\)&lt;/span&gt; 和 &lt;span class="math"&gt;\(\color{blue}{c_t^Q}\)&lt;/span&gt;. 比如说，原来的 &lt;span class="math"&gt;\(\text{dim}(h_t) = 7168\)&lt;/span&gt;, 通过一个降维矩阵 &lt;span class="math"&gt;\(\text{dim}(W^{DKV})=4096 \times 7186\)&lt;/span&gt;把它降到4096维，那么需要保存的矩阵 &lt;span class="math"&gt;\(\color{blue}{c_t^{KV}}\)&lt;/span&gt;就小了很多。 具体地说，&lt;/p&gt;
-&lt;div class="math"&gt;\begin{aligned}
-&amp;amp;  \textcolor{blue}{c_t^{KV}} = W^{DKV} h_t, \\
-&amp;amp;  [k_{t,1}^{C}, k_{t,2}^{C}, ..., k_{t,n_h}^{C}] = k_t^C = W^{UK} c_t^{KV}, \\
-&amp;amp;  \textcolor{blue}{k_t^R} = \text{RoPE}(W^{KR} h_t), \\
-&amp;amp;  k_{t,i} = \left[k_{t,i}^{C}; k_t^R \right], \\
-&amp;amp;  [v_{t,1}^{C}, v_{t,2}^{C}, ..., v_{t,n_h}^{C}] = v_t^C = W^{UV} c_t^{KV},
-\end{aligned}&lt;/div&gt;
-&lt;p&gt;这里 &lt;span class="math"&gt;\( W^{DKV} \in \mathbb{R}^{d_c \times d} $ 是一个降维投影矩阵; $W^{UK}, W^{UV} \in \mathbb{R}^{d_h n_h \times d_c}\)&lt;/span&gt; 是对应的 keys 和 values 的升维矩阵。在做inference的时候，只需要&lt;span class="math"&gt;\(\textcolor{blue}{c_t^{KV}}\)&lt;/span&gt;和&lt;span class="math"&gt;\(\textcolor{blue}{k_t^R}\)&lt;/span&gt;，即节省了计算量，也节约了内存。&lt;/p&gt;
-&lt;p&gt;对Query，也有同样的处理来降维
-&lt;/p&gt;
-&lt;div class="math"&gt;\begin{aligned}
-&amp;amp; \textcolor{blue}{c_t^Q} = W^{DQ} h_t, \\
-&amp;amp; [q_{t,1}^{C}, q_{t,2}^{C}, ..., q_{t,n_h}^{C}] = q_t^C = W^{UQ} c_t^Q, \\
-&amp;amp; [q_{t,1}^{R}, q_{t,2}^{R}, ..., q_{t,n_h}^{R}] = q_t^R = \text{RoPE}(W^{QR} c_t^Q), \\
-&amp;amp; q_{t,i} = [q_{t,i}^{C}, q_{t,i}^{R}],
-\end{aligned}&lt;/div&gt;
-&lt;h4&gt;2.1.2. DeepSeekMoE with Auxiliary-Loss-Free Load Balancing&lt;/h4&gt;
-&lt;h5&gt;Basic Architecture of DeepSeekMoE&lt;/h5&gt;
-&lt;p&gt;在2017年的Attention论文里面，decoder先是计算Attention，然后再计算FFN从而predict最后的token。DS里面，FFN被进一步改成了MoE。MoE的意思是模型是由一些列的Expert构成。每个Expert可以是一个MLP，一个CNN或者其他的神经网络模型，或者每个Expert可以是一个tansformer的encoder/decoder。每个 Expert 负责学习不同的数据模式，MoE 通过 Gating Network 选择合适的Expert，使得不同的数据被送往最擅长Expert家处理。每预测下一个token的时候，MoE不是使用某一个Expert，也不是使用所有的Expert，而是选择其中的Top &lt;span class="math"&gt;\(K\)&lt;/span&gt; 个Expert来进行预测。选哪 &lt;span class="math"&gt;\(K\)&lt;/span&gt; 个Expert是通过一个Gating网络来确定。通常 &lt;span class="math"&gt;\(K \ll N\)&lt;/span&gt;，所以MoE是一个稀疏网络。使用MoE第一个好处是通过更精细化的划分，模型有更大的灵活性，不同的Expert可以学习不同的数据。比如如果 &lt;span class="math"&gt;\(N=16\)&lt;/span&gt;，&lt;span class="math"&gt;\(K=2\)&lt;/span&gt;，那么就有 &lt;span class="math"&gt;\(C(16, 2)=160\)&lt;/span&gt; 个组合。如果每个Expert再split成4个小的Expert，那么总共的组合就是 &lt;span class="math"&gt;\(C(64, 8)=4,426,165,368\)&lt;/span&gt;。这样极大的增加了模型的灵活性。第二个好处是节省计算资源，因为每次只需要激活很少的Expert来参加计算，而不像transfomer那样所有的参数都参加计算。也就是说，MoE可以训练一个更大更多参数的模型，从而记住更多的知识，但是每次实际只有很少一部分参数参加计算。而且应为每个Expert是独立的模型，没有共享参数，所以他们可以并行进行计算。&lt;/p&gt;
-&lt;p&gt;MoE的架构见下图
-&lt;img alt="20250216_03_deepseek_v2_moe.png" src="/figures/20250216_03_deepseek_v2_moe.png"&gt;&lt;/p&gt;
-&lt;p&gt;在DS的FFN里面，DeepSeekMoE在MOE的基础上更进一步：1）他们把Expert进一步细化，然后既有一些Expert用来做routing，具体地说，对routingd的Expert，预测只是route到这些Expert的某一些上面。同时，他们还有一些Expert是共享Expert，也就是说，在预测的时候，他们每次都是被使用。2）DS优化了Expert的选择，使用affinity score来选择专家。3）DS的Expert更finer，同时也更稀疏。这样进一步降低了运算成本。&lt;/p&gt;
-&lt;p&gt;DeepSeekMoE的架构见下图
-&lt;img alt="20250216_02_original_moe.png" src="/figures/20250216_02_original_moe.png"&gt;&lt;/p&gt;
-&lt;p&gt;假设每个Expert &lt;span class="math"&gt;\(i\)&lt;/span&gt; 的中心是 &lt;span class="math"&gt;\(\mathbf{e}_{i}\)&lt;/span&gt;，首先计算 &lt;span class="math"&gt;\(\color{blue}{s_{i,t} = \sigma(\mathbf{u}_t^\top \mathbf{e}_i)}\)&lt;/span&gt; 作为 token &lt;span class="math"&gt;\(t\)&lt;/span&gt; 与 Expert &lt;span class="math"&gt;\(i\)&lt;/span&gt; 的相似度： &lt;span class="math"&gt;\(\mathbf{e}_i\)&lt;/span&gt; 作为Expert &lt;span class="math"&gt;\(i\)&lt;/span&gt; 的中心向量，通过与token的输入 &lt;span class="math"&gt;\(\mathbf{u}_t\)&lt;/span&gt; 进行点积，再经过 sigmoid 计算出 token 对该Expert的 affinity，从而决定 token 是否被路由到该Expert。&lt;/p&gt;
-&lt;p&gt;&lt;span class="math"&gt;\(g^{\prime}_{i,t}\)&lt;/span&gt; 是Expert &lt;span class="math"&gt;\(i\)&lt;/span&gt;的gating value，根据所有的Expert的 &lt;span class="math"&gt;\(s_{i,t}\)&lt;/span&gt;的值，来选择最高的 &lt;span class="math"&gt;\(K_r\)&lt;/span&gt;个。
-&lt;/p&gt;
-&lt;div class="math"&gt;$$
-    g'_{i,t} =
-    \begin{cases} 
-        s_{i,t}, &amp;amp; s_{i,t} \in \text{Topk}(\{s_{j,t} | 1 \leq j \leq N_r\}, K_r), \\
-        0, &amp;amp; \text{otherwise},
-    \end{cases}
-$$&lt;/div&gt;
-&lt;p&gt;然后算出这 &lt;span class="math"&gt;\(K_r\)&lt;/span&gt;个Expert的权重 &lt;span class="math"&gt;\(\color{blue}{g_{i,t} = \frac{g^{\prime}_{i,t}}{\sum_{j=1}^{N_r} g'_{j,t}}}\)&lt;/span&gt;。尽管这儿的公式看分母是&lt;span class="math"&gt;\(N_r\)&lt;/span&gt;个&lt;span class="math"&gt;\(g'_{i,t}\)&lt;/span&gt;相加，但是实际上有&lt;span class="math"&gt;\(N_r - K_r\)&lt;/span&gt;个为0.&lt;/p&gt;
-&lt;p&gt;最后得到新的output为 &lt;span class="math"&gt;\(\color{blue}{\mathbf{h}'_t = \mathbf{u}_t + \sum_{i=1}^{N_s} \text{FFN}^{(s)}_i(\mathbf{u}_t) + \sum_{i=1}^{N_r} g_{i,t} \text{FFN}^{(r)}_i(\mathbf{u}_t)}\)&lt;/span&gt;. 注意的是，这里面从 &lt;span class="math"&gt;\(N_r\)&lt;/span&gt; 个Expert里面选择了 &lt;span class="math"&gt;\(K_r\)&lt;/span&gt;个来进行计算，&lt;span class="math"&gt;\(K_r \ll N_r\)&lt;/span&gt;，从而节约了大量的计算。同时，相比较于一般的MoE，DS使用了 &lt;span class="math"&gt;\(N_s\)&lt;/span&gt;个 shared Expert，这些Expert参加所有的token的运算。通过引入共享专家，模型可以在不同任务之间共享通用知识，避免每个专家都独立学习相似的内容，从而减少了知识冗余。&lt;/p&gt;
-&lt;h5&gt;Auxiliary-Loss-Free Load Balancing in DeepSeek-V3&lt;/h5&gt;
-&lt;p&gt;实际运行的时候，可能会出现这种情况：模型的token大部分都是有某几个Expert来predict，剩下来的Expert使用率会比较少，导致Expert负载不均衡。以前的MOE使用auxiliary loss来让Expert负载均衡。通过惩罚imbalanced Expert utilization （加上更多的loss）来来达到均衡负载的目的。但是这样做有两个问题：1）Too strong auxiliary loss hurts model performance by interfering with learning objectives. 2）Difficult to tune: Balancing between efficiency and accuracy requires careful hyperparameter tuning.&lt;/p&gt;
-&lt;p&gt;DS提出了Auxiliary-Loss-Free Load Balancing来达到balanced routing of tokens to different Experts.具体的说实在gating function里面添加一个bias的项，通过bias的值来平衡Expert的调用。&lt;/p&gt;
-&lt;p&gt;具体的说，在计算权重&lt;span class="math"&gt;\(g'_{i,t}\)&lt;/span&gt;的时候，对每个token和Expert的affinity score都添加了一个bias &lt;span class="math"&gt;\(b_i\)&lt;/span&gt;，变成&lt;span class="math"&gt;\(s_{i,t} + b_i \in \text{Topk}(\{s_{j,t} + b_j | 1 \leq j \leq N_r\}, K_r)\)&lt;/span&gt;, 当某个Expert &lt;span class="math"&gt;\(j\)&lt;/span&gt;出现overload的时候，就把对应的&lt;span class="math"&gt;\(b_j\)&lt;/span&gt;减小&lt;span class="math"&gt;\(\gamma\)&lt;/span&gt; 。这样的话新的&lt;span class="math"&gt;\(s_{j,t} + b_j\)&lt;/span&gt;就会减小一点，这样的话 &lt;span class="math"&gt;\(\textcolor{blue}{Top k}\)&lt;/span&gt; 个选择的时候这个Expert就会排名靠后一点，更可能不会被选中因为&lt;span class="math"&gt;\(g'_{i,t} = 0\)&lt;/span&gt;。&lt;/p&gt;
-&lt;h5&gt;Complementary Sequence-Wise Auxiliary Loss&lt;/h5&gt;
-&lt;p&gt;DeepSeek-V3 主要依赖 Auxiliary-Loss-Free 负载均衡策略来确保 Experts 间的负载均衡。然而，为了防止单个序列内部的极端不平衡，DeepSeek-V3 还引入了 Complementary Sequence-Wise Auxiliary Loss. 通常MoE模型的负载均衡都在batch level进行，但是对一个batch的多个sequence，某个sequence 内部某些Expert可能用的很多，而其他Expert用的很少。DS的想法是要在每个sequence level，也尽可能的让Expert utilization均衡，负载不会过于集中或稀疏。同时该损失的强度非常低，以避免对模型性能产生负面影响。&lt;/p&gt;
-&lt;p&gt;下面我们主要来理解原文中的公式，为什么这个公式就能够均衡 Sequence level的Expert 负载。&lt;/p&gt;
-&lt;div class="math"&gt;\begin{aligned}
-&amp;amp; \mathcal{L}_{\text{Bal}} = \alpha \sum_{i=1}^{N_r} f_i P_i, \\
-&amp;amp; f_i = \frac{N_r}{K_r T} \sum_{t=1}^{T} \mathbb{1} \left(s_{i,t} \in \text{Topk}(\{s_{j,t} | 1 \leq j \leq N_r\}, K_r) \right), \\
-&amp;amp; s'_{i,t} = \frac{s_{i,t}}{\sum_{j=1}^{N_r} s_{j,t}}, \\
-&amp;amp; P_i = \frac{1}{T} \sum_{t=1}^{T} s'_{i,t}
-\end{aligned}&lt;/div&gt;
-&lt;p&gt;&lt;span class="math"&gt;\(P_i\)&lt;/span&gt;是看在 sequence 上面 Expert 的使用是不是比较均衡。如果不均衡的话，&lt;span class="math"&gt;\(P_i\)&lt;/span&gt;的值就会比较大。具体原因：首先看&lt;span class="math"&gt;\(s^{\prime}_{i,t}\)&lt;/span&gt; 和 &lt;span class="math"&gt;\(P_i\)&lt;/span&gt;。对归一化的affinity score &lt;span class="math"&gt;\(s^{\prime}_{i,t} = \frac{s_{i,t}}{\sum_{j=1}^{N_r} s_{j,t}}\)&lt;/span&gt;, 计算Expert &lt;span class="math"&gt;\(i\)&lt;/span&gt; 在整个sequence (Sequence 的长度为 &lt;span class="math"&gt;\(T\)&lt;/span&gt;) 上面的的平均得分 &lt;span class="math"&gt;\(P_i = \frac{1}{T} \sum_{t=1}^{T} s^{\prime}_{i,t}\)&lt;/span&gt;: 如果Expert &lt;span class="math"&gt;\(i\)&lt;/span&gt; 在sequence的很多token &lt;span class="math"&gt;\(t\)&lt;/span&gt;上被选中，那么对应的 &lt;span class="math"&gt;\(s_{i,t}\)&lt;/span&gt; 就会被其他的&lt;span class="math"&gt;\(s_{j,t}\)&lt;/span&gt;大 (&lt;span class="math"&gt;\(s_{i,t} \gg s_{j,t}\)&lt;/span&gt; for &lt;span class="math"&gt;\(j \neq i\)&lt;/span&gt;), 而 &lt;span class="math"&gt;\(s^{\prime}_{i,t}\)&lt;/span&gt; 是 &lt;span class="math"&gt;\(s_{i,t}\)&lt;/span&gt;对所有的 Expert的归一化值，那么&lt;span class="math"&gt;\(s^{\prime}_{i,t}\)&lt;/span&gt;就相应的比较大。而&lt;span class="math"&gt;\(P_i\)&lt;/span&gt;是&lt;span class="math"&gt;\(s^{\prime}_{i,t}\)&lt;/span&gt;在整个 sequence 上的平均值，所以它也会比较大。最后相对应的损失函数 &lt;span class="math"&gt;\(\mathcal{L}_{\text{Bal}} = \alpha \sum_{i=1}^{N_r} f_i P_i\)&lt;/span&gt; 就比较大。&lt;/p&gt;
-&lt;p&gt;&lt;span class="math"&gt;\(f_i\)&lt;/span&gt; 是 Expert &lt;span class="math"&gt;\(i\)&lt;/span&gt; 被使用的频率的归一化值。公式 &lt;span class="math"&gt;\(f_i = \frac{N_r}{K_r T} \sum_{t=1}^{T} \mathbb{1} \left(s_{i,t} \in \text{Topk}(\{s_{j,t} | 1 \leq j \leq N_r\}, K_r) \right)\)&lt;/span&gt; 统计了每个 Expert &lt;span class="math"&gt;\(i\)&lt;/span&gt; 在当前序列 &lt;span class="math"&gt;\(T\)&lt;/span&gt; 个token中被使用的频率 （&lt;span class="math"&gt;\(\sum_{t=1}^{T} \mathbb{1} \left(s_{i,t} \in \text{Topk}(\{s_{j,t} | 1 \leq j \leq N_r\}, K_r) \right)\)&lt;/span&gt;），然后做了归一化 &lt;span class="math"&gt;\(\frac{N_r}{K_r T}\)&lt;/span&gt;. 同样，如果 Expert &lt;span class="math"&gt;\(i\)&lt;/span&gt; 在这个 sequence 中被调用的次数很多，那么这个值也会更大。&lt;/p&gt;
-&lt;p&gt;最后，损失函数公式里的 &lt;span class="math"&gt;\(\alpha\)&lt;/span&gt; 是个取值很小的超参数。它的值很小是为了不过度影响主要训练目标。&lt;/p&gt;
-&lt;h3&gt;2.2. Multi-Token Prediction (MTP)&lt;/h3&gt;
-&lt;p&gt;DS还使用了MTP，而不是像一般的pre-training那样仅仅只预测 next token（2017的Attention文章就是只predict next token）。这有两个好处：1. 同时预测多个token可以提高data的使用效率。2. 让模型在准备representation的时候能够考虑的更长远。跟原始的MTP文章不同的是，DS不是同时predict &lt;span class="math"&gt;\(D\)&lt;/span&gt; 个token (输出一个 &lt;span class="math"&gt;\(D \times V\)&lt;/span&gt; 的矩阵， 其中 &lt;span class="math"&gt;\(V\)&lt;/span&gt; 是词表大小); 换个表达方式，对应的prediction 和损失函数是 &lt;span class="math"&gt;\(L_n = -\sum_t \log P_{\theta} (x_{t+n:t+1} \mid x_{t:1})\)&lt;/span&gt;.  DS是sequentially predict additional token。&lt;/p&gt;
-&lt;p&gt;MTP from Gloeckle et al. (2024), which is  &lt;span class="math"&gt;\(D \times V\)&lt;/span&gt; 的矩阵
-&lt;img alt="20250216_04_deepseek_orig_MTP.png" src="/figures/20250216_04_deepseek_orig_MTP.png"&gt;&lt;/p&gt;
-&lt;p&gt;DS的MTP模块结构用一句话来简单概括就是：DS的MTP使用 &lt;span class="math"&gt;\(D\)&lt;/span&gt; 个sequential modules来预测 &lt;span class="math"&gt;\(D\)&lt;/span&gt; 个tokens。这 &lt;span class="math"&gt;\(D\)&lt;/span&gt; 个modules 共享 embedding &lt;span class="math"&gt;\(\text{Emb}(\cdot)\)&lt;/span&gt;，共享输出头 &lt;span class="math"&gt;\(\text{OutHead}(\cdot)\)&lt;/span&gt; 。 第 &lt;span class="math"&gt;\(k\)&lt;/span&gt; 个token的 MTP 模块有一个专用的 transformer 块 &lt;span class="math"&gt;\(\text{TRM}_k(\cdot)\)&lt;/span&gt;，以及一个投影矩阵 &lt;span class="math"&gt;\(M_k \in \mathbb{R}^{d \times 2d}\)&lt;/span&gt;  &lt;/p&gt;
-&lt;p&gt;DeepSeek V3 MTP: Use D MTP module and &lt;span class="math"&gt;\(k\)&lt;/span&gt;-th module predict &lt;span class="math"&gt;\(k\)&lt;/span&gt;-depth token
-&lt;img alt="20250216_05_deepseek_v3_MTP.png" src="/figures/20250216_05_deepseek_v3_MTP.png"&gt;&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;prediction&lt;/strong&gt;：对于输入sequence的第 &lt;span class="math"&gt;\(i\)&lt;/span&gt; 个token &lt;span class="math"&gt;\(t_i\)&lt;/span&gt;，在第 &lt;span class="math"&gt;\(k\)&lt;/span&gt; 个prediction depth (也就是下面要 predict &lt;span class="math"&gt;\(t_{i+k+1}\)&lt;/span&gt;)，MTP module： 1）首先得到 &lt;span class="math"&gt;\(i\)&lt;/span&gt;-th token  在第 &lt;span class="math"&gt;\((k-1)\)&lt;/span&gt;-th 深度的表示 &lt;span class="math"&gt;\(\mathbf{h}_i^{k-1} \in \mathbb{R}^{d}\)&lt;/span&gt;， 以及第 &lt;span class="math"&gt;\((i+k)\)&lt;/span&gt;-th 个 token 的 embediding  &lt;span class="math"&gt;\(Emb(t_{i+k}) \in \mathbb{R}^{d}\)&lt;/span&gt;；  2）然后把他们concat起来（长度为 &lt;span class="math"&gt;\(2d\)&lt;/span&gt;），再通过 RMSNorm 和 投影矩阵 &lt;span class="math"&gt;\(M_k \in \mathbb{R}^{d \times 2d}\)&lt;/span&gt;} 来生成新的表示 
-&lt;span class="math"&gt;\(h’^k_i = M_k [\text{RMSNorm}(\mathbf{h}_i^{k-1}); \text{RMSNorm}(Emb(t_{i+k}))]\)&lt;/span&gt;；3）然后 &lt;span class="math"&gt;\(\mathbf{h}’^k_i\)&lt;/span&gt;  作为输入到第 &lt;span class="math"&gt;\(k\)&lt;/span&gt;-th  个transformer 模块  &lt;span class="math"&gt;\(\text{TRM}_k(\cdot)\)&lt;/span&gt; ，生成当前深度的输出表示 &lt;span class="math"&gt;\(\mathbf{h}^k_{1:T-k} = TRM_k(\mathbf{h}’^{k}_{1:T-k})\)&lt;/span&gt;；最后使用 &lt;span class="math"&gt;\(\text{OutHead}\)&lt;/span&gt; 将 &lt;span class="math"&gt;\(\mathbf{h}^k_i\)&lt;/span&gt; 转换成预测概率 &lt;span class="math"&gt;\(p_{i+k+1} = OutHead(\mathbf{h}^k_i) \in \mathbb{R}^{V}\)&lt;/span&gt;。&lt;/p&gt;
-&lt;p&gt;我的理解：&lt;/p&gt;
-&lt;p&gt;1) 传统的next token prediction：&lt;span class="math"&gt;\(t_1\)&lt;/span&gt;-&amp;gt; &lt;span class="math"&gt;\(h_1\)&lt;/span&gt; -&amp;gt; &lt;span class="math"&gt;\(\hat{t}_2\)&lt;/span&gt;, &lt;span class="math"&gt;\(t_2\)&lt;/span&gt; -&amp;gt; &lt;span class="math"&gt;\(h_2\)&lt;/span&gt; -&amp;gt; &lt;span class="math"&gt;\(\hat{t}_3\)&lt;/span&gt;, .... 也就是main model做的事情.&lt;/p&gt;
-&lt;p&gt;2) 在DS的 &lt;span class="math"&gt;\(k\)&lt;/span&gt;-th MTP 模块中，模型会根据第 &lt;span class="math"&gt;\((k-1)\)&lt;/span&gt;-depth 的 MTP representation &lt;span class="math"&gt;\(h_i^{k-1}\)&lt;/span&gt; 和 token &lt;span class="math"&gt;\(t_{i+k}\)&lt;/span&gt; 的embedding来的到 &lt;span class="math"&gt;\(k\)&lt;/span&gt;-depth 的representaion &lt;span class="math"&gt;\(\mathbf{h}_i^k\)&lt;/span&gt;，从而更进一步来预测 &lt;span class="math"&gt;\((k+1)\)&lt;/span&gt;-th token。下面用 &lt;span class="math"&gt;\(k=1, 2, 3\)&lt;/span&gt; 作为例子来说明是怎么工作的。 具体来说, 对输入 token &lt;span class="math"&gt;\(i\)&lt;/span&gt; :&lt;/p&gt;
-&lt;p&gt;在 &lt;span class="math"&gt;\(k=1\)&lt;/span&gt; 的时候，先把 &lt;span class="math"&gt;\(t_i\)&lt;/span&gt; 的representaion &lt;span class="math"&gt;\(h_i^{k-1}=h_i^0\)&lt;/span&gt; （from main model） 和 token &lt;span class="math"&gt;\(t_{i+1}\)&lt;/span&gt; (&lt;span class="math"&gt;\(i+k=i+1\)&lt;/span&gt;) 的embedding concat在一起得到 &lt;span class="math"&gt;\(h’^1_i\)&lt;/span&gt;，然后输入 &lt;span class="math"&gt;\(TRM_1\)&lt;/span&gt;， 得到 &lt;span class="math"&gt;\(\mathbf{h}^1_{1:T-1} = TRM_1(\mathbf{h}’^{1}_{1:T-1})\)&lt;/span&gt;， 最后得到token &lt;span class="math"&gt;\(t_{i+2}\)&lt;/span&gt; 的prediction 分布 &lt;span class="math"&gt;\(p_{i+2}\)&lt;/span&gt;&lt;/p&gt;
-&lt;p&gt;在 &lt;span class="math"&gt;\(k=2\)&lt;/span&gt; 的时候，先把 &lt;span class="math"&gt;\(t_i\)&lt;/span&gt; 的representaion &lt;span class="math"&gt;\(h_i^{k-1}=h_i^1\)&lt;/span&gt; （from &lt;span class="math"&gt;\(k=1\)&lt;/span&gt; MTP module） 和 token &lt;span class="math"&gt;\(t_{i+2}\)&lt;/span&gt; ( &lt;span class="math"&gt;\(i+k=i+2\)&lt;/span&gt; ) 的embedding concat在一起得到 &lt;span class="math"&gt;\(h’^2_i\)&lt;/span&gt;，然后输入 &lt;span class="math"&gt;\(TRM_2\)&lt;/span&gt;， 得到 &lt;span class="math"&gt;\(\mathbf{h}^2_{1:T-2} = TRM_2(\mathbf{h}’^{2}_{1:T-2})\)&lt;/span&gt;， 最后得到token &lt;span class="math"&gt;\(t_{i+3}\)&lt;/span&gt;  的prediction 分布 &lt;span class="math"&gt;\(p_{i+3}\)&lt;/span&gt;&lt;/p&gt;
-&lt;p&gt;在 &lt;span class="math"&gt;\(k=3\)&lt;/span&gt; 的时候，先把 &lt;span class="math"&gt;\(t_i\)&lt;/span&gt; 的representaion &lt;span class="math"&gt;\(h_i^{k-1}=h_i^2\)&lt;/span&gt; （from &lt;span class="math"&gt;\(k=2\)&lt;/span&gt; MTP module） 和 token &lt;span class="math"&gt;\(t_{i+3}\)&lt;/span&gt; ( &lt;span class="math"&gt;\(i+k=i+3\)&lt;/span&gt; ) 的embedding concat在一起得到 &lt;span class="math"&gt;\(h’^3_i\)&lt;/span&gt;，然后输入 &lt;span class="math"&gt;\(\text{TRM}_3\)&lt;/span&gt;， 得到 &lt;span class="math"&gt;\(\mathbf{h}^3_{1:T-3} = TRM_3(\mathbf{h}’^{3}_{1:T-3})\)&lt;/span&gt;， 最后得到token &lt;span class="math"&gt;\(t_{i+4}\)&lt;/span&gt;  的prediction 分布 &lt;span class="math"&gt;\(p_{i+4}\)&lt;/span&gt;&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;MTP 的目标函数&lt;/strong&gt; 对每个predict depth k，其损失函数仍然是cross-entropy，定义为 &lt;span class="math"&gt;\(\mathcal{L}_{\text{MTP}}^k\)&lt;/span&gt; = &lt;span class="math"&gt;\(\mathcal{L}_{\text{MTP}}^k\)&lt;/span&gt; = &lt;span class="math"&gt;\(\text{CrossEntropy}(P_{2+k:T+1}^{k}, t_{2+k:T+1})\)&lt;/span&gt; = &lt;span class="math"&gt;\(-\frac{1}{T} \sum_{i=2+k}^{T+1} \log p_i^k[t_i]\)&lt;/span&gt;。其中 &lt;span class="math"&gt;\(T\)&lt;/span&gt; 是输入序列的长度, &lt;span class="math"&gt;\(t_i\)&lt;/span&gt; 是输入序列的第 &lt;span class="math"&gt;\(i\)&lt;/span&gt;-th 个真实值,  &lt;span class="math"&gt;\(p_i^k[t_i]\)&lt;/span&gt; 是第&lt;span class="math"&gt;\(k\)&lt;/span&gt;-th 个 MTP 模块对  &lt;span class="math"&gt;\(t_i\)&lt;/span&gt; 的prediciton probability.&lt;/p&gt;
-&lt;p&gt;最终 MTP 的损失函数是对所有的预测深度 (&lt;span class="math"&gt;\(k\)&lt;/span&gt; 从1 到&lt;span class="math"&gt;\(D\)&lt;/span&gt;) 的平均 乘以权重 &lt;span class="math"&gt;\(\lambda\)&lt;/span&gt; ，&lt;span class="math"&gt;\(\mathcal{L}_{\text{MTP}}\)&lt;/span&gt; = &lt;span class="math"&gt;\(\frac{\lambda}{D} \sum_{k=1}^{D} \mathcal{L}_{\text{MTP}}^k\)&lt;/span&gt; &lt;/p&gt;
-&lt;p&gt;从DS的paper公式25看，&lt;span class="math"&gt;\(\mathcal{L}_{\text{MTP}}\)&lt;/span&gt; 只是 MTP 的损失函数。最终的损失函数应该还要加上 &lt;span class="math"&gt;\(\mathcal{L}_{\text{Main}}\)&lt;/span&gt;。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;MTP 在推理的时候怎么用呢？&lt;/strong&gt; MTP的主要目的是用来提高 main model的表现，在推理的时候，并不要使用MTP，而只是使用 main model来predict next token。&lt;/p&gt;
-&lt;h3&gt;未完待续&lt;/h3&gt;
-&lt;h3&gt;Reference&lt;/h3&gt;
-&lt;ol&gt;
-&lt;li&gt;&lt;a href="https://github.com/deepseek-ai/DeepSeek-V3/blob/main/DeepSeek_V3.pdf"&gt;DeepSeek-V3 Technical Report&lt;/a&gt;&lt;/li&gt;
-&lt;/ol&gt;
-&lt;script type="text/javascript"&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+&lt;/script&gt;</content><category term="python"></category><category term="python"></category><category term="AI"></category><category term="LLM"></category><category term="AIG"></category></entry><entry><title>Image Generation 2: Latent Diffusion model / Stable Diffusion</title><link href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/" rel="alternate"></link><published>2023-10-01T00:00:00-05:00</published><updated>2023-10-01T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2023-10-01:/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/</id><summary type="html">&lt;p&gt;In the &lt;a href="https://songhuiming.github.io/pages/2023/07/04/image-generation-1-diffusion-model/"&gt;previous blog&lt;/a&gt; we introduced diffusion model (DDPM) which is to learn the step (time &lt;span class="math"&gt;\(t\)&lt;/span&gt;) and the noise function (NN model) by adding Gaussian noise to an image step by step and reversing the process by denosiing from Gaussian noise to an image. Diffusion model is the most …&lt;/p&gt;&lt;script type='text/javascript'&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
     var align = "center",
         indent = "0em",
         linebreak = "false";
@@ -345,59 +358,7 @@ $$&lt;/div&gt;
     (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
     (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
 }
-&lt;/script&gt;</content><category term="python"></category><category term="python"></category><category term="AI"></category><category term="LLM"></category><category term="AIG"></category></entry><entry><title>Image Generation 2: Latent Diffusion model / Stable Diffusion</title><link href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/" rel="alternate"></link><published>2023-10-01T00:00:00-05:00</published><updated>2023-10-01T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2023-10-01:/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/</id><summary type="html">&lt;script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"&gt;&lt;/script&gt;
-&lt;script&gt;
-        MathJax.Hub.Config({
-            config: ["MMLorHTML.js"],
-            extensions: ["tex2jax.js","TeX/AMSmath.js","TeX/AMSsymbols.js"],
-            jax: ["input/TeX"],
-            tex2jax: {
-                inlineMath: [ ['$','$'], ["\\(","\\)"] ],
-                displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
-                processEscapes: false
-            },
-            TeX: {
-                TagSide: "right",
-                TagIndent: ".8em",
-                MultLineWidth: "85%",
-                equationNumbers: {
-                   autoNumber: "AMS",
-                },
-                unicode: {
-                   fonts: "STIXGeneral,'Arial Unicode MS'"
-                }
-            },
-            showProcessingMessages: false
-        });
-&lt;/script&gt;
-
-&lt;p&gt;In the &lt;a href="https://songhuiming.github.io/pages/2023/07/04/image-generation-1-diffusion-model/"&gt;previous blog&lt;/a&gt; we introduced diffusion model (DDPM …&lt;/p&gt;</summary><content type="html">&lt;script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"&gt;&lt;/script&gt;
-&lt;script&gt;
-        MathJax.Hub.Config({
-            config: ["MMLorHTML.js"],
-            extensions: ["tex2jax.js","TeX/AMSmath.js","TeX/AMSsymbols.js"],
-            jax: ["input/TeX"],
-            tex2jax: {
-                inlineMath: [ ['$','$'], ["\\(","\\)"] ],
-                displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
-                processEscapes: false
-            },
-            TeX: {
-                TagSide: "right",
-                TagIndent: ".8em",
-                MultLineWidth: "85%",
-                equationNumbers: {
-                   autoNumber: "AMS",
-                },
-                unicode: {
-                   fonts: "STIXGeneral,'Arial Unicode MS'"
-                }
-            },
-            showProcessingMessages: false
-        });
-&lt;/script&gt;
-
-&lt;p&gt;In the &lt;a href="https://songhuiming.github.io/pages/2023/07/04/image-generation-1-diffusion-model/"&gt;previous blog&lt;/a&gt; we introduced diffusion model (DDPM) which is to learn the step (time &lt;span class="math"&gt;\(t\)&lt;/span&gt;) and the noise function (NN model) by adding Gaussian noise to an image step by step and reversing the process by denosiing from Gaussian noise to an image. Diffusion model is the most important part of Gen AI, however, there are still a few steps from Diffusion model to Gen AI: 
+&lt;/script&gt;</summary><content type="html">&lt;p&gt;In the &lt;a href="https://songhuiming.github.io/pages/2023/07/04/image-generation-1-diffusion-model/"&gt;previous blog&lt;/a&gt; we introduced diffusion model (DDPM) which is to learn the step (time &lt;span class="math"&gt;\(t\)&lt;/span&gt;) and the noise function (NN model) by adding Gaussian noise to an image step by step and reversing the process by denosiing from Gaussian noise to an image. Diffusion model is the most important part of Gen AI, however, there are still a few steps from Diffusion model to Gen AI: 
 1. How to comsume the prompts (instructions to Gen AI to generate a response) in the model? 
 2. Diffusion model needs huge computaiton as it is running on image pixel directly. 
 To sovle this, latent diffusion model (stable diffusion) was introduced to project the pixel level image to the smaller latent space with perceptual conpression. &lt;/p&gt;
@@ -667,59 +628,8 @@ Here &lt;span class="math"&gt;\( \varphi_{i}(z_t) \in \mathbb{R}^{N \times d_{\e
     (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
     (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
 }
-&lt;/script&gt;</content><category term="python"></category><category term="python"></category><category term="AI"></category><category term="LLM"></category><category term="AIG"></category></entry><entry><title>Image Generation 1: Diffusion model</title><link href="/pages/2023/07/04/image-generation-1-diffusion-model/" rel="alternate"></link><published>2023-07-04T00:00:00-05:00</published><updated>2023-07-04T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2023-07-04:/pages/2023/07/04/image-generation-1-diffusion-model/</id><summary type="html">&lt;script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"&gt;&lt;/script&gt;
-&lt;script&gt;
-        MathJax.Hub.Config({
-            config: ["MMLorHTML.js"],
-            extensions: ["tex2jax.js","TeX/AMSmath.js","TeX/AMSsymbols.js"],
-            jax: ["input/TeX"],
-            tex2jax: {
-                inlineMath: [ ['$','$'], ["\\(","\\)"] ],
-                displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
-                processEscapes: false
-            },
-            TeX: {
-                TagSide: "right",
-                TagIndent: ".8em",
-                MultLineWidth: "85%",
-                equationNumbers: {
-                   autoNumber: "AMS",
-                },
-                unicode: {
-                   fonts: "STIXGeneral,'Arial Unicode MS'"
-                }
-            },
-            showProcessingMessages: false
-        });
-&lt;/script&gt;
-
-&lt;p&gt;The &lt;a href="https://songhuiming.github.io/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/"&gt;previous notes introduced the text generation models (GPT …&lt;/a&gt;&lt;/p&gt;</summary><content type="html">&lt;script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"&gt;&lt;/script&gt;
-&lt;script&gt;
-        MathJax.Hub.Config({
-            config: ["MMLorHTML.js"],
-            extensions: ["tex2jax.js","TeX/AMSmath.js","TeX/AMSsymbols.js"],
-            jax: ["input/TeX"],
-            tex2jax: {
-                inlineMath: [ ['$','$'], ["\\(","\\)"] ],
-                displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
-                processEscapes: false
-            },
-            TeX: {
-                TagSide: "right",
-                TagIndent: ".8em",
-                MultLineWidth: "85%",
-                equationNumbers: {
-                   autoNumber: "AMS",
-                },
-                unicode: {
-                   fonts: "STIXGeneral,'Arial Unicode MS'"
-                }
-            },
-            showProcessingMessages: false
-        });
-&lt;/script&gt;
-
-&lt;p&gt;The &lt;a href="https://songhuiming.github.io/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/"&gt;previous notes introduced the text generation models (GPT family)&lt;/a&gt;. This reading note is about image generator papers.&lt;/p&gt;
+&lt;/script&gt;</content><category term="python"></category><category term="python"></category><category term="AI"></category><category term="LLM"></category><category term="AIG"></category></entry><entry><title>Image Generation 1: Diffusion model</title><link href="/pages/2023/07/04/image-generation-1-diffusion-model/" rel="alternate"></link><published>2023-07-04T00:00:00-05:00</published><updated>2023-07-04T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2023-07-04:/pages/2023/07/04/image-generation-1-diffusion-model/</id><summary type="html">&lt;p&gt;The &lt;a href="https://songhuiming.github.io/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/"&gt;previous notes introduced the text generation models (GPT family)&lt;/a&gt;. This reading note is about image generator papers.&lt;/p&gt;
+&lt;p&gt;Similar to text generator which generate the next token, OpenAI has &lt;a href="https://openai.com/research/image-gpt"&gt;image-GPT&lt;/a&gt; which is a large transformer trained on next pixel prediction in which the pixels are concated into a vector to …&lt;/p&gt;</summary><content type="html">&lt;p&gt;The &lt;a href="https://songhuiming.github.io/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/"&gt;previous notes introduced the text generation models (GPT family)&lt;/a&gt;. This reading note is about image generator papers.&lt;/p&gt;
 &lt;p&gt;Similar to text generator which generate the next token, OpenAI has &lt;a href="https://openai.com/research/image-gpt"&gt;image-GPT&lt;/a&gt; which is a large transformer trained on next pixel prediction in which the pixels are concated into a vector to build the autoregressive model. This model is time consuming as one image has lots of pixels compared to the tokens in the sentence. &lt;/p&gt;
 &lt;p&gt;Other models usually generate image from an embedding vector rather than pixel by pixel. These generative models usually have the input from the probability distribution (e.g., normal distribution). The sample vector is put into the image generator model to generate the image. These models include: 1) VAE; 2) Flow-based models; 3) GAN and 4) Diffusion models.&lt;/p&gt;
 &lt;p&gt;&lt;img alt="00_summary different image generator models" src="/figures/20230628_01_diffusion_summary_00.png"&gt;&lt;/p&gt;
@@ -875,61 +785,10 @@ $$&lt;/div&gt;
     (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
     (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
 }
-&lt;/script&gt;</content><category term="python"></category><category term="python"></category><category term="AI"></category><category term="LLM"></category><category term="AIG"></category></entry><entry><title>GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</title><link href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/" rel="alternate"></link><published>2023-05-28T00:00:00-05:00</published><updated>2023-05-28T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2023-05-28:/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/</id><summary type="html">&lt;script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"&gt;&lt;/script&gt;
-&lt;script&gt;
-        MathJax.Hub.Config({
-            config: ["MMLorHTML.js"],
-            extensions: ["tex2jax.js","TeX/AMSmath.js","TeX/AMSsymbols.js"],
-            jax: ["input/TeX"],
-            tex2jax: {
-                inlineMath: [ ['$','$'], ["\\(","\\)"] ],
-                displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
-                processEscapes: false
-            },
-            TeX: {
-                TagSide: "right",
-                TagIndent: ".8em",
-                MultLineWidth: "85%",
-                equationNumbers: {
-                   autoNumber: "AMS",
-                },
-                unicode: {
-                   fonts: "STIXGeneral,'Arial Unicode MS'"
-                }
-            },
-            showProcessingMessages: false
-        });
-&lt;/script&gt;
-
-&lt;h2&gt;1. GPT-1&lt;/h2&gt;
+&lt;/script&gt;</content><category term="python"></category><category term="python"></category><category term="AI"></category><category term="LLM"></category><category term="AIG"></category></entry><entry><title>GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</title><link href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/" rel="alternate"></link><published>2023-05-28T00:00:00-05:00</published><updated>2023-05-28T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2023-05-28:/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/</id><summary type="html">&lt;h2&gt;1. GPT-1&lt;/h2&gt;
 &lt;p&gt;&lt;a href="https://s3-us-west-2.amazonaws.com/openai-assets/research-covers/language-unsupervised/language_understanding_paper.pdf"&gt;Improving Language Understandingby Generative Pre-Training&lt;/a&gt;&lt;/p&gt;
-&lt;h3&gt;What the …&lt;/h3&gt;</summary><content type="html">&lt;script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"&gt;&lt;/script&gt;
-&lt;script&gt;
-        MathJax.Hub.Config({
-            config: ["MMLorHTML.js"],
-            extensions: ["tex2jax.js","TeX/AMSmath.js","TeX/AMSsymbols.js"],
-            jax: ["input/TeX"],
-            tex2jax: {
-                inlineMath: [ ['$','$'], ["\\(","\\)"] ],
-                displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
-                processEscapes: false
-            },
-            TeX: {
-                TagSide: "right",
-                TagIndent: ".8em",
-                MultLineWidth: "85%",
-                equationNumbers: {
-                   autoNumber: "AMS",
-                },
-                unicode: {
-                   fonts: "STIXGeneral,'Arial Unicode MS'"
-                }
-            },
-            showProcessingMessages: false
-        });
-&lt;/script&gt;
-
-&lt;h2&gt;1. GPT-1&lt;/h2&gt;
+&lt;h3&gt;What the problem GPT-1 solve?&lt;/h3&gt;
+&lt;p&gt;Before GPT-1, NLP was usually a supervised model. For each task, there are some labeled data, and then develop a suoervised model based on these labeled data. There are several problems with this approach: First, labeled data is …&lt;/p&gt;</summary><content type="html">&lt;h2&gt;1. GPT-1&lt;/h2&gt;
 &lt;p&gt;&lt;a href="https://s3-us-west-2.amazonaws.com/openai-assets/research-covers/language-unsupervised/language_understanding_paper.pdf"&gt;Improving Language Understandingby Generative Pre-Training&lt;/a&gt;&lt;/p&gt;
 &lt;h3&gt;What the problem GPT-1 solve?&lt;/h3&gt;
 &lt;p&gt;Before GPT-1, NLP was usually a supervised model. For each task, there are some labeled data, and then develop a suoervised model based on these labeled data. There are several problems with this approach: First, labeled data is required. But NLP does not like CV which has a well-labeled data imagenet. Second, the models trained by these different tasks are not very general. For example, it is difficult to directly use the model trained by translation on classification. &lt;/p&gt;
@@ -11308,33 +11167,7 @@ WHERE employee.id = employee_1.id AND employee_1.name = :name_1
 &lt;li&gt;
 &lt;p&gt;&lt;a href="https://muxuezi.github.io/posts/sqlalchemy-introduce.html#SQLAlchemy%E5%AE%89%E8%A3%85%E4%B8%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E8%BF%9E%E6%8E%A5"&gt;sqlalchemy introduce&lt;/a&gt;&lt;/p&gt;
 &lt;/li&gt;
-&lt;/ol&gt;</content><category term="python"></category><category term="python"></category><category term="sql"></category></entry><entry><title>Tensorflow简介--06: Logistic regression and KNN analysis for MNIST data</title><link href="/pages/2017/05/27/tensorflowjian-jie-06-logistic-regression-and-knn-analysis-for-mnist-data/" rel="alternate"></link><published>2017-05-27T00:00:00-05:00</published><updated>2017-05-27T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2017-05-27:/pages/2017/05/27/tensorflowjian-jie-06-logistic-regression-and-knn-analysis-for-mnist-data/</id><summary type="html">&lt;p&gt;&lt;a href="https://www.tensorflow.org/get_started/mnist/beginners"&gt;MNIST&lt;/a&gt; is used as example in tensorflow. Here are the examples of how to use logistic regression and KNN(K nearest neighbors) to analyze this data.&lt;/p&gt;</summary><content type="html">&lt;script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"&gt;&lt;/script&gt;
-&lt;script&gt;
-        MathJax.Hub.Config({
-            config: ["MMLorHTML.js"],
-            extensions: ["tex2jax.js","TeX/AMSmath.js","TeX/AMSsymbols.js"],
-            jax: ["input/TeX"],
-            tex2jax: {
-                inlineMath: [ ['$','$'], ["\\(","\\)"] ],
-                displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
-                processEscapes: false
-            },
-            TeX: {
-                TagSide: "right",
-                TagIndent: ".8em",
-                MultLineWidth: "85%",
-                equationNumbers: {
-                   autoNumber: "AMS",
-                },
-                unicode: {
-                   fonts: "STIXGeneral,'Arial Unicode MS'"
-                }
-            },
-            showProcessingMessages: false
-        });
-&lt;/script&gt;
-
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;numpy&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;np&lt;/span&gt;
+&lt;/ol&gt;</content><category term="python"></category><category term="python"></category><category term="sql"></category></entry><entry><title>Tensorflow简介--06: Logistic regression and KNN analysis for MNIST data</title><link href="/pages/2017/05/27/tensorflowjian-jie-06-logistic-regression-and-knn-analysis-for-mnist-data/" rel="alternate"></link><published>2017-05-27T00:00:00-05:00</published><updated>2017-05-27T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2017-05-27:/pages/2017/05/27/tensorflowjian-jie-06-logistic-regression-and-knn-analysis-for-mnist-data/</id><summary type="html">&lt;p&gt;&lt;a href="https://www.tensorflow.org/get_started/mnist/beginners"&gt;MNIST&lt;/a&gt; is used as example in tensorflow. Here are the examples of how to use logistic regression and KNN(K nearest neighbors) to analyze this data.&lt;/p&gt;</summary><content type="html">&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;numpy&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;np&lt;/span&gt;
 &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;matplotlib.pyplot&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;plt&lt;/span&gt;
 &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;tensorflow&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;tf&lt;/span&gt;
 
@@ -12037,32 +11870,6 @@ $$&lt;/div&gt;
     (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
 }
 &lt;/script&gt;</content><category term="python"></category><category term="python"></category><category term="deep learning"></category><category term="data mining"></category></entry><entry><title>Tensorflow简介--05: Multivariate Regression with Stochastic Gradient Descent</title><link href="/pages/2017/05/06/tensorflowjian-jie-05-multivariate-regression-with-stochastic-gradient-descent/" rel="alternate"></link><published>2017-05-06T00:00:00-05:00</published><updated>2017-05-06T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2017-05-06:/pages/2017/05/06/tensorflowjian-jie-05-multivariate-regression-with-stochastic-gradient-descent/</id><summary type="html">&lt;p&gt;在&lt;a href="http://songhuiming.github.io/pages/2017/02/26/tensorflowjian-jie-03/"&gt;3&lt;/a&gt;中我们介绍了怎么使用&lt;code&gt;TensorFlow&lt;/code&gt;做多元回归。本文使用一个图文结合的具体例子详细说明怎么做。下一篇我们将会沿用&lt;a href="http://songhuiming.github.io/pages/2017/03/05/tensorflowjian-jie-04/"&gt;4&lt;/a&gt;中所说的办法介绍怎么做logistic regression.做线性回归和logistic regression不是&lt;code&gt;tf&lt;/code&gt;的特长。&lt;code&gt;tf&lt;/code&gt;的特长是用各种神经网络做深度学习。我们将会在后几篇陆续介绍。&lt;/p&gt;</summary><content type="html">&lt;p&gt;尽管&lt;code&gt;TenforFlow(tf)&lt;/code&gt;最主要的功能是进行深度学习,包括&lt;a href="https://en.wikipedia.org/wiki/Convolutional_neural_network"&gt;卷积神经网络(CNN)&lt;/a&gt;,&lt;a href="https://en.wikipedia.org/wiki/Recurrent_neural_network"&gt;循环神经网络(RNN)&lt;/a&gt;和&lt;a href="https://en.wikipedia.org/wiki/Deep_learning"&gt;深度神经网络(DNN)&lt;/a&gt;等等。但是作为一个深度学习框架，其也提供了进行一般统计学习和优化的工具。前面(&lt;a href="http://songhuiming.github.io/pages/2017/02/26/tensorflowjian-jie-01/"&gt;1&lt;/a&gt;, &lt;a href="http://songhuiming.github.io/pages/2017/02/26/tensorflowjian-jie-02/"&gt;2&lt;/a&gt;, &lt;a href="http://songhuiming.github.io/pages/2017/02/26/tensorflowjian-jie-03/"&gt;3&lt;/a&gt;, &lt;a href="http://songhuiming.github.io/pages/2017/03/05/tensorflowjian-jie-04/"&gt;4&lt;/a&gt;)我们已经介绍了&lt;code&gt;tf&lt;/code&gt;的基本设置和各个命令的含义。下面我们使用一个例子来展示怎么使用&lt;code&gt;tf&lt;/code&gt;来进行多元回归拟合数据。具体的说，用一个例子来说明怎么借助&lt;code&gt;tf&lt;/code&gt;的&lt;code&gt;Stochastic Gradient Descent&lt;/code&gt;做多项式回归。下面的动图展示了拟合函数的参数(回归系数)在&lt;code&gt;tf&lt;/code&gt;经过多次迭代以后，拟合曲线渐渐逼近真实值的过程。&lt;/p&gt;
-&lt;script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"&gt;&lt;/script&gt;
-&lt;script&gt;
-        MathJax.Hub.Config({
-            config: ["MMLorHTML.js"],
-            extensions: ["tex2jax.js","TeX/AMSmath.js","TeX/AMSsymbols.js"],
-            jax: ["input/TeX"],
-            tex2jax: {
-                inlineMath: [ ['$','$'], ["\\(","\\)"] ],
-                displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
-                processEscapes: false
-            },
-            TeX: {
-                TagSide: "right",
-                TagIndent: ".8em",
-                MultLineWidth: "85%",
-                equationNumbers: {
-                   autoNumber: "AMS",
-                },
-                unicode: {
-                   fonts: "STIXGeneral,'Arial Unicode MS'"
-                }
-            },
-            showProcessingMessages: false
-        });
-&lt;/script&gt;
-
 &lt;p&gt;&lt;img alt="alt text" src="/figures/tf_multivar_regression.gif" title="Tensorflow fit result on different Epoch"&gt;&lt;/p&gt;
 &lt;p&gt;在使用&lt;code&gt;tf&lt;/code&gt;的时候，我们需要定义下面几个东西:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="mf"&gt;1.&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;输入和输出数据&lt;/span&gt;
