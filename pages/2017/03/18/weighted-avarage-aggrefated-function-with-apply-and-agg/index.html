@@ -4,10 +4,37 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>weighted avarage, aggrefated function with apply and agg &mdash; pydata</title>
+  <title>weighted avarage, aggrefated function with apply and agg &mdash; pydata by Huiming</title>
   <meta name="author" content="shm">
 
 
+    
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script>
+        MathJax.Hub.Config({
+            config: ["MMLorHTML.js"],
+            extensions: ["tex2jax.js","TeX/AMSmath.js","TeX/AMSsymbols.js"],
+            jax: ["input/TeX"],
+            tex2jax: {
+                inlineMath: [ ['$','$'], ["\(","\)"] ],
+                displayMath: [ ['$$','$$'], ["\[","\]"] ],
+                processEscapes: false
+            },
+            TeX: {
+                TagSide: "right",
+                TagIndent: ".8em",
+                MultLineWidth: "85%",
+                equationNumbers: {
+                   autoNumber: "AMS",
+                },
+                unicode: {
+                   fonts: "STIXGeneral,'Arial Unicode MS'"
+                }
+            },
+            showProcessingMessages: false
+        });
+</script>
 
 
 
@@ -31,7 +58,7 @@
 
 <body>
   <header role="banner"><hgroup>
-  <h1><a href="/">pydata</a></h1>
+  <h1><a href="/">pydata by Huiming</a></h1>
     <h2>Keep Looking, Don't Settle</h2>
 </hgroup>
 
@@ -100,16 +127,15 @@
 <time datetime="2017-03-18T00:00:00-05:00" pubdate>Sat 18 March 2017</time>    </p>
 </header>
 
-  <div class="entry-content"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="kn">as</span> <span class="nn">pd</span>
+  <div class="entry-content"><div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">from</span> <span class="nn">IPython.display</span> <span class="kn">import</span> <span class="n">display</span>
-</pre></div>
-
+</code></pre></div>
 
 <h3>1. weighted average</h3>
 <p>Let's denote <code>x = [x_1, ..., x_n]</code>. The weight <code>w</code> is denoted as <code>w = [w_1, ..., w_n]</code>. The weighted average of <code>x</code> by <code>w</code> is <span class="math">\(\frac{ \sum_{i=1}^{n} x_i * w_i } { \sum_{i=1}^{n} w_i}\)</span></p>
 <p><code>numpy</code> provides a function called <code>np.average()</code> to calculate the weighted average. An example of calculate by hand and by the <code>np.average</code> is given below:</p>
-<div class="highlight"><pre><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">9999</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">9999</span><span class="p">)</span>
 <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;val1&#39;</span><span class="p">,</span> <span class="s1">&#39;wt&#39;</span><span class="p">])</span>
 
 <span class="c1"># if we want to calcuate the weighted average of val1 weighted by wt, that is:</span>
@@ -117,12 +143,10 @@
 
 <span class="c1"># np.average() function</span>
 <span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">val1</span><span class="p">,</span> <span class="n">weights</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">wt</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>    <span class="c1"># 0.42105022244260254</span>
-</pre></div>
+</code></pre></div>
 
-
-<div class="highlight"><pre>0.42105022244260254
-</pre></div>
-
+<div class="highlight"><pre><span></span><code><span class="mf">0.42105022244260254</span>
+</code></pre></div>
 
 <h3>2. calculate weighted average within each group</h3>
 <p>The above example is very simple. A more common situation is there are different groups, and we need to calculate the weighted average within each group. The following is an example:</p>
@@ -132,62 +156,57 @@
 <li>calculate the weighted average of var1 and var2 by wt in group 1, and group 2 seperately</li>
 </ol>
 <p>so,  <code>0.339688030253 = sum(df1.val1 * df1.wt) / df1.wt.sum()</code></p>
-<div class="highlight"><pre><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">9999</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">9999</span><span class="p">)</span>
 <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;val1&#39;</span><span class="p">,</span> <span class="s1">&#39;val2&#39;</span><span class="p">])</span>
 <span class="n">df</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="mi">5</span><span class="p">)</span>
 <span class="n">df</span><span class="p">[</span><span class="s1">&#39;wt&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="mi">5</span>
 
-<span class="k">print</span> <span class="n">df</span>
+<span class="nb">print</span> <span class="n">df</span>
 
-<span class="k">print</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">20</span> <span class="o">+</span> <span class="s1">&#39; weighted average of val1 and val2 by wt in each group &#39;</span> <span class="o">+</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">20</span>
+<span class="nb">print</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">20</span> <span class="o">+</span> <span class="s1">&#39; weighted average of val1 and val2 by wt in each group &#39;</span> <span class="o">+</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">20</span>
 
 <span class="n">wtavg</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">ix</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">2</span><span class="p">],</span> <span class="n">weights</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">wt</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
 <span class="n">dfwavg</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">wtavg</span><span class="p">)</span>
 <span class="n">display</span><span class="p">(</span><span class="n">dfwavg</span><span class="p">)</span>
-</pre></div>
+</code></pre></div>
+
+<div class="highlight"><pre><span></span><code><span class="w">       </span><span class="nx">val1</span><span class="w">      </span><span class="nx">val2</span><span class="w">  </span><span class="nx">id</span><span class="w">  </span><span class="nx">wt</span>
+<span class="mi">0</span><span class="w">  </span><span class="m m-Double">0.823389</span><span class="w">  </span><span class="m m-Double">0.218603</span><span class="w">   </span><span class="mi">1</span><span class="w">   </span><span class="mi">1</span>
+<span class="mi">1</span><span class="w">  </span><span class="m m-Double">0.031461</span><span class="w">  </span><span class="m m-Double">0.545926</span><span class="w">   </span><span class="mi">1</span><span class="w">   </span><span class="mi">2</span>
+<span class="mi">2</span><span class="w">  </span><span class="m m-Double">0.154456</span><span class="w">  </span><span class="m m-Double">0.186963</span><span class="w">   </span><span class="mi">1</span><span class="w">   </span><span class="mi">1</span>
+<span class="mi">3</span><span class="w">  </span><span class="m m-Double">0.422348</span><span class="w">  </span><span class="m m-Double">0.605552</span><span class="w">   </span><span class="mi">1</span><span class="w">   </span><span class="mi">2</span>
+<span class="mi">4</span><span class="w">  </span><span class="m m-Double">0.492354</span><span class="w">  </span><span class="m m-Double">0.644119</span><span class="w">   </span><span class="mi">1</span><span class="w">   </span><span class="mi">1</span>
+<span class="mi">5</span><span class="w">  </span><span class="m m-Double">0.913049</span><span class="w">  </span><span class="m m-Double">0.771104</span><span class="w">   </span><span class="mi">2</span><span class="w">   </span><span class="mi">2</span>
+<span class="mi">6</span><span class="w">  </span><span class="m m-Double">0.288361</span><span class="w">  </span><span class="m m-Double">0.415441</span><span class="w">   </span><span class="mi">2</span><span class="w">   </span><span class="mi">1</span>
+<span class="mi">7</span><span class="w">  </span><span class="m m-Double">0.331490</span><span class="w">  </span><span class="m m-Double">0.366327</span><span class="w">   </span><span class="mi">2</span><span class="w">   </span><span class="mi">2</span>
+<span class="mi">8</span><span class="w">  </span><span class="m m-Double">0.312195</span><span class="w">  </span><span class="m m-Double">0.580446</span><span class="w">   </span><span class="mi">2</span><span class="w">   </span><span class="mi">1</span>
+<span class="mi">9</span><span class="w">  </span><span class="m m-Double">0.112952</span><span class="w">  </span><span class="m m-Double">0.325875</span><span class="w">   </span><span class="mi">2</span><span class="w">   </span><span class="mi">2</span>
+
+<span class="o">--------------------</span><span class="w"> </span><span class="nx">weighted</span><span class="w"> </span><span class="nx">average</span><span class="w"> </span><span class="nx">of</span><span class="w"> </span><span class="nx">val1</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">val2</span><span class="w"> </span><span class="nx">by</span><span class="w"> </span><span class="nx">wt</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="nx">each</span><span class="w"> </span><span class="nx">group</span><span class="w"> </span><span class="o">--------------------</span>
 
 
-<div class="highlight"><pre>       val1      val2  id  wt
-0  0.823389  0.218603   1   1
-1  0.031461  0.545926   1   2
-2  0.154456  0.186963   1   1
-3  0.422348  0.605552   1   2
-4  0.492354  0.644119   1   1
-5  0.913049  0.771104   2   2
-6  0.288361  0.415441   2   1
-7  0.331490  0.366327   2   2
-8  0.312195  0.580446   2   1
-9  0.112952  0.325875   2   2
 
--------------------- weighted average of val1 and val2 by wt in each group --------------------
+<span class="nx">id</span>
+<span class="mi">1</span><span class="w">    </span><span class="p">[</span><span class="m m-Double">0.339688030253</span><span class="p">,</span><span class="w"> </span><span class="m m-Double">0.478948919665</span><span class="p">]</span>
+<span class="mi">2</span><span class="w">     </span><span class="p">[</span><span class="m m-Double">0.41444248036</span><span class="p">,</span><span class="w"> </span><span class="m m-Double">0.490312314239</span><span class="p">]</span>
+<span class="nx">dtype</span><span class="p">:</span><span class="w"> </span><span class="nx">object</span>
+</code></pre></div>
 
-
-
-id
-1    [0.339688030253, 0.478948919665]
-2     [0.41444248036, 0.490312314239]
-dtype: object
-</pre></div>
-
-
-<div class="highlight"><pre><span class="c1">## verified by manual calculation</span>
+<div class="highlight"><pre><span></span><code><span class="c1">## verified by manual calculation</span>
 <span class="n">df1</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;id == 1&#39;</span><span class="p">)</span>
 <span class="nb">sum</span><span class="p">(</span><span class="n">df1</span><span class="o">.</span><span class="n">val1</span> <span class="o">*</span> <span class="n">df1</span><span class="o">.</span><span class="n">wt</span><span class="p">)</span> <span class="o">/</span> <span class="n">df1</span><span class="o">.</span><span class="n">wt</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>    <span class="c1">## 0.33968803025301908</span>
-</pre></div>
+</code></pre></div>
 
-
-<div class="highlight"><pre>0.33968803025301908
-</pre></div>
-
+<div class="highlight"><pre><span></span><code><span class="mf">0.33968803025301908</span>
+</code></pre></div>
 
 <p>Difference between <code>apply</code> and <code>agg</code>: <code>apply</code> will apply the funciton on the data frame of each group, while <code>agg</code> will aggregate each column of each group. So the arguments in the apply function is a dataframe.</p>
 <p>The following is an example from pandas docs. The arguments in function f0 is a dataframe in each id group.</p>
-<div class="highlight"><pre><span class="k">def</span> <span class="nf">f0</span><span class="p">(</span><span class="n">group</span><span class="p">):</span> 
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">f0</span><span class="p">(</span><span class="n">group</span><span class="p">):</span> 
     <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;original&#39;</span><span class="p">:</span> <span class="n">group</span><span class="p">,</span> <span class="s1">&#39;group - mean&#39;</span><span class="p">:</span> <span class="n">group</span> <span class="o">-</span> <span class="n">group</span><span class="o">.</span><span class="n">mean</span><span class="p">()})</span>
 
 <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">)[</span><span class="s1">&#39;val1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">f0</span><span class="p">)</span>
-</pre></div>
-
+</code></pre></div>
 
 <div>
 <table border="1" class="dataframe">
@@ -257,7 +276,7 @@ dtype: object
 <h4>1. different function for different column</h4>
 <p>One condition is you want to apply different function on different columns in the dataframe. For example, you want to apply sum on one column, and stdev on another column. </p>
 <p>if you want to apply multiple functions to aggregate, then you need to put them in the <strong>list</strong> or <strong>dict</strong>.</p>
-<div class="highlight"><pre><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">9999</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">9999</span><span class="p">)</span>
 <span class="n">snapdf</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="mi">3000</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> \
            <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;wt_var&#39;</span><span class="p">,</span> <span class="s1">&#39;var_to_sum&#39;</span><span class="p">,</span> <span class="s2">&quot;var_to_stdev&quot;</span><span class="p">])</span>
 <span class="n">snapdf</span><span class="p">[</span><span class="s1">&#39;stage&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="mi">500</span><span class="p">)</span>
@@ -266,8 +285,7 @@ dtype: object
 <span class="n">stage_s1</span> <span class="o">=</span> <span class="n">snapdf</span><span class="o">.</span><span class="n">ix</span><span class="p">[:,</span> <span class="p">[</span><span class="s1">&#39;stage&#39;</span><span class="p">,</span> <span class="s1">&#39;var_to_sum&#39;</span><span class="p">,</span> <span class="s1">&#39;var_to_stdev&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;stage&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">agg</span><span class="p">(</span><span class="n">f</span><span class="p">)</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
 
 <span class="n">stage_s1</span>
-</pre></div>
-
+</code></pre></div>
 
 <div>
 <table border="1" class="dataframe">
@@ -299,14 +317,13 @@ dtype: object
 <h4>2. multiple functions on one column</h4>
 <p>Another condition is you want to apply multiple functions on each column. For example, you want to calcualte both mean and stdev for eachc column. Then your function is a dict of dicts: first key is the column(variable) to be applied by the functions. second key is the functions.</p>
 <p>An example is like:</p>
-<div class="highlight"><pre><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">9999</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">9999</span><span class="p">)</span>
 <span class="n">snapdf</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="mi">3000</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> \
            <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;wt_var&#39;</span><span class="p">,</span> <span class="s1">&#39;var1&#39;</span><span class="p">,</span> <span class="s2">&quot;var2&quot;</span><span class="p">])</span>
 <span class="n">snapdf</span><span class="p">[</span><span class="s1">&#39;stage&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="mi">500</span><span class="p">)</span>
 
 <span class="n">snapdf</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;stage&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">agg</span><span class="p">({</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">})</span>
-</pre></div>
-
+</code></pre></div>
 
 <div>
 <table border="1" class="dataframe">
@@ -371,7 +388,7 @@ dtype: object
 </table>
 </div>
 
-<div class="highlight"><pre><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">9999</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">9999</span><span class="p">)</span>
 <span class="n">snapdf</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="mi">3000</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> \
            <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;wt_var&#39;</span><span class="p">,</span> <span class="s1">&#39;var_to_wt_avg_1&#39;</span><span class="p">,</span> <span class="s1">&#39;var_to_wt_avg_2&#39;</span><span class="p">])</span>
 <span class="n">snapdf</span><span class="p">[</span><span class="s1">&#39;stage&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="mi">500</span><span class="p">)</span>
@@ -384,10 +401,9 @@ dtype: object
 <span class="c1"># stage_s2.columns = stage_s2.columns.droplevel(0)</span>
 
 <span class="n">stage_s2</span>
-</pre></div>
+</code></pre></div>
 
-
-<p><img alt="png" src="/figures/20170320_pandas_agg_dict.PNG" /></p>
+<p><img alt="png" src="/figures/20170320_pandas_agg_dict.PNG"></p>
 <div>
 <table border="1" class="dataframe">
   <thead>
@@ -429,7 +445,7 @@ dtype: object
 
 <h3>3. weighted from stacked data: unstack data</h3>
 <p>Data in the previous are stored in horizontial way: variables are in different columns. But sometimes data are in vertical way: in the following example, the 3 ratings(I/S/P) are stacked in vertical  line. We want to get the weighted average of I/S/P. So, the first step is to unstak the data. Then calculate the weighted average.</p>
-<div class="highlight"><pre><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">9999</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">9999</span><span class="p">)</span>
 <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="mi">72</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">36</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;var1&quot;</span><span class="p">,</span> <span class="s2">&quot;var2&quot;</span><span class="p">])</span>
 <span class="n">df</span><span class="p">[</span><span class="s2">&quot;rating&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">([</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="s1">&#39;S&#39;</span><span class="p">,</span> <span class="s1">&#39;P&#39;</span><span class="p">],</span> <span class="mi">12</span><span class="p">)</span>
 <span class="n">df</span><span class="p">[</span><span class="s1">&#39;qtrs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">13</span><span class="p">)</span> <span class="o">*</span> <span class="mi">3</span>
@@ -445,8 +461,7 @@ dtype: object
 <span class="n">df</span><span class="p">[</span><span class="s1">&#39;wt_var_2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">var2</span><span class="p">,</span> <span class="n">weights</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">cnts</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
 
 <span class="n">df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span><span class="o">.</span><span class="n">ix</span><span class="p">[:,</span> <span class="p">[</span><span class="s2">&quot;qtrs&quot;</span><span class="p">,</span> <span class="s2">&quot;wt_var_1&quot;</span><span class="p">,</span> <span class="s2">&quot;wt_var_2&quot;</span><span class="p">]]</span>
-</pre></div>
-
+</code></pre></div>
 
 <div>
 <table border="1" class="dataframe">
@@ -650,22 +665,24 @@ dtype: object
         indent = (screen.width < 768) ? "0em" : indent;
         linebreak = (screen.width < 768) ? 'true' : linebreak;
     }
-    
+
     var mathjaxscript = document.createElement('script');
-    var location_protocol = (false) ? 'https' : document.location.protocol;
-    if (location_protocol !== 'http' && location_protocol !== 'https') location_protocol = 'https:';
     mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
-    mathjaxscript.type = 'text/javascript'; 
-    mathjaxscript.src = location_protocol + '//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
-    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
+    mathjaxscript.type = 'text/javascript';
+    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-AMS-MML_HTMLorMML';
+
+    var configscript = document.createElement('script');
+    configscript.type = 'text/x-mathjax-config';
+    configscript[(window.opera ? "innerHTML" : "text")] =
         "MathJax.Hub.Config({" +
         "    config: ['MMLorHTML.js']," +
-        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js','mhchem.js'], equationNumbers: { autoNumber: 'AMS' } }," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js'], equationNumbers: { autoNumber: 'none' } }," +
         "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
         "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
         "    displayAlign: '"+ align +"'," +
         "    displayIndent: '"+ indent +"'," +
         "    showMathMenu: true," +
+        "    messageStyle: 'normal'," +
         "    tex2jax: { " +
         "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
         "        displayMath: [ ['$$','$$'] ]," +
@@ -673,6 +690,8 @@ dtype: object
         "        preview: 'TeX'," +
         "    }, " +
         "    'HTML-CSS': { " +
+        "        availableFonts: ['STIX', 'TeX']," +
+        "        preferredFont: 'STIX'," +
         "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
         "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
         "    }, " +
@@ -693,6 +712,8 @@ dtype: object
                 "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
             "});" +
         "}";
+
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
     (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
 }
 </script></div>
@@ -748,7 +769,7 @@ dtype: object
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/re.html">re</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/python.html">python</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/sklearn.html">sklearn</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

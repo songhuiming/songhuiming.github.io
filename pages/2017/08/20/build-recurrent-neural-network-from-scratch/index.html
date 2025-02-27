@@ -4,10 +4,37 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Build Recurrent Neural Network from Scratch &mdash; pydata</title>
+  <title>Build Recurrent Neural Network from Scratch &mdash; pydata by Huiming</title>
   <meta name="author" content="shm">
 
 
+    
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script>
+        MathJax.Hub.Config({
+            config: ["MMLorHTML.js"],
+            extensions: ["tex2jax.js","TeX/AMSmath.js","TeX/AMSsymbols.js"],
+            jax: ["input/TeX"],
+            tex2jax: {
+                inlineMath: [ ['$','$'], ["\(","\)"] ],
+                displayMath: [ ['$$','$$'], ["\[","\]"] ],
+                processEscapes: false
+            },
+            TeX: {
+                TagSide: "right",
+                TagIndent: ".8em",
+                MultLineWidth: "85%",
+                equationNumbers: {
+                   autoNumber: "AMS",
+                },
+                unicode: {
+                   fonts: "STIXGeneral,'Arial Unicode MS'"
+                }
+            },
+            showProcessingMessages: false
+        });
+</script>
 
 
 
@@ -31,7 +58,7 @@
 
 <body>
   <header role="banner"><hgroup>
-  <h1><a href="/">pydata</a></h1>
+  <h1><a href="/">pydata by Huiming</a></h1>
     <h2>Keep Looking, Don't Settle</h2>
 </hgroup>
 
@@ -110,7 +137,7 @@ s_t &amp;= \tanh(Ux_t + Ws_{t-1}) \\
 o_t &amp;= \mathrm{softmax}(Vs_t)
 \end{aligned}</div>
 <p>If we plot the logic of RNN and the corresponding forward propagation, it is like
-<img alt="alt text" src="/figures/20170826_rnn_scratch_01_rnn.jpg" title="Logo Title Text 1" /></p>
+<img alt="alt text" src="/figures/20170826_rnn_scratch_01_rnn.jpg" title="Logo Title Text 1"></p>
 <p>The training data is 79,170 sentences coming from 15,000 reddit comments(one comment may has multiple sentences). The vocabulary consists of the 8,000 most common words. For the words not included in the vocabulary list are replaced by UNKNOWN_TOKEN.</p>
 <p>The words in each sentences are mapped to the index of the order of these words in the vocabulary list. So the training data <span class="math">\(X\)</span> and <span class="math">\(Y\)</span> are both integers rather than strings. Since the purpose here is to predict the next word, so <span class="math">\(Y\)</span> is just <span class="math">\(X\)</span> shifted by one leading position.</p>
 <h2>1. Build RNN</h2>
@@ -134,7 +161,7 @@ V &amp;\in \mathbb{R}^{8000 \times 100} \\
 W &amp;\in \mathbb{R}^{100 \times 100} \\
 \end{aligned}</div>
 <p>When we iterate to update the parameters, we need to set up their initial values. It is very important to set up suitable initializations to make RNN gradients work well. The initizalition of the parameters is initialized as from random uniform distribution <span class="math">\(U\left(-\frac{1}{\sqrt{n}}, \frac{1}{\sqrt{n}} \right)\)</span> :</p>
-<div class="highlight"><pre><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">itertools</span>
 <span class="kn">import</span> <span class="nn">operator</span>
 <span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
@@ -144,12 +171,11 @@ W &amp;\in \mathbb{R}^{100 \times 100} \\
 
 <span class="n">X_train</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;X_train.npy&#39;</span><span class="p">)</span>
 <span class="n">y_train</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;y_train.npy&#39;</span><span class="p">)</span>
-</pre></div>
+</code></pre></div>
 
-
-<div class="highlight"><pre><span class="c1">## initialize parameters</span>
+<div class="highlight"><pre><span></span><code><span class="c1">## initialize parameters</span>
 <span class="k">class</span> <span class="nc">RNNNumpy</span><span class="p">():</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word_dim</span><span class="p">,</span> <span class="n">hidden_dim</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">bptt_truncate</span> <span class="o">=</span> <span class="mi">4</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word_dim</span><span class="p">,</span> <span class="n">hidden_dim</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">bptt_truncate</span> <span class="o">=</span> <span class="mi">4</span><span class="p">):</span>
         <span class="c1"># assign instance variable</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">word_dim</span> <span class="o">=</span> <span class="n">word_dim</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span> <span class="o">=</span> <span class="n">hidden_dim</span>
@@ -158,13 +184,12 @@ W &amp;\in \mathbb{R}^{100 \times 100} \\
         <span class="bp">self</span><span class="o">.</span><span class="n">U</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="n">word_dim</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="n">word_dim</span><span class="p">),</span> <span class="p">(</span><span class="n">hidden_dim</span><span class="p">,</span> <span class="n">word_dim</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">V</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="n">hidden_dim</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="n">hidden_dim</span><span class="p">),</span> <span class="p">(</span><span class="n">word_dim</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">W</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="n">hidden_dim</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="n">hidden_dim</span><span class="p">),</span> <span class="p">(</span><span class="n">hidden_dim</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">))</span>
-</pre></div>
-
+</code></pre></div>
 
 <p>Pay attention: the matrix <span class="math">\(U, V, W\)</span> are not initizalized as matrix with value 0 but random numbers. If you initilize them as 0, then you will get everythin 0 and they will not change in the loop. </p>
 <h3>1.1. Forward-Propagation</h3>
 <p>For a given sentence <span class="math">\(x = (x_0, \cdots, x_{T-1})\)</span> having <span class="math">\(T\)</span> words, we will start from <span class="math">\(x_0\)</span> with initialized <span class="math">\(s_{-1} = 0\)</span> to calculate <span class="math">\(s_0\)</span> and <span class="math">\(o_0\)</span>, then from <span class="math">\(s_0\)</span> together with <span class="math">\(x_1\)</span> to get <span class="math">\(s_1\)</span> and <span class="math">\(o_1\)</span>, and so on.</p>
-<div class="highlight"><pre><span class="c1">## 1. forward propagation</span>
+<div class="highlight"><pre><span></span><code><span class="c1">## 1. forward propagation</span>
 
 <span class="k">def</span> <span class="nf">softmax</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
     <span class="n">xt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
@@ -187,11 +212,10 @@ W &amp;\in \mathbb{R}^{100 \times 100} \\
     <span class="k">return</span> <span class="p">[</span><span class="n">o</span><span class="p">,</span> <span class="n">s</span><span class="p">]</span>
 
 <span class="n">RNNNumpy</span><span class="o">.</span><span class="n">forward_propagation</span> <span class="o">=</span> <span class="n">forward_propagation</span>
-</pre></div>
-
+</code></pre></div>
 
 <p>Each <span class="math">\(o_t\)</span> here is a vector of prob representing the word in the vocabulary list. All we want is the next word with the predicted prob, we call it predict</p>
-<div class="highlight"><pre><span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
     <span class="n">o</span><span class="p">,</span> <span class="n">s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">forward_propagation</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
 
@@ -200,16 +224,15 @@ W &amp;\in \mathbb{R}^{100 \times 100} \\
 <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">RNNNumpy</span><span class="p">(</span><span class="n">vocabulary_size</span><span class="p">)</span>
 <span class="n">o</span><span class="p">,</span> <span class="n">s</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">forward_propagation</span><span class="p">(</span><span class="n">X_train</span><span class="p">[</span><span class="mi">10</span><span class="p">])</span>
-<span class="k">print</span><span class="p">(</span><span class="n">o</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-<span class="k">print</span><span class="p">(</span><span class="n">o</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">o</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">o</span><span class="p">)</span>
 
 <span class="n">predictions</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_train</span><span class="p">[</span><span class="mi">10</span><span class="p">])</span>
-<span class="k">print</span><span class="p">(</span><span class="n">predictions</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-<span class="k">print</span><span class="p">(</span><span class="n">predictions</span><span class="p">)</span> 
-</pre></div>
+<span class="nb">print</span><span class="p">(</span><span class="n">predictions</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">predictions</span><span class="p">)</span> 
+</code></pre></div>
 
-
-<div class="highlight"><pre>(45, 8000)
+<div class="highlight"><pre><span></span><code>(45, 8000)
 [[ 0.00012408  0.0001244   0.00012603 ...,  0.00012515  0.00012488
    0.00012508]
  [ 0.00012536  0.00012582  0.00012436 ...,  0.00012482  0.00012456
@@ -227,8 +250,7 @@ W &amp;\in \mathbb{R}^{100 \times 100} \\
 [1284 5221 7653 7430 1013 3562 7366 4860 2212 6601 7299 4556 2481  238 2539
    21 6548  261 1780 2005 1810 5376 4146  477 7051 4832 4991  897 3485   21
  7291 2007 6006  760 4864 2182 6569 2800 2752 6821 4437 7021 7875 6912 3575]
-</pre></div>
-
+</code></pre></div>
 
 <h3>1.2. Lost Function</h3>
 <p>We will use <a href="https://en.wikipedia.org/wiki/Cross_entropy#Cross-entropy_error_function_and_logistic_regression">cross entropy</a> loss function here. If we have <span class="math">\(N\)</span> training examples(words in the text) and <span class="math">\(C\)</span> classes(the size of the vocabulary list), then the lost function with respect to the prediction <span class="math">\(o\)</span> and the true lable <span class="math">\(y\)</span> is:</p>
@@ -238,7 +260,7 @@ L(y, o) = - \frac{1}{N}\sum_{n \in N}y_n \log o_n
 <p>How do we know this loss function makes sense? </p>
 <p>If everything is predicted correctly, that is: for the <span class="math">\(y_i = 1\)</span>, the corresponding <span class="math">\(o_i = 1\)</span>, then <span class="math">\(1 \times \log(1) = 1 \times 0 = 0\)</span>. For the rest <span class="math">\(y_i = 0\)</span>, the multiplied value <span class="math">\(0 \times \log(o_i) = 0\)</span>. So the loss will be 0 for the perfect function.</p>
 <p>On the other way, if the model have no prediction power, then all <span class="math">\(o_i = 1/C\)</span> then we will have <span class="math">\(L(y, o) = - \frac{1}{N}\sum_{n \in N} \log \frac{1}{C} = \log(C)\)</span>.</p>
-<div class="highlight"><pre><span class="c1">## 2. calculate the loss</span>
+<div class="highlight"><pre><span></span><code><span class="c1">## 2. calculate the loss</span>
 <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">the loss is defined as</span>
 <span class="sd">L(y, o) = -\frac{1}{N} \sum_{n \in N} y_n log(o_n)</span>
@@ -262,21 +284,19 @@ L(y, o) = - \frac{1}{N}\sum_{n \in N}y_n \log o_n
 <span class="n">RNNNumpy</span><span class="o">.</span><span class="n">calculate_total_loss</span> <span class="o">=</span> <span class="n">calculate_total_loss</span>
 <span class="n">RNNNumpy</span><span class="o">.</span><span class="n">calculate_loss</span> <span class="o">=</span> <span class="n">calculate_loss</span>
 
-<span class="k">print</span><span class="p">(</span><span class="s2">&quot;Expected Loss for random prediction: </span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">vocabulary_size</span><span class="p">))</span>
-<span class="k">print</span><span class="p">(</span><span class="s2">&quot;Actual loss: </span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">model</span><span class="o">.</span><span class="n">calculate_loss</span><span class="p">(</span><span class="n">X_train</span><span class="p">[:</span><span class="mi">1000</span><span class="p">],</span> <span class="n">y_train</span><span class="p">[:</span><span class="mi">1000</span><span class="p">]))</span>
-</pre></div>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Expected Loss for random prediction: </span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">vocabulary_size</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Actual loss: </span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">model</span><span class="o">.</span><span class="n">calculate_loss</span><span class="p">(</span><span class="n">X_train</span><span class="p">[:</span><span class="mi">1000</span><span class="p">],</span> <span class="n">y_train</span><span class="p">[:</span><span class="mi">1000</span><span class="p">]))</span>
+</code></pre></div>
 
-
-<div class="highlight"><pre>Expected Loss for random prediction: 8.987197
-Actual loss: 8.987440
-</pre></div>
-
+<div class="highlight"><pre><span></span><code><span class="nv">Expected</span><span class="w"> </span><span class="nv">Loss</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="k">random</span><span class="w"> </span><span class="nv">prediction</span>:<span class="w"> </span><span class="mi">8</span>.<span class="mi">987197</span>
+<span class="nv">Actual</span><span class="w"> </span><span class="nv">loss</span>:<span class="w"> </span><span class="mi">8</span>.<span class="mi">987440</span>
+</code></pre></div>
 
 <h3>1.3. Model Training with Backward-Propagation</h3>
 <p>Next we need to <strong>find the value of <span class="math">\(U, V, W\)</span> to minimize the loss function</strong>. SGD is the common way to do this. The idad behind SGD is: we iterate over all the training examples and during each iteration <strong>we nudge the parameters into a direction that reduces the error</strong>. <strong>The direction is given by the gradient of th loss <span class="math">\(\frac{\partial{L}}{\partial{U}}, \frac{\partial{L}}{\partial{V}}, \frac{\partial{L}}{\partial{W}}\)</span></strong>. SGD also needs <strong>learning rate</strong>, which defines how big of a step we want to make in each iteration. You can refer to <a href="http://cs231n.github.io/optimization-1/">here</a> for SGD introduction. SGD is a common method used in many numeric solutions to optimize the function.</p>
 <p>Now the question becomes how to calculate the gradients <span class="math">\(\frac{\partial{L}}{\partial{U}}, \frac{\partial{L}}{\partial{V}}, \frac{\partial{L}}{\partial{W}}\)</span>. In the regular fully connected neural network, we use backpropagation to calculate it. In RNN it is a little more complicated because of the hidden status which links the current time step with the historical time step. So we need to calculate the gradients through the time. Thus we call this algorithm <strong>backpropagation through time</strong>(BPTT). The parameters are shared in all the time steps, the gradients at each output will not only depends on the current time step, but also the previous time steps. For general introduction of backpropagation, please read <a href="http://colah.github.io/posts/2015-08-Backprop/">this</a> and <a href="http://cs231n.github.io/optimization-2/">this</a>. Here I will give some detailed math formula about the BPTT used in this post. </p>
 <p>Let's look at the graph of RNN below. Suppose now we are at time step <span class="math">\(t=3\)</span>, we want to calculate the gradients.</p>
-<p><img alt="alt text" src="/figures/20170826_rnn_scratch_02_bptt_with_gradients.png" title="Logo Title Text 1" /></p>
+<p><img alt="alt text" src="/figures/20170826_rnn_scratch_02_bptt_with_gradients.png" title="Logo Title Text 1"></p>
 <p>To make it clear, I will write the forward propagation explitly:
 </p>
 <div class="math">\begin{aligned}
@@ -364,7 +384,7 @@ Actual loss: 8.987440
 \end{aligned}</div>
 <p>This simplifies the equations from vector and matrix multiply to scale multiply. But with this it can easily revert back to vertor and matrix, just need to pay attention of the orders, shape, transformation and dot multiply.</p>
 <p>From the derivatives formula above, we can easily write the BPTT in python:</p>
-<div class="highlight"><pre><span class="c1">## 3. BPTT</span>
+<div class="highlight"><pre><span></span><code><span class="c1">## 3. BPTT</span>
 <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">1. we nudge the parameters into a direction that reduces the error. the direction is given by the gradient of the loss: \frac{\partial L}{\partial U}, </span>
 <span class="sd">\frac{\partial L}{\partial V}, \frac{\partial L}{\partial W}</span>
@@ -401,19 +421,17 @@ Actual loss: 8.987440
     <span class="k">return</span> <span class="p">[</span><span class="n">dLdU</span><span class="p">,</span> <span class="n">dLdV</span><span class="p">,</span> <span class="n">dLdW</span><span class="p">]</span>
 
 <span class="n">RNNNumpy</span><span class="o">.</span><span class="n">bptt</span> <span class="o">=</span> <span class="n">bptt</span>
-</pre></div>
-
+</code></pre></div>
 
 <p>When we implement the backpropagaton it is good idea to also implement gradient checking. The idad behind gradient checking is that derivative of a parameter is equal to the slope at that point, which we can approximate by slighyly changing the parameter and then dividing by the change:</p>
 <div class="math">\begin{aligned}
 \frac{\partial{L}}{\partial{\theta}} = \lim_{h \rightarrow 0} \frac{L(\theta + h) - L(\theta - h)}{2h}
 \end{aligned}</div>
 <p>We will compare the calculate gradient using the limitation approaching formula above with the gradients from the derivatives. They should be very close. The approximation needs to calculate the total loss for every parameter, so the gradient checking is very expensive. So it is a good idea to perform it on a model with a smaller vocabulary.</p>
-<div class="highlight"><pre>
-</pre></div>
+<div class="highlight"><pre><span></span><code>
+</code></pre></div>
 
-
-<div class="highlight"><pre><span class="c1">### 3.1 gradient checking</span>
+<div class="highlight"><pre><span></span><code><span class="c1">### 3.1 gradient checking</span>
 <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">verify the gradient by its definition:</span>
 <span class="sd">\frac{\partial{L}}{\partial{\theta}} = \lim_{h \propto 0} \frac{J(\theta + h) - J(\theta - h)}{2h}</span>
@@ -427,7 +445,7 @@ Actual loss: 8.987440
     <span class="k">for</span> <span class="n">pidx</span><span class="p">,</span> <span class="n">pname</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">model_parameters</span><span class="p">):</span>
         <span class="c1"># get the actual parameter value from model, e.g. model.W</span>
         <span class="n">parameter</span> <span class="o">=</span> <span class="n">operator</span><span class="o">.</span><span class="n">attrgetter</span><span class="p">(</span><span class="n">pname</span><span class="p">)(</span><span class="bp">self</span><span class="p">)</span>
-        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;performing gradient check for parameter </span><span class="si">%s</span><span class="s2"> with size </span><span class="si">%d</span><span class="s2">. &quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">pname</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">parameter</span><span class="o">.</span><span class="n">shape</span><span class="p">)))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;performing gradient check for parameter </span><span class="si">%s</span><span class="s2"> with size </span><span class="si">%d</span><span class="s2">. &quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">pname</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">parameter</span><span class="o">.</span><span class="n">shape</span><span class="p">)))</span>
         <span class="c1"># iterate over each element of the parameter matrix, e.g. (0,0), (0,1)...</span>
         <span class="n">it</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nditer</span><span class="p">(</span><span class="n">parameter</span><span class="p">,</span> <span class="n">flags</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;multi_index&#39;</span><span class="p">],</span> <span class="n">op_flags</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;readwrite&#39;</span><span class="p">])</span>
         <span class="k">while</span> <span class="ow">not</span> <span class="n">it</span><span class="o">.</span><span class="n">finished</span><span class="p">:</span>
@@ -448,15 +466,15 @@ Actual loss: 8.987440
             <span class="n">relative_error</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">backprop_gradient</span> <span class="o">-</span> <span class="n">estimated_gradient</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">backprop_gradient</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">estimated_gradient</span><span class="p">))</span>
             <span class="c1"># if the error is too large fail the gradient check</span>
             <span class="k">if</span> <span class="n">relative_error</span> <span class="o">&lt;</span> <span class="n">error_threshold</span><span class="p">:</span>
-                <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Gradient check error: parameter = </span><span class="si">%s</span><span class="s2"> ix = </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">pname</span><span class="p">,</span> <span class="n">ix</span><span class="p">))</span>
-                <span class="k">print</span><span class="p">(</span><span class="s2">&quot;+h Loss: </span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">gradplus</span><span class="p">)</span>
-                <span class="k">print</span><span class="p">(</span><span class="s2">&quot;-h Loss: </span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">gradminus</span><span class="p">)</span>
-                <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Estimated gradient: </span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">estimated_gradient</span><span class="p">)</span>
-                <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Backpropagation gradient: </span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">backprop_gradient</span><span class="p">)</span>
-                <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Relative error: </span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">relative_error</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Gradient check error: parameter = </span><span class="si">%s</span><span class="s2"> ix = </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">pname</span><span class="p">,</span> <span class="n">ix</span><span class="p">))</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;+h Loss: </span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">gradplus</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;-h Loss: </span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">gradminus</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Estimated gradient: </span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">estimated_gradient</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Backpropagation gradient: </span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">backprop_gradient</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Relative error: </span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">relative_error</span><span class="p">)</span>
                 <span class="k">return</span>
             <span class="n">it</span><span class="o">.</span><span class="n">iternext</span><span class="p">()</span>
-        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Gradient check for parameter </span><span class="si">%s</span><span class="s2"> passed. &quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">pname</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Gradient check for parameter </span><span class="si">%s</span><span class="s2"> passed. &quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">pname</span><span class="p">))</span>
 
 <span class="n">RNNNumpy</span><span class="o">.</span><span class="n">gradient_check</span> <span class="o">=</span> <span class="n">gradient_check</span>
 
@@ -464,22 +482,20 @@ Actual loss: 8.987440
 <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">RNNNumpy</span><span class="p">(</span><span class="n">grad_check_vocab_size</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">bptt_truncate</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">)</span>
 <span class="n">model</span><span class="o">.</span><span class="n">gradient_check</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">])</span>
-</pre></div>
+</code></pre></div>
 
-
-<div class="highlight"><pre>performing gradient check for parameter U with size 1000. 
-Gradient check error: parameter = U ix = (0, 3)
-+h Loss: 18.307080
--h Loss: 18.307296
-Estimated gradient: -0.108091
-Backpropagation gradient: -0.108091
-Relative error: 0.000000
-</pre></div>
-
+<div class="highlight"><pre><span></span><code><span class="nv">performing</span><span class="w"> </span><span class="nv">gradient</span><span class="w"> </span><span class="nv">check</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nv">parameter</span><span class="w"> </span><span class="nv">U</span><span class="w"> </span><span class="nv">with</span><span class="w"> </span><span class="nv">size</span><span class="w"> </span><span class="mi">1000</span>.<span class="w"> </span>
+<span class="nv">Gradient</span><span class="w"> </span><span class="nv">check</span><span class="w"> </span><span class="nv">error</span>:<span class="w"> </span><span class="nv">parameter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">U</span><span class="w"> </span><span class="nv">ix</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">(</span><span class="mi">0</span>,<span class="w"> </span><span class="mi">3</span><span class="ss">)</span>
+<span class="o">+</span><span class="nv">h</span><span class="w"> </span><span class="nv">Loss</span>:<span class="w"> </span><span class="mi">18</span>.<span class="mi">307080</span>
+<span class="o">-</span><span class="nv">h</span><span class="w"> </span><span class="nv">Loss</span>:<span class="w"> </span><span class="mi">18</span>.<span class="mi">307296</span>
+<span class="nv">Estimated</span><span class="w"> </span><span class="nv">gradient</span>:<span class="w"> </span><span class="o">-</span><span class="mi">0</span>.<span class="mi">108091</span>
+<span class="nv">Backpropagation</span><span class="w"> </span><span class="nv">gradient</span>:<span class="w"> </span><span class="o">-</span><span class="mi">0</span>.<span class="mi">108091</span>
+<span class="nv">Relative</span><span class="w"> </span><span class="nv">error</span>:<span class="w"> </span><span class="mi">0</span>.<span class="mi">000000</span>
+</code></pre></div>
 
 <h2>2. SGD Implementation</h2>
 <p>Now that we can calculate the gradients for our parameters we can implement SGD in two steps: 1. A function <em>sgd_step</em> that calculate the gradients and performs the updates for one batch(here one batch is one sentence). 2. An output loop that iterates through the training data and adjust the learning rate.</p>
-<div class="highlight"><pre><span class="c1">## 4. SGD implementation</span>
+<div class="highlight"><pre><span></span><code><span class="c1">## 4. SGD implementation</span>
 <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">two step:</span>
 <span class="sd">1. calculate the gradients and perform the updates for one batch</span>
@@ -512,11 +528,11 @@ Relative error: 0.000000
             <span class="n">loss</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">calculate_loss</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
             <span class="n">losses</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">num_examples_seen</span><span class="p">,</span> <span class="n">loss</span><span class="p">))</span>
             <span class="n">time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1"> %H:%M:%S&#39;</span><span class="p">)</span>
-            <span class="k">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: loss after num_examples_seen=</span><span class="si">%d</span><span class="s2"> epoch=</span><span class="si">%d</span><span class="s2">: </span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">num_examples_seen</span><span class="p">,</span> <span class="n">epoch</span><span class="p">,</span> <span class="n">loss</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: loss after num_examples_seen=</span><span class="si">%d</span><span class="s2"> epoch=</span><span class="si">%d</span><span class="s2">: </span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">num_examples_seen</span><span class="p">,</span> <span class="n">epoch</span><span class="p">,</span> <span class="n">loss</span><span class="p">))</span>
             <span class="c1"># adjust the learning rate if loss increases</span>
             <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">losses</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">losses</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">losses</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">][</span><span class="mi">1</span><span class="p">]):</span>
                 <span class="n">learning_rate</span> <span class="o">=</span> <span class="n">learning_rate</span> <span class="o">*</span> <span class="mf">0.5</span>
-                <span class="k">print</span><span class="p">(</span><span class="s2">&quot;setting learning rate to </span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">learning_rate</span><span class="p">))</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;setting learning rate to </span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">learning_rate</span><span class="p">))</span>
             <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
         <span class="c1"># for each training example...</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y_train</span><span class="p">)):</span>
@@ -527,31 +543,27 @@ Relative error: 0.000000
 <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">RNNNumpy</span><span class="p">(</span><span class="n">vocabulary_size</span><span class="p">)</span>
 <span class="o">%</span><span class="n">timeit</span> <span class="n">model</span><span class="o">.</span><span class="n">sgd_step</span><span class="p">(</span><span class="n">X_train</span><span class="p">[</span><span class="mi">10</span><span class="p">],</span> <span class="n">y_train</span><span class="p">[</span><span class="mi">10</span><span class="p">],</span> <span class="mf">0.005</span><span class="p">)</span>
-</pre></div>
+</code></pre></div>
 
+<div class="highlight"><pre><span></span><code><span class="mf">1</span><span class="w"> </span><span class="n">loop</span><span class="p">,</span><span class="w"> </span><span class="n">best</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="mf">3</span><span class="p">:</span><span class="w"> </span><span class="mf">175</span><span class="w"> </span><span class="n">ms</span><span class="w"> </span><span class="n">per</span><span class="w"> </span><span class="n">loop</span>
+</code></pre></div>
 
-<div class="highlight"><pre>1 loop, best of 3: 175 ms per loop
-</pre></div>
-
-
-<div class="highlight"><pre><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">RNNNumpy</span><span class="p">(</span><span class="n">vocabulary_size</span><span class="p">)</span>
 <span class="n">losses</span> <span class="o">=</span> <span class="n">train_with_sgd</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">X_train</span><span class="p">[:</span><span class="mi">100</span><span class="p">],</span> <span class="n">y_train</span><span class="p">[:</span><span class="mi">100</span><span class="p">],</span> <span class="n">nepoch</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">evaluate_loss_after</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
-</pre></div>
+</code></pre></div>
 
-
-<div class="highlight"><pre>2017-09-21 02:59:52: loss after num_examples_seen=0 epoch=0: 8.987425
-2017-09-21 03:00:04: loss after num_examples_seen=100 epoch=1: 8.974076
-2017-09-21 03:00:18: loss after num_examples_seen=200 epoch=2: 8.943971
-2017-09-21 03:00:30: loss after num_examples_seen=300 epoch=3: 6.892136
-2017-09-21 03:00:40: loss after num_examples_seen=400 epoch=4: 6.351962
-2017-09-21 03:00:50: loss after num_examples_seen=500 epoch=5: 6.107587
-2017-09-21 03:01:00: loss after num_examples_seen=600 epoch=6: 5.960636
-2017-09-21 03:01:11: loss after num_examples_seen=700 epoch=7: 5.858011
-2017-09-21 03:01:22: loss after num_examples_seen=800 epoch=8: 5.781543
-2017-09-21 03:01:32: loss after num_examples_seen=900 epoch=9: 5.722384
-</pre></div>
-
+<div class="highlight"><pre><span></span><code><span class="mf">2017</span><span class="o">-</span><span class="mf">09</span><span class="o">-</span><span class="mf">21</span><span class="w"> </span><span class="mf">02</span><span class="p">:</span><span class="mf">59</span><span class="p">:</span><span class="mf">52</span><span class="p">:</span><span class="w"> </span><span class="n">loss</span><span class="w"> </span><span class="n">after</span><span class="w"> </span><span class="n">num_examples_seen</span><span class="o">=</span><span class="mf">0</span><span class="w"> </span><span class="n">epoch</span><span class="o">=</span><span class="mf">0</span><span class="p">:</span><span class="w"> </span><span class="mf">8.987425</span>
+<span class="mf">2017</span><span class="o">-</span><span class="mf">09</span><span class="o">-</span><span class="mf">21</span><span class="w"> </span><span class="mf">03</span><span class="p">:</span><span class="mf">00</span><span class="p">:</span><span class="mf">04</span><span class="p">:</span><span class="w"> </span><span class="n">loss</span><span class="w"> </span><span class="n">after</span><span class="w"> </span><span class="n">num_examples_seen</span><span class="o">=</span><span class="mf">100</span><span class="w"> </span><span class="n">epoch</span><span class="o">=</span><span class="mf">1</span><span class="p">:</span><span class="w"> </span><span class="mf">8.974076</span>
+<span class="mf">2017</span><span class="o">-</span><span class="mf">09</span><span class="o">-</span><span class="mf">21</span><span class="w"> </span><span class="mf">03</span><span class="p">:</span><span class="mf">00</span><span class="p">:</span><span class="mf">18</span><span class="p">:</span><span class="w"> </span><span class="n">loss</span><span class="w"> </span><span class="n">after</span><span class="w"> </span><span class="n">num_examples_seen</span><span class="o">=</span><span class="mf">200</span><span class="w"> </span><span class="n">epoch</span><span class="o">=</span><span class="mf">2</span><span class="p">:</span><span class="w"> </span><span class="mf">8.943971</span>
+<span class="mf">2017</span><span class="o">-</span><span class="mf">09</span><span class="o">-</span><span class="mf">21</span><span class="w"> </span><span class="mf">03</span><span class="p">:</span><span class="mf">00</span><span class="p">:</span><span class="mf">30</span><span class="p">:</span><span class="w"> </span><span class="n">loss</span><span class="w"> </span><span class="n">after</span><span class="w"> </span><span class="n">num_examples_seen</span><span class="o">=</span><span class="mf">300</span><span class="w"> </span><span class="n">epoch</span><span class="o">=</span><span class="mf">3</span><span class="p">:</span><span class="w"> </span><span class="mf">6.892136</span>
+<span class="mf">2017</span><span class="o">-</span><span class="mf">09</span><span class="o">-</span><span class="mf">21</span><span class="w"> </span><span class="mf">03</span><span class="p">:</span><span class="mf">00</span><span class="p">:</span><span class="mf">40</span><span class="p">:</span><span class="w"> </span><span class="n">loss</span><span class="w"> </span><span class="n">after</span><span class="w"> </span><span class="n">num_examples_seen</span><span class="o">=</span><span class="mf">400</span><span class="w"> </span><span class="n">epoch</span><span class="o">=</span><span class="mf">4</span><span class="p">:</span><span class="w"> </span><span class="mf">6.351962</span>
+<span class="mf">2017</span><span class="o">-</span><span class="mf">09</span><span class="o">-</span><span class="mf">21</span><span class="w"> </span><span class="mf">03</span><span class="p">:</span><span class="mf">00</span><span class="p">:</span><span class="mf">50</span><span class="p">:</span><span class="w"> </span><span class="n">loss</span><span class="w"> </span><span class="n">after</span><span class="w"> </span><span class="n">num_examples_seen</span><span class="o">=</span><span class="mf">500</span><span class="w"> </span><span class="n">epoch</span><span class="o">=</span><span class="mf">5</span><span class="p">:</span><span class="w"> </span><span class="mf">6.107587</span>
+<span class="mf">2017</span><span class="o">-</span><span class="mf">09</span><span class="o">-</span><span class="mf">21</span><span class="w"> </span><span class="mf">03</span><span class="p">:</span><span class="mf">01</span><span class="p">:</span><span class="mf">00</span><span class="p">:</span><span class="w"> </span><span class="n">loss</span><span class="w"> </span><span class="n">after</span><span class="w"> </span><span class="n">num_examples_seen</span><span class="o">=</span><span class="mf">600</span><span class="w"> </span><span class="n">epoch</span><span class="o">=</span><span class="mf">6</span><span class="p">:</span><span class="w"> </span><span class="mf">5.960636</span>
+<span class="mf">2017</span><span class="o">-</span><span class="mf">09</span><span class="o">-</span><span class="mf">21</span><span class="w"> </span><span class="mf">03</span><span class="p">:</span><span class="mf">01</span><span class="p">:</span><span class="mf">11</span><span class="p">:</span><span class="w"> </span><span class="n">loss</span><span class="w"> </span><span class="n">after</span><span class="w"> </span><span class="n">num_examples_seen</span><span class="o">=</span><span class="mf">700</span><span class="w"> </span><span class="n">epoch</span><span class="o">=</span><span class="mf">7</span><span class="p">:</span><span class="w"> </span><span class="mf">5.858011</span>
+<span class="mf">2017</span><span class="o">-</span><span class="mf">09</span><span class="o">-</span><span class="mf">21</span><span class="w"> </span><span class="mf">03</span><span class="p">:</span><span class="mf">01</span><span class="p">:</span><span class="mf">22</span><span class="p">:</span><span class="w"> </span><span class="n">loss</span><span class="w"> </span><span class="n">after</span><span class="w"> </span><span class="n">num_examples_seen</span><span class="o">=</span><span class="mf">800</span><span class="w"> </span><span class="n">epoch</span><span class="o">=</span><span class="mf">8</span><span class="p">:</span><span class="w"> </span><span class="mf">5.781543</span>
+<span class="mf">2017</span><span class="o">-</span><span class="mf">09</span><span class="o">-</span><span class="mf">21</span><span class="w"> </span><span class="mf">03</span><span class="p">:</span><span class="mf">01</span><span class="p">:</span><span class="mf">32</span><span class="p">:</span><span class="w"> </span><span class="n">loss</span><span class="w"> </span><span class="n">after</span><span class="w"> </span><span class="n">num_examples_seen</span><span class="o">=</span><span class="mf">900</span><span class="w"> </span><span class="n">epoch</span><span class="o">=</span><span class="mf">9</span><span class="p">:</span><span class="w"> </span><span class="mf">5.722384</span>
+</code></pre></div>
 
 <p>Since this RNN is implemented in python without code optimization, the running time is pretty long for our 79,170 words in each epoch. But we can try a small sample data and check if the loss actually decreases:</p>
 <h3>Reference</h3>
@@ -568,22 +580,24 @@ Relative error: 0.000000
         indent = (screen.width < 768) ? "0em" : indent;
         linebreak = (screen.width < 768) ? 'true' : linebreak;
     }
-    
+
     var mathjaxscript = document.createElement('script');
-    var location_protocol = (false) ? 'https' : document.location.protocol;
-    if (location_protocol !== 'http' && location_protocol !== 'https') location_protocol = 'https:';
     mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
-    mathjaxscript.type = 'text/javascript'; 
-    mathjaxscript.src = location_protocol + '//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
-    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
+    mathjaxscript.type = 'text/javascript';
+    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-AMS-MML_HTMLorMML';
+
+    var configscript = document.createElement('script');
+    configscript.type = 'text/x-mathjax-config';
+    configscript[(window.opera ? "innerHTML" : "text")] =
         "MathJax.Hub.Config({" +
         "    config: ['MMLorHTML.js']," +
-        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js','mhchem.js'], equationNumbers: { autoNumber: 'AMS' } }," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js'], equationNumbers: { autoNumber: 'none' } }," +
         "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
         "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
         "    displayAlign: '"+ align +"'," +
         "    displayIndent: '"+ indent +"'," +
         "    showMathMenu: true," +
+        "    messageStyle: 'normal'," +
         "    tex2jax: { " +
         "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
         "        displayMath: [ ['$$','$$'] ]," +
@@ -591,6 +605,8 @@ Relative error: 0.000000
         "        preview: 'TeX'," +
         "    }, " +
         "    'HTML-CSS': { " +
+        "        availableFonts: ['STIX', 'TeX']," +
+        "        preferredFont: 'STIX'," +
         "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
         "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
         "    }, " +
@@ -611,6 +627,8 @@ Relative error: 0.000000
                 "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
             "});" +
         "}";
+
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
     (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
 }
 </script></div>
@@ -666,7 +684,7 @@ Relative error: 0.000000
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/re.html">re</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/python.html">python</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/sklearn.html">sklearn</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

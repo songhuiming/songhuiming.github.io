@@ -4,10 +4,37 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>LSTM Introduction &mdash; pydata</title>
+  <title>LSTM Introduction &mdash; pydata by Huiming</title>
   <meta name="author" content="shm">
 
 
+    
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script>
+        MathJax.Hub.Config({
+            config: ["MMLorHTML.js"],
+            extensions: ["tex2jax.js","TeX/AMSmath.js","TeX/AMSsymbols.js"],
+            jax: ["input/TeX"],
+            tex2jax: {
+                inlineMath: [ ['$','$'], ["\(","\)"] ],
+                displayMath: [ ['$$','$$'], ["\[","\]"] ],
+                processEscapes: false
+            },
+            TeX: {
+                TagSide: "right",
+                TagIndent: ".8em",
+                MultLineWidth: "85%",
+                equationNumbers: {
+                   autoNumber: "AMS",
+                },
+                unicode: {
+                   fonts: "STIXGeneral,'Arial Unicode MS'"
+                }
+            },
+            showProcessingMessages: false
+        });
+</script>
 
 
 
@@ -31,7 +58,7 @@
 
 <body>
   <header role="banner"><hgroup>
-  <h1><a href="/">pydata</a></h1>
+  <h1><a href="/">pydata by Huiming</a></h1>
     <h2>Keep Looking, Don't Settle</h2>
 </hgroup>
 
@@ -103,14 +130,14 @@
   <div class="entry-content"><h2>Intro</h2>
 <p>通常介绍deep learning的时候总是从卷积神经网络开始，因为最近deep learning的流行就是从卷积神经网络在图像识别上的广泛应用开始的。但是在银行这种地方，没有什么明显的图像处理的需求。更多的是要处理各种序列性的数据，比如时间序列等等。所以这里我会从循环神经网络(<a href="https://en.wikipedia.org/wiki/Recurrent_neural_network">RNN</a>)开始，并且结合一个例子用来展示怎么进行时间序列的建模。</p>
 <p>RNN的一个显著特征是：新的输入(下图t时刻的输入，绿色的箭头)会和前一个state(下图从t-1到t的蓝色箭头)一起变成新的输入。并以此循环。</p>
-<p><img alt="alt text" src="/figures/20170722_lstm_stock_return_00_1.png" title="RNN" /></p>
+<p><img alt="alt text" src="/figures/20170722_lstm_stock_return_00_1.png" title="RNN"></p>
 <p>把上图画成下图的等号右边部分，那么整个的循环过程通常也就画为下图的等号左边部分。</p>
-<p><img alt="alt text" src="/figures/20170722_lstm_stock_return_00_2.png" title="RNN" /></p>
+<p><img alt="alt text" src="/figures/20170722_lstm_stock_return_00_2.png" title="RNN"></p>
 <p>RNN好的地方是它可以记住前面一段时间的输入信息，不好的地方是它只能记住某段时间的输入信息，虽然理论上RNN可以处理长时间的信息，但是实际上它却不能很好的学习这些信息。对于长时间的输入信息它无能为力。</p>
 <p>对RNN的一个改进就是长短记忆网络(LSTM). LSTM通过信息阀门来控制信息是否能够通过。这个信息阀门是由一个sigmoid神经网络层和多元运算符组成。sigmoid网络层的输出是一个0，1之间的值，用来控制每个组成部分有多少信息可以通过。0表示没有信息能够通过，1表示所有的信息都可以通过。通过控制不同的信息加入到cell state中，LSTM实现了控制哪些信息可以对最后的stage施加影响。</p>
-<p><img alt="alt text" src="/figures/20170722_lstm_stock_return_00_3.png" title="RNN" /></p>
+<p><img alt="alt text" src="/figures/20170722_lstm_stock_return_00_3.png" title="RNN"></p>
 <p>上面图中的各个标志的表示意义分别为</p>
-<p><img alt="alt text" src="/figures/20170722_lstm_stock_return_00_4.png" title="RNN" /></p>
+<p><img alt="alt text" src="/figures/20170722_lstm_stock_return_00_4.png" title="RNN"></p>
 <p>LSTM在自然语言处理(NLP),自动翻译上面取得了很大的成功。如果我们换一个视角，把RNN/LSTM中的输入当成是按照时间顺序的排列的数据，它们就可以用来对(高维)时间序列建模和预测。我们可以控制在RNN/LSTM的每个输入的Layer上输出或者不输出，这样我们就很容易的进行一步预测比如<span class="math">\(X_{1}, X_{2}, \cdots, X_{n-1}\)</span>来预测<span class="math">\(\hat{X_{n}}\)</span>，或者进行多步预测，比如用<span class="math">\(X_{1}\)</span>来预测<span class="math">\(\hat{X_{2}}\)</span>，<span class="math">\(\hat{X_{2}}\)</span>来预测<span class="math">\(\hat{X_{3}}\)</span>等等。</p>
 <p>有一些实际的例子表明，在<span class="math">\(X_{1}, X_{2}, \cdots, X_{n-1}\)</span>来预测<span class="math">\(\hat{X_{t}}\)</span>中，即使不需要<span class="math">\(\hat{X_{2}}, \cdots, \hat{X_{n-1}}\)</span>，但是在模型中强制这些输出会提高模型的效果。</p>
 <p>也有一些实际的例子显示，经过改进CNN也可以用来处理这种序列性质的数据，而且可以得到比RNN更好的效果。</p>
@@ -125,15 +152,15 @@
 <p>假如我们已经知道Y的值是大于0还是小于0，我们可以做出最优的决定：对任一天，当第二天的价格高于当天的价格的时候，我们买进一块钱然后第二天卖掉，这样我们就可以赚取那一部分差价。如果第二天的价格低于今天的价格，我们就应该在今天卖一块钱的股票。这样的决策成为理想决策。当然实际上因为没法知道第二天的价格，所以这样的决策不存在。但是因为我们是历史数据，我们还是可以计算出理想决策最终可以获得多少利润。</p>
 <h4>1.3.2. 最差状况</h4>
 <p>最差的状况就是投一块钱，然后什么都不做最后所得到的状态。</p>
-<p><img alt="alt text" src="/figures/20170722_lstm_stock_return_01.png" title="RNN" /></p>
+<p><img alt="alt text" src="/figures/20170722_lstm_stock_return_01.png" title="RNN"></p>
 <h4>1.4. 学习模型</h4>
 <p>因为回报率是一个连续值，但是我们实际关系的是它大于0还是小于0.所以我们把它分为11份，记为0到10.这样的话Y就是一个Categorical Variable，问题也就转化为一个有序分类(ordered categorical data)的问题。如果预测的<span class="math">\(\hat{Y} &lt; 5\)</span>，我们应该卖出。如果<span class="math">\(\hat{Y} == 5\)</span>,则不作任何交易。如果<span class="math">\(\hat{Y} &gt; 5\)</span>，则买入。</p>
 <h4>1.4.1. Multinomial Logistic Regression</h4>
 <p>类似于传统的logistic regression，只是这个时候Y不只是0和1，而是0到10.因为只是logistic regression，没有超参数，也没有变量选择，所以效果不是很好。
-<img alt="alt text" src="/figures/20170722_lstm_stock_return_02.png" title="RNN" /></p>
+<img alt="alt text" src="/figures/20170722_lstm_stock_return_02.png" title="RNN"></p>
 <h4>1.4.2. LSTM Model</h4>
 <p>LSTM会根据输入的数据来有选择的记住前面的信息。这里我们使用tensorflow的<code>MultiRNNCell([LSTMCell() for _ in range(2)])</code>建立了一个两层的LSTM模型。可以看出，LSTM明天的提高了预测的效果。
-<img alt="alt text" src="/figures/20170722_lstm_stock_return_03.png" title="RNN" /></p>
+<img alt="alt text" src="/figures/20170722_lstm_stock_return_03.png" title="RNN"></p>
 <script type="text/javascript">if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
     var align = "center",
         indent = "0em",
@@ -144,22 +171,24 @@
         indent = (screen.width < 768) ? "0em" : indent;
         linebreak = (screen.width < 768) ? 'true' : linebreak;
     }
-    
+
     var mathjaxscript = document.createElement('script');
-    var location_protocol = (false) ? 'https' : document.location.protocol;
-    if (location_protocol !== 'http' && location_protocol !== 'https') location_protocol = 'https:';
     mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
-    mathjaxscript.type = 'text/javascript'; 
-    mathjaxscript.src = location_protocol + '//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
-    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
+    mathjaxscript.type = 'text/javascript';
+    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-AMS-MML_HTMLorMML';
+
+    var configscript = document.createElement('script');
+    configscript.type = 'text/x-mathjax-config';
+    configscript[(window.opera ? "innerHTML" : "text")] =
         "MathJax.Hub.Config({" +
         "    config: ['MMLorHTML.js']," +
-        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js','mhchem.js'], equationNumbers: { autoNumber: 'AMS' } }," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js'], equationNumbers: { autoNumber: 'none' } }," +
         "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
         "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
         "    displayAlign: '"+ align +"'," +
         "    displayIndent: '"+ indent +"'," +
         "    showMathMenu: true," +
+        "    messageStyle: 'normal'," +
         "    tex2jax: { " +
         "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
         "        displayMath: [ ['$$','$$'] ]," +
@@ -167,6 +196,8 @@
         "        preview: 'TeX'," +
         "    }, " +
         "    'HTML-CSS': { " +
+        "        availableFonts: ['STIX', 'TeX']," +
+        "        preferredFont: 'STIX'," +
         "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
         "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
         "    }, " +
@@ -187,6 +218,8 @@
                 "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
             "});" +
         "}";
+
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
     (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
 }
 </script></div>
@@ -242,7 +275,7 @@
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/re.html">re</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/python.html">python</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/sklearn.html">sklearn</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

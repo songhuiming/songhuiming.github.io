@@ -4,10 +4,37 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>tensorflow简介--03 &mdash; pydata</title>
+  <title>tensorflow简介--03 &mdash; pydata by Huiming</title>
   <meta name="author" content="shm">
 
 
+    
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script>
+        MathJax.Hub.Config({
+            config: ["MMLorHTML.js"],
+            extensions: ["tex2jax.js","TeX/AMSmath.js","TeX/AMSsymbols.js"],
+            jax: ["input/TeX"],
+            tex2jax: {
+                inlineMath: [ ['$','$'], ["\(","\)"] ],
+                displayMath: [ ['$$','$$'], ["\[","\]"] ],
+                processEscapes: false
+            },
+            TeX: {
+                TagSide: "right",
+                TagIndent: ".8em",
+                MultLineWidth: "85%",
+                equationNumbers: {
+                   autoNumber: "AMS",
+                },
+                unicode: {
+                   fonts: "STIXGeneral,'Arial Unicode MS'"
+                }
+            },
+            showProcessingMessages: false
+        });
+</script>
 
 
 
@@ -31,7 +58,7 @@
 
 <body>
   <header role="banner"><hgroup>
-  <h1><a href="/">pydata</a></h1>
+  <h1><a href="/">pydata by Huiming</a></h1>
     <h2>Keep Looking, Don't Settle</h2>
 </hgroup>
 
@@ -110,20 +137,20 @@
 <p>用这条回归直线，对给定的房屋面积，我们可以预测对应的价格</p>
 </li>
 </ol>
-<p><img alt="png" src="/figures/20170225_tensorflow_intro_p3_01.png" /></p>
+<p><img alt="png" src="/figures/20170225_tensorflow_intro_p3_01.png"></p>
 <h2>多特征(multi-feature)线性回归回顾</h2>
 <p>实际当中，预测通常依赖于多个特征。所以我们要从单特征模型拓展到多特征模型。不失一般性，我们选择两个特征模型来可视化。这样既能保持简单，又可以推广到更多特征的情形。</p>
 <p>我们引入一个新的特征，房间的数目(房屋里面房间的数目)。在收集数据的时候，我们需要新的特征房间数目，以及已经存在的特征，房屋面积，还有相应的房屋价格。</p>
 <p>图形就是3-维的：</p>
-<p><img alt="png" src="/figures/20170225_tensorflow_intro_p3_02.png" /></p>
+<p><img alt="png" src="/figures/20170225_tensorflow_intro_p3_02.png"></p>
 <p>我们的目标是给定房间数目，房屋面积，来预测房屋价格。</p>
-<p><img alt="png" src="/figures/20170225_tensorflow_intro_p3_03.png" /></p>
+<p><img alt="png" src="/figures/20170225_tensorflow_intro_p3_03.png"></p>
 <p>在单特征假设下，我们要用线性回归来产生一条直线来预测房屋面积的结果。在2-维的情形下，我们同样可以做线性回归，只不过变成一个平面（而不是一条直线）。</p>
-<p><img alt="png" src="/figures/20170225_tensorflow_intro_p3_04.png" /></p>
+<p><img alt="png" src="/figures/20170225_tensorflow_intro_p3_04.png"></p>
 <h2>多特征线性回归模型</h2>
 <p>回忆一下单特征模型（下图左图），线性模型的结果(y)有一个系数(W),一个叫房屋面积的特征的placeholder(x)，以及截距b。</p>
 <p>对一个2个特征的模型（下图右图），我们有一个新的系数(W2)，以及另外一个placeholder叫x2，用来表示房间的数量这个特征。</p>
-<p><img alt="png" src="/figures/20170225_tensorflow_intro_p3_05.png" /></p>
+<p><img alt="png" src="/figures/20170225_tensorflow_intro_p3_05.png"></p>
 <p>当我们进行线性回归的时候，梯度下降帮助我们知道W2的值。</p>
 <h2>TF实现多特征线性回归模型</h2>
 <h3>快速回顾</h3>
@@ -133,59 +160,55 @@
 <li>构建基于模型的损失函数（红色部分）</li>
 <li>用梯度下降来最小化损失函数（绿色部分）</li>
 </ul>
-<p><img alt="png" src="/figures/20170225_tensorflow_intro_p3_06.png" /></p>
+<p><img alt="png" src="/figures/20170225_tensorflow_intro_p3_06.png"></p>
 <h3>TF求解两个特征的线性模型</h3>
 <p>上面解释的两个特征的线性模型的TF代码表示成红色的颜色：</p>
-<p><img alt="png" src="/figures/20170225_tensorflow_intro_p3_07.png" /></p>
+<p><img alt="png" src="/figures/20170225_tensorflow_intro_p3_07.png"></p>
 <p>请注意用这种办法来添加新的feature比较低效。随着特征的数量的增长，变量的数量（W）和placeholder的数量也相应的增长。现实当中的模型会有很多features，导致问题更加严重。我们怎么才能更高效的表示特征？</p>
 <h2>使用矩阵来表示</h2>
 <p>首先，我们推广一下从两个feature到n个feature的表示：</p>
-<p><img alt="png" src="/figures/20170225_tensorflow_intro_p3_08.png" /></p>
+<p><img alt="png" src="/figures/20170225_tensorflow_intro_p3_08.png"></p>
 <p>用矩阵可以简化n个feature的表达式，TF内嵌了矩阵：</p>
 <ul>
 <li>数据可以表达成多维，这正好是我们需要的：把一个数据点用n个feature（下图左）和一个有n个系数（下图右，系数矩阵）的模型表达出来。</li>
 </ul>
-<p><img alt="png" src="/figures/20170225_tensorflow_intro_p3_09.png" /></p>
+<p><img alt="png" src="/figures/20170225_tensorflow_intro_p3_09.png"></p>
 <p>TF中，它们可以写为</p>
-<div class="highlight"><pre>x = tf.placeholder(tf.float, [1,n])
+<div class="highlight"><pre><span></span><code>x = tf.placeholder(tf.float, [1,n])
 W = tf.Variable(tf.zeros[n,1])
-</pre></div>
-
+</code></pre></div>
 
 <p>注意，我们用<em>tf.zeros</em>来表示W，也就是说把W=(W1, W2, ..., Wn)全部初始化为0.</p>
 <ul>
 <li>数学上矩阵相乘是对应的向量点的乘积的和。所以自然的，特征（下图中间）和系数（下图右边）的矩阵相乘就是我们想要的结果（下图左边）。这也就是上面描述的n个特征的线性回归表达式的第一部分（缺少了截距）.</li>
 </ul>
-<p><img alt="png" src="/figures/20170225_tensorflow_intro_p3_10.png" /></p>
+<p><img alt="png" src="/figures/20170225_tensorflow_intro_p3_10.png"></p>
 <p>TF当中，这个相乘可以表示为</p>
-<div class="highlight"><pre>y = tf.matmul(x, W)
-</pre></div>
-
+<div class="highlight"><pre><span></span><code>y = tf.matmul(x, W)
+</code></pre></div>
 
 <ul>
 <li>一个多行的feature矩阵(每一行表示一个数据点的n个feature)乘以系数矩阵就得到多行的结果(每行表示一个数据点的结果)。所以通过矩阵相乘我们可以把线性回归模型表达成数据点的矩阵乘以系数矩阵。</li>
 </ul>
 <p>注意： feature矩阵的x的表达式会更加复杂，比如我们用x11，x12而不是x1 x2，这是因为feature矩阵(下图中间)已经从一个数据点的n个feature(1行乘以n列)的变成了m个数据点的n个feature(m行乘以n列)。</p>
-<p><img alt="png" src="/figures/20170225_tensorflow_intro_p3_11.png" /></p>
+<p><img alt="png" src="/figures/20170225_tensorflow_intro_p3_11.png"></p>
 <p>TF中的表达形式为</p>
-<div class="highlight"><pre><span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="p">[</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">])</span>
+<div class="highlight"><pre><span></span><code><span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="p">[</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">])</span>
 <span class="n">W</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">zeros</span><span class="p">[</span><span class="n">n</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
 <span class="n">y</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">W</span><span class="p">)</span>
-</pre></div>
-
+</code></pre></div>
 
 <ul>
 <li>最后，在矩阵的每一行加一个常数项，就会在结果矩阵中加入常数项</li>
 </ul>
 <p>在TF中，x和W已经表达成矩阵，不管有多少个feature或者多少个数据点，都可以简化为</p>
-<div class="highlight"><pre><span class="n">b</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">zeros</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<div class="highlight"><pre><span></span><code><span class="n">b</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">zeros</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
 <span class="n">y</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">W</span><span class="p">)</span> <span class="o">+</span> <span class="n">b</span>
-</pre></div>
-
+</code></pre></div>
 
 <h2>Tensorflow多特征备忘录</h2>
 <p>我们做了一个比较的表格来总结从单feature到多feature的线性回归模型的变化</p>
-<p><img alt="png" src="/figures/20170225_tensorflow_intro_p3_12.png" /></p>
+<p><img alt="png" src="/figures/20170225_tensorflow_intro_p3_12.png"></p>
 <h2>总结</h2>
 <p>我们演示了多feature线性回归的概念，以及从单feature到多feature的TF代码。最后用一个速查表做了总结来展示怎么在TF中做多feature回归。</p>
 <h3>下一步</h3>
@@ -246,7 +269,7 @@ W = tf.Variable(tf.zeros[n,1])
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/re.html">re</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/python.html">python</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/sklearn.html">sklearn</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

@@ -4,10 +4,37 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Image Generation 2: Latent Diffusion model / Stable Diffusion &mdash; pydata</title>
+  <title>Image Generation 2: Latent Diffusion model / Stable Diffusion &mdash; pydata by Huiming</title>
   <meta name="author" content="shm">
 
 
+    
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script>
+        MathJax.Hub.Config({
+            config: ["MMLorHTML.js"],
+            extensions: ["tex2jax.js","TeX/AMSmath.js","TeX/AMSsymbols.js"],
+            jax: ["input/TeX"],
+            tex2jax: {
+                inlineMath: [ ['$','$'], ["\(","\)"] ],
+                displayMath: [ ['$$','$$'], ["\[","\]"] ],
+                processEscapes: false
+            },
+            TeX: {
+                TagSide: "right",
+                TagIndent: ".8em",
+                MultLineWidth: "85%",
+                equationNumbers: {
+                   autoNumber: "AMS",
+                },
+                unicode: {
+                   fonts: "STIXGeneral,'Arial Unicode MS'"
+                }
+            },
+            showProcessingMessages: false
+        });
+</script>
 
 
 
@@ -31,7 +58,7 @@
 
 <body>
   <header role="banner"><hgroup>
-  <h1><a href="/">pydata</a></h1>
+  <h1><a href="/">pydata by Huiming</a></h1>
     <h2>Keep Looking, Don't Settle</h2>
 </hgroup>
 
@@ -100,41 +127,14 @@
 <time datetime="2023-10-01T00:00:00-05:00" pubdate>Sun 01 October 2023</time>    </p>
 </header>
 
-  <div class="entry-content"><script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-
-<script>
-        MathJax.Hub.Config({
-            config: ["MMLorHTML.js"],
-            extensions: ["tex2jax.js","TeX/AMSmath.js","TeX/AMSsymbols.js"],
-            jax: ["input/TeX"],
-            tex2jax: {
-                inlineMath: [ ['$','$'], ["\\(","\\)"] ],
-                displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
-                processEscapes: false
-            },
-            TeX: {
-                TagSide: "right",
-                TagIndent: ".8em",
-                MultLineWidth: "85%",
-                equationNumbers: {
-                   autoNumber: "AMS",
-                },
-                unicode: {
-                   fonts: "STIXGeneral,'Arial Unicode MS'"
-                }
-            },
-            showProcessingMessages: false
-        });
-</script>
-
-<p>In the <a href="https://songhuiming.github.io/pages/2023/07/04/image-generation-1-diffusion-model/">previous blog</a> we introduced diffusion model (DDPM) which is to learn the step (time <span class="math">\(t\)</span>) and the noise function (NN model) by adding Gaussian noise to an image step by step and reversing the process by denosiing from Gaussian noise to an image. Diffusion model is the most important part of Gen AI, however, there are still a few steps from Diffusion model to Gen AI: 
+  <div class="entry-content"><p>In the <a href="https://songhuiming.github.io/pages/2023/07/04/image-generation-1-diffusion-model/">previous blog</a> we introduced diffusion model (DDPM) which is to learn the step (time <span class="math">\(t\)</span>) and the noise function (NN model) by adding Gaussian noise to an image step by step and reversing the process by denosiing from Gaussian noise to an image. Diffusion model is the most important part of Gen AI, however, there are still a few steps from Diffusion model to Gen AI: 
 1. How to comsume the prompts (instructions to Gen AI to generate a response) in the model? 
 2. Diffusion model needs huge computaiton as it is running on image pixel directly. 
 To sovle this, latent diffusion model (stable diffusion) was introduced to project the pixel level image to the smaller latent space with perceptual conpression. </p>
 <h2>What problem Latent Diffusion Models (LDM) solve?</h2>
 <p>Latent diffusion model (LDM) applies diffusion model on the latent space from encoder rather than the pixel level data. Diffusion model (DDPM) directly adds noise to the image and uses UNet to learn the noise in the denoise step. One challenge here is that it requires a lot of computation with high dimension RGB images in the training step. Also because the noise and denoise needs to be run for many different steps, it makes the computation more expensive and time consumable to run. To solve this problem, the LDM paper (<a href="https://arxiv.org/abs/2112.10752">High-Resolution Image Synthesis with Latent Diffusion Models
 </a>) proposed an approach to use an encoder (<span class="math">\(\mathcal{E}\)</span>) to convert the image to a latent space <span class="math">\(z\)</span> (which has less dimension than the original image) and and a decoder (<span class="math">\(\mathcal{D}\)</span>) to convert the latent space to image. Diffusion model is then trained on the latent space with better scaling properties because of lower spatial dimension. The reduced complexity also makes it more efficient in image generation from the latent space.</p>
-<p><img alt="stable diffusion 02" src="/figures/20231001_stable_diffusion_model_02.png" /></p>
+<p><img alt="stable diffusion 02" src="/figures/20231001_stable_diffusion_model_02.png"></p>
 <p>The reason of DP can be done in the latent space is that most bits of a digital image correspond to imperceptible details. After the perceptual compression through the encoder projected to the latent space, most of the perceptual information will still be kept and it only eliminates the imperceptible details. The LDM as a generative model learns the semantic and conceptual composition of the data.</p>
 <p>In order to generate images from text prompt <span class="math">\(y\)</span>, that is, to predict the probability of latent space <span class="math">\(z\)</span> given prompt <span class="math">\(y\)</span>, the authors also design the archtecture of conditional denoising autoencoder <span class="math">\(\epsilon_{\theta}(z_t, t, y)\)</span> which is UNet similar to DM to control the synthesis process with input <span class="math">\(y\)</span> by concating it with the latent space. </p>
 <h2>How does Latent Diffusion Model work?</h2>
@@ -147,7 +147,7 @@ To sovle this, latent diffusion model (stable diffusion) was introduced to proje
 3. Sample from <span class="math">\(P(z)\)</span> and apply the decoder <span class="math">\(\mathcal{D}\)</span> to convert <span class="math">\(z_t\)</span> back to <span class="math">\(x_t\)</span></p>
 <h3>3. Conditioning mechanism to generate image from prompt/condition</h3>
 <p>To generate contents from input like prompt <span class="math">\(y\)</span>, the model will not only depends on the time step <span class="math">\(t\)</span>, but also the input <span class="math">\(y\)</span>, that is the conditional distribution of <span class="math">\(p(z_t | y)\)</span>. Accordingly, <span class="math">\(\epsilon_{\theta}(z_t, t)\)</span> is not only the funcion of <span class="math">\(z_t\)</span> and <span class="math">\(t\)</span>, but also with input <span class="math">\(y\)</span>. That is, <span class="math">\(\epsilon_{\theta}(z_t, t, y)\)</span>.</p>
-<p><img alt="stable diffusion 01" src="/figures/20231001_stable_diffusion_model_01.png" /></p>
+<p><img alt="stable diffusion 01" src="/figures/20231001_stable_diffusion_model_01.png"></p>
 <p><strong>Notations for the figure above</strong>:</p>
 <ol>
 <li><span class="math">\(x\)</span>: input of the image. If RGB, its dimension is <span class="math">\(H \times W \times 3\)</span></li>
@@ -172,9 +172,9 @@ Here <span class="math">\( \varphi_{i}(z_t) \in \mathbb{R}^{N \times d_{\epsilon
 <h3>Code for LDM</h3>
 <h4>1. Encoder-Decoder - project image to latent space and project from latent space to image</h4>
 <p>In order to avoid arbitrarily high-variance latent spaces, the authors experiment with two different kinds of regularizations. The first variant is KL-reg which imposes a slight KL-penalty towards a standard normal on the learned latent, similar to a VAE. The second is VQ-reg which uses a vector quantization layer within the decoder.</p>
-<div class="highlight"><pre><span class="k">class</span> <span class="nc">AutoencoderKL</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">LightningModule</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ddconfig</span><span class="p">,</span> <span class="o">...</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AutoencoderKL</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">LightningModule</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ddconfig</span><span class="p">,</span> <span class="o">...</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
     <span class="o">......</span>
 
@@ -192,8 +192,8 @@ Here <span class="math">\( \varphi_{i}(z_t) \in \mathbb{R}^{N \times d_{\epsilon
 
 
 <span class="k">class</span> <span class="nc">VQModel</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">LightningModule</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ddconfig</span><span class="p">,</span> <span class="o">...</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ddconfig</span><span class="p">,</span> <span class="o">...</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
     <span class="o">...</span> <span class="o">...</span>
 
@@ -218,56 +218,54 @@ Here <span class="math">\( \varphi_{i}(z_t) \in \mathbb{R}^{N \times d_{\epsilon
         <span class="n">dec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">quant_b</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">dec</span>
     <span class="o">......</span>
-</pre></div>
-
+</code></pre></div>
 
 <h4>2. Embedding funciton for conditional input from <span class="math">\(y\)</span> to <span class="math">\(\tau_{\theta}(y)\)</span></h4>
 <p>Deifferent embedding functions can be applied to convert the conditonal input to the numeric embeding. Like BERT embedding for text, or CLIP embedding for text or image depending on the input data.</p>
-<div class="highlight"><pre><span class="k">class</span> <span class="nc">TransformerEmbedder</span><span class="p">(</span><span class="n">AbstractEncoder</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Some transformer encoder layers&quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_embed</span><span class="p">,</span> <span class="n">n_layer</span><span class="p">,</span> <span class="n">vocab_size</span><span class="p">,</span> <span class="n">max_seq_len</span><span class="o">=</span><span class="mi">77</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">TransformerEmbedder</span><span class="p">(</span><span class="n">AbstractEncoder</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Some transformer encoder layers&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_embed</span><span class="p">,</span> <span class="n">n_layer</span><span class="p">,</span> <span class="n">vocab_size</span><span class="p">,</span> <span class="n">max_seq_len</span><span class="o">=</span><span class="mi">77</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="o">...</span>
 
 <span class="k">class</span> <span class="nc">BERTEmbedder</span><span class="p">(</span><span class="n">AbstractEncoder</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Uses the BERT tokenizr model and add some transformer encoder layers&quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_embed</span><span class="p">,</span> <span class="n">n_layer</span><span class="p">,</span> <span class="n">vocab_size</span><span class="o">=</span><span class="mi">30522</span><span class="p">,</span> <span class="n">max_seq_len</span><span class="o">=</span><span class="mi">77</span><span class="p">,</span>
-                 <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span><span class="p">,</span><span class="n">use_tokenizer</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">embedding_dropout</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Uses the BERT tokenizr model and add some transformer encoder layers&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_embed</span><span class="p">,</span> <span class="n">n_layer</span><span class="p">,</span> <span class="n">vocab_size</span><span class="o">=</span><span class="mi">30522</span><span class="p">,</span> <span class="n">max_seq_len</span><span class="o">=</span><span class="mi">77</span><span class="p">,</span>
+                 <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span><span class="p">,</span><span class="n">use_tokenizer</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">embedding_dropout</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="o">...</span>
 
 <span class="k">class</span> <span class="nc">FrozenCLIPTextEmbedder</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Uses the CLIP transformer encoder for text.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="s1">&#39;ViT-L/14&#39;</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">77</span><span class="p">,</span> <span class="n">n_repeat</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="s1">&#39;ViT-L/14&#39;</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">77</span><span class="p">,</span> <span class="n">n_repeat</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="o">...</span>
 
 
 <span class="k">class</span> <span class="nc">FrozenClipImageEmbedder</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Uses the CLIP image encoder.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">vargs</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">vargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="o">...</span>
-</pre></div>
-
+</code></pre></div>
 
 <h4>3. Attention - attention between K and Q for new V</h4>
 <p>Query is from the image in DDPM or the latent space is LDM. Key and Value are from the context or the conditions in LDM.</p>
-<div class="highlight"><pre><span class="k">class</span> <span class="nc">CrossAttention</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query_dim</span><span class="p">,</span> <span class="n">context_dim</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">heads</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">dim_head</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="mf">0.</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">CrossAttention</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query_dim</span><span class="p">,</span> <span class="n">context_dim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">heads</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">dim_head</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="mf">0.</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="n">inner_dim</span> <span class="o">=</span> <span class="n">dim_head</span> <span class="o">*</span> <span class="n">heads</span>
         <span class="n">context_dim</span> <span class="o">=</span> <span class="n">default</span><span class="p">(</span><span class="n">context_dim</span><span class="p">,</span> <span class="n">query_dim</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">to_q</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">query_dim</span><span class="p">,</span> <span class="n">inner_dim</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">to_k</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">context_dim</span><span class="p">,</span> <span class="n">inner_dim</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">to_v</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">context_dim</span><span class="p">,</span> <span class="n">inner_dim</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">to_q</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">query_dim</span><span class="p">,</span> <span class="n">inner_dim</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">to_k</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">context_dim</span><span class="p">,</span> <span class="n">inner_dim</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">to_v</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">context_dim</span><span class="p">,</span> <span class="n">inner_dim</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">heads</span>
         <span class="n">q</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_q</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
         <span class="n">context</span> <span class="o">=</span> <span class="n">default</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
@@ -280,14 +278,13 @@ Here <span class="math">\( \varphi_{i}(z_t) \in \mathbb{R}^{N \times d_{\epsilon
         <span class="c1"># attention, what we cannot get enough of</span>
         <span class="n">attn</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
         <span class="o">...</span> <span class="o">...</span>
-</pre></div>
-
+</code></pre></div>
 
 <h4>4. UNet - learn the noise for step <span class="math">\(t\)</span></h4>
 <p>From the code, it shows that for each level of UNet, there is attention block between condition input <span class="math">\(\tau_{\theta}(y)\)</span> and the UNet intermediate representation <span class="math">\(\varphi_i(z_t)\)</span>. The attention mechanism is applied in both down sample and up sample levels in UNet.</p>
-<div class="highlight"><pre><span class="k">class</span> <span class="nc">UNetModel</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">......</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">UNetModel</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">......</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="o">......</span>
 
         <span class="c1"># param channel_mult: channel multiplier for each level of the UNet.</span>
@@ -311,15 +308,14 @@ Here <span class="math">\( \varphi_{i}(z_t) \in \mathbb{R}^{N \times d_{\epsilon
                     <span class="p">)</span>
 
         <span class="c1"># Similar attention is applied in the upsampling steps</span>
-</pre></div>
-
+</code></pre></div>
 
 <h4>5. Loss funcion - loss between the model output and the target, target to optimize</h4>
 <p>Steps here are:
 1. Sample data from the funcion <span class="math">\(q(x)\)</span>
 2. Input the sampled data and step <span class="math">\(t\)</span> into the model
 3. Calc the MSE loss between the model output and the target</p>
-<div class="highlight"><pre><span class="k">def</span> <span class="nf">p_losses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_start</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">noise</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">p_losses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_start</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">noise</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="n">noise</span> <span class="o">=</span> <span class="n">default</span><span class="p">(</span><span class="n">noise</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn_like</span><span class="p">(</span><span class="n">x_start</span><span class="p">))</span>
     <span class="n">x_noisy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">q_sample</span><span class="p">(</span><span class="n">x_start</span><span class="o">=</span><span class="n">x_start</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="n">t</span><span class="p">,</span> <span class="n">noise</span><span class="o">=</span><span class="n">noise</span><span class="p">)</span>
     <span class="n">model_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">x_noisy</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
@@ -330,11 +326,10 @@ Here <span class="math">\( \varphi_{i}(z_t) \in \mathbb{R}^{N \times d_{\epsilon
     <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameterization</span> <span class="o">==</span> <span class="s2">&quot;x0&quot;</span><span class="p">:</span>
         <span class="n">target</span> <span class="o">=</span> <span class="n">x_start</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Paramterization {self.parameterization} not yet supported&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Paramterization </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">parameterization</span><span class="si">}</span><span class="s2"> not yet supported&quot;</span><span class="p">)</span>
 
-    <span class="n">loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_loss</span><span class="p">(</span><span class="n">model_out</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">mean</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
-</pre></div>
-
+    <span class="n">loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_loss</span><span class="p">(</span><span class="n">model_out</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">mean</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+</code></pre></div>
 
 <h3>Reference</h3>
 <ol>
@@ -351,22 +346,24 @@ Here <span class="math">\( \varphi_{i}(z_t) \in \mathbb{R}^{N \times d_{\epsilon
         indent = (screen.width < 768) ? "0em" : indent;
         linebreak = (screen.width < 768) ? 'true' : linebreak;
     }
-    
+
     var mathjaxscript = document.createElement('script');
-    var location_protocol = (false) ? 'https' : document.location.protocol;
-    if (location_protocol !== 'http' && location_protocol !== 'https') location_protocol = 'https:';
     mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
-    mathjaxscript.type = 'text/javascript'; 
-    mathjaxscript.src = location_protocol + '//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
-    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
+    mathjaxscript.type = 'text/javascript';
+    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-AMS-MML_HTMLorMML';
+
+    var configscript = document.createElement('script');
+    configscript.type = 'text/x-mathjax-config';
+    configscript[(window.opera ? "innerHTML" : "text")] =
         "MathJax.Hub.Config({" +
         "    config: ['MMLorHTML.js']," +
-        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js','mhchem.js'], equationNumbers: { autoNumber: 'AMS' } }," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js'], equationNumbers: { autoNumber: 'none' } }," +
         "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
         "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
         "    displayAlign: '"+ align +"'," +
         "    displayIndent: '"+ indent +"'," +
         "    showMathMenu: true," +
+        "    messageStyle: 'normal'," +
         "    tex2jax: { " +
         "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
         "        displayMath: [ ['$$','$$'] ]," +
@@ -374,6 +371,8 @@ Here <span class="math">\( \varphi_{i}(z_t) \in \mathbb{R}^{N \times d_{\epsilon
         "        preview: 'TeX'," +
         "    }, " +
         "    'HTML-CSS': { " +
+        "        availableFonts: ['STIX', 'TeX']," +
+        "        preferredFont: 'STIX'," +
         "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
         "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
         "    }, " +
@@ -394,6 +393,8 @@ Here <span class="math">\( \varphi_{i}(z_t) \in \mathbb{R}^{N \times d_{\epsilon
                 "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
             "});" +
         "}";
+
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
     (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
 }
 </script></div>
@@ -449,7 +450,7 @@ Here <span class="math">\( \varphi_{i}(z_t) \in \mathbb{R}^{N \times d_{\epsilon
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/re.html">re</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/python.html">python</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/sklearn.html">sklearn</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

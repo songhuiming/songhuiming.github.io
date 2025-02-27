@@ -4,10 +4,37 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>variable selection in python &mdash; pydata</title>
+  <title>variable selection in python &mdash; pydata by Huiming</title>
   <meta name="author" content="shm">
 
 
+    
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script>
+        MathJax.Hub.Config({
+            config: ["MMLorHTML.js"],
+            extensions: ["tex2jax.js","TeX/AMSmath.js","TeX/AMSsymbols.js"],
+            jax: ["input/TeX"],
+            tex2jax: {
+                inlineMath: [ ['$','$'], ["\(","\)"] ],
+                displayMath: [ ['$$','$$'], ["\[","\]"] ],
+                processEscapes: false
+            },
+            TeX: {
+                TagSide: "right",
+                TagIndent: ".8em",
+                MultLineWidth: "85%",
+                equationNumbers: {
+                   autoNumber: "AMS",
+                },
+                unicode: {
+                   fonts: "STIXGeneral,'Arial Unicode MS'"
+                }
+            },
+            showProcessingMessages: false
+        });
+</script>
 
 
 
@@ -31,7 +58,7 @@
 
 <body>
   <header role="banner"><hgroup>
-  <h1><a href="/">pydata</a></h1>
+  <h1><a href="/">pydata by Huiming</a></h1>
     <h2>Keep Looking, Don't Settle</h2>
 </hgroup>
 
@@ -102,16 +129,16 @@
 
   <div class="entry-content"><h2>1. decision tree to pick top predictable factors</h2>
 <p>this is to run the regression decision tree first, then get the feature importance. The <strong>feature importances</strong>. The higher, the more important the feature. The importance of a feature <em>is computed as the (normalized) total reduction of the criterion</em> brought by that feature. It is also known as the Gini importance. For regression, it is the mean square error.</p>
-<div class="highlight"><pre><span class="kn">import</span> <span class="nn">pandas</span> <span class="kn">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">itertools</span>
 <span class="kn">import</span> <span class="nn">pickle</span>
 <span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">chain</span><span class="p">,</span> <span class="n">combinations</span>
-<span class="kn">import</span> <span class="nn">statsmodels.formula.api</span> <span class="kn">as</span> <span class="nn">smf</span>
-<span class="kn">import</span> <span class="nn">scipy.stats</span> <span class="kn">as</span> <span class="nn">stats</span>
+<span class="kn">import</span> <span class="nn">statsmodels.formula.api</span> <span class="k">as</span> <span class="nn">smf</span>
+<span class="kn">import</span> <span class="nn">scipy.stats</span> <span class="k">as</span> <span class="nn">stats</span>
 <span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">norm</span>
-<span class="kn">import</span> <span class="nn">statsmodels.api</span> <span class="kn">as</span> <span class="nn">sm</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">statsmodels.api</span> <span class="k">as</span> <span class="nn">sm</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">from</span> <span class="nn">sklearn.tree</span> <span class="kn">import</span> <span class="n">DecisionTreeRegressor</span>
 <span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">mean_squared_error</span>
@@ -123,15 +150,14 @@
 <span class="k">def</span> <span class="nf">importance_dt</span><span class="p">():</span>
     <span class="n">regr_1</span> <span class="o">=</span> <span class="n">DecisionTreeRegressor</span><span class="p">()</span>
     <span class="n">regr_1</span> <span class="o">=</span> <span class="n">regr_1</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">cniX</span><span class="p">,</span> <span class="n">cniY</span><span class="p">)</span>
-    <span class="k">print</span> <span class="n">mean_squared_error</span><span class="p">(</span><span class="n">regr_1</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">cniX</span><span class="p">),</span> <span class="n">cniY</span><span class="p">)</span>
-    <span class="k">print</span> <span class="n">regr_1</span><span class="o">.</span><span class="n">score</span><span class="p">(</span><span class="n">cniX</span><span class="p">,</span> <span class="n">cniY</span><span class="p">)</span>
-    <span class="n">importance_dt</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([</span><span class="n">cniX</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">regr_1</span><span class="o">.</span><span class="n">feature_importances_</span><span class="p">])</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">ascending</span> <span class="o">=</span> <span class="bp">False</span><span class="p">)</span>
+    <span class="nb">print</span> <span class="n">mean_squared_error</span><span class="p">(</span><span class="n">regr_1</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">cniX</span><span class="p">),</span> <span class="n">cniY</span><span class="p">)</span>
+    <span class="nb">print</span> <span class="n">regr_1</span><span class="o">.</span><span class="n">score</span><span class="p">(</span><span class="n">cniX</span><span class="p">,</span> <span class="n">cniY</span><span class="p">)</span>
+    <span class="n">importance_dt</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([</span><span class="n">cniX</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">regr_1</span><span class="o">.</span><span class="n">feature_importances_</span><span class="p">])</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">ascending</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">importance_dt</span>
-</pre></div>
-
+</code></pre></div>
 
 <h2>2. single factor analysis: by rsquared_adj</h2>
-<div class="highlight"><pre><span class="c1"># linear regression to get the adj_rsquare</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># linear regression to get the adj_rsquare</span>
 <span class="k">def</span> <span class="nf">importance_reg</span><span class="p">(</span><span class="n">indata</span> <span class="o">=</span> <span class="n">df</span><span class="p">):</span>
     <span class="n">scores</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">cniX</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
@@ -139,16 +165,15 @@
         <span class="n">reg</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="n">formula</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">f</span><span class="p">),</span> <span class="n">data</span> <span class="o">=</span> <span class="n">indata</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
         <span class="n">scores</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">reg</span><span class="o">.</span><span class="n">rsquared_adj</span>
         <span class="c1"># scores[i] = reg.fvalue</span>
-    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">scores</span><span class="p">,</span> <span class="n">orient</span> <span class="o">=</span> <span class="s1">&#39;index&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">ascending</span> <span class="o">=</span> <span class="bp">False</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">scores</span><span class="p">,</span> <span class="n">orient</span> <span class="o">=</span> <span class="s1">&#39;index&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">ascending</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
 
 <span class="n">xvar</span> <span class="o">=</span> <span class="n">cniX</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
 <span class="n">yvar</span> <span class="o">=</span> <span class="s1">&#39;cum_pd_num&#39;</span>
-</pre></div>
-
+</code></pre></div>
 
 <h2>3. this is to mimic the SAS forward variable selection</h2>
 <p>each step, the variable is selected by their f-test value.</p>
-<div class="highlight"><pre><span class="k">def</span> <span class="nf">importance_foreward</span><span class="p">(</span><span class="n">indata</span> <span class="o">=</span> <span class="n">df</span><span class="p">,</span> <span class="n">yVar</span> <span class="o">=</span> <span class="n">yvar</span><span class="p">,</span> <span class="n">xVar</span> <span class="o">=</span> <span class="n">xvar</span><span class="p">,</span> <span class="n">stopn</span> <span class="o">=</span> <span class="mi">4</span><span class="p">):</span>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">importance_foreward</span><span class="p">(</span><span class="n">indata</span> <span class="o">=</span> <span class="n">df</span><span class="p">,</span> <span class="n">yVar</span> <span class="o">=</span> <span class="n">yvar</span><span class="p">,</span> <span class="n">xVar</span> <span class="o">=</span> <span class="n">xvar</span><span class="p">,</span> <span class="n">stopn</span> <span class="o">=</span> <span class="mi">4</span><span class="p">):</span>
 
     <span class="n">flist</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">nx</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">xVar</span><span class="p">),</span> <span class="n">stopn</span><span class="p">)</span>
@@ -163,23 +188,22 @@
             <span class="k">if</span> <span class="n">score</span> <span class="o">&gt;</span> <span class="n">best_score</span><span class="p">:</span>
                 <span class="n">best_score</span><span class="p">,</span> <span class="n">record_i</span><span class="p">,</span> <span class="n">record_newflist</span> <span class="o">=</span> <span class="n">score</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">newflist</span>
         <span class="n">flist</span> <span class="o">=</span> <span class="n">record_newflist</span>
-        <span class="k">print</span> <span class="n">flist</span>
+        <span class="nb">print</span> <span class="n">flist</span>
         <span class="n">xVar</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">record_i</span><span class="p">)</span>
-        <span class="k">print</span> <span class="nb">len</span><span class="p">(</span><span class="n">xVar</span><span class="p">)</span>
+        <span class="nb">print</span> <span class="nb">len</span><span class="p">(</span><span class="n">xVar</span><span class="p">)</span>
     <span class="n">finmodel</span> <span class="o">=</span>  <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="n">formula</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">yVar</span> <span class="o">+</span> <span class="s1">&#39; ~ &#39;</span> <span class="o">+</span> <span class="s1">&#39;+&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">flist</span><span class="p">)),</span> <span class="n">data</span> <span class="o">=</span> <span class="n">indata</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-    <span class="k">print</span> <span class="n">finmodel</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+    <span class="nb">print</span> <span class="n">finmodel</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">flist</span>
-</pre></div>
-
+</code></pre></div>
 
 <h2>4. best subset regression</h2>
 <p>it will loop through all the variables combination of the Xs. So this will be very time consuming: in you have n variables, then you will run <code>n!</code> regressions.</p>
-<div class="highlight"><pre><span class="c1"># this one also will take long time to run</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># this one also will take long time to run</span>
 <span class="k">def</span> <span class="nf">best_subset</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">k_features</span> <span class="o">=</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]):</span>
     <span class="n">n_features</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-    <span class="n">subsets</span> <span class="o">=</span> <span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">(</span><span class="n">combinations</span><span class="p">(</span><span class="nb">xrange</span><span class="p">(</span><span class="n">n_features</span><span class="p">),</span> <span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">k_features</span><span class="p">)</span>
+    <span class="n">subsets</span> <span class="o">=</span> <span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">(</span><span class="n">combinations</span><span class="p">(</span><span class="n">xrange</span><span class="p">(</span><span class="n">n_features</span><span class="p">),</span> <span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">k_features</span><span class="p">)</span>
     <span class="n">best_score</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span>
-    <span class="n">best_subset</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">best_subset</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="k">for</span> <span class="n">subset</span> <span class="ow">in</span> <span class="n">subsets</span><span class="p">:</span>
         <span class="n">lin_reg</span> <span class="o">=</span> <span class="n">sm</span><span class="o">.</span><span class="n">OLS</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">X</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="n">subset</span><span class="p">])</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
         <span class="n">pred</span> <span class="o">=</span> <span class="n">lin_reg</span><span class="o">.</span><span class="n">predict</span><span class="p">()</span>
@@ -188,20 +212,19 @@
         <span class="k">if</span> <span class="n">score</span> <span class="o">&gt;</span> <span class="n">best_score</span><span class="p">:</span>
             <span class="n">best_score</span><span class="p">,</span> <span class="n">best_subset</span><span class="p">,</span> <span class="n">best_reg_summary</span> <span class="o">=</span> <span class="n">score</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">reg</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">best_subset</span><span class="p">,</span> <span class="n">best_score</span>
-</pre></div>
-
+</code></pre></div>
 
 <h2>5. one variable transformation for all variables</h2>
 <p>if you have 10 variables, and each variable has different transformation with the same starting prefix name. then you can force one of these transformed variable in the model. The reason to include one kind of transform is to avoid multicollinearity. if you include gdp and ln(gdp) then it is very likely they are high correlated.</p>
-<div class="highlight"><pre><span class="c1"># try to pick one var in ech group, too long time to run</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># try to pick one var in ech group, too long time to run</span>
 <span class="k">def</span> <span class="nf">one_var_each</span><span class="p">(</span><span class="n">indata</span> <span class="o">=</span> <span class="n">df</span><span class="p">):</span>
     <span class="n">scores</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="n">bbbx</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">cniX</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="s1">u&#39;bbb_spread&#39;</span> <span class="ow">in</span> <span class="n">x</span><span class="p">]</span>
-    <span class="n">gdpx</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">cniX</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="s1">u&#39;real_gdp_yoy&#39;</span> <span class="ow">in</span> <span class="n">x</span><span class="p">]</span>
-    <span class="n">uemx</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">cniX</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="s1">u&#39;unemploy_rate&#39;</span> <span class="ow">in</span> <span class="n">x</span><span class="p">]</span>
-    <span class="n">cprx</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">cniX</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="s1">u&#39;corp_profit&#39;</span> <span class="ow">in</span> <span class="n">x</span><span class="p">]</span>
-    <span class="n">spix</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">cniX</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="s1">u&#39;sp_index&#39;</span> <span class="ow">in</span> <span class="n">x</span><span class="p">]</span>
-    <span class="n">vixx</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">cniX</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="s1">u&#39;vix&#39;</span> <span class="ow">in</span> <span class="n">x</span><span class="p">]</span>
+    <span class="n">bbbx</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">cniX</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="sa">u</span><span class="s1">&#39;bbb_spread&#39;</span> <span class="ow">in</span> <span class="n">x</span><span class="p">]</span>
+    <span class="n">gdpx</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">cniX</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="sa">u</span><span class="s1">&#39;real_gdp_yoy&#39;</span> <span class="ow">in</span> <span class="n">x</span><span class="p">]</span>
+    <span class="n">uemx</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">cniX</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="sa">u</span><span class="s1">&#39;unemploy_rate&#39;</span> <span class="ow">in</span> <span class="n">x</span><span class="p">]</span>
+    <span class="n">cprx</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">cniX</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="sa">u</span><span class="s1">&#39;corp_profit&#39;</span> <span class="ow">in</span> <span class="n">x</span><span class="p">]</span>
+    <span class="n">spix</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">cniX</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="sa">u</span><span class="s1">&#39;sp_index&#39;</span> <span class="ow">in</span> <span class="n">x</span><span class="p">]</span>
+    <span class="n">vixx</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">cniX</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="sa">u</span><span class="s1">&#39;vix&#39;</span> <span class="ow">in</span> <span class="n">x</span><span class="p">]</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">bbbx</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">gdpx</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">uemx</span><span class="p">:</span>
@@ -212,7 +235,7 @@
                             <span class="n">reg</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="n">formula</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">f</span><span class="p">),</span> <span class="n">data</span> <span class="o">=</span> <span class="n">indata</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
                             <span class="n">scores</span><span class="p">[</span><span class="n">f</span><span class="p">]</span> <span class="o">=</span> <span class="n">reg</span><span class="o">.</span><span class="n">rsquared_adj</span>
     <span class="k">return</span> <span class="n">scores</span>
-</pre></div></div>
+</code></pre></div></div>
     <footer>
 <p class="meta">
   <span class="byline author vcard">
@@ -265,7 +288,7 @@
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/re.html">re</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/python.html">python</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/sklearn.html">sklearn</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>
