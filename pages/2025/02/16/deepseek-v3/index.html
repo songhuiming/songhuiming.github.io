@@ -4,12 +4,9 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>DeepSeek V3 &mdash; pydata by Huiming</title>
+  <title>DeepSeek V3 &mdash; pydata</title>
   <meta name="author" content="shm">
 
-
-    
-<script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
 
 
@@ -34,7 +31,7 @@
 
 <body>
   <header role="banner"><hgroup>
-  <h1><a href="/">pydata by Huiming</a></h1>
+  <h1><a href="/">pydata</a></h1>
     <h2>Keep Looking, Don't Settle</h2>
 </hgroup>
 
@@ -103,13 +100,40 @@
 <time datetime="2025-02-16T00:00:00-06:00" pubdate>Sun 16 February 2025</time>    </p>
 </header>
 
-  <div class="entry-content"><h2>1. What the problem to solve?</h2>
+  <div class="entry-content"><script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+<script>
+        MathJax.Hub.Config({
+            config: ["MMLorHTML.js"],
+            extensions: ["tex2jax.js","TeX/AMSmath.js","TeX/AMSsymbols.js"],
+            jax: ["input/TeX"],
+            tex2jax: {
+                inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+                displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+                processEscapes: false
+            },
+            TeX: {
+                TagSide: "right",
+                TagIndent: ".8em",
+                MultLineWidth: "85%",
+                equationNumbers: {
+                   autoNumber: "AMS",
+                },
+                unicode: {
+                   fonts: "STIXGeneral,'Arial Unicode MS'"
+                }
+            },
+            showProcessingMessages: false
+        });
+</script>
+
+<h2>1. What the problem to solve?</h2>
 <p>春节回去的时候正好碰上DeepSeek发布新的模型，一时间各路媒体讨论的沸沸扬扬，几乎上升到国运的高度。讨论的最重要的应该是两点：第一个是媲美其他主流模型的benchmark分数；第二个是说训练速度快了很多，使用了少的多的GPU时间。可是各路讨论多是繁华之论以及振奋人心的消息，而没有具体的DS为什么好，怎么好的。回来的第一个周末，花了周末的时间读了一下DS V3的论文。之所以选择V3因为R1是之于V3进行了RL和SFT来增强模型的推理能力，基本的模型还是V3，而且DS V3的论文也更详细。文章的第二部分讲述了DS在模型的架构上（science）有一些什么样的改进，第三部分讲述了在模型的训练上（engineering）有什么改进，然后两部分讲了pretraining和posttraining以及evaluation相关的东西。</p>
 <h2>2. How to solve?</h2>
 <h3>2.1. Basic Architecture</h3>
 <p>模型的基本架构里面主要有两点：1是把原来的Attention改成了Multi-head Latent Attention；2是把原来的FFN改成了DeepSeekMoE。这样做的目的一是减少了计算量；二是减少了cache的data，从而节约了GPU的内存。具体如下：</p>
 <p>DeekSeek模型架构
-<img alt="20250216_01_deepseek_v3_architecture.png" src="/figures/20250216_01_deepseek_v3_architecture.png"></p>
+<img alt="20250216_01_deepseek_v3_architecture.png" src="/figures/20250216_01_deepseek_v3_architecture.png" /></p>
 <h4>2.1.1. Multi-head latent attention (MLA)</h4>
 <p>相比较于原始的<a href="https://arxiv.org/abs/1706.03762">Attention</a>模型里面介绍的注意力机制, DS使用Multi-head latent attention (MLA)的架构，跟原来的Multi-head attention不一样的是这里面从 <span class="math">\(h_t\)</span> 来计算 <span class="math">\(k, q, v\)</span> 的时候，先进行降维，把 <span class="math">\(h_t \in \mathbb{R}^d\)</span> 投影到一个低维空间 <span class="math">\(\color{blue}{c_t^{KV} = W^{DKV} h_t}\)</span> ，然后再升维到 <span class="math">\(\color{blue}{k_t^C=W^{UK}c_t^{KV}}\)</span> ；以及投影到一个低维的 <span class="math">\(\color{blue}{c_t^Q=W^{DQ}h_t}\)</span>，然后再升维到 <span class="math">\(\color{blue}{q_t^C = W^{UQ} c_t^Q}\)</span>。这样的话在进行inference的时候只要保存低维的 <span class="math">\(\color{blue}{c_t^{KV}}\)</span> 和 <span class="math">\(\color{blue}{c_t^Q}\)</span>. 比如说，原来的 <span class="math">\(\text{dim}(h_t) = 7168\)</span>, 通过一个降维矩阵 <span class="math">\(\text{dim}(W^{DKV})=4096 \times 7186\)</span>把它降到4096维，那么需要保存的矩阵 <span class="math">\(\color{blue}{c_t^{KV}}\)</span>就小了很多。 具体地说，</p>
 <div class="math">\begin{aligned}
@@ -132,10 +156,10 @@
 <h5>Basic Architecture of DeepSeekMoE</h5>
 <p>在2017年的Attention论文里面，decoder先是计算Attention，然后再计算FFN从而predict最后的token。DS里面，FFN被进一步改成了MoE。MoE的意思是模型是由一些列的Expert构成。每个Expert可以是一个MLP，一个CNN或者其他的神经网络模型，或者每个Expert可以是一个tansformer的encoder/decoder。每个 Expert 负责学习不同的数据模式，MoE 通过 Gating Network 选择合适的Expert，使得不同的数据被送往最擅长Expert家处理。每预测下一个token的时候，MoE不是使用某一个Expert，也不是使用所有的Expert，而是选择其中的Top <span class="math">\(K\)</span> 个Expert来进行预测。选哪 <span class="math">\(K\)</span> 个Expert是通过一个Gating网络来确定。通常 <span class="math">\(K \ll N\)</span>，所以MoE是一个稀疏网络。使用MoE第一个好处是通过更精细化的划分，模型有更大的灵活性，不同的Expert可以学习不同的数据。比如如果 <span class="math">\(N=16\)</span>，<span class="math">\(K=2\)</span>，那么就有 <span class="math">\(C(16, 2)=160\)</span> 个组合。如果每个Expert再split成4个小的Expert，那么总共的组合就是 <span class="math">\(C(64, 8)=4,426,165,368\)</span>。这样极大的增加了模型的灵活性。第二个好处是节省计算资源，因为每次只需要激活很少的Expert来参加计算，而不像transfomer那样所有的参数都参加计算。也就是说，MoE可以训练一个更大更多参数的模型，从而记住更多的知识，但是每次实际只有很少一部分参数参加计算。而且应为每个Expert是独立的模型，没有共享参数，所以他们可以并行进行计算。</p>
 <p>MoE的架构见下图
-<img alt="20250216_03_deepseek_v2_moe.png" src="/figures/20250216_03_deepseek_v2_moe.png"></p>
+<img alt="20250216_03_deepseek_v2_moe.png" src="/figures/20250216_03_deepseek_v2_moe.png" /></p>
 <p>在DS的FFN里面，DeepSeekMoE在MOE的基础上更进一步：1）他们把Expert进一步细化，然后既有一些Expert用来做routing，具体地说，对routingd的Expert，预测只是route到这些Expert的某一些上面。同时，他们还有一些Expert是共享Expert，也就是说，在预测的时候，他们每次都是被使用。2）DS优化了Expert的选择，使用affinity score来选择专家。3）DS的Expert更finer，同时也更稀疏。这样进一步降低了运算成本。</p>
 <p>DeepSeekMoE的架构见下图
-<img alt="20250216_02_original_moe.png" src="/figures/20250216_02_original_moe.png"></p>
+<img alt="20250216_02_original_moe.png" src="/figures/20250216_02_original_moe.png" /></p>
 <p>假设每个Expert <span class="math">\(i\)</span> 的中心是 <span class="math">\(\mathbf{e}_{i}\)</span>，首先计算 <span class="math">\(\color{blue}{s_{i,t} = \sigma(\mathbf{u}_t^\top \mathbf{e}_i)}\)</span> 作为 token <span class="math">\(t\)</span> 与 Expert <span class="math">\(i\)</span> 的相似度： <span class="math">\(\mathbf{e}_i\)</span> 作为Expert <span class="math">\(i\)</span> 的中心向量，通过与token的输入 <span class="math">\(\mathbf{u}_t\)</span> 进行点积，再经过 sigmoid 计算出 token 对该Expert的 affinity，从而决定 token 是否被路由到该Expert。</p>
 <p><span class="math">\(g^{\prime}_{i,t}\)</span> 是Expert <span class="math">\(i\)</span>的gating value，根据所有的Expert的 <span class="math">\(s_{i,t}\)</span>的值，来选择最高的 <span class="math">\(K_r\)</span>个。
 </p>
@@ -167,14 +191,14 @@ $$</div>
 <h3>2.2. Multi-Token Prediction (MTP)</h3>
 <p>DS还使用了MTP，而不是像一般的pre-training那样仅仅只预测 next token（2017的Attention文章就是只predict next token）。这有两个好处：1. 同时预测多个token可以提高data的使用效率。2. 让模型在准备representation的时候能够考虑的更长远。跟原始的MTP文章不同的是，DS不是同时predict <span class="math">\(D\)</span> 个token (输出一个 <span class="math">\(D \times V\)</span> 的矩阵， 其中 <span class="math">\(V\)</span> 是词表大小); 换个表达方式，对应的prediction 和损失函数是 <span class="math">\(L_n = -\sum_t \log P_{\theta} (x_{t+n:t+1} \mid x_{t:1})\)</span>.  DS是sequentially predict additional token。</p>
 <p>MTP from Gloeckle et al. (2024), which is  <span class="math">\(D \times V\)</span> 的矩阵
-<img alt="20250216_04_deepseek_orig_MTP.png" src="/figures/20250216_04_deepseek_orig_MTP.png"></p>
+<img alt="20250216_04_deepseek_orig_MTP.png" src="/figures/20250216_04_deepseek_orig_MTP.png" /></p>
 <p>DS的MTP模块结构用一句话来简单概括就是：DS的MTP使用 <span class="math">\(D\)</span> 个sequential modules来预测 <span class="math">\(D\)</span> 个tokens。这 <span class="math">\(D\)</span> 个modules 共享 embedding <span class="math">\(\text{Emb}(\cdot)\)</span>，共享输出头 <span class="math">\(\text{OutHead}(\cdot)\)</span> 。 第 <span class="math">\(k\)</span> 个token的 MTP 模块有一个专用的 transformer 块 <span class="math">\(\text{TRM}_k(\cdot)\)</span>，以及一个投影矩阵 <span class="math">\(M_k \in \mathbb{R}^{d \times 2d}\)</span>  </p>
 <p>DeepSeek V3 MTP: Use D MTP module and <span class="math">\(k\)</span>-th module predict <span class="math">\(k\)</span>-depth token
-<img alt="20250216_05_deepseek_v3_MTP.png" src="/figures/20250216_05_deepseek_v3_MTP.png"></p>
+<img alt="20250216_05_deepseek_v3_MTP.png" src="/figures/20250216_05_deepseek_v3_MTP.png" /></p>
 <p><strong>prediction</strong>：对于输入sequence的第 <span class="math">\(i\)</span> 个token <span class="math">\(t_i\)</span>，在第 <span class="math">\(k\)</span> 个prediction depth (也就是下面要 predict <span class="math">\(t_{i+k+1}\)</span>)，MTP module： 1）首先得到 <span class="math">\(i\)</span>-th token  在第 <span class="math">\((k-1)\)</span>-th 深度的表示 <span class="math">\(\mathbf{h}_i^{k-1} \in \mathbb{R}^{d}\)</span>， 以及第 <span class="math">\((i+k)\)</span>-th 个 token 的 embediding  <span class="math">\(Emb(t_{i+k}) \in \mathbb{R}^{d}\)</span>；  2）然后把他们concat起来（长度为 <span class="math">\(2d\)</span>），再通过 RMSNorm 和 投影矩阵 <span class="math">\(M_k \in \mathbb{R}^{d \times 2d}\)</span>} 来生成新的表示 
 <span class="math">\(h’^k_i = M_k [\text{RMSNorm}(\mathbf{h}_i^{k-1}); \text{RMSNorm}(Emb(t_{i+k}))]\)</span>；3）然后 <span class="math">\(\mathbf{h}’^k_i\)</span>  作为输入到第 <span class="math">\(k\)</span>-th  个transformer 模块  <span class="math">\(\text{TRM}_k(\cdot)\)</span> ，生成当前深度的输出表示 <span class="math">\(\mathbf{h}^k_{1:T-k} = TRM_k(\mathbf{h}’^{k}_{1:T-k})\)</span>；最后使用 <span class="math">\(\text{OutHead}\)</span> 将 <span class="math">\(\mathbf{h}^k_i\)</span> 转换成预测概率 <span class="math">\(p_{i+k+1} = OutHead(\mathbf{h}^k_i) \in \mathbb{R}^{V}\)</span>。</p>
 <p>我的理解：</p>
-<p>1) 传统的next token prediction：<span class="math">\(t_1\)</span>-&gt; <span class="math">\(h_1\)</span> -&gt; <span class="math">\(\hat{t}_2\)</span>, <span class="math">\(t_2\)</span> -&gt; <span class="math">\(h_2\)</span> -&gt; <span class="math">\(\hat{t}_3\)</span>, .... 也就是main model做的事情.</p>
+<p>1) 传统的next token prediction：<span class="math">\(t_1\)</span>-&gt; <span class="math">\(h_1\)</span> -&gt; <span class="math">\(\hat{t}_2\)</span>, <span class="math">\(t_2\)</span> -&gt; <span class="math">\(h_2\)</span> -&gt; <span class="math">\(\hat{t}_3}\)</span>, .... 也就是main model做的事情.</p>
 <p>2) 在DS的 <span class="math">\(k\)</span>-th MTP 模块中，模型会根据第 <span class="math">\((k-1)\)</span>-depth 的 MTP representation <span class="math">\(h_i^{k-1}\)</span> 和 token <span class="math">\(t_{i+k}\)</span> 的embedding来的到 <span class="math">\(k\)</span>-depth 的representaion <span class="math">\(\mathbf{h}_i^k\)</span>，从而更进一步来预测 <span class="math">\((k+1)\)</span>-th token。下面用 <span class="math">\(k=1, 2, 3\)</span> 作为例子来说明是怎么工作的。 具体来说, 对输入 token <span class="math">\(i\)</span> :</p>
 <p>在 <span class="math">\(k=1\)</span> 的时候，先把 <span class="math">\(t_i\)</span> 的representaion <span class="math">\(h_i^{k-1}=h_i^0\)</span> （from main model） 和 token <span class="math">\(t_{i+1}\)</span> (<span class="math">\(i+k=i+1\)</span>) 的embedding concat在一起得到 <span class="math">\(h’^1_i\)</span>，然后输入 <span class="math">\(TRM_1\)</span>， 得到 <span class="math">\(\mathbf{h}^1_{1:T-1} = TRM_1(\mathbf{h}’^{1}_{1:T-1})\)</span>， 最后得到token <span class="math">\(t_{i+2}\)</span> 的prediction 分布 <span class="math">\(p_{i+2}\)</span></p>
 <p>在 <span class="math">\(k=2\)</span> 的时候，先把 <span class="math">\(t_i\)</span> 的representaion <span class="math">\(h_i^{k-1}=h_i^1\)</span> （from <span class="math">\(k=1\)</span> MTP module） 和 token <span class="math">\(t_{i+2}\)</span> ( <span class="math">\(i+k=i+2\)</span> ) 的embedding concat在一起得到 <span class="math">\(h’^2_i\)</span>，然后输入 <span class="math">\(TRM_2\)</span>， 得到 <span class="math">\(\mathbf{h}^2_{1:T-2} = TRM_2(\mathbf{h}’^{2}_{1:T-2})\)</span>， 最后得到token <span class="math">\(t_{i+3}\)</span>  的prediction 分布 <span class="math">\(p_{i+3}\)</span></p>
@@ -198,24 +222,22 @@ $$</div>
         indent = (screen.width < 768) ? "0em" : indent;
         linebreak = (screen.width < 768) ? 'true' : linebreak;
     }
-
+    
     var mathjaxscript = document.createElement('script');
+    var location_protocol = (false) ? 'https' : document.location.protocol;
+    if (location_protocol !== 'http' && location_protocol !== 'https') location_protocol = 'https:';
     mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
-    mathjaxscript.type = 'text/javascript';
-    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-AMS-MML_HTMLorMML';
-
-    var configscript = document.createElement('script');
-    configscript.type = 'text/x-mathjax-config';
-    configscript[(window.opera ? "innerHTML" : "text")] =
+    mathjaxscript.type = 'text/javascript'; 
+    mathjaxscript.src = location_protocol + '//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+    mathjaxscript[(window.opera ? "innerHTML" : "text")] =
         "MathJax.Hub.Config({" +
         "    config: ['MMLorHTML.js']," +
-        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js'], equationNumbers: { autoNumber: 'none' } }," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js','mhchem.js'], equationNumbers: { autoNumber: 'AMS' } }," +
         "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
         "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
         "    displayAlign: '"+ align +"'," +
         "    displayIndent: '"+ indent +"'," +
         "    showMathMenu: true," +
-        "    messageStyle: 'normal'," +
         "    tex2jax: { " +
         "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
         "        displayMath: [ ['$$','$$'] ]," +
@@ -223,8 +245,6 @@ $$</div>
         "        preview: 'TeX'," +
         "    }, " +
         "    'HTML-CSS': { " +
-        "        availableFonts: ['STIX', 'TeX']," +
-        "        preferredFont: 'STIX'," +
         "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
         "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
         "    }, " +
@@ -245,8 +265,6 @@ $$</div>
                 "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
             "});" +
         "}";
-
-    (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
     (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
 }
 </script></div>
@@ -272,9 +290,6 @@ $$</div>
     <h1>Recent Posts</h1>
     <ul id="recent_posts">
       <li class="post">
-          <a href="/pages/2025/02/23/deepseek-v3-papre-notes/">DeepSeek V3 papre notes</a>
-      </li>
-      <li class="post">
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
@@ -285,6 +300,9 @@ $$</div>
       </li>
       <li class="post">
           <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2021/12/31/recommendation-system-05-bayesian-optimization/">Recommendation System 05 - Bayesian Optimization</a>
       </li>
     </ul>
   </section>
@@ -302,7 +320,7 @@ $$</div>
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/re.html">re</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/python.html">python</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/sklearn.html">sklearn</a>  </section>
 
 
     <section>

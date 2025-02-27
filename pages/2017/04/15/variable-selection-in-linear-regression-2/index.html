@@ -4,12 +4,9 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>variable selection in linear regression: 2 &mdash; pydata by Huiming</title>
+  <title>variable selection in linear regression: 2 &mdash; pydata</title>
   <meta name="author" content="shm">
 
-
-    
-<script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
 
 
@@ -34,7 +31,7 @@
 
 <body>
   <header role="banner"><hgroup>
-  <h1><a href="/">pydata by Huiming</a></h1>
+  <h1><a href="/">pydata</a></h1>
     <h2>Keep Looking, Don't Settle</h2>
 </hgroup>
 
@@ -108,33 +105,35 @@
 <p>The first step is univariate analysis. It checks the pearson correlation between each x and y. This is helpful to reduce the candidate predictors by only selecting the variables has significant correlation. The cutoff point is set p-value no more than 10%. Also the correlation coefficient sign is tested to make sure the correlation should make sense.</p>
 <p>The second step is multi-variate analysis. For the variables selected in step 1(say there are n variables left), all possible variables combinations will be run in the linear regression. Like all 2 variables combination(C(n, 2) combinations), 3 variables combination(C(n, 3) combinations)... will be tested in the linear regression. If there are duplicated variables(like GDP annual change and GDP quarterly change) in the model, it will de droped. The regression sign of each variable will be checked again. If any sign does not make sense, then the model will be droped. If there is any variable is not significant, then the model will be droped. If there is multicollinearity(checked by VIF), the model will be droped. </p>
 <p>The output will list the variables in the model, the regression coefficient, the p-value, vif, R2 and RMSE on training data and validation data set.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<div class="highlight"><pre><span class="kn">import</span> <span class="nn">pandas</span> <span class="kn">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">chain</span><span class="p">,</span> <span class="n">combinations</span>
 
-<span class="kn">import</span> <span class="nn">statsmodels.formula.api</span> <span class="k">as</span> <span class="nn">smf</span>
-<span class="kn">import</span> <span class="nn">scipy.stats</span> <span class="k">as</span> <span class="nn">scipystats</span>
+<span class="kn">import</span> <span class="nn">statsmodels.formula.api</span> <span class="kn">as</span> <span class="nn">smf</span>
+<span class="kn">import</span> <span class="nn">scipy.stats</span> <span class="kn">as</span> <span class="nn">scipystats</span>
 <span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">norm</span>
 <span class="kn">from</span> <span class="nn">scipy.stats.stats</span> <span class="kn">import</span> <span class="n">pearsonr</span>
-<span class="kn">import</span> <span class="nn">statsmodels.api</span> <span class="k">as</span> <span class="nn">sm</span>
-<span class="kn">import</span> <span class="nn">statsmodels.stats.stattools</span> <span class="k">as</span> <span class="nn">stools</span>
-<span class="kn">import</span> <span class="nn">statsmodels.stats</span> <span class="k">as</span> <span class="nn">stats</span> 
+<span class="kn">import</span> <span class="nn">statsmodels.api</span> <span class="kn">as</span> <span class="nn">sm</span>
+<span class="kn">import</span> <span class="nn">statsmodels.stats.stattools</span> <span class="kn">as</span> <span class="nn">stools</span>
+<span class="kn">import</span> <span class="nn">statsmodels.stats</span> <span class="kn">as</span> <span class="nn">stats</span> 
 <span class="kn">from</span> <span class="nn">patsy</span> <span class="kn">import</span> <span class="n">dmatrices</span>
 <span class="kn">from</span> <span class="nn">statsmodels.stats.outliers_influence</span> <span class="kn">import</span> <span class="n">variance_inflation_factor</span>
 <span class="kn">from</span> <span class="nn">statsmodels.graphics.regressionplots</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">math</span>
-<span class="n">mypath</span> <span class="o">=</span>  <span class="sa">r</span><span class="s1">&#39;F:\Dropbox\ipynb_notes\ipynb_blog</span><span class="se">\\</span><span class="s1">&#39;</span>
+<span class="n">mypath</span> <span class="o">=</span>  <span class="s1">r&#39;F:\Dropbox\ipynb_notes\ipynb_blog</span><span class="se">\\</span><span class="s1">&#39;</span>
 
 <span class="n">indata</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_pickle</span><span class="p">(</span><span class="n">mypath</span> <span class="o">+</span> <span class="s2">&quot;data.pkl&quot;</span><span class="p">)</span>
-</code></pre></div>
+</pre></div>
+
 
 <p>set up display options</p>
-<div class="highlight"><pre><span></span><code><span class="n">pd</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">display</span><span class="o">.</span><span class="n">max_rows</span>
+<div class="highlight"><pre><span class="n">pd</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">display</span><span class="o">.</span><span class="n">max_rows</span>
 <span class="n">pd</span><span class="o">.</span><span class="n">set_option</span><span class="p">(</span><span class="s1">&#39;display.max_colwidth&#39;</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
 
 <span class="kn">from</span> <span class="nn">IPython.display</span> <span class="kn">import</span> <span class="n">display</span><span class="p">,</span> <span class="n">HTML</span>
-</code></pre></div>
+</pre></div>
+
 
 <h3>step 1. univariate variable selection</h3>
 <h4>1.1. pearson calculation</h4>
@@ -143,7 +142,7 @@
 <li>calculate the pearson correlation</li>
 <li>keep only significant variables by p-value &lt; 0.1</li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">pearson_corr</span><span class="p">(</span><span class="n">indata</span><span class="p">,</span> <span class="n">xvar</span><span class="p">,</span> <span class="n">yvar</span><span class="p">):</span>
+<div class="highlight"><pre><span class="k">def</span> <span class="nf">pearson_corr</span><span class="p">(</span><span class="n">indata</span><span class="p">,</span> <span class="n">xvar</span><span class="p">,</span> <span class="n">yvar</span><span class="p">):</span>
     <span class="n">outdf</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">xvar</span><span class="p">)):</span>
         <span class="n">pcorr</span> <span class="o">=</span> <span class="n">pearsonr</span><span class="p">(</span><span class="n">indata</span><span class="p">[</span><span class="n">xvar</span><span class="p">[</span><span class="n">i</span><span class="p">]],</span> <span class="n">indata</span><span class="p">[</span><span class="n">yvar</span><span class="p">])</span>
@@ -157,15 +156,17 @@
     <span class="n">pearsoncorr</span> <span class="o">=</span> <span class="n">pearson_corr</span><span class="p">(</span><span class="n">indata</span><span class="p">,</span> <span class="n">xvar</span><span class="p">,</span> <span class="n">yvar</span><span class="p">)</span>
     <span class="n">pearsoncorr</span> <span class="o">=</span> <span class="n">pearsoncorr</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;p_value&#39;</span><span class="p">])</span>
     <span class="n">pearsoncorr</span> <span class="o">=</span> <span class="n">pearsoncorr</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;p_value &lt;= 0.1&#39;</span><span class="p">)</span>
-    <span class="n">pearsoncorr</span> <span class="o">=</span> <span class="n">pearsoncorr</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+    <span class="n">pearsoncorr</span> <span class="o">=</span> <span class="n">pearsoncorr</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">pearsoncorr</span>
-</code></pre></div>
+</pre></div>
 
-<div class="highlight"><pre><span></span><code><span class="n">xvarcol</span> <span class="o">=</span> <span class="n">indata</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span>
+
+<div class="highlight"><pre><span class="n">xvarcol</span> <span class="o">=</span> <span class="n">indata</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span>
 <span class="n">yvarcol</span> <span class="o">=</span> <span class="n">indata</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 <span class="n">pearsoncorr</span> <span class="o">=</span> <span class="n">pearson_calc</span><span class="p">(</span><span class="n">indata</span><span class="p">,</span> <span class="n">xvarcol</span><span class="p">,</span> <span class="n">yvarcol</span><span class="p">)</span>
 <span class="n">pearsoncorr</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
-</code></pre></div>
+</pre></div>
+
 
 <div>
 <table border="1" class="dataframe">
@@ -214,7 +215,7 @@
 
 <h4>1.2. check the sign of pearson correlation</h4>
 <p>only the correlation that makes sense will be kept. For example, gdp growth should have negative correlation with default rate. If the data shows positive sign, we will drop that data.</p>
-<div class="highlight"><pre><span></span><code><span class="n">varsign</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;bbb_spread_p&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;ted_spread_p&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;unemp_p&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;realgpd_yoy_p&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;cap_rate_p&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;crea_hp_yoy_p&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>    \
+<div class="highlight"><pre><span class="n">varsign</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;bbb_spread_p&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;ted_spread_p&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;unemp_p&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;realgpd_yoy_p&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;cap_rate_p&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;crea_hp_yoy_p&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>    \
     <span class="s1">&#39;corp_profit_p&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;com_price_index_yoy_p&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;spindex_yoy_p&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">}</span>
 
 <span class="k">def</span> <span class="nf">check_sign</span><span class="p">(</span><span class="n">indata</span><span class="p">,</span> <span class="n">varsign</span><span class="p">):</span>
@@ -228,7 +229,8 @@
 <span class="n">output</span> <span class="o">=</span> <span class="n">check_sign</span><span class="p">(</span><span class="n">pearsoncorr</span><span class="p">,</span> <span class="n">varsign</span><span class="p">)</span>
 <span class="n">output</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s1">&#39;var_name&#39;</span><span class="p">)</span>
 <span class="n">output</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
-</code></pre></div>
+</pre></div>
+
 
 <div>
 <table border="1" class="dataframe">
@@ -298,22 +300,25 @@
 <h4>2.1 Prepare data</h4>
 <p>From the univariate analysis, we will get the list of X variables(pearson p-vaule is significant, and correlation sign is correct) that should be tested on the multi-variable analysis.</p>
 <p>We will consider both the training data and the validation data. So the data will be prepared into training and validation.</p>
-<div class="highlight"><pre><span></span><code><span class="n">xvar</span> <span class="o">=</span> <span class="n">output</span><span class="o">.</span><span class="n">var_name</span>
+<div class="highlight"><pre><span class="n">xvar</span> <span class="o">=</span> <span class="n">output</span><span class="o">.</span><span class="n">var_name</span>
 <span class="n">cniX</span> <span class="o">=</span> <span class="n">indata</span><span class="o">.</span><span class="n">ix</span><span class="p">[:,</span> <span class="n">xvar</span><span class="p">]</span>
 <span class="n">cniY</span> <span class="o">=</span> <span class="n">indata</span><span class="o">.</span><span class="n">ix</span><span class="p">[:,</span> <span class="s2">&quot;cum_pd_num&quot;</span><span class="p">]</span>    
 <span class="n">train_flag</span> <span class="o">=</span> <span class="n">indata</span><span class="o">.</span><span class="n">train_flag</span>
 
 <span class="n">xtrain</span><span class="p">,</span> <span class="n">xtest</span> <span class="o">=</span> <span class="n">cniX</span><span class="p">[</span><span class="n">train_flag</span><span class="p">],</span> <span class="n">cniX</span><span class="p">[</span><span class="o">~</span><span class="n">train_flag</span><span class="p">]</span> 
 <span class="n">ytrain</span><span class="p">,</span> <span class="n">ytest</span> <span class="o">=</span> <span class="n">cniY</span><span class="p">[</span><span class="n">train_flag</span><span class="p">],</span> <span class="n">cniY</span><span class="p">[</span><span class="o">~</span><span class="n">train_flag</span><span class="p">]</span> 
-</code></pre></div>
+</pre></div>
 
-<div class="highlight"><pre><span></span><code><span class="nb">print</span> <span class="n">xtrain</span><span class="o">.</span><span class="n">shape</span>
-<span class="nb">print</span> <span class="n">xtest</span><span class="o">.</span><span class="n">shape</span>
-</code></pre></div>
 
-<div class="highlight"><pre><span></span><code>(91, 28)
+<div class="highlight"><pre><span class="k">print</span> <span class="n">xtrain</span><span class="o">.</span><span class="n">shape</span>
+<span class="k">print</span> <span class="n">xtest</span><span class="o">.</span><span class="n">shape</span>
+</pre></div>
+
+
+<div class="highlight"><pre>(91, 28)
 (39, 28)
-</code></pre></div>
+</pre></div>
+
 
 <h4>2.2. multi-variable analysis</h4>
 <ol>
@@ -324,7 +329,7 @@
 <li>if the any variables coefficient sign is not intuitive, drop it; otherwise go to next step</li>
 <li>if new model score is better than the previous model, keep it; otherwise drop it</li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">verify_sign</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+<div class="highlight"><pre><span class="k">def</span> <span class="nf">verify_sign</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
     <span class="n">setsign</span> <span class="o">=</span> <span class="n">varsign</span>
     <span class="n">setsign</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">setsign</span><span class="p">,</span> <span class="n">orient</span> <span class="o">=</span> <span class="s2">&quot;index&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
     <span class="n">setsign</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;vars&#39;</span><span class="p">,</span> <span class="s1">&#39;coefsign&#39;</span><span class="p">]</span>
@@ -334,26 +339,26 @@
     <span class="n">combinedata</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">setsign</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">how</span> <span class="o">=</span> <span class="s1">&#39;inner&#39;</span><span class="p">,</span> <span class="n">on</span> <span class="o">=</span> <span class="s1">&#39;vars&#39;</span><span class="p">)</span>
     <span class="n">combinedata</span><span class="p">[</span><span class="s1">&#39;coefd_&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">combinedata</span><span class="o">.</span><span class="n">coefsign</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">combinedata</span><span class="o">.</span><span class="n">coefd</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">sum</span><span class="p">(</span><span class="n">combinedata</span><span class="p">[</span><span class="s1">&#39;coefd_&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="o">==</span> <span class="n">combinedata</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="bp">True</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="bp">False</span>
 
 
 <span class="k">def</span> <span class="nf">check_dup_vars</span><span class="p">(</span><span class="n">xvar</span><span class="p">):</span>
     <span class="n">xx</span> <span class="o">=</span> <span class="n">xvar</span>
     <span class="n">xxx</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="n">x</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">xx</span><span class="p">])</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">xxx</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">xx</span><span class="p">):</span>
-        <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="bp">True</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="bp">False</span>
 
 <span class="k">def</span> <span class="nf">all_combination_withsign2</span><span class="p">(</span><span class="n">xtrain</span><span class="p">,</span> <span class="n">ytrain</span><span class="p">,</span> <span class="n">xtest</span><span class="p">,</span> <span class="n">ytest</span><span class="p">,</span> <span class="n">k_features</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
     <span class="n">outdf</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
     <span class="n">features</span> <span class="o">=</span> <span class="n">xtrain</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
     <span class="n">n_features</span> <span class="o">=</span> <span class="n">xtrain</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-    <span class="n">subsets</span> <span class="o">=</span> <span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">(</span><span class="n">combinations</span><span class="p">(</span><span class="n">xrange</span><span class="p">(</span><span class="n">n_features</span><span class="p">),</span> <span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">k_features</span><span class="p">)</span>
+    <span class="n">subsets</span> <span class="o">=</span> <span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">(</span><span class="n">combinations</span><span class="p">(</span><span class="nb">xrange</span><span class="p">(</span><span class="n">n_features</span><span class="p">),</span> <span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">k_features</span><span class="p">)</span>
     <span class="n">best_score</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span>
-    <span class="n">all_combination</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">all_combination</span> <span class="o">=</span> <span class="bp">None</span>
     <span class="k">for</span> <span class="n">subset</span> <span class="ow">in</span> <span class="n">subsets</span><span class="p">:</span>
         <span class="n">newxtrain</span> <span class="o">=</span> <span class="n">xtrain</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="n">subset</span><span class="p">]</span>
         <span class="n">newxtrain</span> <span class="o">=</span> <span class="n">sm</span><span class="o">.</span><span class="n">add_constant</span><span class="p">(</span><span class="n">newxtrain</span><span class="p">)</span>
@@ -389,11 +394,13 @@
     <span class="k">return</span> <span class="n">all_combination</span><span class="p">,</span> <span class="n">best_score</span><span class="p">,</span> <span class="n">best_reg_result</span><span class="p">,</span> <span class="n">outdf</span>
 
 <span class="n">all_combination</span><span class="p">,</span> <span class="n">best_score</span><span class="p">,</span> <span class="n">best_reg_result</span><span class="p">,</span> <span class="n">outdf</span>  <span class="o">=</span> <span class="n">all_combination_withsign2</span><span class="p">(</span><span class="n">xtrain</span><span class="p">,</span> <span class="n">ytrain</span><span class="p">,</span> <span class="n">xtest</span><span class="p">,</span> <span class="n">ytest</span><span class="p">,</span> <span class="n">k_features</span> <span class="o">=</span> <span class="p">[</span><span class="mi">3</span><span class="p">])</span>
-</code></pre></div>
+</pre></div>
+
 
 <p>List all the candidate models and sort them by the R2 on training data. </p>
-<div class="highlight"><pre><span></span><code><span class="n">outdf</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s1">&#39;r2train&#39;</span><span class="p">,</span> <span class="n">ascending</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;r2train &gt; 0.5&#39;</span><span class="p">)</span>
-</code></pre></div>
+<div class="highlight"><pre><span class="n">outdf</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s1">&#39;r2train&#39;</span><span class="p">,</span> <span class="n">ascending</span> <span class="o">=</span> <span class="bp">False</span><span class="p">)</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;r2train &gt; 0.5&#39;</span><span class="p">)</span>
+</pre></div>
+
 
 <div>
 <table border="1" class="dataframe">
@@ -1080,14 +1087,17 @@
 </table>
 </div>
 
-<div class="highlight"><pre><span></span><code><span class="n">all_combination</span>
-</code></pre></div>
+<div class="highlight"><pre><span class="n">all_combination</span>
+</pre></div>
 
-<div class="highlight"><pre><span></span><code>(5, 14, 18)
-</code></pre></div>
 
-<div class="highlight"><pre><span></span><code><span class="n">best_reg_result</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
-</code></pre></div>
+<div class="highlight"><pre>(5, 14, 18)
+</pre></div>
+
+
+<div class="highlight"><pre><span class="n">best_reg_result</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+</pre></div>
+
 
 <table class="simpletable">
 <caption>OLS Regression Results</caption>
@@ -1119,6 +1129,7 @@
   <th>Covariance Type:</th>      <td>nonrobust</td>    <th>                     </th>     <td> </td>   
 </tr>
 </table>
+
 <table class="simpletable">
 <tr>
          <td></td>           <th>coef</th>     <th>std err</th>      <th>t</th>      <th>P>|t|</th> <th>[95.0% Conf. Int.]</th> 
@@ -1136,6 +1147,7 @@
   <th>crea_hp_yoy_p3</th> <td>   -9.7555</td> <td>    1.111</td> <td>   -8.784</td> <td> 0.000</td> <td>  -11.963    -7.548</td>
 </tr>
 </table>
+
 <table class="simpletable">
 <tr>
   <th>Omnibus:</th>       <td> 3.899</td> <th>  Durbin-Watson:     </th> <td>   2.125</td>
@@ -1172,9 +1184,6 @@
     <h1>Recent Posts</h1>
     <ul id="recent_posts">
       <li class="post">
-          <a href="/pages/2025/02/23/deepseek-v3-papre-notes/">DeepSeek V3 papre notes</a>
-      </li>
-      <li class="post">
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
@@ -1185,6 +1194,9 @@
       </li>
       <li class="post">
           <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2021/12/31/recommendation-system-05-bayesian-optimization/">Recommendation System 05 - Bayesian Optimization</a>
       </li>
     </ul>
   </section>
@@ -1202,7 +1214,7 @@
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/re.html">re</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/python.html">python</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/sklearn.html">sklearn</a>  </section>
 
 
     <section>

@@ -4,12 +4,9 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>namespace in python import &mdash; pydata by Huiming</title>
+  <title>namespace in python import &mdash; pydata</title>
   <meta name="author" content="shm">
 
-
-    
-<script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
 
 
@@ -34,7 +31,7 @@
 
 <body>
   <header role="banner"><hgroup>
-  <h1><a href="/">pydata by Huiming</a></h1>
+  <h1><a href="/">pydata</a></h1>
     <h2>Keep Looking, Don't Settle</h2>
 </hgroup>
 
@@ -106,59 +103,64 @@
   <div class="entry-content"><h2>Introduction</h2>
 <p>I prepated a piece of code to calculate the lifetime expected loss for IFRS9 purpose. However, the calculation has to be modified from time to time for testing purpose. To make it simple, I put the calculation engine function in separate file to be imported into the main function. In this way, if I need to modify the calc engine, I dont need to modify every calculation files.</p>
 <p>The structure will be like
-* calc_engine.py: which is the calculation function called calc_engine
-* main.py: include read in saved predicted pd/lgd/ead/prepayment and the snapshot data for calculation. It also use the multiple processing to call the calc_engine to do the calculation.</p>
+<em> calc_engine.py: which is the calculation function called calc_engine
+</em> main.py: include read in saved predicted pd/lgd/ead/prepayment and the snapshot data for calculation. It also use the multiple processing to call the calc_engine to do the calculation.</p>
 <p>The issue is:
 data and pd/lgd/data are imported in main.py and are passed into calc_engine for calculation. In this way, python will issue error: <em>NameError: global name 'pd_lgd' is not defined</em>.</p>
 <h2>Answer</h2>
 <p>Globals in Python are <em>global</em> to a module, not across all modules. (Many people are confused by this, because in, say, C, a global is the same across all implementation files unless you explicitly make it <code>static</code>.)</p>
-<hr>
+<hr />
 <p>There are different ways to solve this, depending on your actual use case.</p>
 <ul>
 <li>write a class rather than a function in calc_engine.py and let the data to be used as the parameter in the class. </li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">calc_engine</span>
+<div class="highlight"><pre><span class="kn">import</span> <span class="nn">calc_engine</span>
 <span class="n">mycalc</span> <span class="o">=</span> <span class="n">module1</span><span class="o">.</span><span class="n">ClacEngine</span><span class="p">(</span><span class="n">pd</span> <span class="o">=</span> <span class="n">pd_data</span><span class="p">,</span> <span class="n">lgd</span> <span class="o">=</span> <span class="n">lgd_data</span><span class="p">)</span>
 <span class="n">mycalc</span><span class="o">.</span><span class="n">calc_function</span><span class="p">()</span>
-</code></pre></div>
+</pre></div>
+
 
 <ul>
 <li>If you really do want a global, but it's just there to be used by module1, set it in that module.</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">calc_engine</span>
+<div class="highlight"><pre><span class="kn">import</span> <span class="nn">calc_engine</span>
 <span class="n">calc_engine</span><span class="o">.</span><span class="n">pd</span> <span class="o">=</span> <span class="n">pd_data</span>
 <span class="n">calc_engine</span><span class="o">.</span><span class="n">snapshot_data</span> <span class="o">=</span> <span class="n">snapshot_data</span>
 
 <span class="nb">map</span><span class="p">(</span><span class="n">calc_engine</span><span class="o">.</span><span class="n">calc_function</span><span class="p">,</span> <span class="n">snapshot_data</span><span class="p">)</span>
-</code></pre></div>
+</pre></div>
+
 
 <ul>
 <li>On the other hand, if it is shared by a whole lot of modules, put it somewhere else, and have everyone import it:</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">shared_stuff</span>
+<div class="highlight"><pre><span class="kn">import</span> <span class="nn">shared_stuff</span>
 <span class="kn">import</span> <span class="nn">calc_engine</span>
 
 <span class="n">shared_stuff</span><span class="o">.</span><span class="n">pd</span> <span class="o">=</span> <span class="n">pd_data</span>
 <span class="n">shared_stuff</span><span class="o">.</span><span class="n">snapshot_data</span> <span class="o">=</span> <span class="n">snapshot_data</span>
 
 <span class="nb">map</span><span class="p">(</span><span class="n">calc_engine</span><span class="o">.</span><span class="n">calc_function</span><span class="p">,</span> <span class="n">snapshot_data</span><span class="p">)</span>
-</code></pre></div>
+</pre></div>
+
 
 <p>and, in calc_engine.py:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">shared_stuff</span>
+<div class="highlight"><pre><span class="kn">import</span> <span class="nn">shared_stuff</span>
 <span class="k">def</span> <span class="nf">fcalc_function</span><span class="p">():</span>
     <span class="n">f</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-</code></pre></div>
+</pre></div>
+
 
 <ul>
 <li>Finall, Or, in the rare case that you really do need it to be truly global everywhere, like a builtin, add it to the builtin module. The exact details differ between Python 2.x and 3.x. In 3.x, it works like this:</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">builtins</span>
+<div class="highlight"><pre><span class="kn">import</span> <span class="nn">builtins</span>
 <span class="kn">import</span> <span class="nn">calc_engine</span>
 <span class="n">builtins</span><span class="o">.</span><span class="n">snapshot_data</span> <span class="o">=</span> <span class="n">snapshot_data</span>
 
 <span class="nb">map</span><span class="p">(</span><span class="n">calc_engine</span><span class="o">.</span><span class="n">calc_function</span><span class="p">,</span> <span class="n">snapshot_data</span><span class="p">)</span>
-</code></pre></div>
+</pre></div>
+
 
 <h4>Reference</h4>
 <ol>
@@ -191,9 +193,6 @@ data and pd/lgd/data are imported in main.py and are passed into calc_engine for
     <h1>Recent Posts</h1>
     <ul id="recent_posts">
       <li class="post">
-          <a href="/pages/2025/02/23/deepseek-v3-papre-notes/">DeepSeek V3 papre notes</a>
-      </li>
-      <li class="post">
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
@@ -204,6 +203,9 @@ data and pd/lgd/data are imported in main.py and are passed into calc_engine for
       </li>
       <li class="post">
           <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2021/12/31/recommendation-system-05-bayesian-optimization/">Recommendation System 05 - Bayesian Optimization</a>
       </li>
     </ul>
   </section>
@@ -221,7 +223,7 @@ data and pd/lgd/data are imported in main.py and are passed into calc_engine for
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/re.html">re</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/python.html">python</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/sklearn.html">sklearn</a>  </section>
 
 
     <section>

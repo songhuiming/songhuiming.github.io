@@ -4,12 +4,9 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>plot with online web show: plot in bokeh &mdash; pydata by Huiming</title>
+  <title>plot with online web show: plot in bokeh &mdash; pydata</title>
   <meta name="author" content="shm">
 
-
-    
-<script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
 
 
@@ -34,7 +31,7 @@
 
 <body>
   <header role="banner"><hgroup>
-  <h1><a href="/">pydata by Huiming</a></h1>
+  <h1><a href="/">pydata</a></h1>
     <h2>Keep Looking, Don't Settle</h2>
 </hgroup>
 
@@ -115,21 +112,22 @@
 <p>Here an example of drawing the <a href="https://en.wikipedia.org/wiki/Damping">damping vibration</a> is shown. It needs four input values: amplitude, damping factor, frequency and time interval. On the webpage these will be forms for the user to input from keyboard. After input, <em>submit</em> is needed to submit the input value and plot the graphs.</p>
 <h4>1. build the web frame with falsk</h4>
 <p>The structure of the folder for this project is like</p>
-<div class="highlight"><pre><span></span><code>--app
+<div class="highlight"><pre>--app
     --templates
         --view.html
     --static
     --bokeh_in_flask.py
-</code></pre></div>
+</pre></div>
+
 
 <p>The sample code of <code>bokeh_in_flask.py</code> is</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">flask</span> <span class="kn">import</span> <span class="n">Flask</span><span class="p">,</span> <span class="n">render_template</span><span class="p">,</span> <span class="n">request</span>
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">flask</span> <span class="kn">import</span> <span class="n">Flask</span><span class="p">,</span> <span class="n">render_template</span><span class="p">,</span> <span class="n">request</span>
 <span class="kn">from</span> <span class="nn">wtforms</span> <span class="kn">import</span> <span class="n">Form</span><span class="p">,</span> <span class="n">FloatField</span><span class="p">,</span> <span class="n">validators</span>
 <span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">pi</span>
 
 
 <span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">exp</span><span class="p">,</span> <span class="n">cos</span><span class="p">,</span> <span class="n">linspace</span>
-<span class="kn">import</span> <span class="nn">bokeh.plotting</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">bokeh.plotting</span> <span class="kn">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">re</span>
 
 <span class="k">class</span> <span class="nc">InputForm</span><span class="p">(</span><span class="n">Form</span><span class="p">):</span>
@@ -151,7 +149,7 @@
     <span class="k">return</span> <span class="n">A</span><span class="o">*</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">b</span><span class="o">*</span><span class="n">t</span><span class="p">)</span><span class="o">*</span><span class="n">cos</span><span class="p">(</span><span class="n">w</span><span class="o">*</span><span class="n">t</span><span class="p">)</span>
 
 <span class="k">def</span> <span class="nf">compute</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">resolution</span><span class="o">=</span><span class="mi">500</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return filename of plot of the damped_vibration function.&quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;Return filename of plot of the damped_vibration function.&quot;&quot;&quot;</span>
     <span class="n">t</span> <span class="o">=</span> <span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">resolution</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
     <span class="n">u</span> <span class="o">=</span> <span class="n">damped_vibrations</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span>
 
@@ -180,29 +178,30 @@
     <span class="k">return</span> <span class="n">head</span><span class="p">,</span> <span class="n">script</span><span class="p">,</span> <span class="n">div</span>
 
 
-<span class="n">app</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="n">__name__</span><span class="p">)</span>
 
-<span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/vib3&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="s1">&#39;POST&#39;</span><span class="p">])</span>
+<span class="nd">@app.route</span><span class="p">(</span><span class="s1">&#39;/vib3&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="s1">&#39;POST&#39;</span><span class="p">])</span>
 <span class="k">def</span> <span class="nf">index</span><span class="p">():</span>
     <span class="n">form</span> <span class="o">=</span> <span class="n">InputForm</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;POST&#39;</span> <span class="ow">and</span> <span class="n">form</span><span class="o">.</span><span class="n">validate</span><span class="p">():</span>
         <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">form</span><span class="p">:</span>
             <span class="c1"># Make local variable (name field.name)</span>
-            <span class="n">exec</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> = </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">field</span><span class="o">.</span><span class="n">data</span><span class="p">))</span>
+            <span class="k">exec</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> = </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">field</span><span class="o">.</span><span class="n">data</span><span class="p">))</span>
         <span class="n">result</span> <span class="o">=</span> <span class="n">compute</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">None</span>
 
     <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s1">&#39;view.html&#39;</span><span class="p">,</span> <span class="n">form</span><span class="o">=</span><span class="n">form</span><span class="p">,</span>
                            <span class="n">result</span><span class="o">=</span><span class="n">result</span><span class="p">)</span>
 
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
-    <span class="n">app</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">debug</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</code></pre></div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">debug</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</pre></div>
+
 
 <h4>2. the html page for input and showing plto</h4>
 <p>this is the sample code of <code>view.html</code>. it will get the input and submit(<code>post</code> method) to the <code>compute</code> funciton and then plot the graph.</p>
-<div class="highlight"><pre><span></span><code><span class="cp">&lt;!DOCTYPE html&gt;</span>
+<div class="highlight"><pre><span class="cp">&lt;!DOCTYPE html&gt;</span>
 <span class="p">&lt;</span><span class="nt">html</span> <span class="na">lang</span><span class="o">=</span><span class="s">&quot;en&quot;</span><span class="p">&gt;</span>
    <span class="p">&lt;</span><span class="nt">head</span><span class="p">&gt;</span>
     {{ result[0]|safe }}
@@ -210,10 +209,10 @@
 <span class="p">&lt;</span><span class="nt">body</span><span class="p">&gt;</span>
 <span class="p">&lt;</span><span class="nt">script</span> <span class="na">type</span><span class="o">=</span><span class="s">&quot;text/x-mathjax-config&quot;</span><span class="p">&gt;</span>
 <span class="nx">MathJax</span><span class="p">.</span><span class="nx">Hub</span><span class="p">.</span><span class="nx">Config</span><span class="p">({</span>
-<span class="w">  </span><span class="nx">TeX</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">     </span><span class="nx">equationNumbers</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w">  </span><span class="nx">autoNumber</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;AMS&quot;</span><span class="w">  </span><span class="p">},</span>
-<span class="w">     </span><span class="nx">extensions</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;AMSmath.js&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;AMSsymbols.js&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;autobold.js&quot;</span><span class="p">]</span>
-<span class="w">  </span><span class="p">}</span>
+  <span class="nx">TeX</span><span class="o">:</span> <span class="p">{</span>
+     <span class="nx">equationNumbers</span><span class="o">:</span> <span class="p">{</span>  <span class="nx">autoNumber</span><span class="o">:</span> <span class="s2">&quot;AMS&quot;</span>  <span class="p">},</span>
+     <span class="nx">extensions</span><span class="o">:</span> <span class="p">[</span><span class="s2">&quot;AMSmath.js&quot;</span><span class="p">,</span> <span class="s2">&quot;AMSsymbols.js&quot;</span><span class="p">,</span> <span class="s2">&quot;autobold.js&quot;</span><span class="p">]</span>
+  <span class="p">}</span>
 <span class="p">});</span>
 <span class="p">&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
 <span class="p">&lt;</span><span class="nt">script</span> <span class="na">type</span><span class="o">=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src</span><span class="o">=</span>
@@ -244,14 +243,15 @@ u(t) = Ae^{-bt}\sin (w t), \hbox{ for } t\in [0,T]
 
 <span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span>
 {% if result != None %}
-<span class="cm">&lt;!-- script and div elements for Bokeh plot --&gt;</span>
+<span class="c">&lt;!-- script and div elements for Bokeh plot --&gt;</span>
 {{ result[1]|safe }}
 {{ result[2]|safe }}
 {% endif %}
 <span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
 <span class="p">&lt;/</span><span class="nt">body</span><span class="p">&gt;</span>
 <span class="p">&lt;/</span><span class="nt">html</span><span class="p">&gt;</span>
-</code></pre></div>
+</pre></div>
+
 
 <h3>Reference</h3>
 <ol>
@@ -284,9 +284,6 @@ u(t) = Ae^{-bt}\sin (w t), \hbox{ for } t\in [0,T]
     <h1>Recent Posts</h1>
     <ul id="recent_posts">
       <li class="post">
-          <a href="/pages/2025/02/23/deepseek-v3-papre-notes/">DeepSeek V3 papre notes</a>
-      </li>
-      <li class="post">
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
@@ -297,6 +294,9 @@ u(t) = Ae^{-bt}\sin (w t), \hbox{ for } t\in [0,T]
       </li>
       <li class="post">
           <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2021/12/31/recommendation-system-05-bayesian-optimization/">Recommendation System 05 - Bayesian Optimization</a>
       </li>
     </ul>
   </section>
@@ -314,7 +314,7 @@ u(t) = Ae^{-bt}\sin (w t), \hbox{ for } t\in [0,T]
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/re.html">re</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/python.html">python</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/sklearn.html">sklearn</a>  </section>
 
 
     <section>

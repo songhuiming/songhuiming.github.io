@@ -4,12 +4,9 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>python multiprocessing and threads 03: multiprocessing.Process v.s. threading.Thread &mdash; pydata by Huiming</title>
+  <title>python multiprocessing and threads 03: multiprocessing.Process v.s. threading.Thread &mdash; pydata</title>
   <meta name="author" content="shm">
 
-
-    
-<script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
 
 
@@ -34,7 +31,7 @@
 
 <body>
   <header role="banner"><hgroup>
-  <h1><a href="/">pydata by Huiming</a></h1>
+  <h1><a href="/">pydata</a></h1>
     <h2>Keep Looking, Don't Settle</h2>
 </hgroup>
 
@@ -129,14 +126,14 @@
 <p>所以我会优先选择<code>multiprocessing.Pool map</code></p>
 </li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">threading</span>
+<div class="highlight"><pre><span class="kn">import</span> <span class="nn">threading</span>
 <span class="kn">import</span> <span class="nn">multiprocessing</span>
 <span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">Process</span><span class="p">,</span> <span class="n">Queue</span><span class="p">,</span> <span class="n">Pool</span>
 <span class="kn">import</span> <span class="nn">math</span>
 <span class="kn">import</span> <span class="nn">timeit</span>
 
 <span class="k">def</span> <span class="nf">factorize_naive</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot; A naive factorization method. Take integer &#39;n&#39;, return list of</span>
+    <span class="sd">&quot;&quot;&quot; A naive factorization method. Take integer &#39;n&#39;, return list of</span>
 <span class="sd">        factors.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">n</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
@@ -144,7 +141,7 @@
     <span class="n">factors</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">p</span> <span class="o">=</span> <span class="mi">2</span>
 
-    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+    <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">factors</span>
         <span class="n">r</span> <span class="o">=</span> <span class="n">n</span> <span class="o">%</span> <span class="n">p</span>
@@ -160,14 +157,14 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="c1"># If p == 2, get to 3</span>
             <span class="n">p</span> <span class="o">+=</span> <span class="mi">1</span>
-    <span class="k">assert</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;unreachable&quot;</span>
+    <span class="k">assert</span> <span class="bp">False</span><span class="p">,</span> <span class="s2">&quot;unreachable&quot;</span>
 
 <span class="k">def</span> <span class="nf">serial_factorizer</span><span class="p">(</span><span class="n">nums</span><span class="p">):</span>
     <span class="k">return</span> <span class="p">{</span><span class="n">n</span><span class="p">:</span> <span class="n">factorize_naive</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">nums</span><span class="p">}</span>
 
 <span class="k">def</span> <span class="nf">threaded_factorizer</span><span class="p">(</span><span class="n">nums</span><span class="p">,</span> <span class="n">nthreads</span><span class="p">):</span>
     <span class="k">def</span> <span class="nf">worker</span><span class="p">(</span><span class="n">nums</span><span class="p">,</span> <span class="n">outdict</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot; The worker function, invoked in a thread. &#39;nums&#39; is a</span>
+        <span class="sd">&quot;&quot;&quot; The worker function, invoked in a thread. &#39;nums&#39; is a</span>
 <span class="sd">            list of numbers to factor. The results are placed in</span>
 <span class="sd">            outdict.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -198,7 +195,7 @@
 
 <span class="k">def</span> <span class="nf">mp_factorizer</span><span class="p">(</span><span class="n">nums</span><span class="p">,</span> <span class="n">nprocs</span><span class="p">):</span>
     <span class="k">def</span> <span class="nf">worker</span><span class="p">(</span><span class="n">nums</span><span class="p">,</span> <span class="n">out_q</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot; The worker function, invoked in a process. &#39;nums&#39; is a</span>
+        <span class="sd">&quot;&quot;&quot; The worker function, invoked in a process. &#39;nums&#39; is a</span>
 <span class="sd">            list of numbers to factor. The results are placed in</span>
 <span class="sd">            a dictionary that&#39;s pushed to a queue.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -237,31 +234,32 @@
 <span class="n">start</span> <span class="o">=</span> <span class="n">timeit</span><span class="o">.</span><span class="n">default_timer</span><span class="p">()</span>
 <span class="n">serial_factorizer</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1000000</span><span class="p">))</span>
 <span class="n">end</span> <span class="o">=</span> <span class="n">timeit</span><span class="o">.</span><span class="n">default_timer</span><span class="p">()</span>
-<span class="nb">print</span> <span class="s2">&quot;Serial run time is </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
+<span class="k">print</span> <span class="s2">&quot;Serial run time is </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
 
 <span class="c1"># threading run</span>
 <span class="n">start</span> <span class="o">=</span> <span class="n">timeit</span><span class="o">.</span><span class="n">default_timer</span><span class="p">()</span>
 <span class="n">threaded_factorizer</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1000000</span><span class="p">),</span> <span class="n">nthreads</span> <span class="o">=</span> <span class="mi">6</span><span class="p">)</span>
 <span class="n">end</span> <span class="o">=</span> <span class="n">timeit</span><span class="o">.</span><span class="n">default_timer</span><span class="p">()</span>
-<span class="nb">print</span> <span class="s2">&quot;threading run with 6 threads, run time is </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
+<span class="k">print</span> <span class="s2">&quot;threading run with 6 threads, run time is </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
 
 
 <span class="n">start</span> <span class="o">=</span> <span class="n">timeit</span><span class="o">.</span><span class="n">default_timer</span><span class="p">()</span>
 <span class="n">mp_factorizer</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1000000</span><span class="p">),</span> <span class="mi">6</span><span class="p">)</span>
 <span class="n">end</span> <span class="o">=</span> <span class="n">timeit</span><span class="o">.</span><span class="n">default_timer</span><span class="p">()</span>
-<span class="nb">print</span> <span class="s2">&quot;multiprocessing run with 6 process, run time is </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
+<span class="k">print</span> <span class="s2">&quot;multiprocessing run with 6 process, run time is </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
 
 
 <span class="n">start</span> <span class="o">=</span> <span class="n">timeit</span><span class="o">.</span><span class="n">default_timer</span><span class="p">()</span>
 <span class="n">mp_factorizer</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1000000</span><span class="p">),</span> <span class="mi">80</span><span class="p">)</span>
 <span class="n">end</span> <span class="o">=</span> <span class="n">timeit</span><span class="o">.</span><span class="n">default_timer</span><span class="p">()</span>
-<span class="nb">print</span> <span class="s2">&quot;multiprocessing run with 80 process, run time is </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
-</code></pre></div>
+<span class="k">print</span> <span class="s2">&quot;multiprocessing run with 80 process, run time is </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
+</pre></div>
+
 
 <p>Figure 1. compare serial v.s. threading</p>
-<p><img alt="png" src="/figures/20160621_serial_vs_threaded.PNG"></p>
+<p><img alt="png" src="/figures/20160621_serial_vs_threaded.PNG" /></p>
 <p>Figure 2. compare serial, threading and multiprocessing</p>
-<p><img alt="png" src="/figures/20160621_serial_vs_threaded_vs_mp.PNG"></p></div>
+<p><img alt="png" src="/figures/20160621_serial_vs_threaded_vs_mp.PNG" /></p></div>
     <footer>
 <p class="meta">
   <span class="byline author vcard">
@@ -284,9 +282,6 @@
     <h1>Recent Posts</h1>
     <ul id="recent_posts">
       <li class="post">
-          <a href="/pages/2025/02/23/deepseek-v3-papre-notes/">DeepSeek V3 papre notes</a>
-      </li>
-      <li class="post">
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
@@ -297,6 +292,9 @@
       </li>
       <li class="post">
           <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2021/12/31/recommendation-system-05-bayesian-optimization/">Recommendation System 05 - Bayesian Optimization</a>
       </li>
     </ul>
   </section>
@@ -314,7 +312,7 @@
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/re.html">re</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/python.html">python</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/sklearn.html">sklearn</a>  </section>
 
 
     <section>

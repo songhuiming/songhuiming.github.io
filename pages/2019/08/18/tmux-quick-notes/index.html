@@ -4,12 +4,9 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>tmux quick notes &mdash; pydata by Huiming</title>
+  <title>tmux quick notes &mdash; pydata</title>
   <meta name="author" content="shm">
 
-
-    
-<script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
 
 
@@ -34,7 +31,7 @@
 
 <body>
   <header role="banner"><hgroup>
-  <h1><a href="/">pydata by Huiming</a></h1>
+  <h1><a href="/">pydata</a></h1>
     <h2>Keep Looking, Don't Settle</h2>
 </hgroup>
 
@@ -120,22 +117,23 @@
 </ol>
 <h3>修改配置</h3>
 <p><code>Tmux</code>默认不支持鼠标滚动查看窗口中的前后内容。需要修改配置来支持。   <code>vim ~/.tmux.conf</code></p>
-<div class="highlight"><pre><span></span><code>复制代码#<span class="w"> </span>开启鼠标模式
-set-option<span class="w"> </span>-g<span class="w"> </span>mouse<span class="w"> </span>on
+<div class="highlight"><pre>复制代码# 开启鼠标模式
+set-option -g mouse on
 
 <span class="c1"># 允许鼠标选择窗格</span>
 <span class="c1"># set -g mouse-select-pane on</span>
 ​
 <span class="c1"># 如果喜欢给窗口自定义命名，那么需要关闭窗口的自动命名</span>
-set-option<span class="w"> </span>-g<span class="w"> </span>allow-rename<span class="w"> </span>off
+set-option -g allow-rename off
 ​
 <span class="c1"># 如果对 vim 比较熟悉，可以将 copy mode 的快捷键换成 vi 模式</span>
-set-window-option<span class="w"> </span>-g<span class="w"> </span>mode-keys<span class="w"> </span>vi
+set-window-option -g mode-keys vi
 
 <span class="c1"># 默认快捷键是 `Ctrl + b` (`C-b`), 记为 prefix. 自定义快捷键 prefix 为 cmd + a</span>
 <span class="c1"># unbind ^b</span>
 <span class="c1"># set -g prefix &#39;M-a&#39;</span>
-</code></pre></div>
+</pre></div>
+
 
 <h3>tmux的主要元素分为三层：</h3>
 <ol>
@@ -143,75 +141,77 @@ set-window-option<span class="w"> </span>-g<span class="w"> </span>mode-keys<spa
 <li><strong>Window</strong> 单个可见窗口。Windows有自己的编号，也可以认为和ITerm2中的Tab类似。</li>
 <li><strong>Pane</strong> 窗格，被划分成小块的窗口，类似于Vim中 C-w +v 后的效果。一图以蔽之：</li>
 </ol>
-<p><img alt="tmux 说明" src="https://harttle.land/assets/img/blog/tmux-concept.png"></p>
+<p><img alt="tmux 说明" src="https://harttle.land/assets/img/blog/tmux-concept.png" /></p>
 <h4>Session</h4>
 <p>Tmux为了防止与全局快捷键冲突，大部分快捷键需要先需要输入前缀Ctrl + b，下文用Prefix代替。
 Session主要相关命令如下：</p>
-<div class="highlight"><pre><span></span><code>复制代码#<span class="w"> </span>创建
-tmux<span class="w"> </span>new<span class="w"> </span><span class="c1"># 不指定session name</span>
-tmux<span class="w"> </span>new<span class="w"> </span>-s<span class="w"> </span><span class="o">[</span>session-name<span class="o">]</span>
+<div class="highlight"><pre>复制代码# 创建
+tmux new <span class="c1"># 不指定session name</span>
+tmux new -s <span class="o">[</span>session-name<span class="o">]</span>
 
 <span class="c1"># 删除Session</span>
-tmux<span class="w"> </span>kill-session<span class="w"> </span>-t<span class="w"> </span><span class="o">[</span>session-name<span class="o">]</span>
-tmux<span class="w"> </span>kill-server
+tmux kill-session -t <span class="o">[</span>session-name<span class="o">]</span>
+tmux kill-server
 
 <span class="c1"># 列出当前Session</span>
-tmux<span class="w"> </span>ls<span class="w"> </span><span class="c1"># </span>
-Prefix<span class="w"> </span>s<span class="w"> </span><span class="c1"># tmux 内</span>
+tmux ls <span class="c1"># </span>
+Prefix s <span class="c1"># tmux 内</span>
 
 <span class="c1"># 恢复Session</span>
-tmux<span class="w"> </span>a<span class="w"> </span>-t<span class="w"> </span><span class="o">[</span>session-name<span class="o">]</span>
-tmux<span class="w"> </span>a
+tmux a -t <span class="o">[</span>session-name<span class="o">]</span>
+tmux a
 
 <span class="c1"># 断开Session</span>
-tmux<span class="w"> </span>detach
-Prefix<span class="w"> </span>d
+tmux detach
+Prefix d
 
 <span class="c1"># 重命名Session</span>
-Prefix<span class="w"> </span>$
-</code></pre></div>
+Prefix $
+</pre></div>
+
 
 <h4>Window</h4>
-<div class="highlight"><pre><span></span><code><span class="c1"># 创建</span>
-Prefix<span class="w"> </span>c
+<div class="highlight"><pre><span class="c1"># 创建</span>
+Prefix c
 
 <span class="c1"># 选择窗口</span>
-Prefix<span class="w"> </span>+<span class="w"> </span><span class="o">[</span>number<span class="o">]</span><span class="w"> </span><span class="c1"># 选择第n个窗口</span>
-Prefix<span class="w"> </span>+<span class="w"> </span>p/n<span class="w">    </span><span class="c1"># 前/后一个窗口</span>
+Prefix + <span class="o">[</span>number<span class="o">]</span> <span class="c1"># 选择第n个窗口</span>
+Prefix + p/n    <span class="c1"># 前/后一个窗口</span>
 
 <span class="c1"># 关闭窗口</span>
-Prefix<span class="w"> </span><span class="p">&amp;</span>
+Prefix <span class="p">&amp;</span>
 <span class="nb">exit</span>
 
 <span class="c1"># 列出所有window（包含其他Session）</span>
-Prefix<span class="w"> </span>w<span class="w"> </span>
-j/k<span class="w"> </span><span class="c1"># 前后选择</span>
+Prefix w 
+j/k <span class="c1"># 前后选择</span>
 
 <span class="c1"># 搜索窗口</span>
-Prefix<span class="w"> </span>f
+Prefix f
 
 <span class="c1"># 重命名当前窗口</span>
-Prefix<span class="w"> </span>,
-</code></pre></div>
+Prefix ,
+</pre></div>
+
 
 <h4>Pane</h4>
-<div class="highlight"><pre><span></span><code><span class="c1"># 创建</span>
-Prefix<span class="w"> </span>%<span class="w">    </span><span class="c1"># 水平窗格</span>
-Prefix<span class="w"> </span><span class="s1">&#39;&quot;&#39;</span><span class="w">  </span><span class="c1"># 垂直窗格</span>
+<div class="highlight"><pre><span class="c1"># 创建</span>
+Prefix %    <span class="c1"># 水平窗格</span>
+Prefix <span class="s1">&#39;&quot;&#39;</span>  <span class="c1"># 垂直窗格</span>
 
 <span class="c1"># 关闭</span>
-Prefix<span class="w"> </span>x
+Prefix x
 
 <span class="c1"># 切换</span>
-Prefix<span class="w"> </span>o<span class="w"> </span><span class="c1"># 在窗格间切换</span>
-Prefix<span class="w"> </span>q<span class="w">    </span><span class="c1"># 显示窗格编号，输入编号切换</span>
+Prefix o <span class="c1"># 在窗格间切换</span>
+Prefix q    <span class="c1"># 显示窗格编号，输入编号切换</span>
 
 <span class="c1"># 将当前窗格切换到新窗口</span>
-Prefix<span class="w"> </span>！
+Prefix ！
 
 <span class="c1"># 窗格交换位置</span>
-Prefix<span class="w"> </span>+<span class="w"> </span><span class="o">{</span>/<span class="o">}</span>
-</code></pre></div></div>
+Prefix + <span class="o">{</span>/<span class="o">}</span>
+</pre></div></div>
     <footer>
 <p class="meta">
   <span class="byline author vcard">
@@ -234,9 +234,6 @@ Prefix<span class="w"> </span>+<span class="w"> </span><span class="o">{</span>/
     <h1>Recent Posts</h1>
     <ul id="recent_posts">
       <li class="post">
-          <a href="/pages/2025/02/23/deepseek-v3-papre-notes/">DeepSeek V3 papre notes</a>
-      </li>
-      <li class="post">
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
@@ -247,6 +244,9 @@ Prefix<span class="w"> </span>+<span class="w"> </span><span class="o">{</span>/
       </li>
       <li class="post">
           <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2021/12/31/recommendation-system-05-bayesian-optimization/">Recommendation System 05 - Bayesian Optimization</a>
       </li>
     </ul>
   </section>
@@ -264,7 +264,7 @@ Prefix<span class="w"> </span>+<span class="w"> </span><span class="o">{</span>/
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/re.html">re</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/python.html">python</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/sklearn.html">sklearn</a>  </section>
 
 
     <section>
