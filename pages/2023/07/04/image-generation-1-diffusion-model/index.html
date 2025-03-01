@@ -30,40 +30,36 @@
 </head>
 
 <body>
-  <header role="banner"><hgroup>
+  <header role="banner"><header>
   <h1><a href="/">pydata: my learning notes</a></h1>
     <h2>Keep Looking, Don't Settle</h2>
-</hgroup>
+</header>
 
-<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-<script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 <script>
-        MathJax.Hub.Config({
-            config: ["MMLorHTML.js"],
-            extensions: ["tex2jax.js","TeX/AMSmath.js","TeX/AMSsymbols.js"],
-            jax: ["input/TeX"],
-            tex2jax: {
-                inlineMath: [ ['$','$'], ["\\(","\\)"] ],
-                displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
-                processEscapes: false
-            },
-            TeX: {
-                TagSide: "right",
-                TagIndent: ".8em",
-                MultLineWidth: "85%",
-                equationNumbers: {
-                   autoNumber: "AMS",
-                },
-                unicode: {
-                   fonts: "STIXGeneral,'Arial Unicode MS'"
-                }
-            },
-            showProcessingMessages: false
-        });
-</script></header>
-  <nav role="navigation"><ul class="subscription" data-subscription="rss">
-</ul>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],  // 允许 $...$ 和 \( ... \) 作为行内公式
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],  // 允许 $$...$$ 和 \[ ... \] 作为块级公式
+    processEscapes: true,  // 允许在公式中使用转义符，如 \$ 表示美元符号
+    processEnvironments: true  // 允许解析 \begin{equation} ... \end{equation} 等数学环境
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre'],  // 跳过某些 HTML 标签，防止错误解析
+    renderActions: {
+      addMenu: []  // 移除右键菜单
+    }
+  }
+};
 
+window.addEventListener('load', () => {
+  document.querySelectorAll("mjx-container").forEach(x => {
+    x.parentElement.classList.add('has-jax');  // 使用 classList.add() 避免字符串拼接错误
+  });
+});
+</script>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script></header>
+  <nav role="navigation">
 
 <form action="https://www.google.com/search" method="get">
     <fieldset role="search">
@@ -149,13 +145,13 @@ q(\mathbf{x}_{t-1} \vert \mathbf{x}_t)
 &amp;= q(\mathbf{x}_t \vert \mathbf{x}_{t-1}) \frac{ q(\mathbf{x}_{t-1}  ) }{ q(\mathbf{x}_t  ) }
 \end{aligned}
 $$</div>
-<p>In this way we convert <span class="math">\(q(\mathbf{x}_{t-1} \vert \mathbf{x}_t)\)</span> to  <span class="math">\(q(\mathbf{x}_t \vert \mathbf{x}_{t-1}),  q(\mathbf{x}_{t-1}), \text{ and } q(\mathbf{x}_t)\)</span>. The thing is, we still don't know <span class="math">\(q(\mathbf{x}_{t-1})  \text{ and } q(\mathbf{x}_t)\)</span>. But we know <span class="math">\(q(\mathbf{x}_{t-1} \vert  \mathbf{x}_0)\)</span> from fowward process. So now we will rewrite the formula to conditional on <span class="math">\(\mathbf{x}_0\)</span>, and denote it as <span class="math">\(q(\mathbf{x}_{t-1} \vert \mathbf{x}_t, \mathbf{x}_0)\)</span>. That is, we want to calculate <span class="math">\(\color{blue} {q(\mathbf{x}_{t-1} \vert \mathbf{x}_t, \mathbf{x}_0)}\)</span>.</p>
+<p>In this way we convert <span class="math">\(q(\mathbf{x}_{t-1} \vert \mathbf{x}_t)\)</span> to  <span class="math">\(q(\mathbf{x}_t \vert \mathbf{x}_{t-1}),  q(\mathbf{x}_{t-1}), \text{ and } q(\mathbf{x}_t)\)</span>. The thing is, we still don't know <span class="math">\(q(\mathbf{x}_{t-1})  \text{ and } q(\mathbf{x}_t)\)</span>. But we know <span class="math">\(q(\mathbf{x}_{t-1} \vert  \mathbf{x}_0)\)</span> from fowward process. So now we will rewrite the formula to conditional on <span class="math">\(\mathbf{x}_0\)</span>, and denote it as <span class="math">\(q(\mathbf{x}_{t-1} \vert \mathbf{x}_t, \mathbf{x}_0)\)</span>. That is, we want to calculate <span class="math">\(\textcolor{blue} {q(\mathbf{x}_{t-1} \vert \mathbf{x}_t, \mathbf{x}_0)}\)</span>.</p>
 <p>From the forward process, we know that:</p>
 <div class="math">$$
 \begin{aligned}
-&amp; \color{blue}{q(\mathbf{x}_{t} \vert \mathbf{x}_{t-1})} \mbox{ with mean } \sqrt{{\alpha}_{t}}\mathbf{x}_{t-1} + \sqrt{1 - {\alpha}_{t}}\boldsymbol{\epsilon}   \text{    },  \sim \mathcal{N}\left(\sqrt{{\alpha}_{t}}\mathbf{x}_{t-1}, (1-{\alpha}_{t})\mathbf{I}\right) \\
-&amp; \color{blue}{q(\mathbf{x}_{t-1} \vert \mathbf{x}_0)} \mbox{ with mean } \sqrt{\bar{\alpha}_{t-1}}\mathbf{x}_0 + \sqrt{1 - \bar{\alpha}_{t-1}}\boldsymbol{\epsilon}  \text{    }, \sim \mathcal{N}\left(\sqrt{\bar{\alpha}_{t-1}}\mathbf{x}_0 , (1-\bar{\alpha}_{t-1})\mathbf{I}\right) \\
-&amp; \color{blue}{q(\mathbf{x}_{t} \vert \mathbf{x}_0)} \mbox{ with mean } \sqrt{\bar{\alpha}_t}\mathbf{x}_0 + \sqrt{1 - \bar{\alpha}_t}\boldsymbol{\epsilon}  \text{    },  \sim \mathcal{N}\left(\sqrt{\bar{\alpha}_t}\mathbf{x}_0, (1-\bar{\alpha}_t)\mathbf{I}\right) 
+&amp; \textcolor{blue}{q(\mathbf{x}_{t} \vert \mathbf{x}_{t-1})} \mbox{ with mean } \sqrt{{\alpha}_{t}}\mathbf{x}_{t-1} + \sqrt{1 - {\alpha}_{t}}\boldsymbol{\epsilon}   \text{    },  \sim \mathcal{N}\left(\sqrt{{\alpha}_{t}}\mathbf{x}_{t-1}, (1-{\alpha}_{t})\mathbf{I}\right) \\
+&amp; \textcolor{blue}{q(\mathbf{x}_{t-1} \vert \mathbf{x}_0)} \mbox{ with mean } \sqrt{\bar{\alpha}_{t-1}}\mathbf{x}_0 + \sqrt{1 - \bar{\alpha}_{t-1}}\boldsymbol{\epsilon}  \text{    }, \sim \mathcal{N}\left(\sqrt{\bar{\alpha}_{t-1}}\mathbf{x}_0 , (1-\bar{\alpha}_{t-1})\mathbf{I}\right) \\
+&amp; \textcolor{blue}{q(\mathbf{x}_{t} \vert \mathbf{x}_0)} \mbox{ with mean } \sqrt{\bar{\alpha}_t}\mathbf{x}_0 + \sqrt{1 - \bar{\alpha}_t}\boldsymbol{\epsilon}  \text{    },  \sim \mathcal{N}\left(\sqrt{\bar{\alpha}_t}\mathbf{x}_0, (1-\bar{\alpha}_t)\mathbf{I}\right) 
 \end{aligned}
 $$</div>
 <p>From the Bayesian formula, we have:</p>
