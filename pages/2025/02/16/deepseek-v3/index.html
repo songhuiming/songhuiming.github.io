@@ -102,23 +102,28 @@ window.addEventListener('load', () => {
 <p>DeekSeek模型架构
 <img alt="20250216_01_deepseek_v3_architecture.png" src="/figures/20250216_01_deepseek_v3_architecture.png"></p>
 <h4>2.1.1. Multi-head latent attention (MLA)</h4>
-<p>相比较于原始的<a href="https://arxiv.org/abs/1706.03762">Attention</a>模型里面介绍的注意力机制, DS使用Multi-head latent attention (MLA)的架构，跟原来的Multi-head attention不一样的是这里面从 <span class="math">\(h_t\)</span> 来计算 <span class="math">\(k, q, v\)</span> 的时候，先进行降维，把 <span class="math">\(h_t \in \mathbb{R}^d\)</span> 投影到一个低维空间 <span class="math">\(\textcolor{blue}{c_t^{KV} = W^{DKV} h_t}\)</span> ，然后再升维到 <span class="math">\(\textcolor{blue}{k_t^C=W^{UK}c_t^{KV}}\)</span> ；以及投影到一个低维的 <span class="math">\(\textcolor{blue}{c_t^Q=W^{DQ}h_t}\)</span>，然后再升维到 <span class="math">\(\textcolor{blue}{q_t^C = W^{UQ} c_t^Q}\)</span>。这样的话在进行inference的时候只要保存低维的 <span class="math">\(\textcolor{blue}{c_t^{KV}}\)</span> 和 <span class="math">\(\textcolor{blue}{c_t^Q}\)</span>. 比如说，原来的 <span class="math">\(\text{dim}(h_t) = 7168\)</span>, 通过一个降维矩阵 <span class="math">\(\text{dim}(W^{DKV})=4096 \times 7186\)</span>把它降到4096维，那么需要保存的矩阵 <span class="math">\(\textcolor{blue}{c_t^{KV}}\)</span>就小了很多。 具体地说，</p>
-<div class="math">\begin{aligned}
+<p>相比较于原始的<a href="https://arxiv.org/abs/1706.03762">Attention</a>模型里面介绍的注意力机制, DS使用Multi-head latent attention (MLA)的架构，跟原来的Multi-head attention不一样的是这里面从 <span class="math">\(h_t\)</span> 来计算 <span class="math">\(k, q, v\)</span> 的时候，先进行降维，把 <span class="math">\(h_t \in \mathbb{R}^d\)</span> 投影到一个低维空间 <span class="math">\(\textcolor{blue}{c_t^{KV} = W^{DKV} h_t}\)</span> ，然后再升维到 <span class="math">\(\textcolor{blue}{k_t^C=W^{UK}c_t^{KV}}\)</span> ；以及投影到一个低维的 <span class="math">\(\textcolor{blue}{c_t^Q=W^{DQ}h_t}\)</span>，然后再升维到 <span class="math">\(\textcolor{blue}{q_t^C = W^{UQ} c_t^Q}\)</span>。这样的话在进行inference的时候只要保存低维的 <span class="math">\(\textcolor{blue}{c_t^{KV}}\)</span> 和 <span class="math">\(\textcolor{blue}{c_t^Q}\)</span>. 比如说，原来的 <span class="math">\(\text{dim}(h_t) = 7168\)</span>, 通过一个降维矩阵 <span class="math">\(\text{dim}(W^{DKV})=4096 \times 7186\)</span>把它降到4096维，那么需要保存的矩阵 <span class="math">\(\textcolor{blue}{c_t^{KV}}\)</span>就小了很多。 具体地说，
+</p>
+<div class="math">$$
+\begin{aligned}
 &amp;  \textcolor{blue}{c_t^{KV}} = W^{DKV} h_t, \\
 &amp;  [k_{t,1}^{C}, k_{t,2}^{C}, ..., k_{t,n_h}^{C}] = k_t^C = W^{UK} c_t^{KV}, \\
 &amp;  \textcolor{blue}{k_t^R} = \text{RoPE}(W^{KR} h_t), \\
 &amp;  k_{t,i} = \left[k_{t,i}^{C}; k_t^R \right], \\
 &amp;  [v_{t,1}^{C}, v_{t,2}^{C}, ..., v_{t,n_h}^{C}] = v_t^C = W^{UV} c_t^{KV},
-\end{aligned}</div>
+\end{aligned}
+$$</div>
 <p>这里 <span class="math">\( W^{DKV} \in \mathbb{R}^{d_c \times d} $ 是一个降维投影矩阵; $W^{UK}, W^{UV} \in \mathbb{R}^{d_h n_h \times d_c}\)</span> 是对应的 keys 和 values 的升维矩阵。在做inference的时候，只需要<span class="math">\(\textcolor{blue}{c_t^{KV}}\)</span>和<span class="math">\(\textcolor{blue}{k_t^R}\)</span>，即节省了计算量，也节约了内存。</p>
 <p>对Query，也有同样的处理来降维
 </p>
-<div class="math">\begin{aligned}
+<div class="math">$$
+\begin{aligned}
 &amp; \textcolor{blue}{c_t^Q} = W^{DQ} h_t, \\
 &amp; [q_{t,1}^{C}, q_{t,2}^{C}, ..., q_{t,n_h}^{C}] = q_t^C = W^{UQ} c_t^Q, \\
 &amp; [q_{t,1}^{R}, q_{t,2}^{R}, ..., q_{t,n_h}^{R}] = q_t^R = \text{RoPE}(W^{QR} c_t^Q), \\
 &amp; q_{t,i} = [q_{t,i}^{C}, q_{t,i}^{R}],
-\end{aligned}</div>
+\end{aligned}
+$$</div>
 <h4>2.1.2. DeepSeekMoE with Auxiliary-Loss-Free Load Balancing</h4>
 <h5>Basic Architecture of DeepSeekMoE</h5>
 <p>在2017年的Attention论文里面，decoder先是计算Attention，然后再计算FFN从而predict最后的token。DS里面，FFN被进一步改成了MoE。MoE的意思是模型是由一些列的Expert构成。每个Expert可以是一个MLP，一个CNN或者其他的神经网络模型，或者每个Expert可以是一个tansformer的encoder/decoder。每个 Expert 负责学习不同的数据模式，MoE 通过 Gating Network 选择合适的Expert，使得不同的数据被送往最擅长Expert家处理。每预测下一个token的时候，MoE不是使用某一个Expert，也不是使用所有的Expert，而是选择其中的Top <span class="math">\(K\)</span> 个Expert来进行预测。选哪 <span class="math">\(K\)</span> 个Expert是通过一个Gating网络来确定。通常 <span class="math">\(K \ll N\)</span>，所以MoE是一个稀疏网络。使用MoE第一个好处是通过更精细化的划分，模型有更大的灵活性，不同的Expert可以学习不同的数据。比如如果 <span class="math">\(N=16\)</span>，<span class="math">\(K=2\)</span>，那么就有 <span class="math">\(C(16, 2)=160\)</span> 个组合。如果每个Expert再split成4个小的Expert，那么总共的组合就是 <span class="math">\(C(64, 8)=4,426,165,368\)</span>。这样极大的增加了模型的灵活性。第二个好处是节省计算资源，因为每次只需要激活很少的Expert来参加计算，而不像transfomer那样所有的参数都参加计算。也就是说，MoE可以训练一个更大更多参数的模型，从而记住更多的知识，但是每次实际只有很少一部分参数参加计算。而且应为每个Expert是独立的模型，没有共享参数，所以他们可以并行进行计算。</p>
@@ -146,12 +151,14 @@ $$</div>
 <h5>Complementary Sequence-Wise Auxiliary Loss</h5>
 <p>DeepSeek-V3 主要依赖 Auxiliary-Loss-Free 负载均衡策略来确保 Experts 间的负载均衡。然而，为了防止单个序列内部的极端不平衡，DeepSeek-V3 还引入了 Complementary Sequence-Wise Auxiliary Loss. 通常MoE模型的负载均衡都在batch level进行，但是对一个batch的多个sequence，某个sequence 内部某些Expert可能用的很多，而其他Expert用的很少。DS的想法是要在每个sequence level，也尽可能的让Expert utilization均衡，负载不会过于集中或稀疏。同时该损失的强度非常低，以避免对模型性能产生负面影响。</p>
 <p>下面我们主要来理解原文中的公式，为什么这个公式就能够均衡 Sequence level的Expert 负载。</p>
-<div class="math">\begin{aligned}
+<div class="math">$$
+\begin{aligned}
 &amp; \mathcal{L}_{\text{Bal}} = \alpha \sum_{i=1}^{N_r} f_i P_i, \\
-&amp; f_i = \frac{N_r}{K_r T} \sum_{t=1}^{T} \mathbb{1} \left(s_{i,t} \in \text{Topk}(\{s_{j,t} | 1 \leq j \leq N_r\}, K_r) \right), \\
+&amp; f_i = \frac{N_r}{K_r T} \sum_{t=1}^{T} \mathbf{1} \left(s_{i,t} \in \text{Topk}(\{s_{j,t} | 1 \leq j \leq N_r\}, K_r) \right), \\
 &amp; s'_{i,t} = \frac{s_{i,t}}{\sum_{j=1}^{N_r} s_{j,t}}, \\
-&amp; P_i = \frac{1}{T} \sum_{t=1}^{T} s'_{i,t}
-\end{aligned}</div>
+&amp; P_i = \frac{1}{T} \sum_{t=1}^{T} s^{\prime}_{i,t}
+\end{aligned}
+$$</div>
 <p><span class="math">\(P_i\)</span>是看在 sequence 上面 Expert 的使用是不是比较均衡。如果不均衡的话，<span class="math">\(P_i\)</span>的值就会比较大。具体原因：首先看<span class="math">\(s^{\prime}_{i,t}\)</span> 和 <span class="math">\(P_i\)</span>。对归一化的affinity score <span class="math">\(s^{\prime}_{i,t} = \frac{s_{i,t}}{\sum_{j=1}^{N_r} s_{j,t}}\)</span>, 计算Expert <span class="math">\(i\)</span> 在整个sequence (Sequence 的长度为 <span class="math">\(T\)</span>) 上面的的平均得分 <span class="math">\(P_i = \frac{1}{T} \sum_{t=1}^{T} s^{\prime}_{i,t}\)</span>: 如果Expert <span class="math">\(i\)</span> 在sequence的很多token <span class="math">\(t\)</span>上被选中，那么对应的 <span class="math">\(s_{i,t}\)</span> 就会被其他的<span class="math">\(s_{j,t}\)</span>大 (<span class="math">\(s_{i,t} \gg s_{j,t}\)</span> for <span class="math">\(j \neq i\)</span>), 而 <span class="math">\(s^{\prime}_{i,t}\)</span> 是 <span class="math">\(s_{i,t}\)</span>对所有的 Expert的归一化值，那么<span class="math">\(s^{\prime}_{i,t}\)</span>就相应的比较大。而<span class="math">\(P_i\)</span>是<span class="math">\(s^{\prime}_{i,t}\)</span>在整个 sequence 上的平均值，所以它也会比较大。最后相对应的损失函数 <span class="math">\(\mathcal{L}_{\text{Bal}} = \alpha \sum_{i=1}^{N_r} f_i P_i\)</span> 就比较大。</p>
 <p><span class="math">\(f_i\)</span> 是 Expert <span class="math">\(i\)</span> 被使用的频率的归一化值。公式 <span class="math">\(f_i = \frac{N_r}{K_r T} \sum_{t=1}^{T} \mathbb{1} \left(s_{i,t} \in \text{Topk}(\{s_{j,t} | 1 \leq j \leq N_r\}, K_r) \right)\)</span> 统计了每个 Expert <span class="math">\(i\)</span> 在当前序列 <span class="math">\(T\)</span> 个token中被使用的频率 （<span class="math">\(\sum_{t=1}^{T} \mathbb{1} \left(s_{i,t} \in \text{Topk}(\{s_{j,t} | 1 \leq j \leq N_r\}, K_r) \right)\)</span>），然后做了归一化 <span class="math">\(\frac{N_r}{K_r T}\)</span>. 同样，如果 Expert <span class="math">\(i\)</span> 在这个 sequence 中被调用的次数很多，那么这个值也会更大。</p>
 <p>最后，损失函数公式里的 <span class="math">\(\alpha\)</span> 是个取值很小的超参数。它的值很小是为了不过度影响主要训练目标。</p>
