@@ -1,5 +1,119 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata: my learning notes</title><link href="/" rel="alternate"></link><link href="/feeds/all.atom.xml" rel="self"></link><id>/</id><updated>2025-02-16T00:00:00-06:00</updated><subtitle>Keep Looking, Don't Settle</subtitle><entry><title>DeepSeek V3</title><link href="/pages/2025/02/16/deepseek-v3/" rel="alternate"></link><published>2025-02-16T00:00:00-06:00</published><updated>2025-02-16T00:00:00-06:00</updated><author><name>Huiming Song</name></author><id>tag:None,2025-02-16:/pages/2025/02/16/deepseek-v3/</id><summary type="html">&lt;h2&gt;1. What the problem to solve?&lt;/h2&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata: my learning notes</title><link href="/" rel="alternate"></link><link href="/feeds/all.atom.xml" rel="self"></link><id>/</id><updated>2025-02-23T00:00:00-06:00</updated><subtitle>Keep Looking, Don't Settle</subtitle><entry><title>DeepSeek V3 learning notes</title><link href="/pages/2025/02/23/deepseek-v3-learning-notes/" rel="alternate"></link><published>2025-02-23T00:00:00-06:00</published><updated>2025-02-23T00:00:00-06:00</updated><author><name>Huiming Song</name></author><id>tag:None,2025-02-23:/pages/2025/02/23/deepseek-v3-learning-notes/</id><summary type="html">&lt;h2&gt;1. What the problem to solve?&lt;/h2&gt;
+&lt;p&gt;When I went back for the Spring Festival, DeepSeek released a new model. For a while, all kinds of media discussed it a lot, almost rising to the height of national destiny. The most important points discussed should be two: the first is the …&lt;/p&gt;</summary><content type="html">&lt;h2&gt;1. What the problem to solve?&lt;/h2&gt;
+&lt;p&gt;When I went back for the Spring Festival, DeepSeek released a new model. For a while, all kinds of media discussed it a lot, almost rising to the height of national destiny. The most important points discussed should be two: the first is the benchmark score comparable to other mainstream models; the second is that the training speed is much faster and uses much less GPU time. However, most of the discussions are prosperous discussions and exciting news, but there is no specific reason why DS is good and how it is good. The first weekend after I came back, I spent the weekend reading the DS V3 paper. The reason why I chose V3 is that R1 is RL and SFT to enhance the reasoning ability of the model. The basic model is still V3, and the DS V3 paper is more detailed. The second part of the article describes what improvements DS has made in the model architecture (science), and the third part describes what improvements have been made in the model training (engineering). Then the two parts talk about pretraining, posttraining and evaluation related things.&lt;/p&gt;
+&lt;h2&gt;2. How to solve?&lt;/h2&gt;
+&lt;h3&gt;2.1. Basic Architecture&lt;/h3&gt;
+&lt;p&gt;There are two main points in the basic architecture of the model: 1. The original Attention is changed to Multi-head Latent Attention; 2. The original FFN is changed to DeepSeekMoE. The purpose of doing this is to reduce the amount of calculation and reduce the cache data, thereby saving GPU memory. The details are as follows:&lt;/p&gt;
+&lt;p&gt;DeekSeek Model Framework
+&lt;img alt="20250216_01_deepseek_v3_architecture.png" src="/figures/20250216_01_deepseek_v3_architecture.png"&gt;&lt;/p&gt;
+&lt;h4&gt;2.1.1. Multi-head latent attention (MLA)&lt;/h4&gt;
+&lt;p&gt;Compared with the attention mechanism introduced in the original &lt;a href="https://arxiv.org/abs/1706.03762"&gt;Attention&lt;/a&gt; model, DS uses the Multi-head latent attention (MLA) architecture. The difference from the original Multi-head attention is that when calculating &lt;span class="math"&gt;\(k, q, v\)&lt;/span&gt; from &lt;span class="math"&gt;\(h_t\)&lt;/span&gt;, it first reduces the dimension and projects &lt;span class="math"&gt;\(h_t \in \mathbb{R}^d\)&lt;/span&gt; to a low-dimensional space &lt;span class="math"&gt;\(\color{blue}{c_t^{KV} = W^{DKV} h_t}\)&lt;/span&gt;, and then upgrades the dimension to &lt;span class="math"&gt;\(\color{blue}{k_t^C=W^{UK}c_t^{KV}}\)&lt;/span&gt;; and projects it to a low-dimensional &lt;span class="math"&gt;\(\color{blue}{c_t^Q=W^{DQ}h_t}\)&lt;/span&gt;, and then upgrades the dimension to &lt;span class="math"&gt;\(\color{blue}{q_t^C = W^{UQ} c_t^Q}\)&lt;/span&gt;. In this case, when performing inference, we only need to save low-dimensional &lt;span class="math"&gt;\(\color{blue}{c_t^{KV}}\)&lt;/span&gt; and &lt;span class="math"&gt;\(\color{blue}{c_t^Q}\)&lt;/span&gt;. For example, the original &lt;span class="math"&gt;\(\text{dim}(h_t) = 7168\)&lt;/span&gt; is reduced to 4096 dimensions through a dimensionality reduction matrix &lt;span class="math"&gt;\(\text{dim}(W^{DKV})=4096 \times 7186\)&lt;/span&gt;, so the matrix &lt;span class="math"&gt;\(\color{blue}{c_t^{KV}}\)&lt;/span&gt; that needs to be saved is much smaller. Specifically,&lt;/p&gt;
+&lt;div class="math"&gt;\begin{aligned}
+&amp;amp;  \textcolor{blue}{c_t^{KV}} = W^{DKV} h_t, \\
+&amp;amp;  [k_{t,1}^{C}, k_{t,2}^{C}, ..., k_{t,n_h}^{C}] = k_t^C = W^{UK} c_t^{KV}, \\
+&amp;amp;  \textcolor{blue}{k_t^R} = \text{RoPE}(W^{KR} h_t), \\
+&amp;amp;  k_{t,i} = \left[k_{t,i}^{C}; k_t^R \right], \\
+&amp;amp;  [v_{t,1}^{C}, v_{t,2}^{C}, ..., v_{t,n_h}^{C}] = v_t^C = W^{UV} c_t^{KV},
+\end{aligned}&lt;/div&gt;
+&lt;p&gt;Here &lt;span class="math"&gt;\( W^{DKV} \in \mathbb{R}^{d_c \times d} $ is a dimension reduction projection matrix; $W^{UK}, W^{UV} \in \mathbb{R}^{d_h n_h \times d_c}\)&lt;/span&gt; are the corresponding dimension increase matrices of keys and values. When doing inference, only &lt;span class="math"&gt;\(\textcolor{blue}{c_t^{KV}}\)&lt;/span&gt; and &lt;span class="math"&gt;\(\textcolor{blue}{k_t^R}\)&lt;/span&gt; are needed, which saves both computation and memory.&lt;/p&gt;
+&lt;p&gt;For query, the same process is used to reduce the dimension
+&lt;/p&gt;
+&lt;div class="math"&gt;\begin{aligned}
+&amp;amp; \textcolor{blue}{c_t^Q} = W^{DQ} h_t, \\
+&amp;amp; [q_{t,1}^{C}, q_{t,2}^{C}, ..., q_{t,n_h}^{C}] = q_t^C = W^{UQ} c_t^Q, \\
+&amp;amp; [q_{t,1}^{R}, q_{t,2}^{R}, ..., q_{t,n_h}^{R}] = q_t^R = \text{RoPE}(W^{QR} c_t^Q), \\
+&amp;amp; q_{t,i} = [q_{t,i}^{C}, q_{t,i}^{R}],
+\end{aligned}&lt;/div&gt;
+&lt;h4&gt;2.1.2. DeepSeekMoE with Auxiliary-Loss-Free Load Balancing&lt;/h4&gt;
+&lt;h5&gt;Basic Architecture of DeepSeekMoE&lt;/h5&gt;
+&lt;p&gt;In the 2017 Attention paper, the decoder first calculates Attention and then calculates FFN to predict the final token. In DS, FFN is further changed to MoE. MoE means that the model is composed of a series of Experts. Each Expert can be an MLP, a CNN or other neural network model, or each Expert can be a tansformer encoder/decoder. Each Expert is responsible for learning different data patterns. MoE selects the appropriate Expert through the Gating Network so that different data is sent to the best Expert for processing. When predicting the next token, MoE does not use a certain Expert or all Experts, but selects the Top &lt;span class="math"&gt;\(K\)&lt;/span&gt; Experts to make predictions. Which &lt;span class="math"&gt;\(K\)&lt;/span&gt; Experts are selected is determined by a Gating network. Usually &lt;span class="math"&gt;\(K \ll N\)&lt;/span&gt;, so MoE is a sparse network. The first advantage of using MoE is that through more refined divisions, the model has greater flexibility, and different Experts can learn different data. For example, if &lt;span class="math"&gt;\(N=16\)&lt;/span&gt;, &lt;span class="math"&gt;\(K=2\)&lt;/span&gt;, then there are &lt;span class="math"&gt;\(C(16, 2)=160\)&lt;/span&gt; combinations. If each Expert is split into 4 small Experts, the total number of combinations is &lt;span class="math"&gt;\(C(64, 8)=4,426,165,368\)&lt;/span&gt;. This greatly increases the flexibility of the model. The second benefit is saving computing resources, because only a few Experts need to be activated each time to participate in the calculation, unlike the transformer where all parameters participate in the calculation. In other words, MoE can train a larger model with more parameters, thereby remembering more knowledge, but only a small number of parameters actually participate in the calculation each time. And because each Expert is an independent model with no shared parameters, they can perform calculations in parallel.&lt;/p&gt;
+&lt;p&gt;MoE framework
+&lt;img alt="20250216_03_deepseek_v2_moe.png" src="/figures/20250216_03_deepseek_v2_moe.png"&gt;&lt;/p&gt;
+&lt;p&gt;In DS's FFN, DeepSeekMoE goes one step further on the basis of MOE: 1) They further refine the experts, and then some experts are used for routing. Specifically, for the routingd experts, the prediction is only routed to some of these experts. At the same time, they also have some experts that are shared experts, that is, they are used every time when predicting. 2) DS optimizes the selection of experts and uses affinity scores to select experts. 3) DS's experts are finer and sparser. This further reduces the computing cost.&lt;/p&gt;
+&lt;p&gt;DeepSeekMoE Framework
+&lt;img alt="20250216_02_original_moe.png" src="/figures/20250216_02_original_moe.png"&gt;&lt;/p&gt;
+&lt;p&gt;Assuming that the center of each Expert &lt;span class="math"&gt;\(i\)&lt;/span&gt; is &lt;span class="math"&gt;\(\mathbf{e}_{i}\)&lt;/span&gt;, first calculate &lt;span class="math"&gt;\(\color{blue}{s_{i,t} = \sigma(\mathbf{u}_t^\top \mathbf{e}_i)}\)&lt;/span&gt; as the similarity between token &lt;span class="math"&gt;\(t\)&lt;/span&gt; and Expert &lt;span class="math"&gt;\(i\)&lt;/span&gt;: &lt;span class="math"&gt;\(\mathbf{e}_i\)&lt;/span&gt; is the center vector of Expert &lt;span class="math"&gt;\(i\)&lt;/span&gt;, and the dot product is performed with the input &lt;span class="math"&gt;\(\mathbf{u}_t\)&lt;/span&gt; of the token. Then, the affinity of the token to the Expert is calculated through sigmoid, thereby determining whether the token is routed to the Expert.&lt;/p&gt;
+&lt;p&gt;&lt;span class="math"&gt;\(g^{\prime}_{i,t}\)&lt;/span&gt; is the gating value of Expert &lt;span class="math"&gt;\(i\)&lt;/span&gt;. According to the values ​​of &lt;span class="math"&gt;\(s_{i,t}\)&lt;/span&gt; of all Experts, the highest &lt;span class="math"&gt;\(K_r\)&lt;/span&gt; are selected.&lt;/p&gt;
+&lt;div class="math"&gt;$$
+    g'_{i,t} =
+    \begin{cases} 
+        s_{i,t}, &amp;amp; s_{i,t} \in \text{Topk}(\{s_{j,t} | 1 \leq j \leq N_r\}, K_r), \\
+        0, &amp;amp; \text{otherwise},
+    \end{cases}
+$$&lt;/div&gt;
+&lt;p&gt;Then calculate the weights of these &lt;span class="math"&gt;\(K_r\)&lt;/span&gt; Experts &lt;span class="math"&gt;\(\color{blue}{g_{i,t} = \frac{g^{\prime}_{i,t}}{\sum_{j=1}^{N_r} g'_{j,t}}}\)&lt;/span&gt;. Although the formula here shows that the denominator is the sum of &lt;span class="math"&gt;\(N_r\)&lt;/span&gt; &lt;span class="math"&gt;\(g'_{i,t}\)&lt;/span&gt;, in fact, &lt;span class="math"&gt;\(N_r - K_r\)&lt;/span&gt; are 0.&lt;/p&gt;
+&lt;p&gt;Finally, the new output is &lt;span class="math"&gt;\(\color{blue}{\mathbf{h}'_t = \mathbf{u}_t + \sum_{i=1}^{N_s} \text{FFN}^{(s)}_i(\mathbf{u}_t) + \sum_{i=1}^{N_r} g_{i,t} \text{FFN}^{(r)}_i(\mathbf{u}_t)}\)&lt;/span&gt;. Note that &lt;span class="math"&gt;\(K_r\)&lt;/span&gt; are selected from &lt;span class="math"&gt;\(N_r\)&lt;/span&gt; Experts for calculation, &lt;span class="math"&gt;\(K_r \ll N_r\)&lt;/span&gt;, thus saving a lot of calculation. At the same time, compared with the general MoE, DS uses &lt;span class="math"&gt;\(N_s\)&lt;/span&gt; shared Experts, which participate in the calculation of all tokens. By introducing shared experts, the model can share common knowledge between different tasks, avoiding each expert from learning similar content independently, thereby reducing knowledge redundancy.&lt;/p&gt;
+&lt;h5&gt;Auxiliary-Loss-Free Load Balancing in DeepSeek-V3&lt;/h5&gt;
+&lt;p&gt;In actual operation, this situation may occur: most of the model tokens are predicted by a few experts, and the remaining experts are less used, resulting in unbalanced expert load. The previous MOE used auxiliary loss to balance the expert load. The purpose of balanced load is achieved by punishing imbalanced expert utilization (adding more loss). However, there are two problems with this: 1) Too strong auxiliary loss hurts model performance by interfering with learning objectives. 2) Difficult to tune: Balancing between efficiency and accuracy requires careful hyperparameter tuning.&lt;/p&gt;
+&lt;p&gt;DS proposed Auxiliary-Loss-Free Load Balancing to achieve balanced routing of tokens to different experts. Specifically, a bias item is added to the gating function to balance the call of the expert through the bias value.&lt;/p&gt;
+&lt;h3&gt;Stay tuned&lt;/h3&gt;
+&lt;h3&gt;Reference&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;a href="https://github.com/deepseek-ai/DeepSeek-V3/blob/main/DeepSeek_V3.pdf"&gt;DeepSeek-V3 Technical Report&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;script type="text/javascript"&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width &lt; 768) ? "left" : align;
+        indent = (screen.width &lt; 768) ? "0em" : indent;
+        linebreak = (screen.width &lt; 768) ? 'true' : linebreak;
+    }
+
+    var mathjaxscript = document.createElement('script');
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript';
+    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-AMS-MML_HTMLorMML';
+
+    var configscript = document.createElement('script');
+    configscript.type = 'text/x-mathjax-config';
+    configscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js'], equationNumbers: { autoNumber: 'none' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    messageStyle: 'normal'," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        availableFonts: ['STIX', 'TeX']," +
+        "        preferredFont: 'STIX'," +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+&lt;/script&gt;</content><category term="python"></category><category term="python"></category><category term="AI"></category><category term="LLM"></category><category term="AIG"></category></entry><entry><title>DeepSeek V3</title><link href="/pages/2025/02/16/deepseek-v3/" rel="alternate"></link><published>2025-02-16T00:00:00-06:00</published><updated>2025-02-16T00:00:00-06:00</updated><author><name>Huiming Song</name></author><id>tag:None,2025-02-16:/pages/2025/02/16/deepseek-v3/</id><summary type="html">&lt;h2&gt;1. What the problem to solve?&lt;/h2&gt;
 &lt;p&gt;春节回去的时候正好碰上DeepSeek发布新的模型，一时间各路媒体讨论的沸沸扬扬，几乎上升到国运的高度。讨论的最重要的应 …&lt;/p&gt;</summary><content type="html">&lt;h2&gt;1. What the problem to solve?&lt;/h2&gt;
 &lt;p&gt;春节回去的时候正好碰上DeepSeek发布新的模型，一时间各路媒体讨论的沸沸扬扬，几乎上升到国运的高度。讨论的最重要的应该是两点：第一个是媲美其他主流模型的benchmark分数；第二个是说训练速度快了很多，使用了少的多的GPU时间。可是各路讨论多是繁华之论以及振奋人心的消息，而没有具体的DS为什么好，怎么好的。回来的第一个周末，花了周末的时间读了一下DS V3的论文。之所以选择V3因为R1是之于V3进行了RL和SFT来增强模型的推理能力，基本的模型还是V3，而且DS V3的论文也更详细。文章的第二部分讲述了DS在模型的架构上（science）有一些什么样的改进，第三部分讲述了在模型的训练上（engineering）有什么改进，然后两部分讲了pretraining和posttraining以及evaluation相关的东西。&lt;/p&gt;
 &lt;h2&gt;2. How to solve?&lt;/h2&gt;
@@ -14764,41 +14878,4 @@ docker push pinseng/dl-docker
 &lt;li&gt;&lt;a href="https://hub.docker.com/r/tensorflow/tensorflow/"&gt;docker tensorflow repository&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href="http://stackoverflow.com/questions/3160909/how-do-i-deal-with-certificates-using-curl-while-trying-to-access-an-https-url"&gt;How do I deal with certificates using cURL while trying to access an HTTPS url&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href="http://stackoverflow.com/questions/28349392/how-to-push-a-docker-image-to-a-private-repository"&gt;How to push a docker image to a private repository&lt;/a&gt;&lt;/li&gt;
-&lt;/ol&gt;</content><category term="Python"></category><category term="python"></category><category term="docker"></category><category term="tensorflow"></category><category term="deep learning"></category></entry><entry><title>install tensorflow/theano on conda envirement</title><link href="/pages/2017/02/25/install-tensorflowtheano-on-conda-envirement/" rel="alternate"></link><published>2017-02-25T00:00:00-06:00</published><updated>2017-02-25T00:00:00-06:00</updated><author><name>Huiming Song</name></author><id>tag:None,2017-02-25:/pages/2017/02/25/install-tensorflowtheano-on-conda-envirement/</id><summary type="html">&lt;p&gt;to avoid conflict, it is better to install tensorflow/theano in the virtuenv in python. Another way is to install them in the conda enviroment. This is the notes how to do that.&lt;/p&gt;</summary><content type="html">&lt;h3&gt;anaconda install tensorflow&lt;/h3&gt;
-&lt;ol&gt;
-&lt;li&gt;from &lt;a href="https://www.tensorflow.org/versions/r0.12/get_started/os_setup#anaconda_installation"&gt;Anaconda installation&lt;/a&gt;&lt;/li&gt;
-&lt;/ol&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;conda&lt;span class="w"&gt; &lt;/span&gt;create&lt;span class="w"&gt; &lt;/span&gt;-n&lt;span class="w"&gt; &lt;/span&gt;tensorflow&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nv"&gt;python&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="m"&gt;2&lt;/span&gt;.7
-&lt;span class="nb"&gt;source&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;activate&lt;span class="w"&gt; &lt;/span&gt;tensorflow
-conda&lt;span class="w"&gt; &lt;/span&gt;install&lt;span class="w"&gt; &lt;/span&gt;-c&lt;span class="w"&gt; &lt;/span&gt;conda-forge&lt;span class="w"&gt; &lt;/span&gt;tensorflow
-&lt;span class="nb"&gt;source&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;deactivate
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-
-&lt;ol&gt;
-&lt;li&gt;install jupyter notebook, from &lt;a href="http://stackoverflow.com/questions/33960051/unable-to-import-a-module-from-python-notebook-in-jupyter/36613481#36613481"&gt;stackoverflow&lt;/a&gt;&lt;/li&gt;
-&lt;/ol&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="nb"&gt;source&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;activate&lt;span class="w"&gt; &lt;/span&gt;tensorflow
-conda&lt;span class="w"&gt; &lt;/span&gt;install&lt;span class="w"&gt; &lt;/span&gt;ipython
-ipython
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;conda install notebook ipykernel
-jupyter notebook
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-
-&lt;p&gt;&lt;a href="http://www.datascienceassn.org/content/installation-quickstart-tensorflow-anaconda-jupyter"&gt;Installation Quickstart: TensorFlow, Anaconda, Jupyter&lt;/a&gt;&lt;/p&gt;
-&lt;h3&gt;anaconda install theano&lt;/h3&gt;
-&lt;p&gt;under tensorflow enviroment, install theano&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="nb"&gt;source&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;activate&lt;span class="w"&gt; &lt;/span&gt;tensorflow
-pip&lt;span class="w"&gt; &lt;/span&gt;install&lt;span class="w"&gt; &lt;/span&gt;git+git://github.com/Theano/Theano.git
-&lt;span class="nb"&gt;source&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;deactivate
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-
-&lt;h3&gt;anaconda install keras&lt;/h3&gt;
-&lt;p&gt;under tensorflow enviroment, install keras&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="nb"&gt;source&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;activate&lt;span class="w"&gt; &lt;/span&gt;tensorflow
-pip&lt;span class="w"&gt; &lt;/span&gt;install&lt;span class="w"&gt; &lt;/span&gt;git+git://github.com/fchollet/keras.git@1.1.1
-&lt;span class="nb"&gt;source&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;deactivate
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-
-&lt;p&gt;After this, tensorflow and theano is ready for call. However, this is in the anaconda virtual enviroment, so it will require installing pandas in this enviroment.&lt;/p&gt;</content><category term="Python"></category><category term="python"></category><category term="tensorflow"></category></entry></feed>
+&lt;/ol&gt;</content><category term="Python"></category><category term="python"></category><category term="docker"></category><category term="tensorflow"></category><category term="deep learning"></category></entry></feed>

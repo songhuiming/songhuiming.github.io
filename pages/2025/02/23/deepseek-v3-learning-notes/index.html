@@ -4,7 +4,7 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>动态规划 &mdash; pydata: my learning notes</title>
+  <title>DeepSeek V3 learning notes &mdash; pydata: my learning notes</title>
   <meta name="author" content="shm">
 
 
@@ -89,83 +89,62 @@ window.addEventListener('load', () => {
 <div>
   <article class="hentry" role="article">
 <header>
-      <h1 class="entry-title">动态规划</h1>
+      <h1 class="entry-title">DeepSeek V3 learning notes</h1>
     <p class="meta">
-<time datetime="2018-01-28T00:00:00-06:00" pubdate>Sun 28 January 2018</time>    </p>
+<time datetime="2025-02-23T00:00:00-06:00" pubdate>Sun 23 February 2025</time>    </p>
 </header>
 
-  <div class="entry-content"><h2>动态规划的本质，是对问题状态的定义和状态转移方程的定义。</h2>
-<p>引自维基百科</p>
-<blockquote>
-<p>dynamic programming is a method for solving a complex problem by breaking it down into a collection of simpler subproblems.</p>
-</blockquote>
-<p>动态规划是通过拆分问题，定义问题状态和状态之间的关系，使得问题能够以递推（或者说分治）的方式去解决。如何拆分问题，是动态规划的核心。而拆分问题，靠的就是状态的定义和状态转移方程的定义。</p>
-<h2>什么是状态的定义？</h2>
-<p>首先想说大家千万不要被下面的数学式吓到，这里只涉及到了函数相关的知识。我们先来看一个动态规划的教学必备题：</p>
-<blockquote>
-<p>给定一个数列，长度为N，求这个数列的最长上升（递增）子数列（LIS）的长度.</p>
-<p>以1 7 2 8 3 4为例, 这个数列的最长递增子数列是 1 2 3 4，长度为4；</p>
-<p>次长的长度为3， 包括 1 7 8; 1 2 3 等.</p>
-</blockquote>
-<p>要解决这个问题，我们首先要定义这个问题和这个问题的子问题。</p>
-<p>我们来重新定义这个问题：</p>
-<blockquote>
-<p>给定一个数列，长度为<span class="math">\(N\)</span>，</p>
-<p>设<span class="math">\(F_k\)</span>为：以数列中第<span class="math">\(k\)</span>项结尾的最长递增子序列的长度.</p>
-<p>求<span class="math">\(F_1, ..., F_N\)</span>中的最大值.</p>
-</blockquote>
-<p>显然，这个新问题与原问题等价。</p>
-<p>而对于<span class="math">\(F_k\)</span>来讲，<span class="math">\(F_1, ..., F_{k-1}\)</span>都是<span class="math">\(F_k\)</span>的子问题：因为以第<span class="math">\(k\)</span>项结尾的最长递增子序列（下称LIS），包含着以第<span class="math">\(1, ..., k-1\)</span>中某项结尾的LIS。</p>
-<p>上述的新问题<span class="math">\(F_k\)</span>也可以叫做状态，定义中的“<span class="math">\(F_k\)</span>为数列中第<span class="math">\(k\)</span>项结尾的LIS的长度”，就叫做对状态的定义。</p>
-<p>之所以把<span class="math">\(F_k\)</span>做“状态”而不是“问题” ，一是因为避免跟原问题中“问题”混淆，二是因为这个新问题是数学化定义的。</p>
-<h2>什么是状态转移方程？</h2>
-<p>上述状态定义好之后，状态和状态之间的关系式，就叫做状态转移方程。</p>
-<p>比如，对于LIS问题，我们的第一种定义：</p>
-<blockquote>
-<p>设<span class="math">\(F_k\)</span>为：以数列中第<span class="math">\(k\)</span>项结尾的最长递增子序列的长度.</p>
-</blockquote>
-<p>设<span class="math">\(A\)</span>为题中数列，状态转移方程为：</p>
-<blockquote>
-<p><span class="math">\(F_1 = 1\)</span>（根据状态定义导出边界情况）</p>
-<p>$F_k = max(F_{i} + 1 | A_{k} &gt; A_{i}, i \in (1, ..., k-1)), (k &gt; 1) $</p>
-</blockquote>
-<p>用文字解释一下是：以第<span class="math">\(k\)</span>项结尾的LIS的长度是：保证第<span class="math">\(i\)</span>项比第<span class="math">\(k\)</span>项小的情况下，以第<span class="math">\(i\)</span>项结尾的LIS长度加一的最大值，取遍<span class="math">\(i\)</span>的所有值（<span class="math">\(i\)</span>小于<span class="math">\(k\)</span>）。</p>
-<p>这里可以看出，这里的状态转移方程，就是定义了问题和子问题之间的关系。</p>
-<p>可以看出，状态转移方程就是带有条件的递推式。</p>
-<p><img alt="alt text" src="/figures/20180128_dynamic_programming_01.JPG" title="dp_lis"></p>
-<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">lengthOfLIS</span><span class="p">(</span><span class="n">nums</span><span class="p">):</span>
-    <span class="c1">#Edge condition</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">nums</span><span class="p">:</span>
-        <span class="k">return</span> <span class="mi">0</span>
-    <span class="n">dp</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">nums</span><span class="p">))]</span>
-    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">nums</span><span class="p">)):</span>
-        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="n">k</span><span class="p">):</span>
-            <span class="c1"># compare all F_i with F_k for i &lt;ｋ</span>
-            <span class="k">if</span> <span class="n">nums</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">nums</span><span class="p">[</span><span class="n">k</span><span class="p">]:</span>
-                <span class="k">if</span> <span class="n">dp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&gt;</span> <span class="n">dp</span><span class="p">[</span><span class="n">k</span><span class="p">]:</span>
-                    <span class="n">dp</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">dp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
-    <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span>
-
-<span class="n">lengthOfLIS</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">])</span>
-</code></pre></div>
-
-<h2>动态规划迷思</h2>
-<p>本题下其他用户的回答跟动态规划都有或多或少的联系，我也讲一下与本答案的联系。</p>
-<h3>a. “缓存”，“重叠子问题”，“记忆化”：</h3>
-<p>这三个名词，都是在阐述递推式求解的技巧。以<code>Fibonacci</code>数列为例，计算第100项的时候，需要计算第99项和98项；在计算第101项的时候，需要第100项和第99项，这时候你还需要重新计算第99项吗？不需要，你只需要在第一次计算的时候把它记下来就可以了。</p>
-<p>上述的需要再次计算的“第99项”，就叫“重叠子问题”。如果没有计算过，就按照递推式计算，如果计算过，直接使用，就像“缓存”一样，这种方法，叫做“记忆化”，这是递推式求解的技巧。这种技巧，通俗的说叫“花费空间来节省时间”。都不是动态规划的本质，不是动态规划的核心。</p>
-<h3>b. “递归”：递归是递推式求解的方法，连技巧都算不上。</h3>
-<h3>c. "无后效性"，“最优子结构”：</h3>
-<p>上述的状态转移方程中，等式右边不会用到下标大于左边<span class="math">\(i\)</span>或者<span class="math">\(k\)</span>的值，这是"无后效性"的通俗上的数学定义，符合这种定义的状态定义，我们可以说它具有“最优子结构”的性质，在动态规划中我们要做的，就是找到这种“最优子结构”。</p>
-<p>在对状态和状态转移方程的定义过程中，满足“最优子结构”是一个隐含的条件（否则根本定义不出来）。</p>
-<p>需要注意的是，一个问题可能有多种不同的状态定义和状态转移方程定义，存在一个有后效性的定义，不代表该问题不适用动态规划。这也是其他几个答案中出现的逻辑误区：</p>
-<p>动态规划方法要寻找符合“最优子结构“的状态和状态转移方程的定义，在找到之后，这个问题就可以以“记忆化地求解递推式”的方法来解决。而寻找到的定义，才是动态规划的本质。</p>
-<p>文艺的说，动态规划是寻找一种对问题的观察角度，让问题能够以递推（或者说分治）的方式去解决。寻找看问题的角度，才是动态规划中最耀眼的宝石！</p>
-<h3>附加例子</h3>
-<p>为什么需要<code>dp[i] + 1 &gt; dp[k]</code>? <code>lis([1,3,6,7,9,4,10,5,6])</code>在处理10的时候，不应该由4来更新dp，也是应该由9所决定的dp来更新。</p>
-<h2>Reference</h2>
+  <div class="entry-content"><h2>1. What the problem to solve?</h2>
+<p>When I went back for the Spring Festival, DeepSeek released a new model. For a while, all kinds of media discussed it a lot, almost rising to the height of national destiny. The most important points discussed should be two: the first is the benchmark score comparable to other mainstream models; the second is that the training speed is much faster and uses much less GPU time. However, most of the discussions are prosperous discussions and exciting news, but there is no specific reason why DS is good and how it is good. The first weekend after I came back, I spent the weekend reading the DS V3 paper. The reason why I chose V3 is that R1 is RL and SFT to enhance the reasoning ability of the model. The basic model is still V3, and the DS V3 paper is more detailed. The second part of the article describes what improvements DS has made in the model architecture (science), and the third part describes what improvements have been made in the model training (engineering). Then the two parts talk about pretraining, posttraining and evaluation related things.</p>
+<h2>2. How to solve?</h2>
+<h3>2.1. Basic Architecture</h3>
+<p>There are two main points in the basic architecture of the model: 1. The original Attention is changed to Multi-head Latent Attention; 2. The original FFN is changed to DeepSeekMoE. The purpose of doing this is to reduce the amount of calculation and reduce the cache data, thereby saving GPU memory. The details are as follows:</p>
+<p>DeekSeek Model Framework
+<img alt="20250216_01_deepseek_v3_architecture.png" src="/figures/20250216_01_deepseek_v3_architecture.png"></p>
+<h4>2.1.1. Multi-head latent attention (MLA)</h4>
+<p>Compared with the attention mechanism introduced in the original <a href="https://arxiv.org/abs/1706.03762">Attention</a> model, DS uses the Multi-head latent attention (MLA) architecture. The difference from the original Multi-head attention is that when calculating <span class="math">\(k, q, v\)</span> from <span class="math">\(h_t\)</span>, it first reduces the dimension and projects <span class="math">\(h_t \in \mathbb{R}^d\)</span> to a low-dimensional space <span class="math">\(\color{blue}{c_t^{KV} = W^{DKV} h_t}\)</span>, and then upgrades the dimension to <span class="math">\(\color{blue}{k_t^C=W^{UK}c_t^{KV}}\)</span>; and projects it to a low-dimensional <span class="math">\(\color{blue}{c_t^Q=W^{DQ}h_t}\)</span>, and then upgrades the dimension to <span class="math">\(\color{blue}{q_t^C = W^{UQ} c_t^Q}\)</span>. In this case, when performing inference, we only need to save low-dimensional <span class="math">\(\color{blue}{c_t^{KV}}\)</span> and <span class="math">\(\color{blue}{c_t^Q}\)</span>. For example, the original <span class="math">\(\text{dim}(h_t) = 7168\)</span> is reduced to 4096 dimensions through a dimensionality reduction matrix <span class="math">\(\text{dim}(W^{DKV})=4096 \times 7186\)</span>, so the matrix <span class="math">\(\color{blue}{c_t^{KV}}\)</span> that needs to be saved is much smaller. Specifically,</p>
+<div class="math">\begin{aligned}
+&amp;  \textcolor{blue}{c_t^{KV}} = W^{DKV} h_t, \\
+&amp;  [k_{t,1}^{C}, k_{t,2}^{C}, ..., k_{t,n_h}^{C}] = k_t^C = W^{UK} c_t^{KV}, \\
+&amp;  \textcolor{blue}{k_t^R} = \text{RoPE}(W^{KR} h_t), \\
+&amp;  k_{t,i} = \left[k_{t,i}^{C}; k_t^R \right], \\
+&amp;  [v_{t,1}^{C}, v_{t,2}^{C}, ..., v_{t,n_h}^{C}] = v_t^C = W^{UV} c_t^{KV},
+\end{aligned}</div>
+<p>Here <span class="math">\( W^{DKV} \in \mathbb{R}^{d_c \times d} $ is a dimension reduction projection matrix; $W^{UK}, W^{UV} \in \mathbb{R}^{d_h n_h \times d_c}\)</span> are the corresponding dimension increase matrices of keys and values. When doing inference, only <span class="math">\(\textcolor{blue}{c_t^{KV}}\)</span> and <span class="math">\(\textcolor{blue}{k_t^R}\)</span> are needed, which saves both computation and memory.</p>
+<p>For query, the same process is used to reduce the dimension
+</p>
+<div class="math">\begin{aligned}
+&amp; \textcolor{blue}{c_t^Q} = W^{DQ} h_t, \\
+&amp; [q_{t,1}^{C}, q_{t,2}^{C}, ..., q_{t,n_h}^{C}] = q_t^C = W^{UQ} c_t^Q, \\
+&amp; [q_{t,1}^{R}, q_{t,2}^{R}, ..., q_{t,n_h}^{R}] = q_t^R = \text{RoPE}(W^{QR} c_t^Q), \\
+&amp; q_{t,i} = [q_{t,i}^{C}, q_{t,i}^{R}],
+\end{aligned}</div>
+<h4>2.1.2. DeepSeekMoE with Auxiliary-Loss-Free Load Balancing</h4>
+<h5>Basic Architecture of DeepSeekMoE</h5>
+<p>In the 2017 Attention paper, the decoder first calculates Attention and then calculates FFN to predict the final token. In DS, FFN is further changed to MoE. MoE means that the model is composed of a series of Experts. Each Expert can be an MLP, a CNN or other neural network model, or each Expert can be a tansformer encoder/decoder. Each Expert is responsible for learning different data patterns. MoE selects the appropriate Expert through the Gating Network so that different data is sent to the best Expert for processing. When predicting the next token, MoE does not use a certain Expert or all Experts, but selects the Top <span class="math">\(K\)</span> Experts to make predictions. Which <span class="math">\(K\)</span> Experts are selected is determined by a Gating network. Usually <span class="math">\(K \ll N\)</span>, so MoE is a sparse network. The first advantage of using MoE is that through more refined divisions, the model has greater flexibility, and different Experts can learn different data. For example, if <span class="math">\(N=16\)</span>, <span class="math">\(K=2\)</span>, then there are <span class="math">\(C(16, 2)=160\)</span> combinations. If each Expert is split into 4 small Experts, the total number of combinations is <span class="math">\(C(64, 8)=4,426,165,368\)</span>. This greatly increases the flexibility of the model. The second benefit is saving computing resources, because only a few Experts need to be activated each time to participate in the calculation, unlike the transformer where all parameters participate in the calculation. In other words, MoE can train a larger model with more parameters, thereby remembering more knowledge, but only a small number of parameters actually participate in the calculation each time. And because each Expert is an independent model with no shared parameters, they can perform calculations in parallel.</p>
+<p>MoE framework
+<img alt="20250216_03_deepseek_v2_moe.png" src="/figures/20250216_03_deepseek_v2_moe.png"></p>
+<p>In DS's FFN, DeepSeekMoE goes one step further on the basis of MOE: 1) They further refine the experts, and then some experts are used for routing. Specifically, for the routingd experts, the prediction is only routed to some of these experts. At the same time, they also have some experts that are shared experts, that is, they are used every time when predicting. 2) DS optimizes the selection of experts and uses affinity scores to select experts. 3) DS's experts are finer and sparser. This further reduces the computing cost.</p>
+<p>DeepSeekMoE Framework
+<img alt="20250216_02_original_moe.png" src="/figures/20250216_02_original_moe.png"></p>
+<p>Assuming that the center of each Expert <span class="math">\(i\)</span> is <span class="math">\(\mathbf{e}_{i}\)</span>, first calculate <span class="math">\(\color{blue}{s_{i,t} = \sigma(\mathbf{u}_t^\top \mathbf{e}_i)}\)</span> as the similarity between token <span class="math">\(t\)</span> and Expert <span class="math">\(i\)</span>: <span class="math">\(\mathbf{e}_i\)</span> is the center vector of Expert <span class="math">\(i\)</span>, and the dot product is performed with the input <span class="math">\(\mathbf{u}_t\)</span> of the token. Then, the affinity of the token to the Expert is calculated through sigmoid, thereby determining whether the token is routed to the Expert.</p>
+<p><span class="math">\(g^{\prime}_{i,t}\)</span> is the gating value of Expert <span class="math">\(i\)</span>. According to the values ​​of <span class="math">\(s_{i,t}\)</span> of all Experts, the highest <span class="math">\(K_r\)</span> are selected.</p>
+<div class="math">$$
+    g'_{i,t} =
+    \begin{cases} 
+        s_{i,t}, &amp; s_{i,t} \in \text{Topk}(\{s_{j,t} | 1 \leq j \leq N_r\}, K_r), \\
+        0, &amp; \text{otherwise},
+    \end{cases}
+$$</div>
+<p>Then calculate the weights of these <span class="math">\(K_r\)</span> Experts <span class="math">\(\color{blue}{g_{i,t} = \frac{g^{\prime}_{i,t}}{\sum_{j=1}^{N_r} g'_{j,t}}}\)</span>. Although the formula here shows that the denominator is the sum of <span class="math">\(N_r\)</span> <span class="math">\(g'_{i,t}\)</span>, in fact, <span class="math">\(N_r - K_r\)</span> are 0.</p>
+<p>Finally, the new output is <span class="math">\(\color{blue}{\mathbf{h}'_t = \mathbf{u}_t + \sum_{i=1}^{N_s} \text{FFN}^{(s)}_i(\mathbf{u}_t) + \sum_{i=1}^{N_r} g_{i,t} \text{FFN}^{(r)}_i(\mathbf{u}_t)}\)</span>. Note that <span class="math">\(K_r\)</span> are selected from <span class="math">\(N_r\)</span> Experts for calculation, <span class="math">\(K_r \ll N_r\)</span>, thus saving a lot of calculation. At the same time, compared with the general MoE, DS uses <span class="math">\(N_s\)</span> shared Experts, which participate in the calculation of all tokens. By introducing shared experts, the model can share common knowledge between different tasks, avoiding each expert from learning similar content independently, thereby reducing knowledge redundancy.</p>
+<h5>Auxiliary-Loss-Free Load Balancing in DeepSeek-V3</h5>
+<p>In actual operation, this situation may occur: most of the model tokens are predicted by a few experts, and the remaining experts are less used, resulting in unbalanced expert load. The previous MOE used auxiliary loss to balance the expert load. The purpose of balanced load is achieved by punishing imbalanced expert utilization (adding more loss). However, there are two problems with this: 1) Too strong auxiliary loss hurts model performance by interfering with learning objectives. 2) Difficult to tune: Balancing between efficiency and accuracy requires careful hyperparameter tuning.</p>
+<p>DS proposed Auxiliary-Loss-Free Load Balancing to achieve balanced routing of tokens to different experts. Specifically, a bias item is added to the gating function to balance the call of the expert through the bias value.</p>
+<h3>Stay tuned</h3>
+<h3>Reference</h3>
 <ol>
-<li><a href="https://www.zhihu.com/question/23995189">什么是动态规划？动态规划的意义是什么？</a></li>
+<li><a href="https://github.com/deepseek-ai/DeepSeek-V3/blob/main/DeepSeek_V3.pdf">DeepSeek-V3 Technical Report</a></li>
 </ol>
 <script type="text/javascript">if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
     var align = "center",
@@ -236,11 +215,11 @@ window.addEventListener('load', () => {
         <a href="/author/huiming-song.html">Huiming Song</a>
     </span>
   </span>
-<time datetime="2018-01-28T00:00:00-06:00" pubdate>Sun 28 January 2018</time>  <span class="categories">
+<time datetime="2025-02-23T00:00:00-06:00" pubdate>Sun 23 February 2025</time>  <span class="categories">
     <a class='category' href='/category/python.html'>python</a>
   </span>
   <span class="categories">
-    <a class="category" href="/tag/python.html">python</a>  </span>
+    <a class="category" href="/tag/python.html">python</a>,    <a class="category" href="/tag/ai.html">AI</a>,    <a class="category" href="/tag/llm.html">LLM</a>,    <a class="category" href="/tag/aig.html">AIG</a>  </span>
 </p><div class="sharing">
 </div>    </footer>
   </article>
@@ -326,9 +305,9 @@ window.addEventListener('load', () => {
 </script>
   <script type="text/javascript">
     var disqus_shortname = 'songhuiming';
-    var disqus_identifier = '/pages/2018/01/28/dong-tai-gui-hua/';
-    var disqus_url = '/pages/2018/01/28/dong-tai-gui-hua/';
-    var disqus_title = '动态规划';
+    var disqus_identifier = '/pages/2025/02/23/deepseek-v3-learning-notes/';
+    var disqus_url = '/pages/2025/02/23/deepseek-v3-learning-notes/';
+    var disqus_title = 'DeepSeek V3 learning notes';
     (function() {
       var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
       dsq.src = "//" + disqus_shortname + '.disqus.com/embed.js';
