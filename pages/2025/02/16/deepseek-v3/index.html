@@ -96,7 +96,7 @@ window.addEventListener('load', () => {
 
   <div class="entry-content"><h2>1. What the problem to solve?</h2>
 <p>春节回去的时候正好碰上DeepSeek发布新的模型，一时间各路媒体讨论的沸沸扬扬，几乎上升到国运的高度。讨论的最重要的应该是两点：第一个是媲美其他主流模型的benchmark分数；第二个是说训练速度快了很多，使用了少的多的GPU时间。可是各路讨论多是繁华之论以及振奋人心的消息，而没有具体的DS为什么好，怎么好的。回来的第一个周末，花了周末的时间读了一下DS V3的论文。之所以选择V3因为R1是之于V3进行了RL和SFT来增强模型的推理能力，基本的模型还是V3，而且DS V3的论文也更详细。文章的第二部分讲述了DS在模型的架构上（science）有一些什么样的改进，第三部分讲述了在模型的训练上（engineering）有什么改进，然后两部分讲了pretraining和posttraining以及evaluation相关的东西。</p>
-<h2>2. How to solve?</h2>
+<h2>2. How to solve / Model architecture?</h2>
 <h3>2.1. Basic Architecture</h3>
 <p>模型的基本架构里面主要有两点：1是把原来的Attention改成了Multi-head Latent Attention；2是把原来的FFN改成了DeepSeekMoE。这样做的目的一是减少了计算量；二是减少了cache的data，从而节约了GPU的内存。具体如下：</p>
 <p>DeekSeek模型架构
@@ -181,7 +181,106 @@ $$</div>
 <p>最终 MTP 的损失函数是对所有的预测深度 (<span class="math">\(k\)</span> 从1 到<span class="math">\(D\)</span>) 的平均 乘以权重 <span class="math">\(\lambda\)</span> ，<span class="math">\(\mathcal{L}_{\text{MTP}}\)</span> = <span class="math">\(\frac{\lambda}{D} \sum_{k=1}^{D} \mathcal{L}_{\text{MTP}}^k\)</span> </p>
 <p>从DS的paper公式25看，<span class="math">\(\mathcal{L}_{\text{MTP}}\)</span> 只是 MTP 的损失函数。最终的损失函数应该还要加上 <span class="math">\(\mathcal{L}_{\text{Main}}\)</span>。</p>
 <p><strong>MTP 在推理的时候怎么用呢？</strong> MTP的主要目的是用来提高 main model的表现，在推理的时候，并不要使用MTP，而只是使用 main model来predict next token。</p>
-<h3>未完待续</h3>
+<h2>3. InfraStructures / 训练工程优化</h2>
+<h3>3.1. Compure clusters</h3>
+<p>DS-V3 是在2048块H800上训练的，每个cluster有8块H800，nodes内通过NVLink和NVSwitch相连，nodes间通过InfiniBand来通信。</p>
+<h3>3.2. 训练框架</h3>
+<p>正常使用GPU进行训练的时候，有两个非常大的挑战：显存效率和计算效率，也就是显卡的显存和计算能力被使用了多少，有多少是浪费了。因为现在的模型太大，一张显卡或者一个cluster都放不下，所以通常需要把模型分散到不同的机器和显卡上。显卡，cluster组建集群参见kubernets的知识。为了把模型分散到不同的显卡上，通常有这么几个办法：1. <a href="https://pytorch.org/docs/stable/distributed.pipelining.html">Pipeline Parallelism / PP</a>：这是对模型进行分割，对比较深的模型，模型的pipeline可以分到不同的显卡上。比如一个模型有32个transfomer，有八个显卡，那么可以每个显卡放4个，然后依次计算，这样可以使用micro-batch来充分的利用GPU。通常的PP会导致GPU闲置（见下图PP bubbles） 2. <a href="https://huggingface.co/docs/text-generation-inference/en/conceptual/tensor_parallelism">Tensor Parallelism / TP</a>：这是对数据进行分割，对比较大的矩阵运算，可以分散到不同的显卡运算，这样既可以防止一张显卡容不下巨大的数据，也可以并行进行，加快速度。这些名字有时候不是很准确，其他还有Data Parallism, model parallelism. DS-V3因为有很多的Expert，所以他们还有 Expert Parallelism / EP。</p>
+<p>PP bubbles:
+<img alt="pipeline parrallel" src="/figures/20250308_06_deepseek_v3_pp.png"></p>
+<table>
+<thead>
+<tr>
+<th>setup</th>
+<th>scenario</th>
+<th>strategy</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>single node/multi-GPU</td>
+<td>fits on single GPU</td>
+<td>DistributedDataParallel or ZeRO</td>
+</tr>
+<tr>
+<td></td>
+<td>doesn’t fit on single GPU</td>
+<td>PipelineParallel, ZeRO or TensorParallel</td>
+</tr>
+<tr>
+<td></td>
+<td>largest model layer doesn’t fit</td>
+<td>TensorParallel or ZeRO</td>
+</tr>
+<tr>
+<td>multi-node/multi-GPU</td>
+<td>fast inter-node connectivity (NVLink or NVSwitch)</td>
+<td>ZeRO or 3D parallelism (PipelineParallel, TensorParallel, DataParallel)</td>
+</tr>
+<tr>
+<td></td>
+<td>slow inter-node connectivity</td>
+<td>ZeRO or 3D parallelism (PipelineParallel, TensorParallel, DataParallel)</td>
+</tr>
+</tbody>
+</table>
+<p>DS-V3是基于<a href="https://mp.weixin.qq.com/s?__biz=Mzk0MjE3MzQ5Mg==&amp;mid=2247485512&amp;idx=1&amp;sn=5a387c0abeb5613cbde9fa116544c25b&amp;chksm=c2c67413f5b1fd0568cfa859495a89c7051e93d44123c483f7b4643c7c3787c3e2bebc6b2fed&amp;cur_album_id=2981863252852998146&amp;scene=189#wechat_redirect">HAI-LLM</a>训练框架。DS-V3通过16路PP，64路EP分布在8个节点上，以及ZeRO-1 DP. </p>
+<p>DS主要做了这三个工程优化：1. 设计了DualPile的办法来优化PP。DualPipe有更少的 pipeline bubbles（指GPU闲置），它将Forward和Backword过程的计算和通信阶段重叠起来，从而解决了跨节点专家并行性带来的沉重通信开销的挑战。2. 其次，开发了高效的 cross-node all-to-all 通信内核，充分利用 IB 和 NVLink 带宽，节省通信专用的 Streaming Multiprocessors (SMs)。最后，优化了训练过程中的内存占用，从而能够在不使用昂贵的 TP 的情况下训练 DeepSeek-V3。</p>
+<h4>3.2.1 DualPipe</h4>
+<p>在深度学习的大模型训练中，计算（Computation） 和 通信（Communication） 是两个关键环节。1. Computation： 主要指前向Forward 和 BackPropagation computation；2. Communication： 包括不同 GPU 或计算节点间的数据传输，如参数更新、梯度交换等。跨节点 Expert Parallelism 引入的通信开销导致计算与通信比率低效。DualPipe是一个双Pipeline的架构，在Pipeline的两端同时输入 Micro-Batches 的数据，这样 Forward 和 Backward 计算可以同步进行，减少 GPU 空闲时间。同时采用Computation与Communication重叠的策略，使得Forward 和 BackPropagation 的计算任务以及数据通信能够在时间轴上更紧密地交错。通过把Forward和Backward chunk成小块，然后调整GPU SMs的使用比例，一部分用于Computation，另一部分用于Communication。</p>
+<p>DualPipe with less bubble
+<img alt="DualPipe and less bubble" src="/figures/20250308_07_deepseek_v3_dualpipe.png"></p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DualPipeModel</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">rank</span><span class="p">,</span> <span class="n">world_size</span><span class="p">):</span>
+        <span class="o">...</span>
+
+    <span class="k">def</span> <span class="nf">forward_backward_pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_tensor</span><span class="p">):</span>
+        <span class="c1"># 创建两个 CUDA 流，一个用于计算，一个用于通信</span>
+        <span class="n">compute_stream</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">Stream</span><span class="p">()</span>
+        <span class="n">comm_stream</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">Stream</span><span class="p">()</span>
+
+        <span class="c1"># Forward Pass</span>
+        <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">stream</span><span class="p">(</span><span class="n">compute_stream</span><span class="p">):</span>
+            <span class="n">attn_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">attention</span><span class="p">(</span><span class="n">input_tensor</span><span class="p">)</span>
+            <span class="n">mlp_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mlp</span><span class="p">(</span><span class="n">attn_out</span><span class="p">)</span>
+
+        <span class="c1"># Backward Pass</span>
+        <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">stream</span><span class="p">(</span><span class="n">compute_stream</span><span class="p">):</span>
+            <span class="n">loss</span> <span class="o">=</span> <span class="n">mlp_out</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>  
+            <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+
+        <span class="c1"># All-to-All Dispatch &amp; Combine</span>
+        <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">stream</span><span class="p">(</span><span class="n">comm_stream</span><span class="p">):</span>
+            <span class="n">tensor_to_send</span> <span class="o">=</span> <span class="n">input_tensor</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
+            <span class="n">received_tensor</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">input_tensor</span><span class="p">)</span>
+            <span class="c1"># All-to-All </span>
+            <span class="n">dist</span><span class="o">.</span><span class="n">all_to_all_single</span><span class="p">(</span><span class="n">received_tensor</span><span class="p">,</span> <span class="n">tensor_to_send</span><span class="p">)</span>
+
+        <span class="c1"># synchronize</span>
+        <span class="n">compute_stream</span><span class="o">.</span><span class="n">synchronize</span><span class="p">()</span>
+        <span class="n">comm_stream</span><span class="o">.</span><span class="n">synchronize</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">received_tensor</span>
+</code></pre></div>
+
+<h4>3.2.2. Cross-Node All-to-All Communication</h4>
+<p>这一部分牵涉到更底层的工程细节，包括传说中的通过Nvidia的底层语言 PTX (Parallel Thread Execution) 来控制GPU的线程执行，减少通信对计算的影响，实现更高效的GPU利用，以及怎么充分利用集群的网络拓扑结构（IB &amp; NVLink）。DS-V3 的原始paper里面也更多的是high-profile的描述而没有太多的细节。总体的思路是因为节点间IB的带宽比节点内NVLink的带宽要低，所以要想办法来合理分配通信路径，减少IB带宽的阻碍。</p>
+<p>为了对 Cross-Node All-to-All Communication（包括 Dispatching 和 Combining）进行优化，DS设计了优化的网络拓扑结构（IB &amp; NVLink）。在 dispatching 的时候，MOE gating algorithm 决定每个token 会被发送到哪些 Expert，每个 token 先通过 IB 发送到目标 node，然后再通过 IB-to-NVLink 将数据发送到最终的GPU。前面在模型架构已经提到，每个 token 最多发送给4个Node（NVLink的带宽为160GB/s，IB为50GB/s，大概是3.2倍，所以到了Node，token还能平均有3.2个Expert）。在 Combining 的时候反过来，每个 Expert 通过 NVLink 汇总数据的结果，然后通过 NVLink-to-IB 到 node汇总，IB 的接受和汇总同样由动态调整的warp处理。</p>
+<h4>3.2.3. Minimal Overhead</h4>
+<p>这一部分讲的怎么节省GPU内存的开支。第一个是在back propagaton的时候从新计算RMSNorm和升维投影，这样就不需要储存他们的值。第二个是咋Exponential Moving Average (EMA) 计算模型表现的时候，EMA参数放到CPU内存。第三个是在multi-token预测的时候，共享Embedding和Output Head的参数。</p>
+<h3>3.3. FP8 Training</h3>
+<p>首先加一个FP的知识，计算机用二进制表示浮点数，是分为正负号（Sign）、指数部分（exponent）、尾数部分（mantissa）三部分的，完整的表示为 <span class="math">\(X = (-1)^s \times  2^E \times M\)</span>. 近似的可以认为：FP32和FP16比，FP越长，精度越高。在某些精度下已经等于0的数字，在更高的精度下就不是0，这样的话计算就不容易出现错误。但是更高的精度就需要更多的内存来存储，但是GPU通常内存有限。所以这也是一个需要优化的地方。</p>
+<p>NVIDIA FP8 Tensor Core
+<img alt="FP" src="/figures/20250308_08_deepseek_v3_nvidia_fp.png"></p>
+<h4>3.3.1. Mixed Precision Framework</h4>
+<p>DS-V3 使用混合精度的FP8，大部分需要很多计算的地方都是FP8，但是在少量重要的操作上保留了原来的精度，具体见下图。1. 在GEMM矩阵相乘的时候，输入是FP8输出是BF16或者FP32. 在下图，在forward pass，activation backward pass和weight backward pass这几步矩阵相乘都是FP8的输入精度，理论上这样跟BF16比可以快一倍。在需要高精度的地方，比如embedding，output head，MOE gating module，normalizaiton，以及attention等等，仍然保持高精度。 </p>
+<p>Mixed Precision
+<img alt="Mixed Precision" src="/figures/20250308_09_deepseek_v3_overll_mixed_precision.png"></p>
+<h4>3.3.2. Improved Precision from Quantization and Multiplication</h4>
+<p>Fine-Grained Quantization 主要是为了解决低精度训练中 overflow 和 underflow 的问题。这些问题主要来源于 FP8 格式受限的动态范围，特别是 FP8 指数位减少导致的表示范围受限。为了解决这个问题，Fine-Grained Quantization 采用了一种更精细的量化方法，在更细粒度上进行 scaling：对activations，采用 <span class="math">\(1 \times 128 \text{ tile-based scaling}\)</span>，每个tile分别计算scaling； 对于weights，采用 <span class="math">\(128 \times 128 \text{ block-based scaling}\)</span>，每个bloack单独计算scaling factor。这样避免模型的参数会被outliers主导从而导致训练失败。在进行低精度FP8的矩阵运算 MMA (Matrix Multiply-Accumulate) 的时候，把计算的结果先累积在Tensor Core（FP8），当计算达到一定量的批次（<span class="math">\(N_c\)</span>）的时候，将部分结果提成到 CUDA Core（FP32），这样在保持高throttle的铜丝，提高了最终的计算精度。</p>
+<p><img alt="10. Quantization and Multiplication" src="/figures/20250308_10_deepseek_v3_quantization_multiplicaiton.png"></p>
+<h3>3.4. Inference and Deployment</h3>
+<p>Stay tuned!</p>
 <h3>Reference</h3>
 <ol>
 <li><a href="https://github.com/deepseek-ai/DeepSeek-V3/blob/main/DeepSeek_V3.pdf">DeepSeek-V3 Technical Report</a></li>
