@@ -277,7 +277,7 @@ $$</div>
 <p>Mixed Precision
 <img alt="Mixed Precision" src="/figures/20250308_09_deepseek_v3_overll_mixed_precision.png"></p>
 <h4>3.3.2. Improved Precision from Quantization and Multiplication</h4>
-<p>Fine-Grained Quantization 主要是为了解决低精度训练中 overflow 和 underflow 的问题。这些问题主要来源于 FP8 格式受限的动态范围，特别是 FP8 指数位减少导致的表示范围受限。为了解决这个问题，Fine-Grained Quantization 采用了一种更精细的量化方法，在更细粒度上进行 scaling：对activations，采用 <span class="math">\(1 \times 128 \text{ tile-based scaling}\)</span>，每个tile分别计算scaling； 对于weights，采用 <span class="math">\(128 \times 128 \text{ block-based scaling}\)</span>，每个bloack单独计算scaling factor。这样避免模型的参数会被outliers主导从而导致训练失败。在进行低精度FP8的矩阵运算 MMA (Matrix Multiply-Accumulate) 的时候，把计算的结果先累积在Tensor Core（FP8），当计算达到一定量的批次（<span class="math">\(N_c\)</span>）的时候，将部分结果提成到 CUDA Core（FP32），这样在保持高throttle的铜丝，提高了最终的计算精度。</p>
+<p>Fine-Grained Quantization 主要是为了解决低精度训练中 overflow 和 underflow 的问题。这些问题主要来源于 FP8 格式受限的动态范围，特别是 FP8 指数位减少导致的表示范围受限。为了解决这个问题，Fine-Grained Quantization 采用了一种更精细的量化方法，在更细粒度上进行 scaling：对activations，采用 <span class="math">\(1 \times 128 \text{ tile-based scaling}\)</span>，每个tile分别计算scaling； 对于weights，采用 <span class="math">\(128 \times 128 \text{ block-based scaling}\)</span>，每个bloack单独计算scaling factor。这样避免模型的参数会被outliers主导从而导致训练失败。在进行低精度FP8的矩阵运算 MMA (Matrix Multiply-Accumulate) 的时候，把计算的结果先累积在Tensor Core（FP8），当计算达到一定量的批次（<span class="math">\(N_c\)</span>）的时候，将部分结果提升到 CUDA Core（FP32），这样在保持高throttle的同时，提高了最终的计算精度。</p>
 <p><img alt="10. Quantization and Multiplication" src="/figures/20250308_10_deepseek_v3_quantization_multiplicaiton.png"></p>
 <h3>3.4. Inference and Deployment</h3>
 <p>Stay tuned!</p>
