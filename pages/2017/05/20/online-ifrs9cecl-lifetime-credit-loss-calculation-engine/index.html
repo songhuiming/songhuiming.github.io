@@ -122,73 +122,65 @@ window.addEventListener('load', () => {
 <p>Since the calcualtion is by python,  <a href="http://flask.pocoo.org/">flask</a> is selected as the framework. CSS is <a href="http://getbootstrap.com/">Bootstrap</a> which is very easy to use to build a moden look webpage. The ouload/submit/forms are all Bootstrap widgets.</p>
 <h4>4.1. html file</h4>
 <p>html file has six functions:</p>
-<div class="highlight"><pre><span></span><code><span class="mf">1.</span><span class="w"> </span><span class="n">get</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">uploaded</span><span class="w"> </span><span class="n">pd</span><span class="w"> </span><span class="n">file</span>
-<span class="mf">2.</span><span class="w"> </span><span class="n">post</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">uploaded</span><span class="w"> </span><span class="n">pd</span><span class="w"> </span><span class="n">file</span>
-<span class="mf">3.</span><span class="w"> </span><span class="n">get</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">input</span><span class="w"> </span><span class="n">loan</span><span class="w"> </span><span class="n">informaiton</span>
-<span class="mf">4.</span><span class="w"> </span><span class="n">post</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">input</span><span class="w"> </span><span class="n">loan</span><span class="w"> </span><span class="n">information</span>
-<span class="mf">5.</span><span class="w"> </span><span class="n">get</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">submition</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">calculation</span>
-<span class="mf">6.</span><span class="w"> </span><span class="n">post</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">submition</span><span class="w"> </span><span class="n">result</span>
-</code></pre></div>
-
+<pre><code>1. get the uploaded pd file
+2. post the uploaded pd file
+3. get the input loan informaiton
+4. post the input loan information
+5. get the submition for calculation
+6. post the submition result
+</code></pre>
 <p>The full page is a Bootstrap container with two main forms.</p>
 <p>First, The upload widget is fieldset inside the form. A <code>&lt;form&gt;</code> tag is marked with <code>enctype=multipart/form-data</code> and an <code>&lt;input type=file&gt;</code> is placed in that form. If PD file is submitted to upload, the python code will <code>GET</code> the <code>POST</code> information and will check if it is csv or not. It will only accept csv file. If there is no PD file or the POST method is not activated in the html page, it will return to the upload page. <code>&lt;form&gt;</code> tag has the <code>post</code> method to active the route. The route will call the ptyhon upload file function and upload the file to the server. </p>
-<div class="highlight"><pre><span></span><code>{% if request.args.get(&#39;filename&#39;) is none %}
-    <span class="p">&lt;</span><span class="nt">form</span> <span class="na">action</span><span class="o">=</span><span class="s">&quot;&quot;</span> <span class="na">method</span><span class="o">=</span><span class="s">post</span> <span class="na">enctype</span><span class="o">=</span><span class="s">multipart/form-data</span><span class="p">&gt;</span>
-        <span class="p">&lt;</span><span class="nt">fieldset</span><span class="p">&gt;</span>
-        <span class="p">&lt;</span><span class="nt">legend</span><span class="p">&gt;</span>Upload PD CSV File<span class="p">&lt;/</span><span class="nt">legend</span><span class="p">&gt;</span>
+<pre><code class="language-html">{% if request.args.get('filename') is none %}
+    &lt;form action=&quot;&quot; method=post enctype=multipart/form-data&gt;
+        &lt;fieldset&gt;
+        &lt;legend&gt;Upload PD CSV File&lt;/legend&gt;
     .........
-     <span class="p">&lt;/</span><span class="nt">form</span><span class="p">&gt;</span>
+     &lt;/form&gt;
 {% else %}
-    PD file {{request.args.get(&#39;filename&#39;)}} has been uploaded; Please fill in the loan information.
+    PD file {{request.args.get('filename')}} has been uploaded; Please fill in the loan information.
 {% endif %}
-</code></pre></div>
-
+</code></pre>
 <p>If the file is successfully uploaded and successfully POST, it will redirect to ifrs9 with the filename as the parameter like below</p>
 <p><img alt="png" src="/figures/20170525_ifrs9_calc_engine_06.PNG">   </p>
 <p>The html file and the python upload file function is linked by "request". </p>
-<div class="highlight"><pre><span></span><code>{{filename}}
-</code></pre></div>
-
+<pre><code class="language-html">{{filename}}
+</code></pre>
 <p>Second is to input the loan information in the form. It also has the <code>post</code> method</p>
-<div class="highlight"><pre><span></span><code><span class="p">&lt;</span><span class="nt">form</span> <span class="na">action </span><span class="o">=</span> <span class="s">&quot;&quot;</span> <span class="na">method</span><span class="o">=</span><span class="s">&quot;post&quot;</span> <span class="na">role</span><span class="o">=</span><span class="s">&quot;form&quot;</span><span class="p">&gt;</span>
-    <span class="p">&lt;</span><span class="nt">fieldset</span><span class="p">&gt;</span>
-    <span class="p">&lt;</span><span class="nt">legend</span><span class="p">&gt;</span>Input Loan/Borrower Information<span class="p">&lt;/</span><span class="nt">legend</span><span class="p">&gt;</span>
+<pre><code class="language-html">&lt;form action = &quot;&quot; method=&quot;post&quot; role=&quot;form&quot;&gt;
+    &lt;fieldset&gt;
+    &lt;legend&gt;Input Loan/Borrower Information&lt;/legend&gt;
     .....
-<span class="p">&lt;/</span><span class="nt">form</span><span class="p">&gt;</span>
-</code></pre></div>
-
+&lt;/form&gt;
+</code></pre>
 <p>After all the input forms are filled and submited to calculate, the route will call the flask <strong>ifrs9</strong> function as introduced below.</p>
 <p>if calculaion data is returned then it will be displayed on the page in div of the centered class.</p>
-<div class="highlight"><pre><span></span><code>{% if data is not none %}
-<span class="p">&lt;</span><span class="nt">br</span><span class="p">&gt;</span>
-<span class="p">&lt;</span><span class="nt">div</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;centered&quot;</span><span class="p">&gt;</span>
+<pre><code class="language-html">{% if data is not none %}
+&lt;br&gt;
+&lt;div class=&quot;centered&quot;&gt;
 {{data | safe}}
-<span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+&lt;/div&gt;
 {% else%}
 NONE
 {% endif %}
-</code></pre></div>
-
+</code></pre>
 <h4>4.2. python file</h4>
 <p>There are two piece of python code.</p>
 <p>The first function is to upload the PD file with enabled GET and POST method. It will use <code>@app.route(url, methods=[])</code> to tell what url will activate the python function. The <code>route()</code> decorator is used to bind a function to a URL. If it excutes successfully, it will <code>redirect</code> to the ifrs9 url.</p>
-<div class="highlight"><pre><span></span><code><span class="k">return</span> <span class="n">redirect</span><span class="p">(</span><span class="n">url_for</span><span class="p">(</span><span class="s1">&#39;ifrs9&#39;</span><span class="p">,</span> <span class="n">filename</span> <span class="o">=</span> <span class="n">filename</span><span class="p">))</span>
-</code></pre></div>
-
+<pre><code class="language-python">return redirect(url_for('ifrs9', filename = filename))
+</code></pre>
 <p>The second function is <strong>ifrs9</strong> which is to get html information and do the calculation.</p>
 <p>After all the input forms are filled and submited to calculate, the route will call the flask <strong>ifrs9</strong> function: </p>
 <p>1, it will check the filename first, if no file uploaded, it will pop out message to ask for upload the pd file.</p>
 <p>2, if there is uploaded file, then it will request the filled in form values from html</p>
 <p>3, it will call the function to do ECL calculation</p>
 <p>4, it will flash out the calculation result</p>
-<div class="highlight"><pre><span></span><code><span class="n">flash</span><span class="p">(</span><span class="s1">&#39;Total IFRS9 Lifetime EL is: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">output</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="s1">&#39;, Total IFRS9 Lifetime PD is: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">output</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
-<span class="n">flash</span><span class="p">(</span><span class="s1">&#39;Total IFRS9 1 year EL is: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">output</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span> <span class="o">+</span> <span class="s1">&#39;, Total IFRS9 1 year PD is: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">output</span><span class="p">[</span><span class="mi">4</span><span class="p">]))</span>
-</code></pre></div>
-
+<pre><code class="language-python">flash('Total IFRS9 Lifetime EL is: ' + str(output[1]) + ', Total IFRS9 Lifetime PD is: ' + str(output[2]))
+flash('Total IFRS9 1 year EL is: ' + str(output[3]) + ', Total IFRS9 1 year PD is: ' + str(output[4]))
+</code></pre>
 <p>5, it will return to <code>render_template</code> with the output data(the detailed monthly calculation) as parameters to html file for display</p>
-<div class="highlight"><pre><span></span><code><span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s2">&quot;ifrs9_mockup.html&quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">style</span> <span class="o">+</span> <span class="n">output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">to_html</span><span class="p">(</span><span class="n">index</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">col_space</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">float_format</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="s1">&#39;</span><span class="si">%10.2f</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">x</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="s1">&#39;centered&#39;</span><span class="p">))</span>
-</code></pre></div>
-
+<pre><code class="language-python">return render_template(&quot;ifrs9_mockup.html&quot;, data = style + output[0].to_html(index = False, col_space = 5, float_format = lambda x: '%10.2f' % x, classes='centered'))
+</code></pre>
 <h3>5. Batch Run</h3>
 <p>The above is an example for <strong>one single</strong> loan calculation. To calculate all the loan at one time, it needs batch run. The basic idea is very simple:</p>
 <p>1, get the input file(loan file, pd file and so on)</p>
@@ -227,13 +219,13 @@ NONE
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -251,7 +243,7 @@ NONE
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

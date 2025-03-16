@@ -120,35 +120,32 @@ window.addEventListener('load', () => {
 <li>更改页首的menu</li>
 </ol>
 <p>在pelicanconf.py里面更改menuitems，让它链接到你想要得页面。通常categories，archives这些都是模板自带的。</p>
-<div class="highlight"><pre><span></span><code>MENUITEMS = (
-    (&#39;Categories&#39;, &#39;/functions/categories.html&#39;),
-    (&#39;Archives&#39;, &#39;/functions/archives.html&#39;),
-    (&#39;About Me&#39;, &#39;/functions/aboutMe.html&#39;)
+<pre><code>MENUITEMS = (
+    ('Categories', '/functions/categories.html'),
+    ('Archives', '/functions/archives.html'),
+    ('About Me', '/functions/aboutMe.html')
 )
-</code></pre></div>
-
+</code></pre>
 <ol>
 <li>更改右边的sidebar</li>
 </ol>
 <p>需要到主题里面去修改(比如我选的gum主题)。进入pelican-themes/gum/template/sidebar.html，然后修改下面的（下面例子里面把原来的categories改为分类）</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&lt;h4&gt;</span>分类<span class="nt">&lt;/h4&gt;</span>
-<span class="cp">{%</span> <span class="k">if</span> <span class="nv">categories</span> <span class="cp">%}</span>
-<span class="nt">&lt;ul&gt;</span>
-<span class="w">        </span><span class="cp">{%</span> <span class="k">for</span> <span class="nv">cat</span><span class="o">,</span> <span class="nv">null</span> <span class="k">in</span> <span class="nv">categories</span> <span class="cp">%}</span>
-<span class="w">                </span><span class="nt">&lt;li&gt;&lt;a</span><span class="w"> </span><span class="na">href=</span><span class="s">&quot;</span><span class="cp">{{</span> <span class="nv">SITEURL</span> <span class="cp">}}</span><span class="s">/</span><span class="cp">{{</span> <span class="nv">cat.url</span><span class="o">|</span><span class="nf">e</span> <span class="cp">}}</span><span class="s">&quot;</span><span class="nt">&gt;</span><span class="cp">{{</span> <span class="nv">cat</span> <span class="cp">}}</span><span class="nt">&lt;/a&gt;&lt;/li&gt;</span>
-<span class="w">        </span><span class="cp">{%</span> <span class="k">endfor</span> <span class="cp">%}</span>
-<span class="nt">&lt;/ul&gt;</span>
-<span class="cp">{%</span> <span class="k">endif</span> <span class="cp">%}</span>
-</code></pre></div>
-
+<pre><code>&lt;h4&gt;分类&lt;/h4&gt;
+{% if categories %}
+&lt;ul&gt;
+        {% for cat, null in categories %}
+                &lt;li&gt;&lt;a href="{{ SITEURL }}/{{ cat.url|e }}"&gt;{{ cat }}&lt;/a&gt;&lt;/li&gt;
+        {% endfor %}
+&lt;/ul&gt;
+{% endif %}
+</code></pre>
 <h3>最后附加一个怎么直接使用ipynb文件作为blog</h3>
 <h6>1. 按照<a href="https://github.com/danielfrg/pelican-ipynb">这个</a> copy相应的py文件到<code>pelican-plugins/ipyng</code>文件夹下面</h6>
 <h6>2. 在<code>pelicanconf.py</code>做如下修改</h6>
-<div class="highlight"><pre><span></span><code>MARKUP = (&#39;md&#39;, &#39;ipynb&#39;)
-PLUGIN_PATH = &#39;./plugins&#39;
-PLUGINS = [&#39;ipynb.markup&#39;]
-</code></pre></div>
-
+<pre><code>MARKUP = ('md', 'ipynb')
+PLUGIN_PATH = './plugins'
+PLUGINS = ['ipynb.markup']
+</code></pre>
 <h6>3. 对每个<code>ipynb</code>文件，添加<code>.ipynb-meta</code>文件</h6>
 <h6>4. 但是这个时候会发生各种import Error，找不到各种文件。需要手动添加这些文件的路径</h6>
 <p><img alt="png" src="/figures/20150801_01.PNG">
@@ -158,12 +155,11 @@ PLUGINS = [&#39;ipynb.markup&#39;]
 <img alt="png" src="/figures/20150801_04.PNG">
 <img alt="png" src="/figures/20150801_05.PNG"></p>
 <h6>6. 把路径添加到<code>pelicanconf.py</code></h6>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">sys</span>
-<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;/home/shm/anaconda/pkgs/ipython-5.1.0-py27_0/lib/python2.7/site-packages/&#39;</span><span class="p">)</span>
-<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;/home/shm/anaconda/pkgs/traitlets-4.3.1-py27_0/lib/python2.7/site-packages/&#39;</span><span class="p">)</span>
-<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;/home/shm/anaconda/lib/python2.7/site-packages/&#39;</span><span class="p">)</span>
-</code></pre></div>
-
+<pre><code class="language-python">import sys
+sys.path.append('/home/shm/anaconda/pkgs/ipython-5.1.0-py27_0/lib/python2.7/site-packages/')
+sys.path.append('/home/shm/anaconda/pkgs/traitlets-4.3.1-py27_0/lib/python2.7/site-packages/')
+sys.path.append('/home/shm/anaconda/lib/python2.7/site-packages/')
+</code></pre>
 <p><img alt="png" src="/figures/20150801_06.PNG"></p>
 <p>Reference</p>
 <ol>
@@ -199,13 +195,13 @@ PLUGINS = [&#39;ipynb.markup&#39;]
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -223,7 +219,7 @@ PLUGINS = [&#39;ipynb.markup&#39;]
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

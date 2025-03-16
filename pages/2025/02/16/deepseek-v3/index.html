@@ -230,39 +230,38 @@ $$</div>
 <p>在深度学习的大模型训练中，计算（Computation） 和 通信（Communication） 是两个关键环节。1. Computation： 主要指前向Forward 和 BackPropagation computation；2. Communication： 包括不同 GPU 或计算节点间的数据传输，如参数更新、梯度交换等。跨节点 Expert Parallelism 引入的通信开销导致计算与通信比率低效。DualPipe是一个双Pipeline的架构，在Pipeline的两端同时输入 Micro-Batches 的数据，这样 Forward 和 Backward 计算可以同步进行，减少 GPU 空闲时间。同时采用Computation与Communication重叠的策略，使得Forward 和 BackPropagation 的计算任务以及数据通信能够在时间轴上更紧密地交错。通过把Forward和Backward chunk成小块，然后调整GPU SMs的使用比例，一部分用于Computation，另一部分用于Communication。</p>
 <p>DualPipe with less bubble
 <img alt="DualPipe and less bubble" src="/figures/20250308_07_deepseek_v3_dualpipe.png"></p>
-<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DualPipeModel</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">rank</span><span class="p">,</span> <span class="n">world_size</span><span class="p">):</span>
-        <span class="o">...</span>
+<pre><code class="language-python">class DualPipeModel(nn.Module):
+    def __init__(self, dim, rank, world_size):
+        ...
 
-    <span class="k">def</span> <span class="nf">forward_backward_pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_tensor</span><span class="p">):</span>
-        <span class="c1"># 创建两个 CUDA 流，一个用于计算，一个用于通信</span>
-        <span class="n">compute_stream</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">Stream</span><span class="p">()</span>
-        <span class="n">comm_stream</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">Stream</span><span class="p">()</span>
+    def forward_backward_pipeline(self, input_tensor):
+        # 创建两个 CUDA 流，一个用于计算，一个用于通信
+        compute_stream = torch.cuda.Stream()
+        comm_stream = torch.cuda.Stream()
 
-        <span class="c1"># Forward Pass</span>
-        <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">stream</span><span class="p">(</span><span class="n">compute_stream</span><span class="p">):</span>
-            <span class="n">attn_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">attention</span><span class="p">(</span><span class="n">input_tensor</span><span class="p">)</span>
-            <span class="n">mlp_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mlp</span><span class="p">(</span><span class="n">attn_out</span><span class="p">)</span>
+        # Forward Pass
+        with torch.cuda.stream(compute_stream):
+            attn_out = self.attention(input_tensor)
+            mlp_out = self.mlp(attn_out)
 
-        <span class="c1"># Backward Pass</span>
-        <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">stream</span><span class="p">(</span><span class="n">compute_stream</span><span class="p">):</span>
-            <span class="n">loss</span> <span class="o">=</span> <span class="n">mlp_out</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>  
-            <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+        # Backward Pass
+        with torch.cuda.stream(compute_stream):
+            loss = mlp_out.sum()  
+            loss.backward()
 
-        <span class="c1"># All-to-All Dispatch &amp; Combine</span>
-        <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">stream</span><span class="p">(</span><span class="n">comm_stream</span><span class="p">):</span>
-            <span class="n">tensor_to_send</span> <span class="o">=</span> <span class="n">input_tensor</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
-            <span class="n">received_tensor</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">input_tensor</span><span class="p">)</span>
-            <span class="c1"># All-to-All </span>
-            <span class="n">dist</span><span class="o">.</span><span class="n">all_to_all_single</span><span class="p">(</span><span class="n">received_tensor</span><span class="p">,</span> <span class="n">tensor_to_send</span><span class="p">)</span>
+        # All-to-All Dispatch &amp; Combine
+        with torch.cuda.stream(comm_stream):
+            tensor_to_send = input_tensor.clone()
+            received_tensor = torch.zeros_like(input_tensor)
+            # All-to-All 
+            dist.all_to_all_single(received_tensor, tensor_to_send)
 
-        <span class="c1"># synchronize</span>
-        <span class="n">compute_stream</span><span class="o">.</span><span class="n">synchronize</span><span class="p">()</span>
-        <span class="n">comm_stream</span><span class="o">.</span><span class="n">synchronize</span><span class="p">()</span>
+        # synchronize
+        compute_stream.synchronize()
+        comm_stream.synchronize()
 
-        <span class="k">return</span> <span class="n">received_tensor</span>
-</code></pre></div>
-
+        return received_tensor
+</code></pre>
 <h4>3.2.2. Cross-Node All-to-All Communication</h4>
 <p>这一部分牵涉到更底层的工程细节，包括传说中的通过Nvidia的底层语言 PTX (Parallel Thread Execution) 来控制GPU的线程执行，减少通信对计算的影响，实现更高效的GPU利用，以及怎么充分利用集群的网络拓扑结构（IB &amp; NVLink）。DS-V3 的原始paper里面也更多的是high-profile的描述而没有太多的细节。总体的思路是因为节点间IB的带宽比节点内NVLink的带宽要低，所以要想办法来合理分配通信路径，减少IB带宽的阻碍。</p>
 <p>为了对 Cross-Node All-to-All Communication（包括 Dispatching 和 Combining）进行优化，DS设计了优化的网络拓扑结构（IB &amp; NVLink）。在 dispatching 的时候，MOE gating algorithm 决定每个token 会被发送到哪些 Expert，每个 token 先通过 IB 发送到目标 node，然后再通过 IB-to-NVLink 将数据发送到最终的GPU。前面在模型架构已经提到，每个 token 最多发送给4个Node（NVLink的带宽为160GB/s，IB为50GB/s，大概是3.2倍，所以到了Node，token还能平均有3.2个Expert）。在 Combining 的时候反过来，每个 Expert 通过 NVLink 汇总数据的结果，然后通过 NVLink-to-IB 到 node汇总，IB 的接受和汇总同样由动态调整的warp处理。</p>
@@ -270,8 +269,8 @@ $$</div>
 <p>这一部分讲的怎么节省GPU内存的开支。第一个是在back propagaton的时候从新计算RMSNorm和升维投影，这样就不需要储存他们的值。第二个是咋Exponential Moving Average (EMA) 计算模型表现的时候，EMA参数放到CPU内存。第三个是在multi-token预测的时候，共享Embedding和Output Head的参数。</p>
 <h3>3.3. FP8 Training</h3>
 <p>首先加一个FP的知识，计算机用二进制表示浮点数，是分为正负号（Sign）、指数部分（exponent）、尾数部分（mantissa）三部分的，完整的表示为 <span class="math">\(X = (-1)^s \times  2^E \times M\)</span>. 近似的可以认为：FP32和FP16比，FP越长，精度越高。在某些精度下已经等于0的数字，在更高的精度下就不是0，这样的话计算就不容易出现错误。但是更高的精度就需要更多的内存来存储，但是GPU通常内存有限。所以这也是一个需要优化的地方。</p>
-<p>NVIDIA FP8 Tensor Core
-<img alt="FP" src="/figures/20250308_08_deepseek_v3_nvidia_fp.png"></p>
+<p><img alt="FP" src="/figures/20250308_08_deepseek_v3_nvidia_fp.png">
+<em>Fig. NVIDIA FP8 Tensor Core</em></p>
 <h4>3.3.1. Mixed Precision Framework</h4>
 <p>DS-V3 使用混合精度的FP8，大部分需要很多计算的地方都是FP8，但是在少量重要的操作上保留了原来的精度，具体见下图。1. 在GEMM矩阵相乘的时候，输入是FP8输出是BF16或者FP32. 在下图，在forward pass，activation backward pass和weight backward pass这几步矩阵相乘都是FP8的输入精度，理论上这样跟BF16比可以快一倍。在需要高精度的地方，比如embedding，output head，MOE gating module，normalizaiton，以及attention等等，仍然保持高精度。 </p>
 <p>Mixed Precision
@@ -375,13 +374,13 @@ $$</div>
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -399,7 +398,7 @@ $$</div>
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

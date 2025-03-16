@@ -97,39 +97,33 @@ window.addEventListener('load', () => {
   <div class="entry-content"><p>The pre-requirement is to set up the <strong><a href="https://m.do.co/c/03f39a524956">digitalocean</a></strong> droplets. After it is set up, ssh to the vps, change the password.</p>
 <h1>1. install packages</h1>
 <h3>1. update the packages</h3>
-<div class="highlight"><pre><span></span><code>sudo apt-get update
+<pre><code>sudo apt-get update
 sudo apt-get upgrade
-</code></pre></div>
-
+</code></pre>
 <h3>2. Install <code>mysql-server</code> on vps. It is not necessary to install <code>mysql-client</code>.</h3>
-<div class="highlight"><pre><span></span><code>sudo apt-get install mysql-server
-</code></pre></div>
-
+<pre><code>sudo apt-get install mysql-server
+</code></pre>
 <h3>3. install python mysql interface, which is called <code>mysqldb</code>.</h3>
 <p>This usually will cause multiple errors such as <em>"cannot find MySQLdb"</em> or <em>"_mysql is not found"</em> . like <a href="http://songhuiming.github.io/pages/2016/07/26/mysql-db-and-python-mysqldb/">this blog</a>. My experience is run all these command and then append the path to the system.</p>
-<div class="highlight"><pre><span></span><code>sudo apt install python-mysqldb
+<pre><code>sudo apt install python-mysqldb
 sudo apt-get install libmysqlclient-dev
 easy_install MySQL-python
-</code></pre></div>
-
+</code></pre>
 <h3>6. digitalocean will kick you out. To stay connected, do these changes:</h3>
-<div class="highlight"><pre><span></span><code>cd /etc/ssh
+<pre><code>cd /etc/ssh
 sudo vi sshd_config
-</code></pre></div>
-
+</code></pre>
 <p>search for the keyword <em>TCPKeepAlive</em> and then add in the following below the <em>TCPKeepAlive yes</em>:</p>
-<div class="highlight"><pre><span></span><code>ClientAliveInterval 30
+<pre><code>ClientAliveInterval 30
 ClientAliveCountMax 99999
-</code></pre></div>
-
+</code></pre>
 <h3>7. Install Apache and wsgi, and enable wsgi</h3>
 <p><em>WSGI (Web Server Gateway Interface)</em> is an interface between web servers and web apps for python. <em>Mod_wsgi</em> is an Apache HTTP server mod that enables Apache to serve Flask applications.</p>
 <p>Open terminal and type the following command to install mod_wsgi:</p>
-<div class="highlight"><pre><span></span><code>sudo apt-get install apache2
+<pre><code>sudo apt-get install apache2
 sudo apt-get install libapache2-mod-wsgi
 sudo a2enmod wsgi
-</code></pre></div>
-
+</code></pre>
 <p>Now the basic set up is done. Create the folder structure like the following:</p>
 <h2>Folder Structure in /var/www/</h2>
 <pre>|----<span style="color:blue">elec2016</span>
@@ -142,40 +136,32 @@ sudo a2enmod wsgi
 <p>Setting up a virtual environment will keep the application and its dependencies isolated from the main system. Changes to it will not affect the cloud server's system configurations.</p>
 <p>In this step, we will create a virtual environment for our flask application.</p>
 <h5>8.1 We will use pip to install virtualenv and Flask. If pip is not installed, install it on Ubuntu through apt-get.</h5>
-<div class="highlight"><pre><span></span><code>sudo apt-get install python-pip
-</code></pre></div>
-
+<pre><code>sudo apt-get install python-pip
+</code></pre>
 <h5>8.2 If virtualenv is not installed, use pip to install it using following command:</h5>
-<div class="highlight"><pre><span></span><code>sudo pip install virtualenv
-</code></pre></div>
-
+<pre><code>sudo pip install virtualenv
+</code></pre>
 <h5>8.3 Give the following command (where venv is the name you would like to give your temporary environment):</h5>
-<div class="highlight"><pre><span></span><code>sudo virtualenv venv
-</code></pre></div>
-
+<pre><code>sudo virtualenv venv
+</code></pre>
 <p>it will create a folder <em>venv</em> in <em>/var/www/elec2016/elec2016</em>, so you will see <em>/var/www/elec2016/elec2016/venv</em></p>
 <h5>8.4 Now, install Flask in that environment by activating the virtual environment with the following command:</h5>
-<div class="highlight"><pre><span></span><code>source venv/bin/activate
-</code></pre></div>
-
+<pre><code>source venv/bin/activate
+</code></pre>
 <h5>8.5 Give this command to install Flask inside:</h5>
-<div class="highlight"><pre><span></span><code>sudo pip install Flask
-</code></pre></div>
-
+<pre><code>sudo pip install Flask
+</code></pre>
 <p>To install the other packages, do the same thing like install Flask. Sometimes need to use <code>sudo apt-get</code> to install the packages. Make sure to start with <strong>sudo</strong> to aviod using other enviroment <code>pip</code> or <code>apt-set</code>. </p>
 <h5>8.6 install pandas or other necessary packages to run the project</h5>
-<div class="highlight"><pre><span></span><code>sudo apt-get install python-pandas
-</code></pre></div>
-
+<pre><code>sudo apt-get install python-pandas
+</code></pre>
 <h5>8.7 Next, run the following command to test if the installation is successful and the app is running:</h5>
-<div class="highlight"><pre><span></span><code>sudo python __init__.py
-</code></pre></div>
-
+<pre><code>sudo python __init__.py
+</code></pre>
 <p>It should display “Running on http://localhost:5000/” or "Running on http://127.0.0.1:5000/". If you see this message, you have successfully configured the app.</p>
 <h5>8.8 To deactivate the environment, give the following command:</h5>
-<div class="highlight"><pre><span></span><code>deactivate
-</code></pre></div>
-
+<pre><code>deactivate
+</code></pre>
 <h1>3. Configure and Enable a New Virtual Host</h1>
 <h3>9.  add  /etc/apache2/sites-available/elec2016.conf</h3>
 <p>Ubuntu request the <strong>.conf</strong> file for virtual host.</p>
@@ -198,16 +184,14 @@ sudo a2enmod wsgi
 &lt;/VirtualHost&gt;</pre>
 
 <p>enable the virtual host by</p>
-<div class="highlight"><pre><span></span><code>sudo a2ensite elec2016
-</code></pre></div>
-
+<pre><code>sudo a2ensite elec2016
+</code></pre>
 <h1>4. Create the .wsgi File</h1>
 <h3>10. create the wsgi file</h3>
 <p>Apache uses the <strong>.wsgi</strong> file to serve the Flask app. Move to the <strong>/var/www/FlaskApp</strong> directory and create a file named <strong>flaskapp.wsgi</strong> with following commands:</p>
-<div class="highlight"><pre><span></span><code><span class="n">cd</span><span class="w"> </span><span class="o">/</span><span class="k">var</span><span class="o">/</span><span class="n">www</span><span class="o">/</span><span class="n">elec2016</span>
-<span class="n">sudo</span><span class="w"> </span><span class="n">vi</span><span class="w"> </span><span class="n">flaskapp</span><span class="o">.</span><span class="n">wsgi</span>
-</code></pre></div>
-
+<pre><code>cd /var/www/elec2016
+sudo vi flaskapp.wsgi
+</code></pre>
 <p>Add the following lines of code to the <strong>flaskapp.wsgi</strong> file:</p>
 <pre>#!/usr/bin/python
 import sys
@@ -219,16 +203,15 @@ from <span style="color:blue">elec2016</span> import app as application
 application.secret_key = 'Add your secret key'</pre>
 
 <p>a better look of the file is</p>
-<div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/python</span>
-<span class="kn">import</span> <span class="nn">sys</span>
-<span class="kn">import</span> <span class="nn">logging</span>
-<span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">stream</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
-<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="s2">&quot;/var/www/elec2016/&quot;</span><span class="p">)</span>
+<pre><code class="language-python">#!/usr/bin/python
+import sys
+import logging
+logging.basicConfig(stream=sys.stderr)
+sys.path.insert(0,&quot;/var/www/elec2016/&quot;)
 
-<span class="kn">from</span> <span class="nn">elec2016</span> <span class="kn">import</span> <span class="n">app</span> <span class="k">as</span> <span class="n">application</span>
-<span class="n">application</span><span class="o">.</span><span class="n">secret_key</span> <span class="o">=</span> <span class="s1">&#39;elec2016test&#39;</span>
-</code></pre></div>
-
+from elec2016 import app as application
+application.secret_key = 'elec2016test'
+</code></pre>
 <p>Until now the folder structure is like</p>
 <pre>|--------<span style="color:blue">elec2016</span>
 |----------------<span style="color:blue">elec2016</span>
@@ -240,42 +223,34 @@ application.secret_key = 'Add your secret key'</pre>
 
 <h1>5. enable virtual host / start apache / reload apache</h1>
 <h3>11.  run</h3>
-<div class="highlight"><pre><span></span><code><span class="n">sudo</span><span class="w"> </span><span class="n">a2ensite</span><span class="w"> </span><span class="n">elec2016</span>
+<pre><code>sudo a2ensite elec2016
 
-<span class="n">service</span><span class="w"> </span><span class="n">apache2</span><span class="w"> </span><span class="n">reload</span>
-</code></pre></div>
-
+service apache2 reload
+</code></pre>
 <p>or to restart apache service with</p>
-<div class="highlight"><pre><span></span><code>sudo service apache2 restart
-</code></pre></div>
-
+<pre><code>sudo service apache2 restart
+</code></pre>
 <h1>6. Others &amp; debug</h1>
 <h3>12. install anaconda. this is more likely for data processing/data mining purpose.</h3>
-<div class="highlight"><pre><span></span><code>bash<span class="w"> </span>Anaconda.sh
-</code></pre></div>
-
+<pre><code class="language-bash">bash Anaconda.sh
+</code></pre>
 <h3>13. install tweepy since I need to download tweets</h3>
-<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>tweepy
-</code></pre></div>
-
+<pre><code class="language-bash">pip install tweepy
+</code></pre>
 <h3>14. reboot and restart all service</h3>
 <h5>14.1. reboot</h5>
-<div class="highlight"><pre><span></span><code>reboot
-</code></pre></div>
-
+<pre><code>reboot
+</code></pre>
 <h5>14.2. restart mysql:</h5>
-<div class="highlight"><pre><span></span><code>sudo service mysql restart
-</code></pre></div>
-
+<pre><code>sudo service mysql restart
+</code></pre>
 <h5>14.3. kick-off download job</h5>
-<div class="highlight"><pre><span></span><code><span class="n">cd</span><span class="w"> </span><span class="n">develop</span><span class="o">/</span><span class="n">elec_2016_static_v2</span><span class="o">/</span>
-<span class="n">python</span><span class="w"> </span><span class="mi">20160808</span><span class="n">_twitter_download_t2</span><span class="o">.</span><span class="n">py</span><span class="w"> </span><span class="o">&amp;</span>
-</code></pre></div>
-
+<pre><code>cd develop/elec_2016_static_v2/
+python 20160808_twitter_download_t2.py &amp;
+</code></pre>
 <h5>14.4. restart apache service:</h5>
-<div class="highlight"><pre><span></span><code>sudo service apache2 restart
-</code></pre></div>
-
+<pre><code>sudo service apache2 restart
+</code></pre>
 <h3>15. errors</h3>
 <h5>15.1. the most common error is mysql crashed</h5>
 <h5>15.2. errors from tweepy</h5>
@@ -319,13 +294,13 @@ application.secret_key = 'Add your secret key'</pre>
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -343,7 +318,7 @@ application.secret_key = 'Add your secret key'</pre>
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

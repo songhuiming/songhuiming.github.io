@@ -94,27 +94,24 @@ window.addEventListener('load', () => {
 <time datetime="2017-03-18T00:00:00-05:00" pubdate>Sat 18 March 2017</time>    </p>
 </header>
 
-  <div class="entry-content"><div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">from</span> <span class="nn">IPython.display</span> <span class="kn">import</span> <span class="n">display</span>
-</code></pre></div>
-
+  <div class="entry-content"><pre><code class="language-python">import numpy as np
+import pandas as pd
+from IPython.display import display
+</code></pre>
 <h3>1. weighted average</h3>
 <p>Let's denote <code>x = [x_1, ..., x_n]</code>. The weight <code>w</code> is denoted as <code>w = [w_1, ..., w_n]</code>. The weighted average of <code>x</code> by <code>w</code> is <span class="math">\(\frac{ \sum_{i=1}^{n} x_i * w_i } { \sum_{i=1}^{n} w_i}\)</span></p>
 <p><code>numpy</code> provides a function called <code>np.average()</code> to calculate the weighted average. An example of calculate by hand and by the <code>np.average</code> is given below:</p>
-<div class="highlight"><pre><span></span><code><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">9999</span><span class="p">)</span>
-<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;val1&#39;</span><span class="p">,</span> <span class="s1">&#39;wt&#39;</span><span class="p">])</span>
+<pre><code class="language-python">np.random.seed(9999)
+df = pd.DataFrame(np.random.random(20).reshape(10, 2), columns = ['val1', 'wt'])
 
-<span class="c1"># if we want to calcuate the weighted average of val1 weighted by wt, that is:</span>
-<span class="nb">sum</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">val1</span> <span class="o">*</span> <span class="n">df</span><span class="o">.</span><span class="n">wt</span><span class="p">)</span> <span class="o">/</span> <span class="nb">sum</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">wt</span><span class="p">)</span>    <span class="c1"># 0.42105022244260254</span>
+# if we want to calcuate the weighted average of val1 weighted by wt, that is:
+sum(df.val1 * df.wt) / sum(df.wt)    # 0.42105022244260254
 
-<span class="c1"># np.average() function</span>
-<span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">val1</span><span class="p">,</span> <span class="n">weights</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">wt</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>    <span class="c1"># 0.42105022244260254</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="mf">0.42105022244260254</span>
-</code></pre></div>
-
+# np.average() function
+np.average(df.val1, weights = df.wt, axis = 0)    # 0.42105022244260254
+</code></pre>
+<pre><code>0.42105022244260254
+</code></pre>
 <h3>2. calculate weighted average within each group</h3>
 <p>The above example is very simple. A more common situation is there are different groups, and we need to calculate the weighted average within each group. The following is an example:</p>
 <ol>
@@ -123,58 +120,53 @@ window.addEventListener('load', () => {
 <li>calculate the weighted average of var1 and var2 by wt in group 1, and group 2 seperately</li>
 </ol>
 <p>so,  <code>0.339688030253 = sum(df1.val1 * df1.wt) / df1.wt.sum()</code></p>
-<div class="highlight"><pre><span></span><code><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">9999</span><span class="p">)</span>
-<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;val1&#39;</span><span class="p">,</span> <span class="s1">&#39;val2&#39;</span><span class="p">])</span>
-<span class="n">df</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="mi">5</span><span class="p">)</span>
-<span class="n">df</span><span class="p">[</span><span class="s1">&#39;wt&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="mi">5</span>
+<pre><code class="language-python">np.random.seed(9999)
+df = pd.DataFrame(np.random.random(20).reshape(10, 2), columns = ['val1', 'val2'])
+df['id'] = np.repeat([1, 2], 5)
+df['wt'] = [1, 2] * 5
 
-<span class="nb">print</span> <span class="n">df</span>
+print df
 
-<span class="nb">print</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">20</span> <span class="o">+</span> <span class="s1">&#39; weighted average of val1 and val2 by wt in each group &#39;</span> <span class="o">+</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">20</span>
+print '\n' + '-'*20 + ' weighted average of val1 and val2 by wt in each group ' + '-'*20
 
-<span class="n">wtavg</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">ix</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">2</span><span class="p">],</span> <span class="n">weights</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">wt</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
-<span class="n">dfwavg</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">wtavg</span><span class="p">)</span>
-<span class="n">display</span><span class="p">(</span><span class="n">dfwavg</span><span class="p">)</span>
-</code></pre></div>
+wtavg = lambda x: np.average(x.ix[:, :2], weights = x.wt, axis = 0)
+dfwavg = df.groupby('id').apply(wtavg)
+display(dfwavg)
+</code></pre>
+<pre><code>       val1      val2  id  wt
+0  0.823389  0.218603   1   1
+1  0.031461  0.545926   1   2
+2  0.154456  0.186963   1   1
+3  0.422348  0.605552   1   2
+4  0.492354  0.644119   1   1
+5  0.913049  0.771104   2   2
+6  0.288361  0.415441   2   1
+7  0.331490  0.366327   2   2
+8  0.312195  0.580446   2   1
+9  0.112952  0.325875   2   2
 
-<div class="highlight"><pre><span></span><code><span class="w">       </span><span class="nx">val1</span><span class="w">      </span><span class="nx">val2</span><span class="w">  </span><span class="nx">id</span><span class="w">  </span><span class="nx">wt</span>
-<span class="mi">0</span><span class="w">  </span><span class="m m-Double">0.823389</span><span class="w">  </span><span class="m m-Double">0.218603</span><span class="w">   </span><span class="mi">1</span><span class="w">   </span><span class="mi">1</span>
-<span class="mi">1</span><span class="w">  </span><span class="m m-Double">0.031461</span><span class="w">  </span><span class="m m-Double">0.545926</span><span class="w">   </span><span class="mi">1</span><span class="w">   </span><span class="mi">2</span>
-<span class="mi">2</span><span class="w">  </span><span class="m m-Double">0.154456</span><span class="w">  </span><span class="m m-Double">0.186963</span><span class="w">   </span><span class="mi">1</span><span class="w">   </span><span class="mi">1</span>
-<span class="mi">3</span><span class="w">  </span><span class="m m-Double">0.422348</span><span class="w">  </span><span class="m m-Double">0.605552</span><span class="w">   </span><span class="mi">1</span><span class="w">   </span><span class="mi">2</span>
-<span class="mi">4</span><span class="w">  </span><span class="m m-Double">0.492354</span><span class="w">  </span><span class="m m-Double">0.644119</span><span class="w">   </span><span class="mi">1</span><span class="w">   </span><span class="mi">1</span>
-<span class="mi">5</span><span class="w">  </span><span class="m m-Double">0.913049</span><span class="w">  </span><span class="m m-Double">0.771104</span><span class="w">   </span><span class="mi">2</span><span class="w">   </span><span class="mi">2</span>
-<span class="mi">6</span><span class="w">  </span><span class="m m-Double">0.288361</span><span class="w">  </span><span class="m m-Double">0.415441</span><span class="w">   </span><span class="mi">2</span><span class="w">   </span><span class="mi">1</span>
-<span class="mi">7</span><span class="w">  </span><span class="m m-Double">0.331490</span><span class="w">  </span><span class="m m-Double">0.366327</span><span class="w">   </span><span class="mi">2</span><span class="w">   </span><span class="mi">2</span>
-<span class="mi">8</span><span class="w">  </span><span class="m m-Double">0.312195</span><span class="w">  </span><span class="m m-Double">0.580446</span><span class="w">   </span><span class="mi">2</span><span class="w">   </span><span class="mi">1</span>
-<span class="mi">9</span><span class="w">  </span><span class="m m-Double">0.112952</span><span class="w">  </span><span class="m m-Double">0.325875</span><span class="w">   </span><span class="mi">2</span><span class="w">   </span><span class="mi">2</span>
-
-<span class="o">--------------------</span><span class="w"> </span><span class="nx">weighted</span><span class="w"> </span><span class="nx">average</span><span class="w"> </span><span class="nx">of</span><span class="w"> </span><span class="nx">val1</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">val2</span><span class="w"> </span><span class="nx">by</span><span class="w"> </span><span class="nx">wt</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="nx">each</span><span class="w"> </span><span class="nx">group</span><span class="w"> </span><span class="o">--------------------</span>
-
+-------------------- weighted average of val1 and val2 by wt in each group --------------------
 
 
-<span class="nx">id</span>
-<span class="mi">1</span><span class="w">    </span><span class="p">[</span><span class="m m-Double">0.339688030253</span><span class="p">,</span><span class="w"> </span><span class="m m-Double">0.478948919665</span><span class="p">]</span>
-<span class="mi">2</span><span class="w">     </span><span class="p">[</span><span class="m m-Double">0.41444248036</span><span class="p">,</span><span class="w"> </span><span class="m m-Double">0.490312314239</span><span class="p">]</span>
-<span class="nx">dtype</span><span class="p">:</span><span class="w"> </span><span class="nx">object</span>
-</code></pre></div>
 
-<div class="highlight"><pre><span></span><code><span class="c1">## verified by manual calculation</span>
-<span class="n">df1</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;id == 1&#39;</span><span class="p">)</span>
-<span class="nb">sum</span><span class="p">(</span><span class="n">df1</span><span class="o">.</span><span class="n">val1</span> <span class="o">*</span> <span class="n">df1</span><span class="o">.</span><span class="n">wt</span><span class="p">)</span> <span class="o">/</span> <span class="n">df1</span><span class="o">.</span><span class="n">wt</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>    <span class="c1">## 0.33968803025301908</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="mf">0.33968803025301908</span>
-</code></pre></div>
-
+id
+1    [0.339688030253, 0.478948919665]
+2     [0.41444248036, 0.490312314239]
+dtype: object
+</code></pre>
+<pre><code class="language-python">## verified by manual calculation
+df1 = df.query('id == 1')
+sum(df1.val1 * df1.wt) / df1.wt.sum()    ## 0.33968803025301908
+</code></pre>
+<pre><code>0.33968803025301908
+</code></pre>
 <p>Difference between <code>apply</code> and <code>agg</code>: <code>apply</code> will apply the funciton on the data frame of each group, while <code>agg</code> will aggregate each column of each group. So the arguments in the apply function is a dataframe.</p>
 <p>The following is an example from pandas docs. The arguments in function f0 is a dataframe in each id group.</p>
-<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">f0</span><span class="p">(</span><span class="n">group</span><span class="p">):</span> 
-    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;original&#39;</span><span class="p">:</span> <span class="n">group</span><span class="p">,</span> <span class="s1">&#39;group - mean&#39;</span><span class="p">:</span> <span class="n">group</span> <span class="o">-</span> <span class="n">group</span><span class="o">.</span><span class="n">mean</span><span class="p">()})</span>
+<pre><code class="language-python">def f0(group): 
+    return pd.DataFrame({'original': group, 'group - mean': group - group.mean()})
 
-<span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">)[</span><span class="s1">&#39;val1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">f0</span><span class="p">)</span>
-</code></pre></div>
-
+df.groupby('id')['val1'].apply(f0)
+</code></pre>
 <div>
 <table border="1" class="dataframe">
   <thead>
@@ -243,17 +235,16 @@ window.addEventListener('load', () => {
 <h4>1. different function for different column</h4>
 <p>One condition is you want to apply different function on different columns in the dataframe. For example, you want to apply sum on one column, and stdev on another column. </p>
 <p>if you want to apply multiple functions to aggregate, then you need to put them in the <strong>list</strong> or <strong>dict</strong>.</p>
-<div class="highlight"><pre><span></span><code><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">9999</span><span class="p">)</span>
-<span class="n">snapdf</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="mi">3000</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> \
-           <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;wt_var&#39;</span><span class="p">,</span> <span class="s1">&#39;var_to_sum&#39;</span><span class="p">,</span> <span class="s2">&quot;var_to_stdev&quot;</span><span class="p">])</span>
-<span class="n">snapdf</span><span class="p">[</span><span class="s1">&#39;stage&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="mi">500</span><span class="p">)</span>
+<pre><code class="language-python">np.random.seed(9999)
+snapdf = pd.DataFrame(np.random.random(3000).reshape(-1, 3), \
+           columns = ['wt_var', 'var_to_sum', &quot;var_to_stdev&quot;])
+snapdf['stage'] = np.repeat([1, 2], 500)
 
-<span class="n">f</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;var_to_sum&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">,</span> <span class="s2">&quot;var_to_stdev&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">}</span>
-<span class="n">stage_s1</span> <span class="o">=</span> <span class="n">snapdf</span><span class="o">.</span><span class="n">ix</span><span class="p">[:,</span> <span class="p">[</span><span class="s1">&#39;stage&#39;</span><span class="p">,</span> <span class="s1">&#39;var_to_sum&#39;</span><span class="p">,</span> <span class="s1">&#39;var_to_stdev&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;stage&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">agg</span><span class="p">(</span><span class="n">f</span><span class="p">)</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+f = {&quot;var_to_sum&quot;: np.sum, &quot;var_to_stdev&quot;: np.std}
+stage_s1 = snapdf.ix[:, ['stage', 'var_to_sum', 'var_to_stdev']].groupby('stage').agg(f).reset_index()
 
-<span class="n">stage_s1</span>
-</code></pre></div>
-
+stage_s1
+</code></pre>
 <div>
 <table border="1" class="dataframe">
   <thead>
@@ -284,14 +275,13 @@ window.addEventListener('load', () => {
 <h4>2. multiple functions on one column</h4>
 <p>Another condition is you want to apply multiple functions on each column. For example, you want to calcualte both mean and stdev for eachc column. Then your function is a dict of dicts: first key is the column(variable) to be applied by the functions. second key is the functions.</p>
 <p>An example is like:</p>
-<div class="highlight"><pre><span></span><code><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">9999</span><span class="p">)</span>
-<span class="n">snapdf</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="mi">3000</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> \
-           <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;wt_var&#39;</span><span class="p">,</span> <span class="s1">&#39;var1&#39;</span><span class="p">,</span> <span class="s2">&quot;var2&quot;</span><span class="p">])</span>
-<span class="n">snapdf</span><span class="p">[</span><span class="s1">&#39;stage&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="mi">500</span><span class="p">)</span>
+<pre><code class="language-python">np.random.seed(9999)
+snapdf = pd.DataFrame(np.random.random(3000).reshape(-1, 3), \
+           columns = ['wt_var', 'var1', &quot;var2&quot;])
+snapdf['stage'] = np.repeat([1, 2], 500)
 
-<span class="n">snapdf</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;stage&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">agg</span><span class="p">({</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">})</span>
-</code></pre></div>
-
+snapdf.groupby('stage').agg({np.sum, np.mean, np.std})
+</code></pre>
 <div>
 <table border="1" class="dataframe">
   <thead>
@@ -355,21 +345,20 @@ window.addEventListener('load', () => {
 </table>
 </div>
 
-<div class="highlight"><pre><span></span><code><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">9999</span><span class="p">)</span>
-<span class="n">snapdf</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="mi">3000</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> \
-           <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;wt_var&#39;</span><span class="p">,</span> <span class="s1">&#39;var_to_wt_avg_1&#39;</span><span class="p">,</span> <span class="s1">&#39;var_to_wt_avg_2&#39;</span><span class="p">])</span>
-<span class="n">snapdf</span><span class="p">[</span><span class="s1">&#39;stage&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="mi">500</span><span class="p">)</span>
+<pre><code class="language-python">np.random.seed(9999)
+snapdf = pd.DataFrame(np.random.random(3000).reshape(-1, 3), \
+           columns = ['wt_var', 'var_to_wt_avg_1', 'var_to_wt_avg_2'])
+snapdf['stage'] = np.repeat([1, 2], 500)
 
-<span class="n">wtavg</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">weights</span> <span class="o">=</span> <span class="n">snapdf</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="s2">&quot;wt_var&quot;</span><span class="p">])</span>
+wtavg = lambda x: np.average(x, weights = snapdf.loc[x.index, &quot;wt_var&quot;])
 
-<span class="n">f2</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;var_to_wt_avg_1&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;mean&#39;</span><span class="p">:</span><span class="s1">&#39;mean&#39;</span><span class="p">,</span> <span class="s1">&#39;wt_avg&#39;</span><span class="p">:</span> <span class="n">wtavg</span><span class="p">},</span> <span class="s1">&#39;var_to_wt_avg_2&#39;</span><span class="p">:{</span><span class="s1">&#39;mean&#39;</span><span class="p">:</span><span class="s1">&#39;mean&#39;</span><span class="p">,</span> <span class="s1">&#39;wt_avg&#39;</span><span class="p">:</span><span class="n">wtavg</span><span class="p">}}</span>
-<span class="n">stage_s2</span> <span class="o">=</span> <span class="n">snapdf</span><span class="o">.</span><span class="n">ix</span><span class="p">[:,</span> <span class="p">[</span><span class="s1">&#39;stage&#39;</span><span class="p">,</span> <span class="s1">&#39;var_to_wt_avg_1&#39;</span><span class="p">,</span> <span class="s1">&#39;var_to_wt_avg_2&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;stage&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">agg</span><span class="p">(</span><span class="n">f2</span><span class="p">)</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+f2 = {'var_to_wt_avg_1': {'mean':'mean', 'wt_avg': wtavg}, 'var_to_wt_avg_2':{'mean':'mean', 'wt_avg':wtavg}}
+stage_s2 = snapdf.ix[:, ['stage', 'var_to_wt_avg_1', 'var_to_wt_avg_2']].groupby('stage').agg(f2).reset_index()
 
-<span class="c1"># stage_s2.columns = stage_s2.columns.droplevel(0)</span>
+# stage_s2.columns = stage_s2.columns.droplevel(0)
 
-<span class="n">stage_s2</span>
-</code></pre></div>
-
+stage_s2
+</code></pre>
 <p><img alt="png" src="/figures/20170320_pandas_agg_dict.PNG"></p>
 <div>
 <table border="1" class="dataframe">
@@ -412,24 +401,24 @@ window.addEventListener('load', () => {
 
 <h3>3. weighted from stacked data: unstack data</h3>
 <p>Data in the previous are stored in horizontial way: variables are in different columns. But sometimes data are in vertical way: in the following example, the 3 ratings(I/S/P) are stacked in vertical  line. We want to get the weighted average of I/S/P. So, the first step is to unstak the data. Then calculate the weighted average.</p>
-<div class="highlight"><pre><span></span><code><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">9999</span><span class="p">)</span>
-<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="mi">72</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">36</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;var1&quot;</span><span class="p">,</span> <span class="s2">&quot;var2&quot;</span><span class="p">])</span>
-<span class="n">df</span><span class="p">[</span><span class="s2">&quot;rating&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">([</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="s1">&#39;S&#39;</span><span class="p">,</span> <span class="s1">&#39;P&#39;</span><span class="p">],</span> <span class="mi">12</span><span class="p">)</span>
-<span class="n">df</span><span class="p">[</span><span class="s1">&#39;qtrs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">13</span><span class="p">)</span> <span class="o">*</span> <span class="mi">3</span>
+<pre><code class="language-python">np.random.seed(9999)
+df = pd.DataFrame(np.random.random(72).reshape(36, 2), columns = [&quot;var1&quot;, &quot;var2&quot;])
+df[&quot;rating&quot;] = np.repeat(['I', 'S', 'P'], 12)
+df['qtrs'] = range(1, 13) * 3
 
-<span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">set_index</span><span class="p">([</span><span class="s1">&#39;rating&#39;</span><span class="p">,</span> <span class="s1">&#39;qtrs&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">unstack</span><span class="p">(</span><span class="n">level</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
-<span class="n">df</span><span class="p">[</span><span class="s1">&#39;cnts&#39;</span><span class="p">,</span> <span class="s1">&#39;I&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">100</span>
-<span class="n">df</span><span class="p">[</span><span class="s1">&#39;cnts&#39;</span><span class="p">,</span> <span class="s1">&#39;P&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">200</span>
-<span class="n">df</span><span class="p">[</span><span class="s1">&#39;cnts&#39;</span><span class="p">,</span> <span class="s2">&quot;S&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">300</span>
+df = df.set_index(['rating', 'qtrs']).unstack(level = 0)
+df['cnts', 'I'] = 100
+df['cnts', 'P'] = 200
+df['cnts', &quot;S&quot;] = 300
 
-<span class="n">display</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
+display(df.head())
 
-<span class="n">df</span><span class="p">[</span><span class="s1">&#39;wt_var_1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">var1</span><span class="p">,</span> <span class="n">weights</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">cnts</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
-<span class="n">df</span><span class="p">[</span><span class="s1">&#39;wt_var_2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">var2</span><span class="p">,</span> <span class="n">weights</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">cnts</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+df['wt_var_1'] = np.average(df.var1, weights = df.cnts, axis = 1)
+df['wt_var_2'] = np.average(df.var2, weights = df.cnts, axis = 1)
 
-<span class="n">df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span><span class="o">.</span><span class="n">ix</span><span class="p">[:,</span> <span class="p">[</span><span class="s2">&quot;qtrs&quot;</span><span class="p">,</span> <span class="s2">&quot;wt_var_1&quot;</span><span class="p">,</span> <span class="s2">&quot;wt_var_2&quot;</span><span class="p">]]</span>
-</code></pre></div>
+df.reset_index().ix[:, [&quot;qtrs&quot;, &quot;wt_var_1&quot;, &quot;wt_var_2&quot;]]
 
+</code></pre>
 <div>
 <table border="1" class="dataframe">
   <thead>
@@ -712,13 +701,13 @@ window.addEventListener('load', () => {
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -736,7 +725,7 @@ window.addEventListener('load', () => {
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

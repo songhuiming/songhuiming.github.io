@@ -119,10 +119,9 @@ window.addEventListener('load', () => {
 <p>Finally, the system must take into account additional constraints for the final ranking. For example, the system removes items that the user explicitly disliked or boosts the score of fresher content. Re-ranking can also help ensure diversity, freshness, and fairness.</p>
 <p>We will discuss each of these stages over the course of the class and give examples from different recommendation systems, such as YouTube.</p>
 <h1>3. Candidate Generation Overview</h1>
-<div class="highlight"><pre><span></span><code><span class="mf">1.</span><span class="w"> </span><span class="kr">cont</span><span class="n">ent</span><span class="o">-</span><span class="n">based</span><span class="w"> </span><span class="n">filtering</span><span class="p">:</span><span class="w"> </span><span class="n">recommendate</span><span class="w"> </span><span class="n">based</span><span class="w"> </span><span class="kr">on</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">similarity</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">items</span>
-<span class="mf">2.</span><span class="w"> </span><span class="n">collaborative</span><span class="w"> </span><span class="n">filtering</span><span class="err">：</span><span class="w"> </span><span class="kr">if</span><span class="w"> </span><span class="n">user</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="n">user</span><span class="w"> </span><span class="n">B</span><span class="w"> </span><span class="n">are</span><span class="w"> </span><span class="n">similar</span><span class="p">,</span><span class="w"> </span><span class="kr">then</span><span class="w"> </span><span class="n">recommend</span><span class="w"> </span><span class="n">user</span><span class="w"> </span><span class="n">A</span><span class="err">&#39;</span><span class="n">s</span><span class="w"> </span><span class="n">items</span><span class="w"> </span><span class="kr">to</span><span class="w"> </span><span class="n">user</span><span class="w"> </span><span class="n">B</span><span class="mf">.</span>
-</code></pre></div>
-
+<pre><code>1. content-based filtering: recommendate based on the similarity of items
+2. collaborative filtering： if user A and user B are similar, then recommend user A's items to user B.
+</code></pre>
 <h2>3.1. Embedding Space: map item and query to a <span class="math">\(d\)</span> dimension space</h2>
 <p>Map each item and each query (or context) to an embedding vector in a common embedding space . Typically, the embedding space is low-dimensional <span class="math">\(E = \mathbb{R}^{d}\)</span> (that is,  is much smaller than the size of the corpus), and captures some latent structure of the item or query set.</p>
 <h2>3.2. Similarity Measures：based on embedding to find item, or find the related items and querys</h2>
@@ -151,39 +150,35 @@ window.addEventListener('load', () => {
 <h2>5.2. <a href="https://developers.google.cn/machine-learning/recommendation/collaborative/matrix">Matrix Factorization</a></h2>
 <p>Assume feedback matrix <span class="math">\(A \in \mathbb{R}^{m \times n}\)</span>, m x n matrix. m means m user, and n means n items. </p>
 <p>Matrix Factorization is to get a matrix U and matrix V, such that</p>
-<div class="highlight"><pre><span></span><code><span class="mf">1.</span><span class="w"> </span><span class="n">U</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="n">matrix</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="n">d</span><span class="p">,</span><span class="w"> </span><span class="n">each</span><span class="w"> </span><span class="n">row</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="n">an</span><span class="w"> </span><span class="n">user</span><span class="err">&#39;</span><span class="n">s</span><span class="w"> </span><span class="n">embedding</span>
-<span class="mf">2.</span><span class="w"> </span><span class="n">V</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="n">matrix</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="n">d</span><span class="p">,</span><span class="w"> </span><span class="n">each</span><span class="w"> </span><span class="n">row</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="n">an</span><span class="w"> </span><span class="n">item</span><span class="err">&#39;</span><span class="n">s</span><span class="w"> </span><span class="n">embedding</span>
-</code></pre></div>
-
+<pre><code>1. U is matrix m x d, each row is an user's embedding
+2. V is matrix n x d, each row is an item's embedding
+</code></pre>
 <p>Our goal is to factorize the ratings matrix <span class="math">\(A\)</span> into the product of a user embedding matrix <span class="math">\(U\)</span> and movie embedding matrix <span class="math">\(V\)</span>, such that <span class="math">\(A \approx UV^\top\)</span> with</p>
 <div class="math">$$U = \begin{bmatrix} u_{1} \\ \hline \vdots \\ \hline u_{N} \end{bmatrix}$$</div>
 <div class="math">$$V = \begin{bmatrix} v_{1} \\ \hline \vdots \\ \hline v_{M} \end{bmatrix}$$</div>
 <p>Here</p>
-<div class="highlight"><pre><span></span><code><span class="k">-</span> $N$ is the number of users,
-<span class="k">-</span> $M$ is the number of movies,
-<span class="k">-</span> $A_{ij}$ is the rating of the $j$th movies by the $i$th user,
-<span class="k">-</span> each row $U_i$ is a $d$-dimensional vector (embedding) representing user $i$,
-<span class="k">-</span> each row $V_j$ is a $d$-dimensional vector (embedding) representing movie $j$,
-<span class="k">-</span> the prediction of the model for the $(i, j)$ pair is the dot product $\langle U_i, V_j \rangle$.
-</code></pre></div>
-
+<pre><code>- $N$ is the number of users,
+- $M$ is the number of movies,
+- $A_{ij}$ is the rating of the $j$th movies by the $i$th user,
+- each row $U_i$ is a $d$-dimensional vector (embedding) representing user $i$,
+- each row $V_j$ is a $d$-dimensional vector (embedding) representing movie $j$,
+- the prediction of the model for the $(i, j)$ pair is the dot product $\langle U_i, V_j \rangle$.
+</code></pre>
 <p>embedding matrix U and V has <span class="math">\(UV^T\)</span> as approx of feedback matrix A. A has dim <span class="math">\(m \times n\)</span>, the new U V has dim = <span class="math">\(（m+n）\times d\)</span>. Usually d is small, which means we will use low dim matrix to approx the original A. Singular value decomposion (SVD) is not a good method here because A is sparse most of the time.</p>
-<div class="highlight"><pre><span></span><code><span class="mf">1.</span><span class="w"> </span><span class="n">Stochastic</span><span class="w"> </span><span class="n">gradient</span><span class="w"> </span><span class="n">descent</span><span class="w"> </span><span class="p">(</span><span class="n">SGD</span><span class="p">)</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">generic</span><span class="w"> </span><span class="n">method</span><span class="w"> </span><span class="kr">to</span><span class="w"> </span><span class="n">minimize</span><span class="w"> </span><span class="n">loss</span><span class="w"> </span><span class="n">functions</span><span class="mf">.</span>
-<span class="mf">2.</span><span class="w"> </span><span class="n">Weighted</span><span class="w"> </span><span class="n">Alternating</span><span class="w"> </span><span class="n">Least</span><span class="w"> </span><span class="n">Squares</span><span class="w"> </span><span class="p">(</span><span class="n">WALS</span><span class="p">)</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="n">specialized</span><span class="w"> </span><span class="kr">to</span><span class="w"> </span><span class="n">this</span><span class="w"> </span><span class="n">particular</span><span class="w"> </span><span class="n">objective</span><span class="mf">.</span>
+<pre><code>1. Stochastic gradient descent (SGD) is a generic method to minimize loss functions.
+2. Weighted Alternating Least Squares (WALS) is specialized to this particular objective.
 
-<span class="mf">1.</span><span class="w"> </span><span class="n">pros</span><span class="p">:</span><span class="w"> </span><span class="n">no</span><span class="w"> </span><span class="n">special</span><span class="w"> </span><span class="n">pre</span><span class="o">-</span><span class="n">knowledge</span><span class="p">,</span><span class="w"> </span><span class="n">Serendipity</span><span class="w"> </span><span class="p">(</span><span class="n">model</span><span class="w"> </span><span class="n">help</span><span class="w"> </span><span class="kr">to</span><span class="w"> </span><span class="kr">get</span><span class="w"> </span><span class="n">likes</span><span class="p">),</span><span class="w"> </span><span class="n">easy</span><span class="w"> </span><span class="kr">to</span><span class="w"> </span><span class="n">start</span>
-<span class="mf">2.</span><span class="w"> </span><span class="n">cons</span><span class="p">:</span><span class="w"> </span><span class="n">cannot</span><span class="w"> </span><span class="n">handle</span><span class="w"> </span><span class="kr">new</span><span class="w"> </span><span class="n">item</span><span class="p">,</span><span class="w"> </span><span class="n">cannot</span><span class="w"> </span><span class="n">use</span><span class="w"> </span><span class="n">side</span><span class="w"> </span><span class="n">features</span><span class="w"> </span><span class="p">(</span><span class="n">age</span><span class="p">,</span><span class="w"> </span><span class="n">address</span><span class="p">)</span><span class="o">-</span><span class="w"> </span><span class="n">high</span><span class="w"> </span><span class="kd">dim</span><span class="w"> </span><span class="n">feedback</span><span class="w"> </span><span class="n">matrix</span><span class="w"> </span><span class="n">A</span>
-</code></pre></div>
-
+1. pros: no special pre-knowledge, Serendipity (model help to get likes), easy to start
+2. cons: cannot handle new item, cannot use side features (age, address)- high dim feedback matrix A
+</code></pre>
 <p><a href="https://colab.research.google.com/github/google/eng-edu/blob/main/ml/recommendation-systems/recommendation-systems.ipynb?utm_source=ss-recommendation-systems&amp;utm_campaign=colab-external&amp;utm_medium=referral&amp;utm_content=recommendation-systems">使用colab来练习怎么做推荐系统</a></p>
 <p><a href="https://www.kaggle.com/grouplens/movielens-20m-dataset?select=tag.csv">kaggle data link</a></p>
 <h1>6. <a href="https://developers.google.cn/machine-learning/recommendation/dnn/softmax">Recommendation with Deep Neural Network (DNN) Models</a></h1>
 <p>DNN can put item feature and user feature into a network modle to learn embeddings.</p>
 <h2>Softmax DNN for Recommendation</h2>
-<div class="highlight"><pre><span></span><code><span class="n">input</span><span class="o">:</span><span class="w"> </span><span class="n">user</span><span class="w"> </span><span class="n">query</span><span class="w">  </span>
-<span class="n">output</span><span class="o">:</span><span class="w"> </span><span class="n">prob</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="n">items</span>
-</code></pre></div>
-
+<pre><code>input: user query  
+output: prob of n items
+</code></pre>
 <p>input X can be dense feature (watch time length, time since last watch), it can also be sparse feature (country, watch history).</p>
 <p><img alt="DNN for recommendaiton system" src="https://developers.google.cn/machine-learning/recommendation/images/LossFunction.svg"></p>
 <p>Last hidden layer of DNN output is <span class="math">\(\phi(x)\)</span>, which is a vector with dim = d. It will times a matrix V <span class="math">\(V \in n \times d\)</span> to get a vector with dim = n. Each value is the probability for item.</p>
@@ -199,10 +194,9 @@ window.addEventListener('load', () => {
 <h2>Negative sampling</h2>
 <p>When there are n items, the output prob from DNN is <span class="math">\(\hat{p} \in \mathbb{R}^{n}\)</span>. Since n is very big, which will result in lots of calcualation in backpropagation.(In NLP, when clac the prob of neighbors words given the central word, it also uses negative smapling because of word size is also very big). </p>
 <p>Negative sampling will do: </p>
-<div class="highlight"><pre><span></span><code><span class="mf">1.</span><span class="w"> </span><span class="n">All</span><span class="w"> </span><span class="nb">pos</span><span class="n">itive</span><span class="w"> </span><span class="n">items</span><span class="w"> </span><span class="p">(</span><span class="n">the</span><span class="w"> </span><span class="kr">on</span><span class="n">es</span><span class="w"> </span><span class="n">that</span><span class="w"> </span><span class="n">appear</span><span class="w"> </span><span class="n">in</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">target</span><span class="w"> </span><span class="n">label</span><span class="p">)</span>
-<span class="mf">2.</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="n">sample</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">negative</span><span class="w"> </span><span class="n">items</span><span class="w"> </span><span class="p">(</span><span class="n">j</span><span class="w"> </span><span class="n">in</span><span class="w"> </span><span class="mf">1</span><span class="p">,</span><span class="w"> </span><span class="mf">2</span><span class="p">,</span><span class="w"> </span><span class="mf">3</span><span class="p">,</span><span class="w"> </span><span class="mf">...</span><span class="w"> </span><span class="n">n</span><span class="p">)</span>
-</code></pre></div>
-
+<pre><code>1. All positive items (the ones that appear in the target label)
+2. A sample of negative items (j in 1, 2, 3, ... n)
+</code></pre>
 <p>An example from Youtube recommendation:
 <img alt="youtube" src="/figures/20211030_recommendation_01_youtube.png"></p>
 <h1>Reference</h1>
@@ -307,13 +301,13 @@ window.addEventListener('load', () => {
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -331,7 +325,7 @@ window.addEventListener('load', () => {
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

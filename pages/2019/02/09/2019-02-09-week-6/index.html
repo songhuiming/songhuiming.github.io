@@ -105,48 +105,47 @@ window.addEventListener('load', () => {
 <li><a href="https://www.pugetsystems.com/labs/hpc/Build-TensorFlow-GPU-with-CUDA-9-1-MKL-and-Anaconda-Python-3-6-using-a-Docker-Container-1134/">Build TensorFlow-GPU with CUDA 9.1 MKL and Anaconda Python 3.6 using a Docker Container</a></li>
 <li><a href="https://www.msra.cn/zh-cn/news/features/gan-20170511"> 到底什么是生成式对抗网络GAN？</a></li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="c1"># Dockerfile to setup a build environment for TensorFlow</span>
-<span class="c1"># using Intel MKL and Anaconda3 Python</span>
-<span class="c1"># GPU support with CUDA 9.1 and cudnn7.1</span>
+<pre><code class="language-bash"># Dockerfile to setup a build environment for TensorFlow
+# using Intel MKL and Anaconda3 Python
+# GPU support with CUDA 9.1 and cudnn7.1
 
-FROM<span class="w"> </span>nvidia/cuda:9.1-cudnn7-devel-ubuntu16.04
+FROM nvidia/cuda:9.1-cudnn7-devel-ubuntu16.04
 
-MAINTAINER<span class="w"> </span>nobody,<span class="w"> </span>not<span class="w"> </span>even<span class="w"> </span>me
+MAINTAINER nobody, not even me
 
-<span class="c1"># Add a few needed packages to the base Ubuntu 16.04</span>
-<span class="c1"># OK, maybe *you* don&#39;t need emacs :-)</span>
-RUN<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>apt-get<span class="w"> </span>update<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>build-essential<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>curl<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>emacs-nox<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>git<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>openjdk-8-jdk<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span>rm<span class="w"> </span>-rf<span class="w"> </span>/var/lib/lists/*
+# Add a few needed packages to the base Ubuntu 16.04
+# OK, maybe *you* don't need emacs :-)
+RUN \
+    apt-get update &amp;&amp; apt-get install -y \
+    build-essential \
+    curl \
+    emacs-nox \
+    git \
+    openjdk-8-jdk \
+    &amp;&amp; rm -rf /var/lib/lists/*
 
-<span class="c1"># Use version 11.1 bazel! install from the deb file.</span>
-COPY<span class="w"> </span>bazel_0.11.1-linux-x86_64.deb<span class="w"> </span>/root/
-RUN<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span><span class="nb">cd</span><span class="w"> </span>/root<span class="p">;</span><span class="w"> </span>dpkg<span class="w"> </span>-i<span class="w"> </span>bazel_0.11.1-linux-x86_64.deb<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>rm<span class="w"> </span>-f<span class="w"> </span>bazel_0.11.1-linux-x86_64.deb
+# Use version 11.1 bazel! install from the deb file.
+COPY bazel_0.11.1-linux-x86_64.deb /root/
+RUN \
+  cd /root; dpkg -i bazel_0.11.1-linux-x86_64.deb &amp;&amp; \
+  rm -f bazel_0.11.1-linux-x86_64.deb
 
-<span class="c1"># Copy in and install Anaconda3 from the shell archive</span>
-<span class="c1"># Anaconda3-5.1.0-Linux-x86_64.sh</span>
-COPY<span class="w"> </span>Anaconda3*<span class="w"> </span>/root/
-RUN<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span><span class="nb">cd</span><span class="w"> </span>/root<span class="p">;</span><span class="w"> </span>chmod<span class="w"> </span><span class="m">755</span><span class="w"> </span>Anaconda3*.sh<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>./Anaconda3*.sh<span class="w"> </span>-b<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;export PATH=&quot;$HOME/anaconda3/bin:$PATH&quot;&#39;</span><span class="w"> </span>&gt;&gt;<span class="w"> </span>.bashrc<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>rm<span class="w"> </span>-f<span class="w"> </span>Anaconda3*.sh
+# Copy in and install Anaconda3 from the shell archive
+# Anaconda3-5.1.0-Linux-x86_64.sh
+COPY Anaconda3* /root/
+RUN \
+  cd /root; chmod 755 Anaconda3*.sh &amp;&amp; \
+  ./Anaconda3*.sh -b &amp;&amp; \
+  echo 'export PATH=&quot;$HOME/anaconda3/bin:$PATH&quot;' &gt;&gt; .bashrc &amp;&amp; \
+  rm -f Anaconda3*.sh
 
-<span class="c1"># Copy in the CUDA configuration files</span>
-COPY<span class="w"> </span>cuda.sh<span class="w"> </span>/etc/profile.d/
-COPY<span class="w"> </span>cuda.conf<span class="w"> </span>/etc/ld.so.conf.d/
+# Copy in the CUDA configuration files
+COPY cuda.sh /etc/profile.d/
+COPY cuda.conf /etc/ld.so.conf.d/
 
-<span class="c1"># That&#39;s it! That should be enough to do a TensorFlow 1.7 GPU build</span>
-<span class="c1"># using CUDA 9.1 Anaconda Python 3.6 Intel MKL with gcc 5.4</span>
-</code></pre></div>
-
+# That's it! That should be enough to do a TensorFlow 1.7 GPU build
+# using CUDA 9.1 Anaconda Python 3.6 Intel MKL with gcc 5.4
+</code></pre>
 <p>swap交换空间，相当于Win中的虚拟内存，通常需要划分对应物理内存2倍的空间，考虑到深度学习主机内存一般都是32G、64G或者128G，所以选择忽略不划分，之后如有需要还可以在系统设置中添加swap部分。</p>
 <p>EFI系统分区，选择分区类型为“逻辑分区”，分区位置为“空间起始位置”。分配大小为512M，足矣。</p>
 <p>挂载“/”,类型为EXT4日志文件系统，选择“逻辑分区”和“空间起始位置”。根目录将挂载除了“/home”和“/usr”之外的其他目录，分配50G。</p>
@@ -180,13 +179,13 @@ COPY<span class="w"> </span>cuda.conf<span class="w"> </span>/etc/ld.so.conf.d/
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -204,7 +203,7 @@ COPY<span class="w"> </span>cuda.conf<span class="w"> </span>/etc/ld.so.conf.d/
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

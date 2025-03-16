@@ -139,165 +139,161 @@ Here <span class="math">\( \varphi_{i}(z_t) \in \mathbb{R}^{N \times d_{\epsilon
 <h3>Code for LDM</h3>
 <h4>1. Encoder-Decoder - project image to latent space and project from latent space to image</h4>
 <p>In order to avoid arbitrarily high-variance latent spaces, the authors experiment with two different kinds of regularizations. The first variant is KL-reg which imposes a slight KL-penalty towards a standard normal on the learned latent, similar to a VAE. The second is VQ-reg which uses a vector quantization layer within the decoder.</p>
-<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AutoencoderKL</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">LightningModule</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ddconfig</span><span class="p">,</span> <span class="o">...</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+<pre><code class="language-python">class AutoencoderKL(pl.LightningModule):
+    def __init__(self, ddconfig, ...):
+        super().__init__()
 
-    <span class="o">......</span>
+    ......
 
-    <span class="k">def</span> <span class="nf">encode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
-        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-        <span class="n">moments</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">quant_conv</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
-        <span class="n">posterior</span> <span class="o">=</span> <span class="n">DiagonalGaussianDistribution</span><span class="p">(</span><span class="n">moments</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">posterior</span>
+    def encode(self, x):
+        h = self.encoder(x)
+        moments = self.quant_conv(h)
+        posterior = DiagonalGaussianDistribution(moments)
+        return posterior
 
-    <span class="k">def</span> <span class="nf">decode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">z</span><span class="p">):</span>
-        <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">post_quant_conv</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
-        <span class="n">dec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">dec</span>
-    <span class="o">...</span> <span class="o">...</span>
+    def decode(self, z):
+        z = self.post_quant_conv(z)
+        dec = self.decoder(z)
+        return dec
+    ... ...
 
 
-<span class="k">class</span> <span class="nc">VQModel</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">LightningModule</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ddconfig</span><span class="p">,</span> <span class="o">...</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+class VQModel(pl.LightningModule):
+    def __init__(self, ddconfig, ...):
+        super().__init__()
 
-    <span class="o">...</span> <span class="o">...</span>
+    ... ...
 
-    <span class="k">def</span> <span class="nf">encode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
-        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">quant_conv</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
-        <span class="n">quant</span><span class="p">,</span> <span class="n">emb_loss</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">quantize</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">quant</span><span class="p">,</span> <span class="n">emb_loss</span><span class="p">,</span> <span class="n">info</span>
+    def encode(self, x):
+        h = self.encoder(x)
+        h = self.quant_conv(h)
+        quant, emb_loss, info = self.quantize(h)
+        return quant, emb_loss, info
 
-    <span class="k">def</span> <span class="nf">encode_to_prequant</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
-        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">quant_conv</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">h</span>
+    def encode_to_prequant(self, x):
+        h = self.encoder(x)
+        h = self.quant_conv(h)
+        return h
 
-    <span class="k">def</span> <span class="nf">decode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">quant</span><span class="p">):</span>
-        <span class="n">quant</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">post_quant_conv</span><span class="p">(</span><span class="n">quant</span><span class="p">)</span>
-        <span class="n">dec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="p">(</span><span class="n">quant</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">dec</span>
+    def decode(self, quant):
+        quant = self.post_quant_conv(quant)
+        dec = self.decoder(quant)
+        return dec
 
-    <span class="k">def</span> <span class="nf">decode_code</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">code_b</span><span class="p">):</span>
-        <span class="n">quant_b</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">quantize</span><span class="o">.</span><span class="n">embed_code</span><span class="p">(</span><span class="n">code_b</span><span class="p">)</span>
-        <span class="n">dec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">quant_b</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">dec</span>
-    <span class="o">......</span>
-</code></pre></div>
-
+    def decode_code(self, code_b):
+        quant_b = self.quantize.embed_code(code_b)
+        dec = self.decode(quant_b)
+        return dec
+    ......
+</code></pre>
 <h4>2. Embedding funciton for conditional input from <span class="math">\(y\)</span> to <span class="math">\(\tau_{\theta}(y)\)</span></h4>
 <p>Deifferent embedding functions can be applied to convert the conditonal input to the numeric embeding. Like BERT embedding for text, or CLIP embedding for text or image depending on the input data.</p>
-<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">TransformerEmbedder</span><span class="p">(</span><span class="n">AbstractEncoder</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Some transformer encoder layers&quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_embed</span><span class="p">,</span> <span class="n">n_layer</span><span class="p">,</span> <span class="n">vocab_size</span><span class="p">,</span> <span class="n">max_seq_len</span><span class="o">=</span><span class="mi">77</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-        <span class="o">...</span>
+<pre><code class="language-python">
+class TransformerEmbedder(AbstractEncoder):
+    &quot;&quot;&quot;Some transformer encoder layers&quot;&quot;&quot;
+    def __init__(self, n_embed, n_layer, vocab_size, max_seq_len=77, device=&quot;cuda&quot;):
+        super().__init__()
+        ...
 
-<span class="k">class</span> <span class="nc">BERTEmbedder</span><span class="p">(</span><span class="n">AbstractEncoder</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Uses the BERT tokenizr model and add some transformer encoder layers&quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_embed</span><span class="p">,</span> <span class="n">n_layer</span><span class="p">,</span> <span class="n">vocab_size</span><span class="o">=</span><span class="mi">30522</span><span class="p">,</span> <span class="n">max_seq_len</span><span class="o">=</span><span class="mi">77</span><span class="p">,</span>
-                 <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span><span class="p">,</span><span class="n">use_tokenizer</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">embedding_dropout</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-        <span class="o">...</span>
+class BERTEmbedder(AbstractEncoder):
+    &quot;&quot;&quot;Uses the BERT tokenizr model and add some transformer encoder layers&quot;&quot;&quot;
+    def __init__(self, n_embed, n_layer, vocab_size=30522, max_seq_len=77,
+                 device=&quot;cuda&quot;,use_tokenizer=True, embedding_dropout=0.0):
+        super().__init__()
+        ...
 
-<span class="k">class</span> <span class="nc">FrozenCLIPTextEmbedder</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Uses the CLIP transformer encoder for text.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="s1">&#39;ViT-L/14&#39;</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">77</span><span class="p">,</span> <span class="n">n_repeat</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-        <span class="o">...</span>
+class FrozenCLIPTextEmbedder(nn.Module):
+    &quot;&quot;&quot;
+    Uses the CLIP transformer encoder for text.
+    &quot;&quot;&quot;
+    def __init__(self, version='ViT-L/14', device=&quot;cuda&quot;, max_length=77, n_repeat=1, normalize=True):
+        super().__init__()
+        ...
 
 
-<span class="k">class</span> <span class="nc">FrozenClipImageEmbedder</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Uses the CLIP image encoder.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">vargs</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-        <span class="o">...</span>
-</code></pre></div>
-
+class FrozenClipImageEmbedder(nn.Module):
+    &quot;&quot;&quot;
+    Uses the CLIP image encoder.
+    &quot;&quot;&quot;
+    def __init__(self, **vargs):
+        super().__init__()
+        ...
+</code></pre>
 <h4>3. Attention - attention between K and Q for new V</h4>
 <p>Query is from the image in DDPM or the latent space is LDM. Key and Value are from the context or the conditions in LDM.</p>
-<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">CrossAttention</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query_dim</span><span class="p">,</span> <span class="n">context_dim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">heads</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">dim_head</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="mf">0.</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-        <span class="n">inner_dim</span> <span class="o">=</span> <span class="n">dim_head</span> <span class="o">*</span> <span class="n">heads</span>
-        <span class="n">context_dim</span> <span class="o">=</span> <span class="n">default</span><span class="p">(</span><span class="n">context_dim</span><span class="p">,</span> <span class="n">query_dim</span><span class="p">)</span>
+<pre><code class="language-python">class CrossAttention(nn.Module):
+    def __init__(self, query_dim, context_dim=None, heads=8, dim_head=64, dropout=0.):
+        super().__init__()
+        inner_dim = dim_head * heads
+        context_dim = default(context_dim, query_dim)
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">to_q</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">query_dim</span><span class="p">,</span> <span class="n">inner_dim</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">to_k</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">context_dim</span><span class="p">,</span> <span class="n">inner_dim</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">to_v</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">context_dim</span><span class="p">,</span> <span class="n">inner_dim</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        self.to_q = nn.Linear(query_dim, inner_dim, bias=False)
+        self.to_k = nn.Linear(context_dim, inner_dim, bias=False)
+        self.to_v = nn.Linear(context_dim, inner_dim, bias=False)
 
-    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">heads</span>
-        <span class="n">q</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_q</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-        <span class="n">context</span> <span class="o">=</span> <span class="n">default</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
-        <span class="n">k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_k</span><span class="p">(</span><span class="n">context</span><span class="p">)</span>
-        <span class="n">v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_v</span><span class="p">(</span><span class="n">context</span><span class="p">)</span>
+    def forward(self, x, context=None, mask=None):
+        h = self.heads
+        q = self.to_q(x)
+        context = default(context, x)
+        k = self.to_k(context)
+        v = self.to_v(context)
 
-        <span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="n">rearrange</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="s1">&#39;b n (h d) -&gt; (b h) n d&#39;</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="n">h</span><span class="p">),</span> <span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">))</span>
-        <span class="n">sim</span> <span class="o">=</span> <span class="n">einsum</span><span class="p">(</span><span class="s1">&#39;b i d, b j d -&gt; b i j&#39;</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span>
+        q, k, v = map(lambda t: rearrange(t, 'b n (h d) -&gt; (b h) n d', h=h), (q, k, v))
+        sim = einsum('b i d, b j d -&gt; b i j', q, k) * self.scale
 
-        <span class="c1"># attention, what we cannot get enough of</span>
-        <span class="n">attn</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
-        <span class="o">...</span> <span class="o">...</span>
-</code></pre></div>
-
+        # attention, what we cannot get enough of
+        attn = sim.softmax(dim=-1)
+        ... ...
+</code></pre>
 <h4>4. UNet - learn the noise for step <span class="math">\(t\)</span></h4>
 <p>From the code, it shows that for each level of UNet, there is attention block between condition input <span class="math">\(\tau_{\theta}(y)\)</span> and the UNet intermediate representation <span class="math">\(\varphi_i(z_t)\)</span>. The attention mechanism is applied in both down sample and up sample levels in UNet.</p>
-<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">UNetModel</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">......</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-        <span class="o">......</span>
+<pre><code class="language-python">class UNetModel(nn.Module):
+    def __init__(self, ......):
+        super().__init__()
+        ......
 
-        <span class="c1"># param channel_mult: channel multiplier for each level of the UNet.</span>
-        <span class="k">for</span> <span class="n">level</span><span class="p">,</span> <span class="n">mult</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">channel_mult</span><span class="p">):</span>
-            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_res_blocks</span><span class="p">):</span>
-                <span class="n">layers</span> <span class="o">=</span> <span class="p">[</span><span class="n">ResBlock</span><span class="p">(</span><span class="o">...</span><span class="p">)]</span>
+        # param channel_mult: channel multiplier for each level of the UNet.
+        for level, mult in enumerate(channel_mult):
+            for _ in range(num_res_blocks):
+                layers = [ResBlock(...)]
 
-                <span class="n">ch</span> <span class="o">=</span> <span class="n">mult</span> <span class="o">*</span> <span class="n">model_channels</span>
-                <span class="k">if</span> <span class="n">ds</span> <span class="ow">in</span> <span class="n">attention_resolutions</span><span class="p">:</span>
-                    <span class="o">......</span>
-                    <span class="n">layers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                        <span class="n">AttentionBlock</span><span class="p">(</span>
-                            <span class="n">ch</span><span class="p">,</span>
-                            <span class="n">use_checkpoint</span><span class="o">=</span><span class="n">use_checkpoint</span><span class="p">,</span>
-                            <span class="n">num_heads</span><span class="o">=</span><span class="n">num_heads</span><span class="p">,</span>
-                            <span class="n">num_head_channels</span><span class="o">=</span><span class="n">dim_head</span><span class="p">,</span>
-                            <span class="n">use_new_attention_order</span><span class="o">=</span><span class="n">use_new_attention_order</span><span class="p">,</span>
-                        <span class="p">)</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">use_spatial_transformer</span> <span class="k">else</span> <span class="n">SpatialTransformer</span><span class="p">(</span>
-                            <span class="n">ch</span><span class="p">,</span> <span class="n">num_heads</span><span class="p">,</span> <span class="n">dim_head</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="n">transformer_depth</span><span class="p">,</span> <span class="n">context_dim</span><span class="o">=</span><span class="n">context_dim</span>
-                        <span class="p">)</span>
-                    <span class="p">)</span>
+                ch = mult * model_channels
+                if ds in attention_resolutions:
+                    ......
+                    layers.append(
+                        AttentionBlock(
+                            ch,
+                            use_checkpoint=use_checkpoint,
+                            num_heads=num_heads,
+                            num_head_channels=dim_head,
+                            use_new_attention_order=use_new_attention_order,
+                        ) if not use_spatial_transformer else SpatialTransformer(
+                            ch, num_heads, dim_head, depth=transformer_depth, context_dim=context_dim
+                        )
+                    )
 
-        <span class="c1"># Similar attention is applied in the upsampling steps</span>
-</code></pre></div>
-
+        # Similar attention is applied in the upsampling steps
+</code></pre>
 <h4>5. Loss funcion - loss between the model output and the target, target to optimize</h4>
 <p>Steps here are:
 1. Sample data from the funcion <span class="math">\(q(x)\)</span>
 2. Input the sampled data and step <span class="math">\(t\)</span> into the model
 3. Calc the MSE loss between the model output and the target</p>
-<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">p_losses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_start</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">noise</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="n">noise</span> <span class="o">=</span> <span class="n">default</span><span class="p">(</span><span class="n">noise</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn_like</span><span class="p">(</span><span class="n">x_start</span><span class="p">))</span>
-    <span class="n">x_noisy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">q_sample</span><span class="p">(</span><span class="n">x_start</span><span class="o">=</span><span class="n">x_start</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="n">t</span><span class="p">,</span> <span class="n">noise</span><span class="o">=</span><span class="n">noise</span><span class="p">)</span>
-    <span class="n">model_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">x_noisy</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
+<pre><code class="language-python">def p_losses(self, x_start, t, noise=None):
+    noise = default(noise, lambda: torch.randn_like(x_start))
+    x_noisy = self.q_sample(x_start=x_start, t=t, noise=noise)
+    model_out = self.model(x_noisy, t)
 
-    <span class="n">loss_dict</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameterization</span> <span class="o">==</span> <span class="s2">&quot;eps&quot;</span><span class="p">:</span>
-        <span class="n">target</span> <span class="o">=</span> <span class="n">noise</span>
-    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameterization</span> <span class="o">==</span> <span class="s2">&quot;x0&quot;</span><span class="p">:</span>
-        <span class="n">target</span> <span class="o">=</span> <span class="n">x_start</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Paramterization </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">parameterization</span><span class="si">}</span><span class="s2"> not yet supported&quot;</span><span class="p">)</span>
+    loss_dict = {}
+    if self.parameterization == &quot;eps&quot;:
+        target = noise
+    elif self.parameterization == &quot;x0&quot;:
+        target = x_start
+    else:
+        raise NotImplementedError(f&quot;Paramterization {self.parameterization} not yet supported&quot;)
 
-    <span class="n">loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_loss</span><span class="p">(</span><span class="n">model_out</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">mean</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
-</code></pre></div>
-
+    loss = self.get_loss(model_out, target, mean=False).mean(dim=[1, 2, 3])
+</code></pre>
 <h3>Reference</h3>
 <ol>
 <li><a href="https://arxiv.org/abs/2112.10752">High-Resolution Image Synthesis with Latent Diffusion Models</a></li>
@@ -393,13 +389,13 @@ Here <span class="math">\( \varphi_{i}(z_t) \in \mathbb{R}^{N \times d_{\epsilon
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -417,7 +413,7 @@ Here <span class="math">\( \varphi_{i}(z_t) \in \mathbb{R}^{N \times d_{\epsilon
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

@@ -106,142 +106,140 @@ window.addEventListener('load', () => {
 <p>Here an example of drawing the <a href="https://en.wikipedia.org/wiki/Damping">damping vibration</a> is shown. It needs four input values: amplitude, damping factor, frequency and time interval. On the webpage these will be forms for the user to input from keyboard. After input, <em>submit</em> is needed to submit the input value and plot the graphs.</p>
 <h4>1. build the web frame with falsk</h4>
 <p>The structure of the folder for this project is like</p>
-<div class="highlight"><pre><span></span><code>--app
+<pre><code>--app
     --templates
         --view.html
     --static
     --bokeh_in_flask.py
-</code></pre></div>
-
+</code></pre>
 <p>The sample code of <code>bokeh_in_flask.py</code> is</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">flask</span> <span class="kn">import</span> <span class="n">Flask</span><span class="p">,</span> <span class="n">render_template</span><span class="p">,</span> <span class="n">request</span>
-<span class="kn">from</span> <span class="nn">wtforms</span> <span class="kn">import</span> <span class="n">Form</span><span class="p">,</span> <span class="n">FloatField</span><span class="p">,</span> <span class="n">validators</span>
-<span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">pi</span>
+<pre><code class="language-python">from flask import Flask, render_template, request
+from wtforms import Form, FloatField, validators
+from math import pi
 
 
-<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">exp</span><span class="p">,</span> <span class="n">cos</span><span class="p">,</span> <span class="n">linspace</span>
-<span class="kn">import</span> <span class="nn">bokeh.plotting</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">re</span>
+from numpy import exp, cos, linspace
+import bokeh.plotting as plt
+import os, re
 
-<span class="k">class</span> <span class="nc">InputForm</span><span class="p">(</span><span class="n">Form</span><span class="p">):</span>
-    <span class="n">A</span> <span class="o">=</span> <span class="n">FloatField</span><span class="p">(</span>
-        <span class="n">label</span><span class="o">=</span><span class="s1">&#39;amplitude (m)&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
-        <span class="n">validators</span><span class="o">=</span><span class="p">[</span><span class="n">validators</span><span class="o">.</span><span class="n">InputRequired</span><span class="p">()])</span>
-    <span class="n">b</span> <span class="o">=</span> <span class="n">FloatField</span><span class="p">(</span>
-        <span class="n">label</span><span class="o">=</span><span class="s1">&#39;damping factor (kg/s)&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-        <span class="n">validators</span><span class="o">=</span><span class="p">[</span><span class="n">validators</span><span class="o">.</span><span class="n">InputRequired</span><span class="p">()])</span>
-    <span class="n">w</span> <span class="o">=</span> <span class="n">FloatField</span><span class="p">(</span>
-        <span class="n">label</span><span class="o">=</span><span class="s1">&#39;frequency (1/s)&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">2</span><span class="o">*</span><span class="n">pi</span><span class="p">,</span>
-        <span class="n">validators</span><span class="o">=</span><span class="p">[</span><span class="n">validators</span><span class="o">.</span><span class="n">InputRequired</span><span class="p">()])</span>
-    <span class="n">T</span> <span class="o">=</span> <span class="n">FloatField</span><span class="p">(</span>
-        <span class="n">label</span><span class="o">=</span><span class="s1">&#39;time interval (s)&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">18</span><span class="p">,</span>
-        <span class="n">validators</span><span class="o">=</span><span class="p">[</span><span class="n">validators</span><span class="o">.</span><span class="n">InputRequired</span><span class="p">()])</span>
-
-
-<span class="k">def</span> <span class="nf">damped_vibrations</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">w</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">A</span><span class="o">*</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">b</span><span class="o">*</span><span class="n">t</span><span class="p">)</span><span class="o">*</span><span class="n">cos</span><span class="p">(</span><span class="n">w</span><span class="o">*</span><span class="n">t</span><span class="p">)</span>
-
-<span class="k">def</span> <span class="nf">compute</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">resolution</span><span class="o">=</span><span class="mi">500</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return filename of plot of the damped_vibration function.&quot;&quot;&quot;</span>
-    <span class="n">t</span> <span class="o">=</span> <span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">resolution</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
-    <span class="n">u</span> <span class="o">=</span> <span class="n">damped_vibrations</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span>
-
-    <span class="c1"># create a new plot with a title and axis labels</span>
-    <span class="n">TOOLS</span> <span class="o">=</span> <span class="s2">&quot;pan,wheel_zoom,box_zoom,reset,save,box_select,lasso_select&quot;</span>
-    <span class="n">p</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;simple line example&quot;</span><span class="p">,</span> <span class="n">tools</span><span class="o">=</span><span class="n">TOOLS</span><span class="p">,</span>
-                   <span class="n">x_axis_label</span><span class="o">=</span><span class="s1">&#39;t&#39;</span><span class="p">,</span> <span class="n">y_axis_label</span><span class="o">=</span><span class="s1">&#39;y&#39;</span><span class="p">)</span>
-
-    <span class="c1"># add a line renderer with legend and line thickness</span>
-    <span class="n">p</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="s2">&quot;u(t)&quot;</span><span class="p">,</span> <span class="n">line_width</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-
-    <span class="kn">from</span> <span class="nn">bokeh.resources</span> <span class="kn">import</span> <span class="n">CDN</span>
-    <span class="kn">from</span> <span class="nn">bokeh.embed</span> <span class="kn">import</span> <span class="n">components</span>
-    <span class="n">script</span><span class="p">,</span> <span class="n">div</span> <span class="o">=</span> <span class="n">components</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
-    <span class="n">head</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">        &lt;link rel=&quot;stylesheet&quot;</span>
-<span class="s2">         href=&quot;http://cdn.pydata.org/bokeh/release/bokeh-0.9.0.min.css&quot;</span>
-<span class="s2">         type=&quot;text/css&quot; /&gt;</span>
-<span class="s2">        &lt;script type=&quot;text/javascript&quot;</span>
-<span class="s2">         src=&quot;http://cdn.pydata.org/bokeh/release/bokeh-0.9.0.min.js&quot;&gt;</span>
-<span class="s2">        &lt;/script&gt;</span>
-<span class="s2">        &lt;script type=&quot;text/javascript&quot;&gt;</span>
-<span class="s2">        Bokeh.set_log_level(&quot;info&quot;);</span>
-<span class="s2">        &lt;/script&gt;</span>
-<span class="s2">        &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">head</span><span class="p">,</span> <span class="n">script</span><span class="p">,</span> <span class="n">div</span>
+class InputForm(Form):
+    A = FloatField(
+        label='amplitude (m)', default=1.0,
+        validators=[validators.InputRequired()])
+    b = FloatField(
+        label='damping factor (kg/s)', default=0,
+        validators=[validators.InputRequired()])
+    w = FloatField(
+        label='frequency (1/s)', default=2*pi,
+        validators=[validators.InputRequired()])
+    T = FloatField(
+        label='time interval (s)', default=18,
+        validators=[validators.InputRequired()])
 
 
-<span class="n">app</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+def damped_vibrations(t, A, b, w):
+    return A*exp(-b*t)*cos(w*t)
 
-<span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/vib3&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="s1">&#39;POST&#39;</span><span class="p">])</span>
-<span class="k">def</span> <span class="nf">index</span><span class="p">():</span>
-    <span class="n">form</span> <span class="o">=</span> <span class="n">InputForm</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;POST&#39;</span> <span class="ow">and</span> <span class="n">form</span><span class="o">.</span><span class="n">validate</span><span class="p">():</span>
-        <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">form</span><span class="p">:</span>
-            <span class="c1"># Make local variable (name field.name)</span>
-            <span class="n">exec</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> = </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">field</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">field</span><span class="o">.</span><span class="n">data</span><span class="p">))</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="n">compute</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="kc">None</span>
+def compute(A, b, w, T, resolution=500):
+    &quot;&quot;&quot;Return filename of plot of the damped_vibration function.&quot;&quot;&quot;
+    t = linspace(0, T, resolution+1)
+    u = damped_vibrations(t, A, b, w)
 
-    <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s1">&#39;view.html&#39;</span><span class="p">,</span> <span class="n">form</span><span class="o">=</span><span class="n">form</span><span class="p">,</span>
-                           <span class="n">result</span><span class="o">=</span><span class="n">result</span><span class="p">)</span>
+    # create a new plot with a title and axis labels
+    TOOLS = &quot;pan,wheel_zoom,box_zoom,reset,save,box_select,lasso_select&quot;
+    p = plt.figure(title=&quot;simple line example&quot;, tools=TOOLS,
+                   x_axis_label='t', y_axis_label='y')
 
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
-    <span class="n">app</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">debug</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</code></pre></div>
+    # add a line renderer with legend and line thickness
+    p.line(t, u, legend=&quot;u(t)&quot;, line_width=2)
 
+    from bokeh.resources import CDN
+    from bokeh.embed import components
+    script, div = components(p)
+    head = &quot;&quot;&quot;
+        &lt;link rel=&quot;stylesheet&quot;
+         href=&quot;http://cdn.pydata.org/bokeh/release/bokeh-0.9.0.min.css&quot;
+         type=&quot;text/css&quot; /&gt;
+        &lt;script type=&quot;text/javascript&quot;
+         src=&quot;http://cdn.pydata.org/bokeh/release/bokeh-0.9.0.min.js&quot;&gt;
+        &lt;/script&gt;
+        &lt;script type=&quot;text/javascript&quot;&gt;
+        Bokeh.set_log_level(&quot;info&quot;);
+        &lt;/script&gt;
+        &quot;&quot;&quot;
+    return head, script, div
+
+
+app = Flask(__name__)
+
+@app.route('/vib3', methods=['GET', 'POST'])
+def index():
+    form = InputForm(request.form)
+    if request.method == 'POST' and form.validate():
+        for field in form:
+            # Make local variable (name field.name)
+            exec('%s = %s' % (field.name, field.data))
+        result = compute(A, b, w, T)
+    else:
+        result = None
+
+    return render_template('view.html', form=form,
+                           result=result)
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
+</code></pre>
 <h4>2. the html page for input and showing plto</h4>
 <p>this is the sample code of <code>view.html</code>. it will get the input and submit(<code>post</code> method) to the <code>compute</code> funciton and then plot the graph.</p>
-<div class="highlight"><pre><span></span><code><span class="cp">&lt;!DOCTYPE html&gt;</span>
-<span class="p">&lt;</span><span class="nt">html</span> <span class="na">lang</span><span class="o">=</span><span class="s">&quot;en&quot;</span><span class="p">&gt;</span>
-   <span class="p">&lt;</span><span class="nt">head</span><span class="p">&gt;</span>
+<pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html lang=&quot;en&quot;&gt;
+   &lt;head&gt;
     {{ result[0]|safe }}
-<span class="p">&lt;/</span><span class="nt">head</span><span class="p">&gt;</span>
-<span class="p">&lt;</span><span class="nt">body</span><span class="p">&gt;</span>
-<span class="p">&lt;</span><span class="nt">script</span> <span class="na">type</span><span class="o">=</span><span class="s">&quot;text/x-mathjax-config&quot;</span><span class="p">&gt;</span>
-<span class="nx">MathJax</span><span class="p">.</span><span class="nx">Hub</span><span class="p">.</span><span class="nx">Config</span><span class="p">({</span>
-<span class="w">  </span><span class="nx">TeX</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">     </span><span class="nx">equationNumbers</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w">  </span><span class="nx">autoNumber</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;AMS&quot;</span><span class="w">  </span><span class="p">},</span>
-<span class="w">     </span><span class="nx">extensions</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;AMSmath.js&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;AMSsymbols.js&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;autobold.js&quot;</span><span class="p">]</span>
-<span class="w">  </span><span class="p">}</span>
-<span class="p">});</span>
-<span class="p">&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
-<span class="p">&lt;</span><span class="nt">script</span> <span class="na">type</span><span class="o">=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">id</span><span class="o">=</span><span class="s">&quot;MathJax-script&quot;</span> <span class="na">async</span> <span class="na">src</span><span class="o">=</span><span class="s">&quot;https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js&quot;</span><span class="p">&gt;&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+&lt;/head&gt;
+&lt;body&gt;
+&lt;script type=&quot;text/x-mathjax-config&quot;&gt;
+MathJax.Hub.Config({
+  TeX: {
+     equationNumbers: {  autoNumber: &quot;AMS&quot;  },
+     extensions: [&quot;AMSmath.js&quot;, &quot;AMSsymbols.js&quot;, &quot;autobold.js&quot;]
+  }
+});
+&lt;/script&gt;
+&lt;script type=&quot;text/javascript&quot; id=&quot;MathJax-script&quot; async src=&quot;https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js&quot;&gt;&lt;/script&gt;
 
 This web page visualizes the function \(
 u(t) = Ae^{-bt}\sin (w t), \hbox{ for } t\in [0,T]
 \).
 
-<span class="p">&lt;</span><span class="nt">form</span> <span class="na">method</span><span class="o">=</span><span class="s">post</span> <span class="na">action</span><span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">&gt;</span>
-<span class="p">&lt;</span><span class="nt">table</span><span class="p">&gt;</span>
+&lt;form method=post action=&quot;&quot;&gt;
+&lt;table&gt;
   {% for field in form %}
-    <span class="p">&lt;</span><span class="nt">tr</span><span class="p">&gt;</span>
-    <span class="p">&lt;</span><span class="nt">td</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;name&quot;</span><span class="p">&gt;</span>\( {{ field.name }} \) <span class="ni">&amp;nbsp;&amp;nbsp;</span><span class="p">&lt;/</span><span class="nt">td</span><span class="p">&gt;</span>
-    <span class="p">&lt;</span><span class="nt">td</span><span class="p">&gt;</span>{{ field(size=12) }}<span class="p">&lt;/</span><span class="nt">td</span><span class="p">&gt;</span>
-    <span class="p">&lt;</span><span class="nt">td</span><span class="p">&gt;</span>{{ field.label }}<span class="p">&lt;/</span><span class="nt">td</span><span class="p">&gt;</span>
+    &lt;tr&gt;
+    &lt;td class=&quot;name&quot;&gt;\( {{ field.name }} \) &amp;nbsp;&amp;nbsp;&lt;/td&gt;
+    &lt;td&gt;{{ field(size=12) }}&lt;/td&gt;
+    &lt;td&gt;{{ field.label }}&lt;/td&gt;
     {% if field.errors %}
-      <span class="p">&lt;</span><span class="nt">td</span><span class="p">&gt;&lt;</span><span class="nt">ul</span> <span class="na">class</span><span class="o">=</span><span class="s">errors</span><span class="p">&gt;</span>
+      &lt;td&gt;&lt;ul class=errors&gt;
       {% for error in field.errors %}
-        <span class="p">&lt;</span><span class="nt">li</span><span class="p">&gt;&lt;</span><span class="nt">font</span> <span class="na">color</span><span class="o">=</span><span class="s">&quot;red&quot;</span><span class="p">&gt;</span>{{ error }}<span class="p">&lt;/</span><span class="nt">font</span><span class="p">&gt;&lt;/</span><span class="nt">li</span><span class="p">&gt;</span>
-      {% endfor %}<span class="p">&lt;/</span><span class="nt">ul</span><span class="p">&gt;&lt;/</span><span class="nt">td</span><span class="p">&gt;</span>
+        &lt;li&gt;&lt;font color=&quot;red&quot;&gt;{{ error }}&lt;/font&gt;&lt;/li&gt;
+      {% endfor %}&lt;/ul&gt;&lt;/td&gt;
     {% endif %}
-    <span class="p">&lt;/</span><span class="nt">tr</span><span class="p">&gt;</span>
+    &lt;/tr&gt;
   {% endfor %}
-<span class="p">&lt;/</span><span class="nt">table</span><span class="p">&gt;</span>
-<span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;&lt;</span><span class="nt">input</span> <span class="na">type</span><span class="o">=</span><span class="s">&quot;submit&quot;</span> <span class="na">value</span><span class="o">=</span><span class="s">&quot;Compute&quot;</span><span class="p">&gt;&lt;/</span><span class="nt">form</span><span class="p">&gt;&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+&lt;/table&gt;
+&lt;p&gt;&lt;input type=&quot;submit&quot; value=&quot;Compute&quot;&gt;&lt;/form&gt;&lt;/p&gt;
 
-<span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span>
+&lt;p&gt;
 {% if result != None %}
-<span class="cm">&lt;!-- script and div elements for Bokeh plot --&gt;</span>
+&lt;!-- script and div elements for Bokeh plot --&gt;
 {{ result[1]|safe }}
 {{ result[2]|safe }}
 {% endif %}
-<span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
-<span class="p">&lt;/</span><span class="nt">body</span><span class="p">&gt;</span>
-<span class="p">&lt;/</span><span class="nt">html</span><span class="p">&gt;</span>
-</code></pre></div>
-
+&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
 <h3>Reference</h3>
 <ol>
 <li>
@@ -279,13 +277,13 @@ u(t) = Ae^{-bt}\sin (w t), \hbox{ for } t\in [0,T]
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -303,7 +301,7 @@ u(t) = Ae^{-bt}\sin (w t), \hbox{ for } t\in [0,T]
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

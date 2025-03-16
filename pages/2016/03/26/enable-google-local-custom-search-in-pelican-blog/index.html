@@ -107,154 +107,148 @@ window.addEventListener('load', () => {
 <h3>Method 1. create a search page to show the result</h3>
 <p>refer to <a href="http://guozhongxin.com/pages/2014/09/25/build_blog_with_pelican.html">this blog</a>. this blog shows how to add google search with new search page.</p>
 <h4>step 1. in pelicanconf.py, enable SEARCH_BOX by adding</h4>
-<div class="highlight"><pre><span></span><code>SEARCH_BOX = True
-</code></pre></div>
-
+<pre><code>SEARCH_BOX = True
+</code></pre>
 <h4>step 2. register at <a href="https://cse.google.com/cse/all">google custom search</a> for your own customed search engine.</h4>
 <p><img alt="google custom search" src="/figures/20160325_google_search_01.PNG"></p>
 <h4>step 3. replace the default search option by customed search engine</h4>
 <p>since selected theme is pelican-octopress-theme, it needs to replace the original search option by the created search.html, the step is in <code>blog/pelican-themes/pelican-octopress-theme/templates/_includes/navigation.html</code>, find the default search option</p>
-<div class="highlight"><pre><span></span><code><span class="cp">{%</span> <span class="k">if</span> <span class="nv">SEARCH_BOX</span> <span class="cp">%}</span>
-<span class="nt">&lt;form</span><span class="w"> </span><span class="na">class=</span><span class="s">&quot;search&quot;</span><span class="w"> </span><span class="na">action=</span><span class="s">&quot;/search.html&quot;</span><span class="nt">&gt;</span>
-<span class="w">    </span><span class="nt">&lt;input</span><span class="w"> </span><span class="na">type=</span><span class="s">&quot;text&quot;</span><span class="w"> </span><span class="na">class=</span><span class="s">&quot;search-query&quot;</span><span class="w"> </span><span class="na">placeholder=</span><span class="s">&quot;Search&quot;</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;q&quot;</span><span class="w"> </span><span class="na">id=</span><span class="s">&quot;s&quot;</span><span class="nt">&gt;</span>
-<span class="nt">&lt;/form&gt;</span>
-<span class="cp">{%</span> <span class="k">if</span> <span class="nv">SEARCH_BOX</span> <span class="cp">%}</span>
-<span class="nt">&lt;form</span><span class="w"> </span><span class="na">action=</span><span class="s">&quot;</span><span class="cp">{{</span> <span class="nv">SITESEARCH</span><span class="o">|</span><span class="nf">default</span><span class="o">(</span><span class="s1">&#39;https://www.google.com/search&#39;</span><span class="o">)</span> <span class="cp">}}</span><span class="s">&quot;</span><span class="w"> </span><span class="na">method=</span><span class="s">&quot;get&quot;</span><span class="nt">&gt;</span>
-<span class="w">  </span><span class="nt">&lt;fieldset</span><span class="w"> </span><span class="na">role=</span><span class="s">&quot;search&quot;</span><span class="nt">&gt;</span>
-<span class="w">    </span><span class="cp">{%</span> <span class="k">if</span> <span class="s1">&#39;duckduckgo.com&#39;</span> <span class="k">in</span> <span class="nv">SITESEARCH</span><span class="o">|</span><span class="nf">lower</span> <span class="cp">%}</span>
-<span class="w">    </span><span class="nt">&lt;input</span><span class="w"> </span><span class="na">type=</span><span class="s">&quot;hidden&quot;</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;sites&quot;</span><span class="w"> </span><span class="na">value=</span><span class="s">&quot;</span><span class="cp">{{</span> <span class="nv">SITEURL</span><span class="o">|</span><span class="nf">replace</span><span class="o">(</span><span class="s1">&#39;https://&#39;</span><span class="o">,</span><span class="s1">&#39;&#39;</span><span class="o">)|</span><span class="nf">replace</span><span class="o">(</span><span class="s1">&#39;http://&#39;</span><span class="o">,</span><span class="s1">&#39;&#39;</span><span class="o">)</span> <span class="cp">}}</span><span class="s">&quot;</span><span class="w"> </span><span class="nt">/&gt;</span>
-<span class="w">    </span><span class="cp">{%</span> <span class="k">else</span> <span class="cp">%}</span>
-<span class="w">    </span><span class="nt">&lt;input</span><span class="w"> </span><span class="na">type=</span><span class="s">&quot;hidden&quot;</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;sitesearch&quot;</span><span class="w"> </span><span class="na">value=</span><span class="s">&quot;</span><span class="cp">{{</span> <span class="nv">SITEURL</span><span class="o">|</span><span class="nf">replace</span><span class="o">(</span><span class="s1">&#39;https://&#39;</span><span class="o">,</span><span class="s1">&#39;&#39;</span><span class="o">)|</span><span class="nf">replace</span><span class="o">(</span><span class="s1">&#39;http://&#39;</span><span class="o">,</span><span class="s1">&#39;&#39;</span><span class="o">)</span> <span class="cp">}}</span><span class="s">&quot;</span><span class="nt">&gt;</span>
-<span class="w">    </span><span class="cp">{%</span> <span class="k">endif</span> <span class="cp">%}</span>
-<span class="w">    </span><span class="nt">&lt;input</span><span class="w"> </span><span class="na">class=</span><span class="s">&quot;search&quot;</span><span class="w"> </span><span class="na">type=</span><span class="s">&quot;text&quot;</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;q&quot;</span><span class="w"> </span><span class="na">results=</span><span class="s">&quot;0&quot;</span><span class="w"> </span><span class="na">placeholder=</span><span class="s">&quot;Search&quot;</span><span class="nt">/&gt;</span>
-<span class="w">  </span><span class="nt">&lt;/fieldset&gt;</span>
-<span class="nt">&lt;/form&gt;</span>
-<span class="cp">{%</span> <span class="k">endif</span> <span class="cp">%}</span>
-</code></pre></div>
-
+<pre><code>{% if SEARCH_BOX %}
+&lt;form class=&quot;search&quot; action=&quot;/search.html&quot;&gt;
+    &lt;input type=&quot;text&quot; class=&quot;search-query&quot; placeholder=&quot;Search&quot; name=&quot;q&quot; id=&quot;s&quot;&gt;
+&lt;/form&gt;
+{% if SEARCH_BOX %}
+&lt;form action=&quot;{{ SITESEARCH|default('https://www.google.com/search') }}&quot; method=&quot;get&quot;&gt;
+  &lt;fieldset role=&quot;search&quot;&gt;
+    {% if 'duckduckgo.com' in SITESEARCH|lower %}
+    &lt;input type=&quot;hidden&quot; name=&quot;sites&quot; value=&quot;{{ SITEURL|replace('https://','')|replace('http://','') }}&quot; /&gt;
+    {% else %}
+    &lt;input type=&quot;hidden&quot; name=&quot;sitesearch&quot; value=&quot;{{ SITEURL|replace('https://','')|replace('http://','') }}&quot;&gt;
+    {% endif %}
+    &lt;input class=&quot;search&quot; type=&quot;text&quot; name=&quot;q&quot; results=&quot;0&quot; placeholder=&quot;Search&quot;/&gt;
+  &lt;/fieldset&gt;
+&lt;/form&gt;
+{% endif %}
+</code></pre>
 <p>and replace it with the following code to use the search.html</p>
-<div class="highlight"><pre><span></span><code><span class="cp">{%</span> <span class="k">if</span> <span class="nv">SEARCH_BOX</span> <span class="cp">%}</span>
-<span class="nt">&lt;form</span><span class="w"> </span><span class="na">class=</span><span class="s">&quot;search&quot;</span><span class="w"> </span><span class="na">action=</span><span class="s">&quot;/search.html&quot;</span><span class="nt">&gt;</span>
-<span class="w">    </span><span class="nt">&lt;input</span><span class="w"> </span><span class="na">type=</span><span class="s">&quot;text&quot;</span><span class="w"> </span><span class="na">class=</span><span class="s">&quot;search-query&quot;</span><span class="w"> </span><span class="na">placeholder=</span><span class="s">&quot;Search&quot;</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;q&quot;</span><span class="w"> </span><span class="na">id=</span><span class="s">&quot;s&quot;</span><span class="nt">&gt;</span>
-<span class="nt">&lt;/form&gt;</span>
-<span class="cp">{%</span> <span class="k">endif</span> <span class="cp">%}</span>
-</code></pre></div>
-
+<pre><code>{% if SEARCH_BOX %}
+&lt;form class=&quot;search&quot; action=&quot;/search.html&quot;&gt;
+    &lt;input type=&quot;text&quot; class=&quot;search-query&quot; placeholder=&quot;Search&quot; name=&quot;q&quot; id=&quot;s&quot;&gt;
+&lt;/form&gt;
+{% endif %}
+</code></pre>
 <h4>step 4. create the <code>search.html</code> in the blog/output folder with the following code</h4>
-<div class="highlight"><pre><span></span><code><span class="o">&lt;!</span><span class="n">DOCTYPE</span><span class="w"> </span><span class="n">html</span><span class="o">&gt;</span>
-<span class="o">&lt;</span><span class="n">html</span><span class="w"> </span><span class="n">lang</span><span class="o">=</span><span class="s2">&quot;zh_CN&quot;</span><span class="o">&gt;</span>
-<span class="o">&lt;</span><span class="n">head</span><span class="o">&gt;</span>
-<span class="o">&lt;</span><span class="n">meta</span><span class="w"> </span><span class="n">charset</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="o">&gt;</span>
-<span class="o">&lt;</span><span class="n">title</span><span class="o">&gt;</span><span class="err">站内搜索</span><span class="o">&lt;/</span><span class="n">title</span><span class="o">&gt;</span>
-<span class="o">&lt;/</span><span class="n">head</span><span class="o">&gt;</span>
-<span class="w">  </span><span class="o">&lt;</span><span class="n">body</span><span class="o">&gt;</span>
-<span class="o">&lt;</span><span class="n">style</span><span class="o">&gt;</span>
-<span class="c1">#search-box {</span>
-<span class="w">    </span><span class="n">position</span><span class="p">:</span><span class="w"> </span><span class="n">relative</span><span class="p">;</span>
-<span class="w">    </span><span class="n">width</span><span class="p">:</span><span class="w"> </span><span class="mi">50</span><span class="o">%</span><span class="p">;</span>
-<span class="w">    </span><span class="n">margin</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
-<span class="w">    </span><span class="n">padding</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="n">em</span><span class="p">;</span>
-<span class="p">}</span>
+<pre><code>&lt;!DOCTYPE html&gt;
+&lt;html lang=&quot;zh_CN&quot;&gt;
+&lt;head&gt;
+&lt;meta charset=&quot;utf-8&quot;&gt;
+&lt;title&gt;站内搜索&lt;/title&gt;
+&lt;/head&gt;
+  &lt;body&gt;
+&lt;style&gt;
+#search-box {
+    position: relative;
+    width: 50%;
+    margin: 0;
+    padding: 1em;
+}
 
-<span class="c1">#search-form {</span>
-<span class="w">    </span><span class="n">height</span><span class="p">:</span><span class="w"> </span><span class="mi">30</span><span class="n">px</span><span class="p">;</span>
-<span class="w">    </span><span class="n">border</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="n">px</span><span class="w"> </span><span class="n">solid</span><span class="w"> </span><span class="c1">#999;</span>
-<span class="w">    </span><span class="o">-</span><span class="n">webkit</span><span class="o">-</span><span class="n">border</span><span class="o">-</span><span class="n">radius</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="n">px</span><span class="p">;</span>
-<span class="w">    </span><span class="o">-</span><span class="n">moz</span><span class="o">-</span><span class="n">border</span><span class="o">-</span><span class="n">radius</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="n">px</span><span class="p">;</span>
-<span class="w">    </span><span class="n">border</span><span class="o">-</span><span class="n">radius</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="n">px</span><span class="p">;</span>
-<span class="w">    </span><span class="n">background</span><span class="o">-</span><span class="n">color</span><span class="p">:</span><span class="w"> </span><span class="c1">#fff;</span>
-<span class="w">    </span><span class="n">overflow</span><span class="p">:</span><span class="w"> </span><span class="n">hidden</span><span class="p">;</span>
-<span class="p">}</span>
+#search-form {
+    height: 30px;
+    border: 1px solid #999;
+    -webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
+    border-radius: 5px;
+    background-color: #fff;
+    overflow: hidden;
+}
 
-<span class="c1">#search-text {</span>
-<span class="w">    </span><span class="n">font</span><span class="o">-</span><span class="n">size</span><span class="p">:</span><span class="w"> </span><span class="mi">14</span><span class="n">px</span><span class="p">;</span>
-<span class="w">    </span><span class="n">color</span><span class="p">:</span><span class="w"> </span><span class="c1">#ddd;</span>
-<span class="w">    </span><span class="n">border</span><span class="o">-</span><span class="n">width</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
-<span class="w">    </span><span class="n">background</span><span class="p">:</span><span class="w"> </span><span class="n">transparent</span><span class="p">;</span>
-<span class="p">}</span>
+#search-text {
+    font-size: 14px;
+    color: #ddd;
+    border-width: 0;
+    background: transparent;
+}
 
-<span class="c1">#search-box input[type=&quot;text&quot;] {</span>
-<span class="w">    </span><span class="n">width</span><span class="p">:</span><span class="w"> </span><span class="mi">90</span><span class="o">%</span><span class="p">;</span>
-<span class="w">    </span><span class="n">padding</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="n">px</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mi">12</span><span class="n">px</span><span class="w"> </span><span class="mi">1</span><span class="n">em</span><span class="p">;</span>
-<span class="w">    </span><span class="n">color</span><span class="p">:</span><span class="w"> </span><span class="c1">#333;</span>
-<span class="w">    </span><span class="n">outline</span><span class="p">:</span><span class="w"> </span><span class="n">none</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="o">&lt;/</span><span class="n">style</span><span class="o">&gt;</span>
-<span class="o">&lt;</span><span class="n">div</span><span class="w"> </span><span class="n">id</span><span class="o">=</span><span class="s1">&#39;search-box&#39;</span><span class="o">&gt;</span>
-<span class="w">  </span><span class="o">&lt;</span><span class="n">form</span><span class="w"> </span><span class="n">action</span><span class="o">=</span><span class="s1">&#39;/search.html&#39;</span><span class="w"> </span><span class="n">id</span><span class="o">=</span><span class="s1">&#39;search-form&#39;</span><span class="w"> </span><span class="n">method</span><span class="o">=</span><span class="s1">&#39;get&#39;</span><span class="w"> </span><span class="n">target</span><span class="o">=</span><span class="s1">&#39;_top&#39;</span><span class="o">&gt;</span>
-<span class="w">    </span><span class="o">&lt;</span><span class="n">input</span><span class="w"> </span><span class="n">id</span><span class="o">=</span><span class="s1">&#39;search-text&#39;</span><span class="w"> </span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;q&#39;</span><span class="w"> </span><span class="n">placeholder</span><span class="o">=</span><span class="s1">&#39;Search&#39;</span><span class="w"> </span><span class="n">type</span><span class="o">=</span><span class="s1">&#39;text&#39;</span><span class="o">/&gt;</span>
-<span class="w">  </span><span class="o">&lt;/</span><span class="n">form</span><span class="o">&gt;</span>
-<span class="o">&lt;/</span><span class="n">div</span><span class="o">&gt;</span>
-<span class="o">&lt;</span><span class="n">div</span><span class="w"> </span><span class="n">id</span><span class="o">=</span><span class="s2">&quot;cse&quot;</span><span class="w"> </span><span class="n">style</span><span class="o">=</span><span class="s2">&quot;width: 100%;&quot;</span><span class="o">&gt;</span><span class="n">Loading</span><span class="o">&lt;/</span><span class="n">div</span><span class="o">&gt;</span>
-<span class="o">&lt;</span><span class="n">script</span><span class="w"> </span><span class="n">src</span><span class="o">=</span><span class="s2">&quot;http://www.google.com/jsapi&quot;</span><span class="w"> </span><span class="n">type</span><span class="o">=</span><span class="s2">&quot;text/javascript&quot;</span><span class="o">&gt;&lt;/</span><span class="n">script</span><span class="o">&gt;</span>
-<span class="o">&lt;</span><span class="n">script</span><span class="w"> </span><span class="n">type</span><span class="o">=</span><span class="s2">&quot;text/javascript&quot;</span><span class="o">&gt;</span><span class="w"> </span>
-<span class="w">  </span><span class="n">google</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;search&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;1&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="n">language</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;zh-CN&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">style</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">google</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">themes</span><span class="o">.</span><span class="n">V2_DEFAULT</span><span class="p">});</span>
-<span class="w">  </span><span class="n">google</span><span class="o">.</span><span class="n">setOnLoadCallback</span><span class="p">(</span><span class="n">function</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">var</span><span class="w"> </span><span class="n">customSearchOptions</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{};</span><span class="w">  </span><span class="k">var</span><span class="w"> </span><span class="n">customSearchControl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">new</span><span class="w"> </span><span class="n">google</span><span class="o">.</span><span class="n">search</span><span class="o">.</span><span class="n">CustomSearchControl</span><span class="p">(</span>
-<span class="w">      </span><span class="s1">&#39;012191777864628038963:**********&lt;!using your own google custom search id&gt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">customSearchOptions</span><span class="p">);</span>
-<span class="w">    </span><span class="n">customSearchControl</span><span class="o">.</span><span class="n">setResultSetSize</span><span class="p">(</span><span class="n">google</span><span class="o">.</span><span class="n">search</span><span class="o">.</span><span class="n">Search</span><span class="o">.</span><span class="n">FILTERED_CSE_RESULTSET</span><span class="p">);</span>
-<span class="w">    </span><span class="k">var</span><span class="w"> </span><span class="n">options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">new</span><span class="w"> </span><span class="n">google</span><span class="o">.</span><span class="n">search</span><span class="o">.</span><span class="n">DrawOptions</span><span class="p">();</span>
-<span class="w">    </span><span class="n">options</span><span class="o">.</span><span class="n">enableSearchResultsOnly</span><span class="p">();</span><span class="w"> </span>
-<span class="w">    </span><span class="n">customSearchControl</span><span class="o">.</span><span class="n">draw</span><span class="p">(</span><span class="s1">&#39;cse&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">options</span><span class="p">);</span>
-<span class="w">    </span><span class="n">function</span><span class="w"> </span><span class="n">parseParamsFromUrl</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="k">var</span><span class="w"> </span><span class="n">params</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{};</span>
-<span class="w">      </span><span class="k">var</span><span class="w"> </span><span class="n">parts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">window</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">search</span><span class="o">.</span><span class="n">substr</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\x26</span><span class="s1">&#39;</span><span class="p">);</span>
-<span class="w">      </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">var</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">parts</span><span class="o">.</span><span class="n">length</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">var</span><span class="w"> </span><span class="n">keyValuePair</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">parts</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">);</span>
-<span class="w">        </span><span class="k">var</span><span class="w"> </span><span class="n">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">decodeURIComponent</span><span class="p">(</span><span class="n">keyValuePair</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span>
-<span class="w">        </span><span class="n">params</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">keyValuePair</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="err">?</span>
-<span class="w">            </span><span class="n">decodeURIComponent</span><span class="p">(</span><span class="n">keyValuePair</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="o">/</span>\<span class="o">+/</span><span class="n">g</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39; &#39;</span><span class="p">))</span><span class="w"> </span><span class="p">:</span>
-<span class="w">            </span><span class="n">keyValuePair</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span>
-<span class="w">      </span><span class="p">}</span>
-<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="n">params</span><span class="p">;</span>
-<span class="w">    </span><span class="p">}</span>
+#search-box input[type=&quot;text&quot;] {
+    width: 90%;
+    padding: 4px 0 12px 1em;
+    color: #333;
+    outline: none;
+}
+&lt;/style&gt;
+&lt;div id='search-box'&gt;
+  &lt;form action='/search.html' id='search-form' method='get' target='_top'&gt;
+    &lt;input id='search-text' name='q' placeholder='Search' type='text'/&gt;
+  &lt;/form&gt;
+&lt;/div&gt;
+&lt;div id=&quot;cse&quot; style=&quot;width: 100%;&quot;&gt;Loading&lt;/div&gt;
+&lt;script src=&quot;http://www.google.com/jsapi&quot; type=&quot;text/javascript&quot;&gt;&lt;/script&gt;
+&lt;script type=&quot;text/javascript&quot;&gt; 
+  google.load('search', '1', {language : 'zh-CN', style : google.loader.themes.V2_DEFAULT});
+  google.setOnLoadCallback(function() {
+    var customSearchOptions = {};  var customSearchControl = new google.search.CustomSearchControl(
+      '012191777864628038963:**********&lt;!using your own google custom search id&gt;', customSearchOptions);
+    customSearchControl.setResultSetSize(google.search.Search.FILTERED_CSE_RESULTSET);
+    var options = new google.search.DrawOptions();
+    options.enableSearchResultsOnly(); 
+    customSearchControl.draw('cse', options);
+    function parseParamsFromUrl() {
+      var params = {};
+      var parts = window.location.search.substr(1).split('\x26');
+      for (var i = 0; i &lt; parts.length; i++) {
+        var keyValuePair = parts[i].split('=');
+        var key = decodeURIComponent(keyValuePair[0]);
+        params[key] = keyValuePair[1] ?
+            decodeURIComponent(keyValuePair[1].replace(/\+/g, ' ')) :
+            keyValuePair[1];
+      }
+      return params;
+    }
 
-<span class="w">    </span><span class="k">var</span><span class="w"> </span><span class="n">urlParams</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">parseParamsFromUrl</span><span class="p">();</span>
-<span class="w">    </span><span class="k">var</span><span class="w"> </span><span class="n">queryParamName</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;q&quot;</span><span class="p">;</span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">urlParams</span><span class="p">[</span><span class="n">queryParamName</span><span class="p">])</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="n">customSearchControl</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">urlParams</span><span class="p">[</span><span class="n">queryParamName</span><span class="p">]);</span>
-<span class="w">    </span><span class="p">}</span>
-<span class="w">  </span><span class="p">},</span><span class="w"> </span><span class="bp">true</span><span class="p">);</span>
-<span class="o">&lt;/</span><span class="n">script</span><span class="o">&gt;</span>
-<span class="o">&lt;/</span><span class="n">body</span><span class="o">&gt;</span>
-<span class="o">&lt;/</span><span class="n">html</span><span class="o">&gt;</span>
-</code></pre></div>
-
+    var urlParams = parseParamsFromUrl();
+    var queryParamName = &quot;q&quot;;
+    if (urlParams[queryParamName]) {
+      customSearchControl.execute(urlParams[queryParamName]);
+    }
+  }, true);
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
 <p>after this is done, there will be a search box like
 <img alt="google custom search" src="/figures/20160325_google_search_02.PNG"></p>
 <p>and the result is like
 <img alt="google custom search" src="/figures/20160325_google_search_03.PNG"></p>
 <h3>Method 2. to search in google directly with keyword like <code>site:songhuiming.github.io piecewise</code>.</h3>
 <p>go to <code>naviation.html</code> to change the <code>SEARCH_BOX</code> option. go to <code>blog/pelican-themes/pelican-octopress-theme/templates/_includes/navigation.html</code>, find the default search option</p>
-<div class="highlight"><pre><span></span><code><span class="cp">{%</span> <span class="k">if</span> <span class="nv">SEARCH_BOX</span> <span class="cp">%}</span>
-<span class="nt">&lt;form</span><span class="w"> </span><span class="na">class=</span><span class="s">&quot;search&quot;</span><span class="w"> </span><span class="na">action=</span><span class="s">&quot;/search.html&quot;</span><span class="nt">&gt;</span>
-<span class="w">    </span><span class="nt">&lt;input</span><span class="w"> </span><span class="na">type=</span><span class="s">&quot;text&quot;</span><span class="w"> </span><span class="na">class=</span><span class="s">&quot;search-query&quot;</span><span class="w"> </span><span class="na">placeholder=</span><span class="s">&quot;Search&quot;</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;q&quot;</span><span class="w"> </span><span class="na">id=</span><span class="s">&quot;s&quot;</span><span class="nt">&gt;</span>
-<span class="nt">&lt;/form&gt;</span>
-<span class="cp">{%</span> <span class="k">if</span> <span class="nv">SEARCH_BOX</span> <span class="cp">%}</span>
-<span class="nt">&lt;form</span><span class="w"> </span><span class="na">action=</span><span class="s">&quot;</span><span class="cp">{{</span> <span class="nv">SITESEARCH</span><span class="o">|</span><span class="nf">default</span><span class="o">(</span><span class="s1">&#39;https://www.google.com/search&#39;</span><span class="o">)</span> <span class="cp">}}</span><span class="s">&quot;</span><span class="w"> </span><span class="na">method=</span><span class="s">&quot;get&quot;</span><span class="nt">&gt;</span>
-<span class="w">  </span><span class="nt">&lt;fieldset</span><span class="w"> </span><span class="na">role=</span><span class="s">&quot;search&quot;</span><span class="nt">&gt;</span>
-<span class="w">    </span><span class="cp">{%</span> <span class="k">if</span> <span class="s1">&#39;duckduckgo.com&#39;</span> <span class="k">in</span> <span class="nv">SITESEARCH</span><span class="o">|</span><span class="nf">lower</span> <span class="cp">%}</span>
-<span class="w">    </span><span class="nt">&lt;input</span><span class="w"> </span><span class="na">type=</span><span class="s">&quot;hidden&quot;</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;sites&quot;</span><span class="w"> </span><span class="na">value=</span><span class="s">&quot;</span><span class="cp">{{</span> <span class="nv">SITEURL</span><span class="o">|</span><span class="nf">replace</span><span class="o">(</span><span class="s1">&#39;https://&#39;</span><span class="o">,</span><span class="s1">&#39;&#39;</span><span class="o">)|</span><span class="nf">replace</span><span class="o">(</span><span class="s1">&#39;http://&#39;</span><span class="o">,</span><span class="s1">&#39;&#39;</span><span class="o">)</span> <span class="cp">}}</span><span class="s">&quot;</span><span class="w"> </span><span class="nt">/&gt;</span>
-<span class="w">    </span><span class="cp">{%</span> <span class="k">else</span> <span class="cp">%}</span>
-<span class="w">    </span><span class="nt">&lt;input</span><span class="w"> </span><span class="na">type=</span><span class="s">&quot;hidden&quot;</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;sitesearch&quot;</span><span class="w"> </span><span class="na">value=</span><span class="s">&quot;</span><span class="cp">{{</span> <span class="nv">SITEURL</span><span class="o">|</span><span class="nf">replace</span><span class="o">(</span><span class="s1">&#39;https://&#39;</span><span class="o">,</span><span class="s1">&#39;&#39;</span><span class="o">)|</span><span class="nf">replace</span><span class="o">(</span><span class="s1">&#39;http://&#39;</span><span class="o">,</span><span class="s1">&#39;&#39;</span><span class="o">)</span> <span class="cp">}}</span><span class="s">&quot;</span><span class="nt">&gt;</span>
-<span class="w">    </span><span class="cp">{%</span> <span class="k">endif</span> <span class="cp">%}</span>
-<span class="w">    </span><span class="nt">&lt;input</span><span class="w"> </span><span class="na">class=</span><span class="s">&quot;search&quot;</span><span class="w"> </span><span class="na">type=</span><span class="s">&quot;text&quot;</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;q&quot;</span><span class="w"> </span><span class="na">results=</span><span class="s">&quot;0&quot;</span><span class="w"> </span><span class="na">placeholder=</span><span class="s">&quot;Search&quot;</span><span class="nt">/&gt;</span>
-<span class="w">  </span><span class="nt">&lt;/fieldset&gt;</span>
-<span class="nt">&lt;/form&gt;</span>
-<span class="cp">{%</span> <span class="k">endif</span> <span class="cp">%}</span>
-</code></pre></div>
-
+<pre><code>{% if SEARCH_BOX %}
+&lt;form class=&quot;search&quot; action=&quot;/search.html&quot;&gt;
+    &lt;input type=&quot;text&quot; class=&quot;search-query&quot; placeholder=&quot;Search&quot; name=&quot;q&quot; id=&quot;s&quot;&gt;
+&lt;/form&gt;
+{% if SEARCH_BOX %}
+&lt;form action=&quot;{{ SITESEARCH|default('https://www.google.com/search') }}&quot; method=&quot;get&quot;&gt;
+  &lt;fieldset role=&quot;search&quot;&gt;
+    {% if 'duckduckgo.com' in SITESEARCH|lower %}
+    &lt;input type=&quot;hidden&quot; name=&quot;sites&quot; value=&quot;{{ SITEURL|replace('https://','')|replace('http://','') }}&quot; /&gt;
+    {% else %}
+    &lt;input type=&quot;hidden&quot; name=&quot;sitesearch&quot; value=&quot;{{ SITEURL|replace('https://','')|replace('http://','') }}&quot;&gt;
+    {% endif %}
+    &lt;input class=&quot;search&quot; type=&quot;text&quot; name=&quot;q&quot; results=&quot;0&quot; placeholder=&quot;Search&quot;/&gt;
+  &lt;/fieldset&gt;
+&lt;/form&gt;
+{% endif %}
+</code></pre>
 <p>and replace it with the following code to use the search.html</p>
-<div class="highlight"><pre><span></span><code><span class="cp">{%</span> <span class="k">if</span> <span class="nv">SEARCH_BOX</span> <span class="cp">%}</span>
-<span class="nt">&lt;form</span><span class="w"> </span><span class="na">action=</span><span class="s">&quot;https://www.google.com/search&quot;</span><span class="w"> </span><span class="na">method=</span><span class="s">&quot;get&quot;</span><span class="nt">&gt;</span>
-<span class="w">  </span><span class="nt">&lt;fieldset</span><span class="w"> </span><span class="na">role=</span><span class="s">&quot;search&quot;</span><span class="nt">&gt;</span>
-<span class="w">    </span><span class="nt">&lt;input</span><span class="w"> </span><span class="na">type=</span><span class="s">&quot;hidden&quot;</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;q&quot;</span><span class="w"> </span><span class="na">value=</span><span class="s">&quot;site:songhuiming.github.io&quot;</span><span class="w"> </span><span class="nt">/&gt;</span>
-<span class="w">    </span><span class="nt">&lt;input</span><span class="w"> </span><span class="na">class=</span><span class="s">&quot;search&quot;</span><span class="w"> </span><span class="na">type=</span><span class="s">&quot;text&quot;</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;q&quot;</span><span class="w"> </span><span class="na">results=</span><span class="s">&quot;0&quot;</span><span class="w"> </span><span class="na">placeholder=</span><span class="s">&quot;Search&quot;</span><span class="nt">/&gt;</span>
-<span class="w">  </span><span class="nt">&lt;/fieldset&gt;</span>
-<span class="nt">&lt;/form&gt;</span>
-<span class="cp">{%</span> <span class="k">endif</span> <span class="cp">%}</span>
-</code></pre></div>
-
+<pre><code>{% if SEARCH_BOX %}
+&lt;form action=&quot;https://www.google.com/search&quot; method=&quot;get&quot;&gt;
+  &lt;fieldset role=&quot;search&quot;&gt;
+    &lt;input type=&quot;hidden&quot; name=&quot;q&quot; value=&quot;site:songhuiming.github.io&quot; /&gt;
+    &lt;input class=&quot;search&quot; type=&quot;text&quot; name=&quot;q&quot; results=&quot;0&quot; placeholder=&quot;Search&quot;/&gt;
+  &lt;/fieldset&gt;
+&lt;/form&gt;
+{% endif %}
+</code></pre>
 <p>The output will be like
 <img alt="google custom search" src="/figures/20160325_google_search_04.PNG"></p></div>
     <footer>
@@ -285,13 +279,13 @@ window.addEventListener('load', () => {
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -309,7 +303,7 @@ window.addEventListener('load', () => {
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

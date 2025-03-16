@@ -97,185 +97,182 @@ window.addEventListener('load', () => {
   <div class="entry-content"><h2>introduction</h2>
 <p>A quick introduction to python sqlite: how to create db, create table, insert values, update table and select from the table.</p>
 <h2>1. create db, create table and insert values into the table</h2>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">sqlite3</span>
+<pre><code class="language-python">import sqlite3
 
-<span class="c1"># 1. create db in the memory</span>
-<span class="n">createDB</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s1">&#39;:memory:&#39;</span><span class="p">)</span>
+# 1. create db in the memory
+createDB = sqlite3.connect(':memory:')
 
-<span class="c1"># or create db in the hard drive</span>
-<span class="c1"># createDB = sqlite3.connect(&#39;D:\sqlite.db&#39;)</span>
+# or create db in the hard drive
+# createDB = sqlite3.connect('D:\sqlite.db')
 
-<span class="c1"># 2. define cursor</span>
-<span class="n">c</span> <span class="o">=</span> <span class="n">createDB</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+# 2. define cursor
+c = createDB.cursor()
 
-<span class="c1"># 3. create table</span>
-<span class="k">def</span> <span class="nf">createTable</span><span class="p">():</span>
-    <span class="n">c</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s1">&#39;&#39;&#39;CREATE TABLE customer</span>
-<span class="s1">    (id INTEGER PRIMARY KEY, name TEXT, street TEXT, city TEXT,</span>
-<span class="s1">    state TEXT, balance REAL)&#39;&#39;&#39;</span><span class="p">)</span>
+# 3. create table
+def createTable():
+    c.execute('''CREATE TABLE customer
+    (id INTEGER PRIMARY KEY, name TEXT, street TEXT, city TEXT,
+    state TEXT, balance REAL)''')
 
-<span class="c1"># 4. add data into the table</span>
-<span class="k">def</span> <span class="nf">addCust</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">street</span><span class="p">,</span> <span class="n">city</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">balance</span><span class="p">):</span>
-    <span class="n">c</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s1">&#39;&#39;&#39;INSERT INTO customer (name, street, city, state, balance)</span>
-<span class="s1">    VALUES (?, ?, ?, ?, ?)&#39;&#39;&#39;</span><span class="p">,</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">street</span><span class="p">,</span> <span class="n">city</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">balance</span><span class="p">))</span>
+# 4. add data into the table
+def addCust(name, street, city, state, balance):
+    c.execute('''INSERT INTO customer (name, street, city, state, balance)
+    VALUES (?, ?, ?, ?, ?)''', (name, street, city, state, balance))
 
-<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
-    <span class="n">createTable</span><span class="p">()</span>
+def main():
+    createTable()
 
-    <span class="n">addCust</span><span class="p">(</span><span class="s2">&quot;H Song&quot;</span><span class="p">,</span> <span class="s1">&#39;302 Kentucky St&#39;</span><span class="p">,</span> <span class="s1">&#39;RiverC&#39;</span><span class="p">,</span> <span class="s1">&#39;CA&#39;</span><span class="p">,</span> <span class="mf">188.10</span><span class="p">)</span>
-    <span class="n">addCust</span><span class="p">(</span><span class="s2">&quot;A Song&quot;</span><span class="p">,</span> <span class="s1">&#39;202 Kentucky St&#39;</span><span class="p">,</span> <span class="s1">&#39;RiverC&#39;</span><span class="p">,</span> <span class="s1">&#39;CA&#39;</span><span class="p">,</span> <span class="mf">100.30</span><span class="p">)</span>
-    <span class="n">addCust</span><span class="p">(</span><span class="s2">&quot;B Song&quot;</span><span class="p">,</span> <span class="s1">&#39;102 Kentucky St&#39;</span><span class="p">,</span> <span class="s1">&#39;RiverC&#39;</span><span class="p">,</span> <span class="s1">&#39;CA&#39;</span><span class="p">,</span> <span class="mf">10.83</span><span class="p">)</span>
-    <span class="n">addCust</span><span class="p">(</span><span class="s2">&quot;C Song&quot;</span><span class="p">,</span> <span class="s1">&#39;101 Kentucky St&#39;</span><span class="p">,</span> <span class="s1">&#39;RiverC&#39;</span><span class="p">,</span> <span class="s1">&#39;CA&#39;</span><span class="p">,</span> <span class="mf">100.01</span><span class="p">)</span>
-    <span class="n">addCust</span><span class="p">(</span><span class="s2">&quot;D Song&quot;</span><span class="p">,</span> <span class="s1">&#39;301 Kentucky St&#39;</span><span class="p">,</span> <span class="s1">&#39;RiverC&#39;</span><span class="p">,</span> <span class="s1">&#39;CA&#39;</span><span class="p">,</span> <span class="mf">90.10</span><span class="p">)</span>
-    <span class="n">addCust</span><span class="p">(</span><span class="s2">&quot;E Song&quot;</span><span class="p">,</span> <span class="s1">&#39;303 Kentucky St&#39;</span><span class="p">,</span> <span class="s1">&#39;RiverC&#39;</span><span class="p">,</span> <span class="s1">&#39;CA&#39;</span><span class="p">,</span> <span class="mf">60.10</span><span class="p">)</span>
+    addCust(&quot;H Song&quot;, '302 Kentucky St', 'RiverC', 'CA', 188.10)
+    addCust(&quot;A Song&quot;, '202 Kentucky St', 'RiverC', 'CA', 100.30)
+    addCust(&quot;B Song&quot;, '102 Kentucky St', 'RiverC', 'CA', 10.83)
+    addCust(&quot;C Song&quot;, '101 Kentucky St', 'RiverC', 'CA', 100.01)
+    addCust(&quot;D Song&quot;, '301 Kentucky St', 'RiverC', 'CA', 90.10)
+    addCust(&quot;E Song&quot;, '303 Kentucky St', 'RiverC', 'CA', 60.10)
 
-    <span class="n">createDB</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+    createDB.commit()
 
-    <span class="n">c</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s1">&#39;SELECT * FROM customer&#39;</span><span class="p">)</span>
+    c.execute('SELECT * FROM customer')
 
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">c</span><span class="p">:</span>
-        <span class="nb">print</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
-        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">i</span><span class="p">:</span>
-            <span class="nb">print</span> <span class="n">j</span>
-
-
-<span class="n">main</span><span class="p">()</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="mf">1</span>
-<span class="n">H</span><span class="w"> </span><span class="n">Song</span>
-<span class="mf">302</span><span class="w"> </span><span class="n">Kentucky</span><span class="w"> </span><span class="n">St</span>
-<span class="n">RiverC</span>
-<span class="n">CA</span>
-<span class="mf">188.1</span>
+    for i in c:
+        print '\n'
+        for j in i:
+            print j
 
 
-<span class="mf">2</span>
-<span class="n">A</span><span class="w"> </span><span class="n">Song</span>
-<span class="mf">202</span><span class="w"> </span><span class="n">Kentucky</span><span class="w"> </span><span class="n">St</span>
-<span class="n">RiverC</span>
-<span class="n">CA</span>
-<span class="mf">100.3</span>
+main()
+</code></pre>
+<pre><code>1
+H Song
+302 Kentucky St
+RiverC
+CA
+188.1
 
 
-<span class="mf">3</span>
-<span class="n">B</span><span class="w"> </span><span class="n">Song</span>
-<span class="mf">102</span><span class="w"> </span><span class="n">Kentucky</span><span class="w"> </span><span class="n">St</span>
-<span class="n">RiverC</span>
-<span class="n">CA</span>
-<span class="mf">10.83</span>
+2
+A Song
+202 Kentucky St
+RiverC
+CA
+100.3
 
 
-<span class="mf">4</span>
-<span class="n">C</span><span class="w"> </span><span class="n">Song</span>
-<span class="mf">101</span><span class="w"> </span><span class="n">Kentucky</span><span class="w"> </span><span class="n">St</span>
-<span class="n">RiverC</span>
-<span class="n">CA</span>
-<span class="mf">100.01</span>
+3
+B Song
+102 Kentucky St
+RiverC
+CA
+10.83
 
 
-<span class="mf">5</span>
-<span class="n">D</span><span class="w"> </span><span class="n">Song</span>
-<span class="mf">301</span><span class="w"> </span><span class="n">Kentucky</span><span class="w"> </span><span class="n">St</span>
-<span class="n">RiverC</span>
-<span class="n">CA</span>
-<span class="mf">90.1</span>
+4
+C Song
+101 Kentucky St
+RiverC
+CA
+100.01
 
 
-<span class="mf">6</span>
-<span class="n">E</span><span class="w"> </span><span class="n">Song</span>
-<span class="mf">303</span><span class="w"> </span><span class="n">Kentucky</span><span class="w"> </span><span class="n">St</span>
-<span class="n">RiverC</span>
-<span class="n">CA</span>
-<span class="mf">60.1</span>
-</code></pre></div>
+5
+D Song
+301 Kentucky St
+RiverC
+CA
+90.1
 
+
+6
+E Song
+303 Kentucky St
+RiverC
+CA
+60.1
+</code></pre>
 <h2>2. alter table, add new column and update the value</h2>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">sqlite3</span>
+<pre><code class="language-python">import sqlite3
 
-<span class="n">createDB</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s1">&#39;:memory:&#39;</span><span class="p">)</span>
+createDB = sqlite3.connect(':memory:')
 
-<span class="n">c</span> <span class="o">=</span> <span class="n">createDB</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+c = createDB.cursor()
 
-<span class="k">def</span> <span class="nf">createTable</span><span class="p">():</span>
-    <span class="n">c</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s1">&#39;&#39;&#39;CREATE TABLE customer</span>
-<span class="s1">    (id INTEGER PRIMARY KEY, name TEXT, street TEXT, city TEXT,</span>
-<span class="s1">    state TEXT, balance REAL)&#39;&#39;&#39;</span><span class="p">)</span>
+def createTable():
+    c.execute('''CREATE TABLE customer
+    (id INTEGER PRIMARY KEY, name TEXT, street TEXT, city TEXT,
+    state TEXT, balance REAL)''')
 
-<span class="k">def</span> <span class="nf">addCust</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">street</span><span class="p">,</span> <span class="n">city</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">balance</span><span class="p">):</span>
-    <span class="n">c</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s1">&#39;&#39;&#39;INSERT INTO customer (name, street, city, state, balance)</span>
-<span class="s1">    VALUES (?, ?, ?, ?, ?)&#39;&#39;&#39;</span><span class="p">,</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">street</span><span class="p">,</span> <span class="n">city</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">balance</span><span class="p">))</span>
+def addCust(name, street, city, state, balance):
+    c.execute('''INSERT INTO customer (name, street, city, state, balance)
+    VALUES (?, ?, ?, ?, ?)''', (name, street, city, state, balance))
 
-<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
-    <span class="n">createTable</span><span class="p">()</span>
+def main():
+    createTable()
 
-    <span class="n">addCust</span><span class="p">(</span><span class="s2">&quot;H Song&quot;</span><span class="p">,</span> <span class="s1">&#39;302 Kentucky St&#39;</span><span class="p">,</span> <span class="s1">&#39;RiverC&#39;</span><span class="p">,</span> <span class="s1">&#39;CA&#39;</span><span class="p">,</span> <span class="mf">188.10</span><span class="p">)</span>
-    <span class="n">addCust</span><span class="p">(</span><span class="s2">&quot;A Song&quot;</span><span class="p">,</span> <span class="s1">&#39;202 Kentucky St&#39;</span><span class="p">,</span> <span class="s1">&#39;RiverC&#39;</span><span class="p">,</span> <span class="s1">&#39;CA&#39;</span><span class="p">,</span> <span class="mf">100.30</span><span class="p">)</span>
-    <span class="n">addCust</span><span class="p">(</span><span class="s2">&quot;B Song&quot;</span><span class="p">,</span> <span class="s1">&#39;102 Kentucky St&#39;</span><span class="p">,</span> <span class="s1">&#39;RiverC&#39;</span><span class="p">,</span> <span class="s1">&#39;CA&#39;</span><span class="p">,</span> <span class="mf">10.83</span><span class="p">)</span>
-    <span class="n">addCust</span><span class="p">(</span><span class="s2">&quot;C Song&quot;</span><span class="p">,</span> <span class="s1">&#39;101 Kentucky St&#39;</span><span class="p">,</span> <span class="s1">&#39;RiverC&#39;</span><span class="p">,</span> <span class="s1">&#39;CA&#39;</span><span class="p">,</span> <span class="mf">100.01</span><span class="p">)</span>
-    <span class="n">addCust</span><span class="p">(</span><span class="s2">&quot;D Song&quot;</span><span class="p">,</span> <span class="s1">&#39;301 Kentucky St&#39;</span><span class="p">,</span> <span class="s1">&#39;RiverC&#39;</span><span class="p">,</span> <span class="s1">&#39;CA&#39;</span><span class="p">,</span> <span class="mf">90.10</span><span class="p">)</span>
-    <span class="n">addCust</span><span class="p">(</span><span class="s2">&quot;E Song&quot;</span><span class="p">,</span> <span class="s1">&#39;303 Kentucky St&#39;</span><span class="p">,</span> <span class="s1">&#39;RiverC&#39;</span><span class="p">,</span> <span class="s1">&#39;CA&#39;</span><span class="p">,</span> <span class="mf">60.10</span><span class="p">)</span>
+    addCust(&quot;H Song&quot;, '302 Kentucky St', 'RiverC', 'CA', 188.10)
+    addCust(&quot;A Song&quot;, '202 Kentucky St', 'RiverC', 'CA', 100.30)
+    addCust(&quot;B Song&quot;, '102 Kentucky St', 'RiverC', 'CA', 10.83)
+    addCust(&quot;C Song&quot;, '101 Kentucky St', 'RiverC', 'CA', 100.01)
+    addCust(&quot;D Song&quot;, '301 Kentucky St', 'RiverC', 'CA', 90.10)
+    addCust(&quot;E Song&quot;, '303 Kentucky St', 'RiverC', 'CA', 60.10)
 
-    <span class="n">createDB</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+    createDB.commit()
 
-    <span class="n">c</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s1">&#39;ALTER TABLE customer ADD COLUMN email TEXT&#39;</span><span class="p">)</span>
-    <span class="n">c</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s1">&#39;UPDATE customer SET email = &quot;hs@gm.me&quot; where name = &quot;H Song&quot;&#39;</span><span class="p">)</span>
-    <span class="n">c</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s1">&#39;DELETE FROM customer where id = 4&#39;</span><span class="p">)</span>
-    <span class="n">c</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s1">&#39;SELECT * FROM customer ORDER BY balance DESC&#39;</span><span class="p">)</span>
+    c.execute('ALTER TABLE customer ADD COLUMN email TEXT')
+    c.execute('UPDATE customer SET email = &quot;hs@gm.me&quot; where name = &quot;H Song&quot;')
+    c.execute('DELETE FROM customer where id = 4')
+    c.execute('SELECT * FROM customer ORDER BY balance DESC')
 
 
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">c</span><span class="p">:</span>
-        <span class="nb">print</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
-        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">i</span><span class="p">:</span>
-            <span class="nb">print</span> <span class="n">j</span>
+    for i in c:
+        print '\n'
+        for j in i:
+            print j
 
-<span class="n">main</span><span class="p">()</span>
+main()
+</code></pre>
+<pre><code>1
+H Song
+302 Kentucky St
+RiverC
+CA
+188.1
+hs@gm.me
+
+
+2
+A Song
+202 Kentucky St
+RiverC
+CA
+100.3
+None
+
+
+5
+D Song
+301 Kentucky St
+RiverC
+CA
+90.1
+None
+
+
+6
+E Song
+303 Kentucky St
+RiverC
+CA
+60.1
+None
+
+
+3
+B Song
+102 Kentucky St
+RiverC
+CA
+10.83
+None
 </code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="mf">1</span>
-<span class="n">H</span><span class="w"> </span><span class="n">Song</span>
-<span class="mf">302</span><span class="w"> </span><span class="n">Kentucky</span><span class="w"> </span><span class="n">St</span>
-<span class="n">RiverC</span>
-<span class="n">CA</span>
-<span class="mf">188.1</span>
-<span class="n">hs</span><span class="err">@</span><span class="n">gm</span><span class="mf">.</span><span class="n">me</span>
-
-
-<span class="mf">2</span>
-<span class="n">A</span><span class="w"> </span><span class="n">Song</span>
-<span class="mf">202</span><span class="w"> </span><span class="n">Kentucky</span><span class="w"> </span><span class="n">St</span>
-<span class="n">RiverC</span>
-<span class="n">CA</span>
-<span class="mf">100.3</span>
-<span class="n">None</span>
-
-
-<span class="mf">5</span>
-<span class="n">D</span><span class="w"> </span><span class="n">Song</span>
-<span class="mf">301</span><span class="w"> </span><span class="n">Kentucky</span><span class="w"> </span><span class="n">St</span>
-<span class="n">RiverC</span>
-<span class="n">CA</span>
-<span class="mf">90.1</span>
-<span class="n">None</span>
-
-
-<span class="mf">6</span>
-<span class="n">E</span><span class="w"> </span><span class="n">Song</span>
-<span class="mf">303</span><span class="w"> </span><span class="n">Kentucky</span><span class="w"> </span><span class="n">St</span>
-<span class="n">RiverC</span>
-<span class="n">CA</span>
-<span class="mf">60.1</span>
-<span class="n">None</span>
-
-
-<span class="mf">3</span>
-<span class="n">B</span><span class="w"> </span><span class="n">Song</span>
-<span class="mf">102</span><span class="w"> </span><span class="n">Kentucky</span><span class="w"> </span><span class="n">St</span>
-<span class="n">RiverC</span>
-<span class="n">CA</span>
-<span class="mf">10.83</span>
-<span class="n">None</span>
-</code></pre></div></div>
     <footer>
 <p class="meta">
   <span class="byline author vcard">
@@ -304,13 +301,13 @@ window.addEventListener('load', () => {
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -328,7 +325,7 @@ window.addEventListener('load', () => {
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

@@ -97,64 +97,61 @@ window.addEventListener('load', () => {
   <div class="entry-content"><p><a href="https://leetcode.com/problems/burst-balloons/description/">312. Burst Balloons</a></p>
 <p>题目大意 给定n个气球，每个气球有一个数字，用数组nums来表示n个气球上面的数字。如果气球i被打破，那么你会得到nums[left] * nums[i] * nums[right] 。 这里left和right分别为气球i的左右两边的气球。打破所有的气球后把所有的数字相加，求解怎么打破这些气球使得最后得到的数字最大。</p>
 <p>比如给定 [3, 1, 5, 8]，最大可以得到 167。办法如下</p>
-<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="n">nums</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="mi">3</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">8</span><span class="p">]</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="p">[</span><span class="mi">3</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">8</span><span class="p">]</span><span class="w"> </span><span class="o">--&gt;</span><span class="w">   </span><span class="p">[</span><span class="mi">3</span><span class="p">,</span><span class="mi">8</span><span class="p">]</span><span class="w">   </span><span class="o">--&gt;</span><span class="w">  </span><span class="p">[</span><span class="mi">8</span><span class="p">]</span><span class="w">  </span><span class="o">--&gt;</span><span class="w"> </span><span class="p">[]</span>
-<span class="w">   </span><span class="n">coins</span><span class="w"> </span><span class="o">=</span><span class="w">  </span><span class="mi">3</span><span class="o">*</span><span class="mi">1</span><span class="o">*</span><span class="mi">5</span><span class="w">      </span><span class="o">+</span><span class="w">  </span><span class="mi">3</span><span class="o">*</span><span class="mi">5</span><span class="o">*</span><span class="mi">8</span><span class="w">    </span><span class="o">+</span><span class="w">  </span><span class="mi">1</span><span class="o">*</span><span class="mi">3</span><span class="o">*</span><span class="mi">8</span><span class="w">      </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="o">*</span><span class="mi">8</span><span class="o">*</span><span class="mi">1</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="mi">167</span>
-</code></pre></div>
-
+<pre><code>    nums = [3,1,5,8] --&gt; [3,5,8] --&gt;   [3,8]   --&gt;  [8]  --&gt; []
+   coins =  3*1*5      +  3*5*8    +  1*3*8      + 1*8*1   = 167
+</code></pre>
 <p>解题思路：取一个子串从nums[i]到nums[j]，加入中间有一个k，对应的nums[k]，如果nums[k]没有被打破，那么nums[k]把nums[i]到nums[j]分成两个子串，分别为nums[i]到nums[k-1]和nums[k+1]到nums[j]。这样我们可以对这两个子串分别求解打破以后的最大值，然后对不同的k来寻找最后的最大值，这样把一个nums[i]到nums[j]的大的问题就拆分成两个小的问题来求解。</p>
 <p><img src="/figures/leetcode_0312_burst_balloons.svg"></p>
 <h2>1. 记忆化递归</h2>
-<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Solution</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">maxCoins</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nums</span><span class="p">):</span>
-        <span class="n">nums</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-        <span class="n">nums</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-        <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">nums</span><span class="p">)</span>
-        <span class="n">dp</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
-        <span class="k">def</span> <span class="nf">divid</span><span class="p">(</span><span class="n">nums</span><span class="p">,</span> <span class="n">dp</span><span class="p">,</span> <span class="n">low</span><span class="p">,</span> <span class="n">high</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">low</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">==</span> <span class="n">high</span><span class="p">:</span>
-                <span class="k">return</span> <span class="mi">0</span>
-            <span class="k">if</span> <span class="n">dp</span><span class="p">[</span><span class="n">low</span><span class="p">][</span><span class="n">high</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">dp</span><span class="p">[</span><span class="n">low</span><span class="p">][</span><span class="n">high</span><span class="p">]</span>
-            <span class="n">ans</span> <span class="o">=</span> <span class="mi">0</span>
-            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">low</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">high</span><span class="p">):</span>
-                <span class="n">ans</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">ans</span><span class="p">,</span> <span class="n">nums</span><span class="p">[</span><span class="n">low</span><span class="p">]</span><span class="o">*</span><span class="n">nums</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">nums</span><span class="p">[</span><span class="n">high</span><span class="p">]</span> <span class="o">+</span> <span class="n">divid</span><span class="p">(</span><span class="n">nums</span><span class="p">,</span> <span class="n">dp</span><span class="p">,</span> <span class="n">low</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="n">divid</span><span class="p">(</span><span class="n">nums</span><span class="p">,</span> <span class="n">dp</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">high</span><span class="p">))</span>
-            <span class="n">dp</span><span class="p">[</span><span class="n">low</span><span class="p">][</span><span class="n">high</span><span class="p">]</span> <span class="o">=</span> <span class="n">ans</span>
-            <span class="k">return</span> <span class="n">ans</span>
-        <span class="k">return</span> <span class="n">divid</span><span class="p">(</span><span class="n">nums</span><span class="p">,</span> <span class="n">dp</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
-</code></pre></div>
-
+<pre><code class="language-python">class Solution(object):
+    def maxCoins(self, nums):
+        nums.insert(0, 1)
+        nums.append(1)
+        n = len(nums)
+        dp = [[0 for _ in range(n + 1)] for _ in range(n + 1)]
+        def divid(nums, dp, low, high):
+            if low + 1 == high:
+                return 0
+            if dp[low][high] &gt; 0:
+                return dp[low][high]
+            ans = 0
+            for i in range(low + 1, high):
+                ans = max(ans, nums[low]*nums[i]*nums[high] + divid(nums, dp, low, i) + divid(nums, dp, i, high))
+            dp[low][high] = ans
+            return ans
+        return divid(nums, dp, 0, n - 1)
+</code></pre>
 <h2>2. 递推/态规划</h2>
-<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Solution</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">maxCoins</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nums</span><span class="p">):</span>
-        <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">nums</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">return</span> <span class="mi">0</span>
-        <span class="n">nums</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-        <span class="n">nums</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-        <span class="n">c</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="o">+</span><span class="mi">2</span><span class="p">)]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="o">+</span><span class="mi">2</span><span class="p">)]</span>
-        <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
-            <span class="c1"># l is the len between j(include j) and i, so l = j - i + 1</span>
-            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n</span> <span class="o">-</span> <span class="n">l</span> <span class="o">+</span> <span class="mi">2</span><span class="p">):</span>
-                <span class="n">j</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="n">l</span> <span class="o">-</span> <span class="mi">1</span>
-                <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
-                    <span class="n">c</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">],</span> <span class="n">c</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">k</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">nums</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">nums</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">*</span><span class="n">nums</span><span class="p">[</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">c</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">][</span><span class="n">j</span><span class="p">])</span>
-        <span class="k">return</span> <span class="n">c</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">n</span><span class="p">]</span>
+<pre><code class="language-python">class Solution(object):
+    def maxCoins(self, nums):
+        n = len(nums)
+        if n == 0:
+            return 0
+        nums.insert(0, 1)
+        nums.append(1)
+        c = [[0 for _ in range(n+2)] for _ in range(n+2)]
+        for l in range(1, n + 1):
+            # l is the len between j(include j) and i, so l = j - i + 1
+            for i in range(1, n - l + 2):
+                j = i + l - 1
+                for k in range(i, j + 1):
+                    c[i][j] = max(c[i][j], c[i][k-1] + nums[i-1]*nums[k]*nums[j+1] + c[k+1][j])
+        return c[1][n]
+</code></pre>
+<pre><code class="language-python">class Solution(object):
+    def maxCoins(self, nums):
+        n = len(nums)
+        if n == 0:
+            return 0
+        nums.insert(0, 1)
+        nums.append(1)
+        c = [[0 for _ in range(n+2)] for _ in range(n+2)]
+        for i in range(n-1, -1, -1):
+            for j in range(i + 2, n + 2):
+                for k in range(i + 1, j):
+                    c[i][j] = max(c[i][j], c[i][k] + nums[i]*nums[k]*nums[j] + c[k][j])
+        return c[0][n+1]
 </code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Solution</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">maxCoins</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nums</span><span class="p">):</span>
-        <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">nums</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">return</span> <span class="mi">0</span>
-        <span class="n">nums</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-        <span class="n">nums</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-        <span class="n">c</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="o">+</span><span class="mi">2</span><span class="p">)]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="o">+</span><span class="mi">2</span><span class="p">)]</span>
-        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
-            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">2</span><span class="p">,</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">2</span><span class="p">):</span>
-                <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
-                    <span class="n">c</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">],</span> <span class="n">c</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">k</span><span class="p">]</span> <span class="o">+</span> <span class="n">nums</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">nums</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">*</span><span class="n">nums</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">+</span> <span class="n">c</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="n">j</span><span class="p">])</span>
-        <span class="k">return</span> <span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
-</code></pre></div></div>
     <footer>
 <p class="meta">
   <span class="byline author vcard">
@@ -183,13 +180,13 @@ window.addEventListener('load', () => {
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -207,7 +204,7 @@ window.addEventListener('load', () => {
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

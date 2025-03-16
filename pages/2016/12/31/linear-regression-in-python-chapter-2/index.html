@@ -96,18 +96,17 @@ window.addEventListener('load', () => {
 
   <div class="entry-content"><h2>2 - Regression Diagnostics</h2>
 <h3>Outline</h3>
-<div class="highlight"><pre><span></span><code><span class="mf">2.0</span><span class="w"> </span><span class="n">Regression</span><span class="w"> </span><span class="n">Diagnostics</span>
-<span class="mf">2.1</span><span class="w"> </span><span class="n">Unusual</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="n">Influential</span><span class="w"> </span><span class="kd">data</span>
-<span class="mf">2.2</span><span class="w"> </span><span class="n">Tests</span><span class="w"> </span><span class="kr">on</span><span class="w"> </span><span class="n">Normality</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">Residuals</span>
-<span class="mf">2.3</span><span class="w"> </span><span class="n">Tests</span><span class="w"> </span><span class="kr">on</span><span class="w"> </span><span class="n">Nonconstant</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">Variance</span>
-<span class="mf">2.4</span><span class="w"> </span><span class="n">Tests</span><span class="w"> </span><span class="kr">on</span><span class="w"> </span><span class="n">Multicollinearity</span>
-<span class="mf">2.5</span><span class="w"> </span><span class="n">Tests</span><span class="w"> </span><span class="kr">on</span><span class="w"> </span><span class="n">Nonlinearity</span>
-<span class="mf">2.6</span><span class="w"> </span><span class="n">Model</span><span class="w"> </span><span class="n">Specification</span>
-<span class="mf">2.7</span><span class="w"> </span><span class="n">Issues</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">Independence</span>
-<span class="mf">2.8</span><span class="w"> </span><span class="n">Summary</span>
-<span class="mf">2.9</span><span class="w"> </span><span class="kr">For</span><span class="w"> </span><span class="n">more</span><span class="w"> </span><span class="n">information</span>
-</code></pre></div>
-
+<pre><code>2.0 Regression Diagnostics
+2.1 Unusual and Influential data
+2.2 Tests on Normality of Residuals
+2.3 Tests on Nonconstant Error of Variance
+2.4 Tests on Multicollinearity
+2.5 Tests on Nonlinearity
+2.6 Model Specification
+2.7 Issues of Independence
+2.8 Summary
+2.9 For more information
+</code></pre>
 <h3>2.0 Regression Diagnostics</h3>
 <p>When run regression models, you need to do regression disgnostics.  Without verifying that your data have met the regression assumptions, your results may be misleading.  This section will explore how to do regression diagnostics.</p>
 <ul>
@@ -129,34 +128,32 @@ window.addEventListener('load', () => {
 <p><strong>Leverage</strong>: An observation with an extreme value on a predictor variable is called a point with high leverage. Leverage is a measure of how far an observation deviates from the mean of that variable. These leverage points can have an effect on the estimate of regression coefficients.</p>
 <p><strong>Influence</strong>: An observation is said to be influential if removing the observation substantially changes the estimate of coefficients. Influence can be thought of as the product of leverage and outlierness.</p>
 <p>How can we identify these three types of observations? Let's look at an example dataset called crime. This dataset appears in Statistical Methods for Social Sciences, Third Edition by Alan Agresti and Barbara Finlay (Prentice Hall, 1997). The variables are state id (sid), state name (state), violent crimes per 100,000 people (crime), murders per 1,000,000 (murder),  the percent of the population living in metropolitan areas (pctmetro), the percent of the population that is white (pctwhite), percent of population with a high school education or above (pcths), percent of population living under poverty line (poverty), and percent of population that are single parents (single). </p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">itertools</span>
-<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">chain</span><span class="p">,</span> <span class="n">combinations</span>
-<span class="kn">import</span> <span class="nn">statsmodels.formula.api</span> <span class="k">as</span> <span class="nn">smf</span>
-<span class="kn">import</span> <span class="nn">scipy.stats</span> <span class="k">as</span> <span class="nn">scipystats</span>
-<span class="kn">import</span> <span class="nn">statsmodels.api</span> <span class="k">as</span> <span class="nn">sm</span>
-<span class="kn">import</span> <span class="nn">statsmodels.stats.stattools</span> <span class="k">as</span> <span class="nn">stools</span>
-<span class="kn">import</span> <span class="nn">statsmodels.stats</span> <span class="k">as</span> <span class="nn">stats</span> 
-<span class="kn">from</span> <span class="nn">statsmodels.graphics.regressionplots</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
-<span class="kn">import</span> <span class="nn">copy</span>
-<span class="kn">from</span> <span class="nn">sklearn.cross_validation</span> <span class="kn">import</span> <span class="n">train_test_split</span>
-<span class="kn">import</span> <span class="nn">math</span>
-<span class="kn">import</span> <span class="nn">time</span>
+<pre><code class="language-python">import pandas as pd
+import numpy as np
+import itertools
+from itertools import chain, combinations
+import statsmodels.formula.api as smf
+import scipy.stats as scipystats
+import statsmodels.api as sm
+import statsmodels.stats.stattools as stools
+import statsmodels.stats as stats 
+from statsmodels.graphics.regressionplots import *
+import matplotlib.pyplot as plt
+import seaborn as sns
+import copy
+from sklearn.cross_validation import train_test_split
+import math
+import time
 
-<span class="o">%</span><span class="n">matplotlib</span> <span class="n">inline</span> 
-<span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;figure.figsize&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">12</span><span class="p">)</span>
+%matplotlib inline 
+plt.rcParams['figure.figsize'] = (16, 12)
 
-<span class="n">mypath</span> <span class="o">=</span>  <span class="sa">r</span><span class="s1">&#39;D:\Dropbox\ipynb_download\ipynb_blog</span><span class="se">\\</span><span class="s1">&#39;</span>
+mypath =  r'D:\Dropbox\ipynb_download\ipynb_blog\\'
 
-<span class="n">crime</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">mypath</span> <span class="o">+</span> <span class="sa">r</span><span class="s1">&#39;crime.csv&#39;</span><span class="p">)</span>   
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="n">crime</span><span class="o">.</span><span class="n">describe</span><span class="p">()</span>
-</code></pre></div>
-
+crime = pd.read_csv(mypath + r'crime.csv')   
+</code></pre>
+<pre><code class="language-python">crime.describe()
+</code></pre>
 <div>
 <table border="1" class="dataframe">
   <thead>
@@ -265,58 +262,52 @@ window.addEventListener('load', () => {
 </table>
 </div>
 
-<div class="highlight"><pre><span></span><code><span class="n">sns</span><span class="o">.</span><span class="n">pairplot</span><span class="p">(</span><span class="n">crime</span><span class="p">[[</span><span class="s1">&#39;crime&#39;</span><span class="p">,</span> <span class="s1">&#39;pctmetro&#39;</span><span class="p">,</span> <span class="s1">&#39;poverty&#39;</span><span class="p">,</span>  <span class="s1">&#39;single&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">how</span> <span class="o">=</span> <span class="s1">&#39;any&#39;</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span><span class="p">))</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>&lt;seaborn.axisgrid.PairGrid at 0x176314a8&gt;
-</code></pre></div>
-
+<pre><code class="language-python">sns.pairplot(crime[['crime', 'pctmetro', 'poverty',  'single']].dropna(how = 'any', axis = 0))
+</code></pre>
+<pre><code>&lt;seaborn.axisgrid.PairGrid at 0x176314a8&gt;
+</code></pre>
 <p><img alt="png" src="/figures/ucla_ats_linreg_2_1_01.png"></p>
 <p>The graphs of crime with other variables show some potential problems.  In every plot, we see a data point that is far away from the rest of the data points. Let's make individual graphs of crime with pctmetro and poverty and single so we can get a better view of these scatterplots.  We will add the label plot of the state name instead of a point. </p>
-<div class="highlight"><pre><span></span><code><span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">crime</span><span class="o">.</span><span class="n">pctmetro</span><span class="p">,</span> <span class="n">crime</span><span class="o">.</span><span class="n">crime</span><span class="p">)</span>
+<pre><code class="language-python">plt.scatter(crime.pctmetro, crime.crime)
 
-<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">state</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">crime</span><span class="o">.</span><span class="n">state</span><span class="p">):</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="p">[</span><span class="n">crime</span><span class="o">.</span><span class="n">pctmetro</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">crime</span><span class="o">.</span><span class="n">crime</span><span class="p">[</span><span class="n">i</span><span class="p">]])</span>
+for i, state in enumerate(crime.state):
+    plt.annotate(state, [crime.pctmetro[i], crime.crime[i]])
 
-<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;pctmetro&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;crime&quot;</span><span class="p">)</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>&lt;matplotlib.text.Text at 0x130b47f0&gt;
-</code></pre></div>
-
+plt.xlabel(&quot;pctmetro&quot;)
+plt.ylabel(&quot;crime&quot;)
+</code></pre>
+<pre><code>&lt;matplotlib.text.Text at 0x130b47f0&gt;
+</code></pre>
 <p><img alt="png" src="/figures/ucla_ats_linreg_2_1_02.png"></p>
 <p>All the scatter plots suggest that the observation for state = dc is a point that requires extra attention since it stands out away from all of the other points. We will keep it in mind when we do our regression analysis.</p>
 <p>Now let's try the regression  predicting crime from pctmetro, poverty and single.  We will go step-by-step to identify all the potentially unusual or influential points afterwards. We will output several statistics that we will need for the next few analyses to a dataset called crime1res, and we will explain each statistic in turn.  These statistics include the studentized residual (called <a href="https://en.wikipedia.org/wiki/Studentized_residual"><strong>resid_student</strong></a>), leverage (called <a href="https://en.wikipedia.org/wiki/Leverage_(statistics)"><strong>leverage</strong></a>), Cook's D (called <a href="https://en.wikipedia.org/wiki/Cook's_distance"><strong>cooks</strong></a>) and DFFITS (called <a href="https://en.wikipedia.org/wiki/DFFITS"><strong>dffits</strong></a>).  We are requesting all of these statistics now so that they can be placed in a single dataset that we will use for the next several examples.  </p>
-<div class="highlight"><pre><span></span><code><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">influence</span><span class="o">.</span><span class="n">hat_matrix_diag</span><span class="p">)</span><span class="o">.</span><span class="n">describe</span><span class="p">()</span>
-</code></pre></div>
+<pre><code class="language-python">pd.Series(influence.hat_matrix_diag).describe()
+</code></pre>
+<pre><code>count    51.000000
+mean      0.078431
+std       0.080285
+min       0.020061
+25%       0.037944
+50%       0.061847
+75%       0.083896
+max       0.536383
+dtype: float64
+</code></pre>
+<pre><code class="language-python">lm = smf.ols(formula = &quot;crime ~ pctmetro + poverty + single&quot;, data = crime).fit()
+print lm.summary()
 
-<div class="highlight"><pre><span></span><code><span class="nx">count</span><span class="w">    </span><span class="m m-Double">51.000000</span>
-<span class="nx">mean</span><span class="w">      </span><span class="m m-Double">0.078431</span>
-<span class="nx">std</span><span class="w">       </span><span class="m m-Double">0.080285</span>
-<span class="nx">min</span><span class="w">       </span><span class="m m-Double">0.020061</span>
-<span class="mi">25</span><span class="o">%</span><span class="w">       </span><span class="m m-Double">0.037944</span>
-<span class="mi">50</span><span class="o">%</span><span class="w">       </span><span class="m m-Double">0.061847</span>
-<span class="mi">75</span><span class="o">%</span><span class="w">       </span><span class="m m-Double">0.083896</span>
-<span class="nx">max</span><span class="w">       </span><span class="m m-Double">0.536383</span>
-<span class="nx">dtype</span><span class="p">:</span><span class="w"> </span><span class="nx">float64</span>
-</code></pre></div>
+influence = lm.get_influence()
+resid_student = influence.resid_studentized_external
+(cooks, p) = influence.cooks_distance
+(dffits, p) = influence.dffits
+leverage = influence.hat_matrix_diag
 
-<div class="highlight"><pre><span></span><code><span class="n">lm</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="n">formula</span> <span class="o">=</span> <span class="s2">&quot;crime ~ pctmetro + poverty + single&quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">crime</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="nb">print</span> <span class="n">lm</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+print '\n'
+print 'Leverage v.s. Studentized Residuals'
+sns.regplot(leverage, lm.resid_pearson,  fit_reg=False)
 
-<span class="n">influence</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">get_influence</span><span class="p">()</span>
-<span class="n">resid_student</span> <span class="o">=</span> <span class="n">influence</span><span class="o">.</span><span class="n">resid_studentized_external</span>
-<span class="p">(</span><span class="n">cooks</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span> <span class="o">=</span> <span class="n">influence</span><span class="o">.</span><span class="n">cooks_distance</span>
-<span class="p">(</span><span class="n">dffits</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span> <span class="o">=</span> <span class="n">influence</span><span class="o">.</span><span class="n">dffits</span>
-<span class="n">leverage</span> <span class="o">=</span> <span class="n">influence</span><span class="o">.</span><span class="n">hat_matrix_diag</span>
-
-<span class="nb">print</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
-<span class="nb">print</span> <span class="s1">&#39;Leverage v.s. Studentized Residuals&#39;</span>
-<span class="n">sns</span><span class="o">.</span><span class="n">regplot</span><span class="p">(</span><span class="n">leverage</span><span class="p">,</span> <span class="n">lm</span><span class="o">.</span><span class="n">resid_pearson</span><span class="p">,</span>  <span class="n">fit_reg</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>                            OLS Regression Results                            
+</code></pre>
+<pre><code>                            OLS Regression Results                            
 ==============================================================================
 Dep. Variable:                  crime   R-squared:                       0.840
 Model:                            OLS   Adj. R-squared:                  0.830
@@ -326,20 +317,20 @@ Time:                        07:12:55   Log-Likelihood:                -335.71
 No. Observations:                  51   AIC:                             679.4
 Df Residuals:                      47   BIC:                             687.1
 Df Model:                           3                                         
-<span class="gh">Covariance Type:            nonrobust                                         </span>
-<span class="gh">==============================================================================</span>
+Covariance Type:            nonrobust                                         
+==============================================================================
                  coef    std err          t      P&gt;|t|      [95.0% Conf. Int.]
 ------------------------------------------------------------------------------
 Intercept  -1666.4359    147.852    -11.271      0.000     -1963.876 -1368.996
 pctmetro       7.8289      1.255      6.240      0.000         5.305    10.353
 poverty       17.6802      6.941      2.547      0.014         3.717    31.644
-<span class="gh">single       132.4081     15.503      8.541      0.000       101.220   163.597</span>
-<span class="gh">==============================================================================</span>
+single       132.4081     15.503      8.541      0.000       101.220   163.597
+==============================================================================
 Omnibus:                        2.081   Durbin-Watson:                   1.706
 Prob(Omnibus):                  0.353   Jarque-Bera (JB):                1.284
 Skew:                          -0.093   Prob(JB):                        0.526
-<span class="gh">Kurtosis:                       3.755   Cond. No.                         424.</span>
-<span class="gh">==============================================================================</span>
+Kurtosis:                       3.755   Cond. No.                         424.
+==============================================================================
 
 Warnings:
 [1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
@@ -351,15 +342,13 @@ Leverage v.s. Studentized Residuals
 
 
 
-<span class="nt">&lt;matplotlib.axes._subplots.AxesSubplot at 0x1baf2f28&gt;</span>
-</code></pre></div>
-
+&lt;matplotlib.axes._subplots.AxesSubplot at 0x1baf2f28&gt;
+</code></pre>
 <p><img alt="png" src="/figures/ucla_ats_linreg_2_1_03.png"></p>
-<div class="highlight"><pre><span></span><code><span class="n">crime1res</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">cooks</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;cooks&quot;</span><span class="p">),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">dffits</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;dffits&quot;</span><span class="p">),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">leverage</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;leverage&quot;</span><span class="p">),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">resid_student</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;resid_student&quot;</span><span class="p">)],</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
-<span class="n">crime1res</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">crime</span><span class="p">,</span> <span class="n">crime1res</span><span class="p">],</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
-<span class="n">crime1res</span><span class="o">.</span><span class="n">head</span><span class="p">()</span> 
-</code></pre></div>
-
+<pre><code class="language-python">crime1res = pd.concat([pd.Series(cooks, name = &quot;cooks&quot;), pd.Series(dffits, name = &quot;dffits&quot;), pd.Series(leverage, name = &quot;leverage&quot;), pd.Series(resid_student, name = &quot;resid_student&quot;)], axis = 1)
+crime1res = pd.concat([crime, crime1res], axis = 1)
+crime1res.head() 
+</code></pre>
 <div>
 <table border="1" class="dataframe">
   <thead>
@@ -466,132 +455,125 @@ Leverage v.s. Studentized Residuals
 </div>
 
 <p>Let's examine the studentized residuals as a first means for identifying outliers. We requested the studentized residuals in the above regression in the output statement and named them r. Studentized residuals are a type of standardized residual that can be used to identify outliers. We see three residuals that stick out, -3.57, 2.62 and 3.77.  </p>
-<div class="highlight"><pre><span></span><code><span class="n">r</span> <span class="o">=</span> <span class="n">crime1res</span><span class="o">.</span><span class="n">resid_student</span>
-<span class="nb">print</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">30</span> <span class="o">+</span> <span class="s1">&#39; studentized residual &#39;</span> <span class="o">+</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">30</span>
-<span class="nb">print</span> <span class="n">r</span><span class="o">.</span><span class="n">describe</span><span class="p">()</span>
-<span class="nb">print</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+<pre><code class="language-python">r = crime1res.resid_student
+print '-'*30 + ' studentized residual ' + '-'*30
+print r.describe()
+print '\n'
 
-<span class="n">r_sort</span> <span class="o">=</span> <span class="n">crime1res</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span> <span class="o">=</span> <span class="s1">&#39;resid_student&#39;</span><span class="p">)</span>
-<span class="nb">print</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">30</span> <span class="o">+</span> <span class="s1">&#39; top 5 most negative residuals &#39;</span> <span class="o">+</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">30</span>
-<span class="nb">print</span> <span class="n">r_sort</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
-<span class="nb">print</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+r_sort = crime1res.sort_values(by = 'resid_student')
+print '-'*30 + ' top 5 most negative residuals ' + '-'*30
+print r_sort.head()
+print '\n'
 
-<span class="nb">print</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">30</span> <span class="o">+</span> <span class="s1">&#39; top 5 most positive residuals &#39;</span> <span class="o">+</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">30</span>
-<span class="nb">print</span> <span class="n">r_sort</span><span class="o">.</span><span class="n">tail</span><span class="p">()</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="o">------------------------------</span><span class="w"> </span><span class="nx">studentized</span><span class="w"> </span><span class="nx">residual</span><span class="w"> </span><span class="o">------------------------------</span>
-<span class="nx">count</span><span class="w">    </span><span class="m m-Double">51.000000</span>
-<span class="nx">mean</span><span class="w">      </span><span class="m m-Double">0.018402</span>
-<span class="nx">std</span><span class="w">       </span><span class="m m-Double">1.133126</span>
-<span class="nx">min</span><span class="w">      </span><span class="o">-</span><span class="m m-Double">3.570789</span>
-<span class="mi">25</span><span class="o">%</span><span class="w">      </span><span class="o">-</span><span class="m m-Double">0.555460</span>
-<span class="mi">50</span><span class="o">%</span><span class="w">       </span><span class="m m-Double">0.052616</span>
-<span class="mi">75</span><span class="o">%</span><span class="w">       </span><span class="m m-Double">0.599771</span>
-<span class="nx">max</span><span class="w">       </span><span class="m m-Double">3.765847</span>
-<span class="nx">Name</span><span class="p">:</span><span class="w"> </span><span class="nx">resid_student</span><span class="p">,</span><span class="w"> </span><span class="nx">dtype</span><span class="p">:</span><span class="w"> </span><span class="nx">float64</span>
-
-
-<span class="o">------------------------------</span><span class="w"> </span><span class="nx">top</span><span class="w"> </span><span class="mi">5</span><span class="w"> </span><span class="nx">most</span><span class="w"> </span><span class="nx">negative</span><span class="w"> </span><span class="nx">residuals</span><span class="w"> </span><span class="o">------------------------------</span>
-<span class="w">    </span><span class="nx">sid</span><span class="w"> </span><span class="nx">state</span><span class="w">  </span><span class="nx">crime</span><span class="w">  </span><span class="nx">murder</span><span class="w">  </span><span class="nx">pctmetro</span><span class="w">  </span><span class="nx">pctwhite</span><span class="w">  </span><span class="nx">pcths</span><span class="w">  </span><span class="nx">poverty</span><span class="w">  </span><span class="nx">single</span><span class="w">  </span>\
-<span class="mi">24</span><span class="w">   </span><span class="mi">25</span><span class="w">    </span><span class="nx">ms</span><span class="w">    </span><span class="mi">434</span><span class="w">    </span><span class="m m-Double">13.5</span><span class="w">      </span><span class="m m-Double">30.7</span><span class="w">      </span><span class="m m-Double">63.3</span><span class="w">   </span><span class="m m-Double">64.3</span><span class="w">     </span><span class="m m-Double">24.7</span><span class="w">    </span><span class="m m-Double">14.7</span><span class="w">   </span>
-<span class="mi">17</span><span class="w">   </span><span class="mi">18</span><span class="w">    </span><span class="nx">la</span><span class="w">   </span><span class="mi">1062</span><span class="w">    </span><span class="m m-Double">20.3</span><span class="w">      </span><span class="m m-Double">75.0</span><span class="w">      </span><span class="m m-Double">66.7</span><span class="w">   </span><span class="m m-Double">68.3</span><span class="w">     </span><span class="m m-Double">26.4</span><span class="w">    </span><span class="m m-Double">14.9</span><span class="w">   </span>
-<span class="mi">38</span><span class="w">   </span><span class="mi">39</span><span class="w">    </span><span class="nx">ri</span><span class="w">    </span><span class="mi">402</span><span class="w">     </span><span class="m m-Double">3.9</span><span class="w">      </span><span class="m m-Double">93.6</span><span class="w">      </span><span class="m m-Double">92.6</span><span class="w">   </span><span class="m m-Double">72.0</span><span class="w">     </span><span class="m m-Double">11.2</span><span class="w">    </span><span class="m m-Double">10.8</span><span class="w">   </span>
-<span class="mi">46</span><span class="w">   </span><span class="mi">47</span><span class="w">    </span><span class="nx">wa</span><span class="w">    </span><span class="mi">515</span><span class="w">     </span><span class="m m-Double">5.2</span><span class="w">      </span><span class="m m-Double">83.0</span><span class="w">      </span><span class="m m-Double">89.4</span><span class="w">   </span><span class="m m-Double">83.8</span><span class="w">     </span><span class="m m-Double">12.1</span><span class="w">    </span><span class="m m-Double">11.7</span><span class="w">   </span>
-<span class="mi">34</span><span class="w">   </span><span class="mi">35</span><span class="w">    </span><span class="nx">oh</span><span class="w">    </span><span class="mi">504</span><span class="w">     </span><span class="m m-Double">6.0</span><span class="w">      </span><span class="m m-Double">81.3</span><span class="w">      </span><span class="m m-Double">87.5</span><span class="w">   </span><span class="m m-Double">75.7</span><span class="w">     </span><span class="m m-Double">13.0</span><span class="w">    </span><span class="m m-Double">11.4</span>
-
-<span class="w">       </span><span class="nx">cooks</span><span class="w">    </span><span class="nx">dffits</span><span class="w">  </span><span class="nx">leverage</span><span class="w">  </span><span class="nx">resid_student</span><span class="w">  </span>
-<span class="mi">24</span><span class="w">  </span><span class="m m-Double">0.602106</span><span class="w"> </span><span class="o">-</span><span class="m m-Double">1.735096</span><span class="w">  </span><span class="m m-Double">0.191012</span><span class="w">      </span><span class="o">-</span><span class="m m-Double">3.570789</span><span class="w">  </span>
-<span class="mi">17</span><span class="w">  </span><span class="m m-Double">0.159264</span><span class="w"> </span><span class="o">-</span><span class="m m-Double">0.818120</span><span class="w">  </span><span class="m m-Double">0.165277</span><span class="w">      </span><span class="o">-</span><span class="m m-Double">1.838578</span><span class="w">  </span>
-<span class="mi">38</span><span class="w">  </span><span class="m m-Double">0.041165</span><span class="w"> </span><span class="o">-</span><span class="m m-Double">0.413655</span><span class="w">  </span><span class="m m-Double">0.056803</span><span class="w">      </span><span class="o">-</span><span class="m m-Double">1.685598</span><span class="w">  </span>
-<span class="mi">46</span><span class="w">  </span><span class="m m-Double">0.015271</span><span class="w"> </span><span class="o">-</span><span class="m m-Double">0.248989</span><span class="w">  </span><span class="m m-Double">0.035181</span><span class="w">      </span><span class="o">-</span><span class="m m-Double">1.303919</span><span class="w">  </span>
-<span class="mi">34</span><span class="w">  </span><span class="m m-Double">0.009695</span><span class="w"> </span><span class="o">-</span><span class="m m-Double">0.197588</span><span class="w">  </span><span class="m m-Double">0.028755</span><span class="w">      </span><span class="o">-</span><span class="m m-Double">1.148330</span>
+print '-'*30 + ' top 5 most positive residuals ' + '-'*30
+print r_sort.tail()
+</code></pre>
+<pre><code>------------------------------ studentized residual ------------------------------
+count    51.000000
+mean      0.018402
+std       1.133126
+min      -3.570789
+25%      -0.555460
+50%       0.052616
+75%       0.599771
+max       3.765847
+Name: resid_student, dtype: float64
 
 
-<span class="o">------------------------------</span><span class="w"> </span><span class="nx">top</span><span class="w"> </span><span class="mi">5</span><span class="w"> </span><span class="nx">most</span><span class="w"> </span><span class="nx">positive</span><span class="w"> </span><span class="nx">residuals</span><span class="w"> </span><span class="o">------------------------------</span>
-<span class="w">    </span><span class="nx">sid</span><span class="w"> </span><span class="nx">state</span><span class="w">  </span><span class="nx">crime</span><span class="w">  </span><span class="nx">murder</span><span class="w">  </span><span class="nx">pctmetro</span><span class="w">  </span><span class="nx">pctwhite</span><span class="w">  </span><span class="nx">pcths</span><span class="w">  </span><span class="nx">poverty</span><span class="w">  </span><span class="nx">single</span><span class="w">  </span>\
-<span class="mi">13</span><span class="w">   </span><span class="mi">14</span><span class="w">    </span><span class="nx">il</span><span class="w">    </span><span class="mi">960</span><span class="w">    </span><span class="m m-Double">11.4</span><span class="w">      </span><span class="m m-Double">84.0</span><span class="w">      </span><span class="m m-Double">81.0</span><span class="w">   </span><span class="m m-Double">76.2</span><span class="w">     </span><span class="m m-Double">13.6</span><span class="w">    </span><span class="m m-Double">11.5</span><span class="w">   </span>
-<span class="mi">12</span><span class="w">   </span><span class="mi">13</span><span class="w">    </span><span class="nx">id</span><span class="w">    </span><span class="mi">282</span><span class="w">     </span><span class="m m-Double">2.9</span><span class="w">      </span><span class="m m-Double">30.0</span><span class="w">      </span><span class="m m-Double">96.7</span><span class="w">   </span><span class="m m-Double">79.7</span><span class="w">     </span><span class="m m-Double">13.1</span><span class="w">     </span><span class="m m-Double">9.5</span><span class="w">   </span>
-<span class="mi">11</span><span class="w">   </span><span class="mi">12</span><span class="w">    </span><span class="nx">ia</span><span class="w">    </span><span class="mi">326</span><span class="w">     </span><span class="m m-Double">2.3</span><span class="w">      </span><span class="m m-Double">43.8</span><span class="w">      </span><span class="m m-Double">96.6</span><span class="w">   </span><span class="m m-Double">80.1</span><span class="w">     </span><span class="m m-Double">10.3</span><span class="w">     </span><span class="m m-Double">9.0</span><span class="w">   </span>
-<span class="mi">8</span><span class="w">     </span><span class="mi">9</span><span class="w">    </span><span class="nx">fl</span><span class="w">   </span><span class="mi">1206</span><span class="w">     </span><span class="m m-Double">8.9</span><span class="w">      </span><span class="m m-Double">93.0</span><span class="w">      </span><span class="m m-Double">83.5</span><span class="w">   </span><span class="m m-Double">74.4</span><span class="w">     </span><span class="m m-Double">17.8</span><span class="w">    </span><span class="m m-Double">10.6</span><span class="w">   </span>
-<span class="mi">50</span><span class="w">   </span><span class="mi">51</span><span class="w">    </span><span class="nx">dc</span><span class="w">   </span><span class="mi">2922</span><span class="w">    </span><span class="m m-Double">78.5</span><span class="w">     </span><span class="m m-Double">100.0</span><span class="w">      </span><span class="m m-Double">31.8</span><span class="w">   </span><span class="m m-Double">73.1</span><span class="w">     </span><span class="m m-Double">26.4</span><span class="w">    </span><span class="m m-Double">22.1</span>
+------------------------------ top 5 most negative residuals ------------------------------
+    sid state  crime  murder  pctmetro  pctwhite  pcths  poverty  single  \
+24   25    ms    434    13.5      30.7      63.3   64.3     24.7    14.7   
+17   18    la   1062    20.3      75.0      66.7   68.3     26.4    14.9   
+38   39    ri    402     3.9      93.6      92.6   72.0     11.2    10.8   
+46   47    wa    515     5.2      83.0      89.4   83.8     12.1    11.7   
+34   35    oh    504     6.0      81.3      87.5   75.7     13.0    11.4
 
-<span class="w">       </span><span class="nx">cooks</span><span class="w">    </span><span class="nx">dffits</span><span class="w">  </span><span class="nx">leverage</span><span class="w">  </span><span class="nx">resid_student</span><span class="w">  </span>
-<span class="mi">13</span><span class="w">  </span><span class="m m-Double">0.010661</span><span class="w">  </span><span class="m m-Double">0.207220</span><span class="w">  </span><span class="m m-Double">0.031358</span><span class="w">       </span><span class="m m-Double">1.151702</span><span class="w">  </span>
-<span class="mi">12</span><span class="w">  </span><span class="m m-Double">0.036675</span><span class="w">  </span><span class="m m-Double">0.385749</span><span class="w">  </span><span class="m m-Double">0.081675</span><span class="w">       </span><span class="m m-Double">1.293477</span><span class="w">  </span>
-<span class="mi">11</span><span class="w">  </span><span class="m m-Double">0.040978</span><span class="w">  </span><span class="m m-Double">0.411382</span><span class="w">  </span><span class="m m-Double">0.062768</span><span class="w">       </span><span class="m m-Double">1.589644</span><span class="w">  </span>
-<span class="mi">8</span><span class="w">   </span><span class="m m-Double">0.173629</span><span class="w">  </span><span class="m m-Double">0.883820</span><span class="w">  </span><span class="m m-Double">0.102202</span><span class="w">       </span><span class="m m-Double">2.619523</span><span class="w">  </span>
-<span class="mi">50</span><span class="w">  </span><span class="m m-Double">3.203429</span><span class="w">  </span><span class="m m-Double">4.050610</span><span class="w">  </span><span class="m m-Double">0.536383</span><span class="w">       </span><span class="m m-Double">3.765847</span>
-</code></pre></div>
+       cooks    dffits  leverage  resid_student  
+24  0.602106 -1.735096  0.191012      -3.570789  
+17  0.159264 -0.818120  0.165277      -1.838578  
+38  0.041165 -0.413655  0.056803      -1.685598  
+46  0.015271 -0.248989  0.035181      -1.303919  
+34  0.009695 -0.197588  0.028755      -1.148330
 
+
+------------------------------ top 5 most positive residuals ------------------------------
+    sid state  crime  murder  pctmetro  pctwhite  pcths  poverty  single  \
+13   14    il    960    11.4      84.0      81.0   76.2     13.6    11.5   
+12   13    id    282     2.9      30.0      96.7   79.7     13.1     9.5   
+11   12    ia    326     2.3      43.8      96.6   80.1     10.3     9.0   
+8     9    fl   1206     8.9      93.0      83.5   74.4     17.8    10.6   
+50   51    dc   2922    78.5     100.0      31.8   73.1     26.4    22.1
+
+       cooks    dffits  leverage  resid_student  
+13  0.010661  0.207220  0.031358       1.151702  
+12  0.036675  0.385749  0.081675       1.293477  
+11  0.040978  0.411382  0.062768       1.589644  
+8   0.173629  0.883820  0.102202       2.619523  
+50  3.203429  4.050610  0.536383       3.765847
+</code></pre>
 <p>We should pay attention to studentized residuals that exceed +2 or -2, and get even more concerned about residuals that exceed +2.5 or -2.5 and even yet more concerned about residuals that exceed +3 or -3.  These results show that DC and MS are the most worrisome observations, followed by FL.</p>
 <p>Let's show all of the variables in our regression where the studentized residual exceeds +2 or -2, i.e., where the absolute value of the residual exceeds 2.  We see the data for the three potential outliers we identified, namely Florida, Mississippi and Washington D.C. Looking carefully at these three observations, we couldn't find any data entry errors, though we may want to do another regression analysis with the extreme point such as DC deleted. We will return to this issue later. </p>
-<div class="highlight"><pre><span></span><code><span class="nb">print</span> <span class="n">crime</span><span class="p">[</span><span class="nb">abs</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">]</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>    sid state  crime  murder  pctmetro  pctwhite  pcths  poverty  single
+<pre><code class="language-python">print crime[abs(r) &gt; 2]
+</code></pre>
+<pre><code>    sid state  crime  murder  pctmetro  pctwhite  pcths  poverty  single
 8     9    fl   1206     8.9      93.0      83.5   74.4     17.8    10.6
 24   25    ms    434    13.5      30.7      63.3   64.3     24.7    14.7
 50   51    dc   2922    78.5     100.0      31.8   73.1     26.4    22.1
-</code></pre></div>
-
+</code></pre>
 <p>Now let's look at the leverage's to identify observations that will have potential great influence on regression coefficient estimates.   </p>
 <p>Generally, a point with leverage greater than (2k+2)/n should be carefully examined, where k is the number of predictors and n is the number of observations. In our example this works out to (2*3+2)/51 = .15686275, so we can do the following. </p>
-<div class="highlight"><pre><span></span><code><span class="n">leverage</span> <span class="o">=</span> <span class="n">crime1res</span><span class="o">.</span><span class="n">leverage</span>
-<span class="nb">print</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">30</span> <span class="o">+</span> <span class="s1">&#39; Leverage &#39;</span> <span class="o">+</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">30</span>
-<span class="nb">print</span> <span class="n">leverage</span><span class="o">.</span><span class="n">describe</span><span class="p">()</span>
-<span class="nb">print</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+<pre><code class="language-python">leverage = crime1res.leverage
+print '-'*30 + ' Leverage ' + '-'*30
+print leverage.describe()
+print '\n'
 
-<span class="n">leverage_sort</span> <span class="o">=</span> <span class="n">crime1res</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span> <span class="o">=</span> <span class="s1">&#39;leverage&#39;</span><span class="p">,</span> <span class="n">ascending</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
+leverage_sort = crime1res.sort_values(by = 'leverage', ascending = False)
 
-<span class="nb">print</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">30</span> <span class="o">+</span> <span class="s1">&#39; top 5 highest leverage data points &#39;</span> <span class="o">+</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">30</span>
-<span class="nb">print</span> <span class="n">leverage_sort</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
-</code></pre></div>
+print '-'*30 + ' top 5 highest leverage data points ' + '-'*30
+print leverage_sort.head()
+</code></pre>
+<pre><code>------------------------------ Leverage ------------------------------
+count    51.000000
+mean      0.078431
+std       0.080285
+min       0.020061
+25%       0.037944
+50%       0.061847
+75%       0.083896
+max       0.536383
+Name: leverage, dtype: float64
 
-<div class="highlight"><pre><span></span><code><span class="o">------------------------------</span><span class="w"> </span><span class="nx">Leverage</span><span class="w"> </span><span class="o">------------------------------</span>
-<span class="nx">count</span><span class="w">    </span><span class="m m-Double">51.000000</span>
-<span class="nx">mean</span><span class="w">      </span><span class="m m-Double">0.078431</span>
-<span class="nx">std</span><span class="w">       </span><span class="m m-Double">0.080285</span>
-<span class="nx">min</span><span class="w">       </span><span class="m m-Double">0.020061</span>
-<span class="mi">25</span><span class="o">%</span><span class="w">       </span><span class="m m-Double">0.037944</span>
-<span class="mi">50</span><span class="o">%</span><span class="w">       </span><span class="m m-Double">0.061847</span>
-<span class="mi">75</span><span class="o">%</span><span class="w">       </span><span class="m m-Double">0.083896</span>
-<span class="nx">max</span><span class="w">       </span><span class="m m-Double">0.536383</span>
-<span class="nx">Name</span><span class="p">:</span><span class="w"> </span><span class="nx">leverage</span><span class="p">,</span><span class="w"> </span><span class="nx">dtype</span><span class="p">:</span><span class="w"> </span><span class="nx">float64</span>
 
+------------------------------ top 5 highest leverage data points ------------------------------
+    sid state  crime  murder  pctmetro  pctwhite  pcths  poverty  single  \
+50   51    dc   2922    78.5     100.0      31.8   73.1     26.4    22.1   
+0     1    ak    761     9.0      41.8      75.2   86.6      9.1    14.3   
+24   25    ms    434    13.5      30.7      63.3   64.3     24.7    14.7   
+48   49    wv    208     6.9      41.8      96.3   66.0     22.2     9.4   
+17   18    la   1062    20.3      75.0      66.7   68.3     26.4    14.9
 
-<span class="o">------------------------------</span><span class="w"> </span><span class="nx">top</span><span class="w"> </span><span class="mi">5</span><span class="w"> </span><span class="nx">highest</span><span class="w"> </span><span class="nx">leverage</span><span class="w"> </span><span class="nx">data</span><span class="w"> </span><span class="nx">points</span><span class="w"> </span><span class="o">------------------------------</span>
-<span class="w">    </span><span class="nx">sid</span><span class="w"> </span><span class="nx">state</span><span class="w">  </span><span class="nx">crime</span><span class="w">  </span><span class="nx">murder</span><span class="w">  </span><span class="nx">pctmetro</span><span class="w">  </span><span class="nx">pctwhite</span><span class="w">  </span><span class="nx">pcths</span><span class="w">  </span><span class="nx">poverty</span><span class="w">  </span><span class="nx">single</span><span class="w">  </span>\
-<span class="mi">50</span><span class="w">   </span><span class="mi">51</span><span class="w">    </span><span class="nx">dc</span><span class="w">   </span><span class="mi">2922</span><span class="w">    </span><span class="m m-Double">78.5</span><span class="w">     </span><span class="m m-Double">100.0</span><span class="w">      </span><span class="m m-Double">31.8</span><span class="w">   </span><span class="m m-Double">73.1</span><span class="w">     </span><span class="m m-Double">26.4</span><span class="w">    </span><span class="m m-Double">22.1</span><span class="w">   </span>
-<span class="mi">0</span><span class="w">     </span><span class="mi">1</span><span class="w">    </span><span class="nx">ak</span><span class="w">    </span><span class="mi">761</span><span class="w">     </span><span class="m m-Double">9.0</span><span class="w">      </span><span class="m m-Double">41.8</span><span class="w">      </span><span class="m m-Double">75.2</span><span class="w">   </span><span class="m m-Double">86.6</span><span class="w">      </span><span class="m m-Double">9.1</span><span class="w">    </span><span class="m m-Double">14.3</span><span class="w">   </span>
-<span class="mi">24</span><span class="w">   </span><span class="mi">25</span><span class="w">    </span><span class="nx">ms</span><span class="w">    </span><span class="mi">434</span><span class="w">    </span><span class="m m-Double">13.5</span><span class="w">      </span><span class="m m-Double">30.7</span><span class="w">      </span><span class="m m-Double">63.3</span><span class="w">   </span><span class="m m-Double">64.3</span><span class="w">     </span><span class="m m-Double">24.7</span><span class="w">    </span><span class="m m-Double">14.7</span><span class="w">   </span>
-<span class="mi">48</span><span class="w">   </span><span class="mi">49</span><span class="w">    </span><span class="nx">wv</span><span class="w">    </span><span class="mi">208</span><span class="w">     </span><span class="m m-Double">6.9</span><span class="w">      </span><span class="m m-Double">41.8</span><span class="w">      </span><span class="m m-Double">96.3</span><span class="w">   </span><span class="m m-Double">66.0</span><span class="w">     </span><span class="m m-Double">22.2</span><span class="w">     </span><span class="m m-Double">9.4</span><span class="w">   </span>
-<span class="mi">17</span><span class="w">   </span><span class="mi">18</span><span class="w">    </span><span class="nx">la</span><span class="w">   </span><span class="mi">1062</span><span class="w">    </span><span class="m m-Double">20.3</span><span class="w">      </span><span class="m m-Double">75.0</span><span class="w">      </span><span class="m m-Double">66.7</span><span class="w">   </span><span class="m m-Double">68.3</span><span class="w">     </span><span class="m m-Double">26.4</span><span class="w">    </span><span class="m m-Double">14.9</span>
-
-<span class="w">       </span><span class="nx">cooks</span><span class="w">    </span><span class="nx">dffits</span><span class="w">  </span><span class="nx">leverage</span><span class="w">  </span><span class="nx">resid_student</span><span class="w">  </span>
-<span class="mi">50</span><span class="w">  </span><span class="m m-Double">3.203429</span><span class="w">  </span><span class="m m-Double">4.050610</span><span class="w">  </span><span class="m m-Double">0.536383</span><span class="w">       </span><span class="m m-Double">3.765847</span><span class="w">  </span>
-<span class="mi">0</span><span class="w">   </span><span class="m m-Double">0.007565</span><span class="w">  </span><span class="m m-Double">0.172247</span><span class="w">  </span><span class="m m-Double">0.260676</span><span class="w">       </span><span class="m m-Double">0.290081</span><span class="w">  </span>
-<span class="mi">24</span><span class="w">  </span><span class="m m-Double">0.602106</span><span class="w"> </span><span class="o">-</span><span class="m m-Double">1.735096</span><span class="w">  </span><span class="m m-Double">0.191012</span><span class="w">      </span><span class="o">-</span><span class="m m-Double">3.570789</span><span class="w">  </span>
-<span class="mi">48</span><span class="w">  </span><span class="m m-Double">0.016361</span><span class="w"> </span><span class="o">-</span><span class="m m-Double">0.253893</span><span class="w">  </span><span class="m m-Double">0.180200</span><span class="w">      </span><span class="o">-</span><span class="m m-Double">0.541535</span><span class="w">  </span>
-<span class="mi">17</span><span class="w">  </span><span class="m m-Double">0.159264</span><span class="w"> </span><span class="o">-</span><span class="m m-Double">0.818120</span><span class="w">  </span><span class="m m-Double">0.165277</span><span class="w">      </span><span class="o">-</span><span class="m m-Double">1.838578</span>
-</code></pre></div>
-
+       cooks    dffits  leverage  resid_student  
+50  3.203429  4.050610  0.536383       3.765847  
+0   0.007565  0.172247  0.260676       0.290081  
+24  0.602106 -1.735096  0.191012      -3.570789  
+48  0.016361 -0.253893  0.180200      -0.541535  
+17  0.159264 -0.818120  0.165277      -1.838578
+</code></pre>
 <p>As we have seen, DC is an observation that both has a large residual and large leverage.  Such points are potentially the most influential.  We can make a plot that shows the leverage by the residual squared and look for observations that are jointly high on both of these measures.  We can do this using a leverage versus residual-squared plot. Using residual squared instead of residual itself, the graph is restricted to the first quadrant and the relative positions of data points are preserved. This is a quick way of checking potential influential observations and outliers at the same time. Both types of points are of great concern for us.   </p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">statsmodels.graphics.regressionplots</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="n">plot_leverage_resid2</span><span class="p">(</span><span class="n">lm</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<pre><code class="language-python">from statsmodels.graphics.regressionplots import *
+plot_leverage_resid2(lm)
+plt.show()
 
-<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">crime1res</span><span class="o">.</span><span class="n">resid_student</span> <span class="o">**</span> <span class="mi">2</span><span class="p">,</span> <span class="n">crime1res</span><span class="o">.</span><span class="n">leverage</span><span class="p">)</span>
-<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">state</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">crime</span><span class="o">.</span><span class="n">state</span><span class="p">):</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="p">[(</span><span class="n">crime1res</span><span class="o">.</span><span class="n">resid_student</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)[</span><span class="n">i</span><span class="p">],</span>  <span class="n">crime1res</span><span class="o">.</span><span class="n">leverage</span><span class="p">[</span><span class="n">i</span><span class="p">]])</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;pctmetro&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;crime&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+plt.scatter(crime1res.resid_student ** 2, crime1res.leverage)
+for i, state in enumerate(crime.state):
+    plt.annotate(state, [(crime1res.resid_student ** 2)[i],  crime1res.leverage[i]])
+plt.xlabel(&quot;pctmetro&quot;)
+plt.ylabel(&quot;crime&quot;)
+plt.show()
 
-<span class="n">influence_plot</span><span class="p">(</span><span class="n">lm</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-</code></pre></div>
-
+influence_plot(lm)
+plt.show()
+</code></pre>
 <p><img alt="png" src="/figures/ucla_ats_linreg_2_1_04.png"></p>
 <p><img alt="png" src="/figures/ucla_ats_linreg_2_1_05.png"></p>
 <p><img alt="png" src="/figures/ucla_ats_linreg_2_1_06.png"></p>
@@ -599,9 +581,8 @@ Leverage v.s. Studentized Residuals
 <p>Now let's move on to overall measures of influence. Specifically, let's look at Cook's D and DFITS.  These measures both combine information on the residual and leverage. Cook's D and DFITS are very similar except that they scale differently, but they give us similar answers.</p>
 <p>The lowest value that Cook's D can assume is zero, and the higher the Cook's D is, the more influential the point is. The conventional cut-off point is 4/n. We can list any observation above the cut-off point by doing the following. We do see that the Cook's D for DC is by far the largest.  </p>
 <p>Now let's take a look at DFITS. The conventional cut-off point for DFITS is 2*sqrt(k/n). DFITS can be either positive or negative, with numbers close to zero corresponding to the points with small or zero influence. As we see, DFITS also indicates that DC is, by far, the most influential observation. </p>
-<div class="highlight"><pre><span></span><code><span class="n">crime1res</span><span class="p">[</span><span class="nb">abs</span><span class="p">(</span><span class="n">crime1res</span><span class="o">.</span><span class="n">dffits</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">3.0</span> <span class="o">/</span> <span class="mi">51</span><span class="p">)]</span>
-</code></pre></div>
-
+<pre><code class="language-python">crime1res[abs(crime1res.dffits) &gt; 2 * math.sqrt(3.0 / 51)]
+</code></pre>
 <div>
 <table border="1" class="dataframe">
   <thead>
@@ -692,13 +673,12 @@ Leverage v.s. Studentized Residuals
 </div>
 
 <p>The above measures are general measures of influence.  You can also consider more specific measures of influence that assess how each coefficient is changed by deleting the observation. This measure is called <a href="https://en.wikipedia.org/wiki/Influential_observation"><strong>DFBETA</strong></a> and is created for each of the predictors. Apparently this is more computationally intensive than summary statistics such as Cook's D because the more predictors a model has, the more computation it may involve. We can restrict our attention to only those predictors that we are most concerned with and  to see how well behaved those predictors are. </p>
-<div class="highlight"><pre><span></span><code><span class="n">crimedfbeta</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">crime1res</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">influence</span><span class="o">.</span><span class="n">dfbetas</span><span class="p">,</span> <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;dfb_intercept&#39;</span><span class="p">,</span> <span class="s1">&#39;dfb_pctmetro&#39;</span><span class="p">,</span> <span class="s1">&#39;dfb_poverty&#39;</span><span class="p">,</span> <span class="s1">&#39;dfb_single&#39;</span><span class="p">])],</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
-<span class="nb">print</span> <span class="n">crimedfbeta</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+<pre><code class="language-python">crimedfbeta = pd.concat([crime1res, pd.DataFrame(influence.dfbetas, columns = ['dfb_intercept', 'dfb_pctmetro', 'dfb_poverty', 'dfb_single'])], axis = 1)
+print crimedfbeta.head()
 
-<span class="c1"># print pd.DataFrame(OLSInfluence(lm).dfbetas).head()</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>   sid state  crime  murder  pctmetro  pctwhite  pcths  poverty  single  \
+# print pd.DataFrame(OLSInfluence(lm).dfbetas).head()
+</code></pre>
+<pre><code>   sid state  crime  murder  pctmetro  pctwhite  pcths  poverty  single  \
 0    1    ak    761     9.0      41.8      75.2   86.6      9.1    14.3   
 1    2    al    780    11.6      67.4      73.5   66.9     17.4    11.5   
 2    3    ar    593    10.2      44.7      82.9   66.3     20.0    10.7   
@@ -718,29 +698,25 @@ Leverage v.s. Studentized Residuals
 2     0.175348   -0.105263  
 3    -0.030883    0.001242  
 4     0.008801   -0.003636
-</code></pre></div>
-
+</code></pre>
 <p>The value for DFB_single for Alaska is 0.14, which means that by being included in the analysis (as compared to being excluded), Alaska increases the coefficient for single by 0.14 standard errors, i.e., 0.14 times the standard error for BSingle or by (0.14 * 15.5).  Because the inclusion of an observation could either contribute to an increase or decrease in a regression coefficient, DFBETAs can be either positive or negative.  A DFBETA value in excess of  2/sqrt(n) merits further investigation. In this example, we would be concerned about absolute values in excess of 2/sqrt(51) or 0.28.</p>
 <p>We can plot all three DFBETA values against the state id in one graph shown below. We add a line at 0.28 and -0.28 to help us see potentially troublesome observations.  We see the largest value is about 3.0 for DFsingle. </p>
-<div class="highlight"><pre><span></span><code><span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">crimedfbeta</span><span class="o">.</span><span class="n">sid</span><span class="p">,</span> <span class="n">crimedfbeta</span><span class="o">.</span><span class="n">dfb_pctmetro</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s2">&quot;red&quot;</span><span class="p">,</span> <span class="n">marker</span> <span class="o">=</span> <span class="s2">&quot;o&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">crimedfbeta</span><span class="o">.</span><span class="n">sid</span><span class="p">,</span> <span class="n">crimedfbeta</span><span class="o">.</span><span class="n">dfb_poverty</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s2">&quot;green&quot;</span><span class="p">,</span> <span class="n">marker</span> <span class="o">=</span> <span class="s2">&quot;+&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">crimedfbeta</span><span class="o">.</span><span class="n">sid</span><span class="p">,</span> <span class="n">crimedfbeta</span><span class="o">.</span><span class="n">dfb_single</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s2">&quot;blue&quot;</span><span class="p">,</span> <span class="n">marker</span> <span class="o">=</span> <span class="s2">&quot;*&quot;</span><span class="p">)</span>
+<pre><code class="language-python">plt.scatter(crimedfbeta.sid, crimedfbeta.dfb_pctmetro, color = &quot;red&quot;, marker = &quot;o&quot;)
+plt.scatter(crimedfbeta.sid, crimedfbeta.dfb_poverty, color = &quot;green&quot;, marker = &quot;+&quot;)
+plt.scatter(crimedfbeta.sid, crimedfbeta.dfb_single, color = &quot;blue&quot;, marker = &quot;*&quot;)
 
-<span class="c1"># add a horizontial line in pyplot, using plt.plot((x1, x2), (y1, y2), &#39;c-&#39;)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">((</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">55</span><span class="p">),</span> <span class="p">(</span><span class="mf">0.28</span><span class="p">,</span> <span class="mf">0.28</span><span class="p">),</span> <span class="s1">&#39;k-&#39;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">((</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">55</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mf">0.28</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.28</span><span class="p">),</span> <span class="s1">&#39;k-&#39;</span><span class="p">)</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>[&lt;matplotlib.lines.Line2D at 0x23161ac8&gt;]
-</code></pre></div>
-
+# add a horizontial line in pyplot, using plt.plot((x1, x2), (y1, y2), 'c-')
+plt.plot((-5, 55), (0.28, 0.28), 'k-')
+plt.plot((-5, 55), (-0.28, -0.28), 'k-')
+</code></pre>
+<pre><code>[&lt;matplotlib.lines.Line2D at 0x23161ac8&gt;]
+</code></pre>
 <p><img alt="png" src="/figures/ucla_ats_linreg_2_1_07.png"></p>
 <p>Finally, all the analysis showing data point with 'dc' is the most problematic observation. Let's run the regression without the 'dc' point.</p>
-<div class="highlight"><pre><span></span><code><span class="n">lm_1</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="n">formula</span> <span class="o">=</span> <span class="s2">&quot;crime ~ pctmetro + poverty + single&quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">crime</span><span class="p">[</span><span class="n">crime</span><span class="o">.</span><span class="n">state</span> <span class="o">!=</span> <span class="s2">&quot;dc&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="nb">print</span> <span class="n">lm_1</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>                            OLS Regression Results                            
+<pre><code class="language-python">lm_1 = smf.ols(formula = &quot;crime ~ pctmetro + poverty + single&quot;, data = crime[crime.state != &quot;dc&quot;]).fit()
+print lm_1.summary()
+</code></pre>
+<pre><code>                            OLS Regression Results                            
 ==============================================================================
 Dep. Variable:                  crime   R-squared:                       0.722
 Model:                            OLS   Adj. R-squared:                  0.704
@@ -750,39 +726,37 @@ Time:                        07:48:06   Log-Likelihood:                -322.90
 No. Observations:                  50   AIC:                             653.8
 Df Residuals:                      46   BIC:                             661.5
 Df Model:                           3                                         
-<span class="gh">Covariance Type:            nonrobust                                         </span>
-<span class="gh">==============================================================================</span>
+Covariance Type:            nonrobust                                         
+==============================================================================
                  coef    std err          t      P&gt;|t|      [95.0% Conf. Int.]
 ------------------------------------------------------------------------------
 Intercept  -1197.5381    180.487     -6.635      0.000     -1560.840  -834.236
 pctmetro       7.7123      1.109      6.953      0.000         5.480     9.945
 poverty       18.2827      6.136      2.980      0.005         5.932    30.634
-<span class="gh">single        89.4008     17.836      5.012      0.000        53.498   125.303</span>
-<span class="gh">==============================================================================</span>
+single        89.4008     17.836      5.012      0.000        53.498   125.303
+==============================================================================
 Omnibus:                        0.112   Durbin-Watson:                   1.760
 Prob(Omnibus):                  0.945   Jarque-Bera (JB):                0.144
 Skew:                           0.098   Prob(JB):                        0.930
-<span class="gh">Kurtosis:                       2.825   Cond. No.                         574.</span>
-<span class="gh">==============================================================================</span>
+Kurtosis:                       2.825   Cond. No.                         574.
+==============================================================================
 
 Warnings:
 [1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
-</code></pre></div>
-
+</code></pre>
 <h5>Summary</h5>
 <p>In this section, we explored a number of methods of identifying outliers and influential points. In a typical analysis, you would probably use only some of these methods. Generally speaking, there are two types of methods for assessing outliers: statistics such as residuals, leverage, Cook's D and DFITS, that assess the overall impact of an observation on the regression results, and statistics such as DFBETA that assess the specific impact of an observation on the regression coefficients. </p>
 <p>In our example, we found that DC was a point of major concern. We performed a regression with it and without it and the regression equations were very different. We can justify removing it from our analysis by reasoning that our model  is to predict crime rate for states, not for metropolitan areas. </p>
 <h3>2.2 Tests for Normality of Residuals</h3>
 <p>One of the assumptions of linear regression analysis is that the residuals are normally distributed. This assumption assures that the p-values for the t-tests will be valid. As before, we will generate the residuals (called r) and predicted values (called fv) and put them in a dataset (called elem1res).  We will also keep the variables api00, meals, ell and emer in that dataset.</p>
 <p>Let's use the elemapi2 data file we saw in Chapter 1 for these analyses.  Let's predict academic performance (api00) from percent receiving free meals (meals), percent of English language learners (ell), and percent of teachers with emergency credentials (emer). </p>
-<div class="highlight"><pre><span></span><code><span class="n">elemapi2</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">mypath</span> <span class="o">+</span> <span class="s1">&#39;elemapi2.csv&#39;</span><span class="p">)</span>
-<span class="n">lm</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="n">formula</span> <span class="o">=</span> <span class="s2">&quot;api00 ~ meals + ell + emer&quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">elemapi2</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="nb">print</span> <span class="n">lm</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+<pre><code class="language-python">elemapi2 = pd.read_csv(mypath + 'elemapi2.csv')
+lm = smf.ols(formula = &quot;api00 ~ meals + ell + emer&quot;, data = elemapi2).fit()
+print lm.summary()
 
-<span class="n">elem1res</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">elemapi2</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">lm</span><span class="o">.</span><span class="n">resid</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;resid&#39;</span><span class="p">),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">lm</span><span class="o">.</span><span class="n">predict</span><span class="p">(),</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;predict&quot;</span><span class="p">)],</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>                            OLS Regression Results                            
+elem1res = pd.concat([elemapi2, pd.Series(lm.resid, name = 'resid'), pd.Series(lm.predict(), name = &quot;predict&quot;)], axis = 1)
+</code></pre>
+<pre><code>                            OLS Regression Results                            
 ==============================================================================
 Dep. Variable:                  api00   R-squared:                       0.836
 Model:                            OLS   Adj. R-squared:                  0.835
@@ -792,148 +766,129 @@ Time:                        09:42:41   Log-Likelihood:                -2188.5
 No. Observations:                 400   AIC:                             4385.
 Df Residuals:                     396   BIC:                             4401.
 Df Model:                           3                                         
-<span class="gh">Covariance Type:            nonrobust                                         </span>
-<span class="gh">==============================================================================</span>
+Covariance Type:            nonrobust                                         
+==============================================================================
                  coef    std err          t      P&gt;|t|      [95.0% Conf. Int.]
 ------------------------------------------------------------------------------
 Intercept    886.7033      6.260    141.651      0.000       874.397   899.010
 meals         -3.1592      0.150    -21.098      0.000        -3.454    -2.865
 ell           -0.9099      0.185     -4.928      0.000        -1.273    -0.547
-<span class="gh">emer          -1.5735      0.293     -5.368      0.000        -2.150    -0.997</span>
-<span class="gh">==============================================================================</span>
+emer          -1.5735      0.293     -5.368      0.000        -2.150    -0.997
+==============================================================================
 Omnibus:                        2.394   Durbin-Watson:                   1.437
 Prob(Omnibus):                  0.302   Jarque-Bera (JB):                2.168
 Skew:                           0.170   Prob(JB):                        0.338
-<span class="gh">Kurtosis:                       3.119   Cond. No.                         171.</span>
-<span class="gh">==============================================================================</span>
+Kurtosis:                       3.119   Cond. No.                         171.
+==============================================================================
 
 Warnings:
 [1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="n">sns</span><span class="o">.</span><span class="n">kdeplot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">elem1res</span><span class="o">.</span><span class="n">resid</span><span class="p">),</span> <span class="n">bw</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
-<span class="n">sns</span><span class="o">.</span><span class="n">distplot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">elem1res</span><span class="o">.</span><span class="n">resid</span><span class="p">),</span> <span class="n">hist</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>&lt;matplotlib.axes._subplots.AxesSubplot at 0x23bc05c0&gt;
-</code></pre></div>
-
+</code></pre>
+<pre><code class="language-python">sns.kdeplot(np.array(elem1res.resid), bw=10)
+sns.distplot(np.array(elem1res.resid), hist=False)
+</code></pre>
+<pre><code>&lt;matplotlib.axes._subplots.AxesSubplot at 0x23bc05c0&gt;
+</code></pre>
 <p><img alt="png" src="/figures/ucla_ats_linreg_2_1_08.png"></p>
-<div class="highlight"><pre><span></span><code><span class="n">sm</span><span class="o">.</span><span class="n">qqplot</span><span class="p">(</span><span class="n">elem1res</span><span class="o">.</span><span class="n">resid</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<pre><code class="language-python">sm.qqplot(elem1res.resid)
+plt.show()
 
-<span class="kn">import</span> <span class="nn">pylab</span>
-<span class="n">scipystats</span><span class="o">.</span><span class="n">probplot</span><span class="p">(</span><span class="n">elem1res</span><span class="o">.</span><span class="n">resid</span><span class="p">,</span> <span class="n">dist</span><span class="o">=</span><span class="s2">&quot;norm&quot;</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="n">pylab</span><span class="p">)</span>
-<span class="n">pylab</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-</code></pre></div>
-
+import pylab
+scipystats.probplot(elem1res.resid, dist=&quot;norm&quot;, plot=pylab)
+pylab.show()
+</code></pre>
 <p><img alt="png" src="/figures/ucla_ats_linreg_2_1_09.png"></p>
 <p><img alt="png" src="/figures/ucla_ats_linreg_2_1_10.png"></p>
-<div class="highlight"><pre><span></span><code><span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">by default, scipy stats.kstest for normal will assume mean 0 and stdev 1. To use this, the data should be normalized first</span>
-<span class="sd">&#39;&#39;&#39;</span>
-<span class="n">resid</span> <span class="o">=</span> <span class="n">elem1res</span><span class="o">.</span><span class="n">resid</span>
-<span class="n">norm_resid</span> <span class="o">=</span> <span class="p">(</span><span class="n">elem1res</span><span class="o">.</span><span class="n">resid</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">elem1res</span><span class="o">.</span><span class="n">resid</span><span class="p">))</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">elem1res</span><span class="o">.</span><span class="n">resid</span><span class="p">)</span>
-<span class="nb">print</span> <span class="n">scipystats</span><span class="o">.</span><span class="n">kstest</span><span class="p">(</span><span class="n">norm_resid</span><span class="p">,</span> <span class="s1">&#39;norm&#39;</span><span class="p">)</span>
+<pre><code class="language-python">'''
+by default, scipy stats.kstest for normal will assume mean 0 and stdev 1. To use this, the data should be normalized first
+'''
+resid = elem1res.resid
+norm_resid = (elem1res.resid - np.mean(elem1res.resid)) / np.std(elem1res.resid)
+print scipystats.kstest(norm_resid, 'norm')
 
-<span class="c1"># or use the statsmodels provided function kstest_normal to use kolmogorov-smirnov test or Anderson-Darling test</span>
-<span class="nb">print</span> <span class="n">stats</span><span class="o">.</span><span class="n">diagnostic</span><span class="o">.</span><span class="n">kstest_normal</span><span class="p">(</span><span class="n">elem1res</span><span class="o">.</span><span class="n">resid</span><span class="p">,</span> <span class="n">pvalmethod</span><span class="o">=</span><span class="s1">&#39;approx&#39;</span><span class="p">)</span>
-<span class="nb">print</span> <span class="n">stats</span><span class="o">.</span><span class="n">diagnostic</span><span class="o">.</span><span class="n">normal_ad</span><span class="p">(</span><span class="n">elem1res</span><span class="o">.</span><span class="n">resid</span><span class="p">)</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>KstestResult(statistic=0.032723261818185578, pvalue=0.78506446901572213)
+# or use the statsmodels provided function kstest_normal to use kolmogorov-smirnov test or Anderson-Darling test
+print stats.diagnostic.kstest_normal(elem1res.resid, pvalmethod='approx')
+print stats.diagnostic.normal_ad(elem1res.resid)
+</code></pre>
+<pre><code>KstestResult(statistic=0.032723261818185578, pvalue=0.78506446901572213)
 (0.032676218847940308, 0.35190400492542645)
 (0.34071240334691311, 0.49471893268937844)
-</code></pre></div>
-
+</code></pre>
 <p>Severe outliers consist of those points that are either 3 inter-quartile-ranges below the first quartile or 3 inter-quartile-ranges above the third quartile. The presence of any severe outliers should be sufficient evidence to reject normality at a 5% significance level. Mild outliers are common in samples of any size. In our case, we don't have any severe outliers and the distribution seems fairly symmetric. The residuals have an approximately normal distribution. (See the output of the proc univariate above.)</p>
 <p>In the Kilmogorov-Smirnov test or  Anderson-Darling test for normality, the p-value  is based on the assumption that the distribution is normal. In our example, the p-value is very large, indicating that we cannot reject that residuals is normally distributed. </p>
 <h3>2.3 Tests for Heteroscedasticity</h3>
 <p>One of the main assumptions for the ordinary least squares regression is the homogeneity of variance of the residuals. If the model is well-fitted, there should be no pattern to the residuals plotted against the fitted values. If the variance of the residuals is non-constant, then the residual variance is said to be "heteroscedastic." There are graphical and non-graphical methods for detecting heteroscedasticity. A commonly used graphical method is to plot the residuals versus fitted (predicted) values. We see that the pattern of the data points is getting a little narrower towards the right end, which is an indication of mild heteroscedasticity. </p>
-<div class="highlight"><pre><span></span><code><span class="n">lm</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="n">formula</span> <span class="o">=</span> <span class="s2">&quot;api00 ~ meals + ell + emer&quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">elemapi2</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+<pre><code class="language-python">lm = smf.ols(formula = &quot;api00 ~ meals + ell + emer&quot;, data = elemapi2).fit()
 
-<span class="n">resid</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">resid</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">lm</span><span class="o">.</span><span class="n">predict</span><span class="p">(),</span> <span class="n">resid</span><span class="p">)</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>&lt;matplotlib.collections.PathCollection at 0x261445f8&gt;
-</code></pre></div>
-
+resid = lm.resid
+plt.scatter(lm.predict(), resid)
+</code></pre>
+<pre><code>&lt;matplotlib.collections.PathCollection at 0x261445f8&gt;
+</code></pre>
 <p><img alt="png" src="/figures/ucla_ats_linreg_2_1_11.png"></p>
-<div class="highlight"><pre><span></span><code><span class="c1"># p-value here is different from SAS output, need double check</span>
-<span class="n">stats</span><span class="o">.</span><span class="n">diagnostic</span><span class="o">.</span><span class="n">het_white</span><span class="p">(</span><span class="n">resid</span><span class="p">,</span> <span class="n">lm</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">exog</span><span class="p">,</span> <span class="n">retres</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>(18.352755736667305,
+<pre><code class="language-python"># p-value here is different from SAS output, need double check
+stats.diagnostic.het_white(resid, lm.model.exog, retres = False)
+</code></pre>
+<pre><code>(18.352755736667305,
  0.031294634010796941,
  2.0838250344433504,
  0.029987789753355969)
-</code></pre></div>
+</code></pre>
+<pre><code class="language-python">lm2 = smf.ols(formula = &quot;api00 ~ enroll&quot;, data = elemapi2).fit()
 
-<div class="highlight"><pre><span></span><code><span class="n">lm2</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="n">formula</span> <span class="o">=</span> <span class="s2">&quot;api00 ~ enroll&quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">elemapi2</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-
-<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">lm2</span><span class="o">.</span><span class="n">predict</span><span class="p">(),</span> <span class="n">lm2</span><span class="o">.</span><span class="n">resid</span><span class="p">)</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>&lt;matplotlib.collections.PathCollection at 0x25ccb470&gt;
-</code></pre></div>
-
+plt.scatter(lm2.predict(), lm2.resid)
+</code></pre>
+<pre><code>&lt;matplotlib.collections.PathCollection at 0x25ccb470&gt;
+</code></pre>
 <p><img alt="png" src="/figures/ucla_ats_linreg_2_1_12.png"></p>
-<div class="highlight"><pre><span></span><code><span class="n">elemapi2</span><span class="p">[</span><span class="s1">&#39;log_enroll&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">elemapi2</span><span class="o">.</span><span class="n">enroll</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
-<span class="n">lm3</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="n">formula</span> <span class="o">=</span> <span class="s2">&quot;api00 ~ log_enroll&quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">elemapi2</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+<pre><code class="language-python">elemapi2['log_enroll'] = elemapi2.enroll.map(lambda x: math.log(x))
+lm3 = smf.ols(formula = &quot;api00 ~ log_enroll&quot;, data = elemapi2).fit()
 
-<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">lm3</span><span class="o">.</span><span class="n">predict</span><span class="p">(),</span> <span class="n">lm3</span><span class="o">.</span><span class="n">resid</span><span class="p">)</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>&lt;matplotlib.collections.PathCollection at 0x28a10a20&gt;
-</code></pre></div>
-
+plt.scatter(lm3.predict(), lm3.resid)
+</code></pre>
+<pre><code>&lt;matplotlib.collections.PathCollection at 0x28a10a20&gt;
+</code></pre>
 <p><img alt="png" src="/figures/ucla_ats_linreg_2_1_13.png"></p>
 <p>Finally, let's revisit the model we used at the start of this section, predicting api00 from meals, ell and emer.  Using this model, the distribution of the residuals looked very nice and even across the fitted values.  What if we add enroll to this model?  Will this automatically ruin the distribution of the residuals?  Let's add it and see. </p>
-<div class="highlight"><pre><span></span><code><span class="n">lm4</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="n">formula</span> <span class="o">=</span> <span class="s2">&quot;api00 ~ meals + ell + emer + enroll&quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">elemapi2</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+<pre><code class="language-python">lm4 = smf.ols(formula = &quot;api00 ~ meals + ell + emer + enroll&quot;, data = elemapi2).fit()
 
-<span class="n">resid</span> <span class="o">=</span> <span class="n">lm4</span><span class="o">.</span><span class="n">resid</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">lm4</span><span class="o">.</span><span class="n">predict</span><span class="p">(),</span> <span class="n">resid</span><span class="p">)</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>&lt;matplotlib.collections.PathCollection at 0x28b71828&gt;
-</code></pre></div>
-
+resid = lm4.resid
+plt.scatter(lm4.predict(), resid)
+</code></pre>
+<pre><code>&lt;matplotlib.collections.PathCollection at 0x28b71828&gt;
+</code></pre>
 <p><img alt="png" src="/figures/ucla_ats_linreg_2_1_14.png"></p>
 <p>As you can see, the distribution of the residuals looks fine, even after we added the variable enroll. When we had just the variable enroll in the model, we did a log transformation to improve the distribution of the residuals, but when enroll was part of a model with other variables, the residuals looked good enough so that no transformation was needed.  <strong>This illustrates how the distribution of the residuals, not the distribution of the predictor, was the guiding factor in determining whether a transformation was needed.</strong></p>
 <h3>2.4 Tests for Collinearity</h3>
 <p>When there is a perfect linear relationship among the predictors, the estimates for a regression model cannot be uniquely computed. The term collinearity describes two variables are near perfect linear combinations of one another. When more than two variables are involved, it is often called multicollinearity, although the two terms are often used interchangeably.</p>
 <p>The primary concern is that as the degree of multicollinearity increases, the regression model estimates of the coefficients become unstable and the standard errors for the coefficients can get wildly inflated. In this section, we will explore some SAS options used with the model statement that help to detect multicollinearity.</p>
 <p>We can use the vif option to check for multicollinearity. vif stands for variance inflation factor. As a rule of thumb, a variable whose VIF values is greater than 10 may merit further investigation. Tolerance, defined as 1/VIF, is used by many researchers to check on the degree of collinearity. A tolerance value lower than 0.1 is comparable to a VIF of 10. It means that the variable could be considered as a linear combination of other independent variables. The tol option on the model statement gives us these values. Let's first look at the regression we did from the last section, the regression model predicting api00 from meals, ell and emer, and use the vif and tol options with the model statement.  </p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">patsy</span> <span class="kn">import</span> <span class="n">dmatrices</span>
-<span class="kn">from</span> <span class="nn">statsmodels.stats.outliers_influence</span> <span class="kn">import</span> <span class="n">variance_inflation_factor</span>
+<pre><code class="language-python">from patsy import dmatrices
+from statsmodels.stats.outliers_influence import variance_inflation_factor
 
-<span class="n">lm</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="n">formula</span> <span class="o">=</span> <span class="s2">&quot;api00 ~ meals + ell + emer&quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">elemapi2</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="n">y</span><span class="p">,</span> <span class="n">X</span> <span class="o">=</span> <span class="n">dmatrices</span><span class="p">(</span><span class="s2">&quot;api00 ~ meals + ell + emer&quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">elemapi2</span><span class="p">,</span> <span class="n">return_type</span> <span class="o">=</span> <span class="s2">&quot;dataframe&quot;</span><span class="p">)</span>
-<span class="n">vif</span> <span class="o">=</span> <span class="p">[</span><span class="n">variance_inflation_factor</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span>
-<span class="nb">print</span> <span class="n">vif</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>[4.6883371380582997, 2.7250555232887432, 2.5105120172587836, 1.4148169984086651]
-</code></pre></div>
-
+lm = smf.ols(formula = &quot;api00 ~ meals + ell + emer&quot;, data = elemapi2).fit()
+y, X = dmatrices(&quot;api00 ~ meals + ell + emer&quot;, data = elemapi2, return_type = &quot;dataframe&quot;)
+vif = [variance_inflation_factor(X.values, i) for i in range(X.shape[1])]
+print vif
+</code></pre>
+<pre><code>[4.6883371380582997, 2.7250555232887432, 2.5105120172587836, 1.4148169984086651]
+</code></pre>
 <p>We know the multicollinearity is caused the high correlation between the indepentent variables. So let's check the correlation between the vatiables. First we need to drop the added constant column which are all equal to 1. Then <code>np.corrcoef</code> or <code>df.corr</code> will calculate the correlation coefficient. We can also calculate the eigen value and eigen vectors of the correlation matrix to check the details.</p>
-<div class="highlight"><pre><span></span><code><span class="n">corr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">corrcoef</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="s2">&quot;Intercept&quot;</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">),</span> <span class="n">rowvar</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
-<span class="nb">print</span> <span class="s2">&quot;correlation from np.corrcoef is &quot;</span> 
-<span class="nb">print</span> <span class="n">corr</span>
+<pre><code class="language-python">corr = np.corrcoef(X.drop(&quot;Intercept&quot;, axis = 1), rowvar = 0)
+print &quot;correlation from np.corrcoef is &quot; 
+print corr
 
-<span class="nb">print</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
-<span class="nb">print</span> <span class="s2">&quot;correlation from df.corr() is &quot;</span> 
-<span class="nb">print</span> <span class="n">X</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="s2">&quot;Intercept&quot;</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">corr</span><span class="p">()</span>
+print '\n'
+print &quot;correlation from df.corr() is &quot; 
+print X.drop(&quot;Intercept&quot;, axis = 1).corr()
 
-<span class="nb">print</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+print '\n'
 
-<span class="n">w</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">eig</span><span class="p">(</span><span class="n">corr</span><span class="p">)</span>    
-<span class="nb">print</span> <span class="s2">&quot;the eigen value of the correlation coefficient is &quot;</span>
-<span class="nb">print</span> <span class="n">w</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>correlation from np.corrcoef is 
+w, v = np.linalg.eig(corr)    
+print &quot;the eigen value of the correlation coefficient is &quot;
+print w
+</code></pre>
+<pre><code>correlation from np.corrcoef is 
 [[ 1.          0.77237718  0.53303874]
  [ 0.77237718  1.          0.47217948]
  [ 0.53303874  0.47217948  1.        ]]
@@ -948,26 +903,24 @@ emer   0.533039  0.472179  1.000000
 
 the eigen value of the correlation coefficient is 
 [ 2.19536815  0.22351013  0.58112172]
-</code></pre></div>
-
+</code></pre>
 <h3>2.5 Tests on Nonlinearity</h3>
 <p>When we do linear regression, we assume that the relationship between the response variable and the predictors is linear. This is the assumption of linearity. If this assumption is violated, the linear regression will try to fit a straight line to data that does not follow a straight line. Checking the linear assumption in the case of simple regression is straightforward, since we only have one predictor. All we have to do is a scatter plot between the response variable and the predictor to see if nonlinearity is present, such as a curved band or a big wave-shaped curve. For example, let us use a data file called nations.sav that has data about a number of nations around the world.</p>
 <p>Let's look at the relationship between GNP per capita (gnpcap) and births (birth).  Below if we look at the scatterplot between gnpcap and birth, we can see that the relationship between these two variables is quite non-linear. We added a regression line to the chart, and you can see how poorly the line fits this data. Also, if we look at the residuals by predicted plot, we see that the residuals are not nearly homoscedastic, due to the non-linearity in the relationship between gnpcap and birth. </p>
-<div class="highlight"><pre><span></span><code><span class="n">nations</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">mypath</span> <span class="o">+</span> <span class="s2">&quot;nations.csv&quot;</span><span class="p">)</span>
-<span class="c1"># print nations.describe()</span>
+<pre><code class="language-python">nations = pd.read_csv(mypath + &quot;nations.csv&quot;)
+# print nations.describe()
 
-<span class="n">lm</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="n">formula</span> <span class="o">=</span> <span class="s2">&quot;birth ~ gnpcap&quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">nations</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="nb">print</span> <span class="n">lm</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+lm = smf.ols(formula = &quot;birth ~ gnpcap&quot;, data = nations).fit()
+print lm.summary()
 
-<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">lm</span><span class="o">.</span><span class="n">predict</span><span class="p">(),</span> <span class="n">lm</span><span class="o">.</span><span class="n">resid</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+plt.scatter(lm.predict(), lm.resid)
+plt.show()
 
-<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">nations</span><span class="o">.</span><span class="n">gnpcap</span><span class="p">,</span> <span class="n">nations</span><span class="o">.</span><span class="n">birth</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">nations</span><span class="o">.</span><span class="n">gnpcap</span><span class="p">,</span> <span class="n">lm</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">lm</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">nations</span><span class="o">.</span><span class="n">gnpcap</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>                            OLS Regression Results                            
+plt.scatter(nations.gnpcap, nations.birth)
+plt.plot(nations.gnpcap, lm.params[0] + lm.params[1] * nations.gnpcap, '-')
+plt.show()
+</code></pre>
+<pre><code>                            OLS Regression Results                            
 ==============================================================================
 Dep. Variable:                  birth   R-squared:                       0.392
 Model:                            OLS   Adj. R-squared:                  0.387
@@ -977,54 +930,51 @@ Time:                        15:42:45   Log-Likelihood:                -411.80
 No. Observations:                 109   AIC:                             827.6
 Df Residuals:                     107   BIC:                             833.0
 Df Model:                           1                                         
-<span class="gh">Covariance Type:            nonrobust                                         </span>
-<span class="gh">==============================================================================</span>
+Covariance Type:            nonrobust                                         
+==============================================================================
                  coef    std err          t      P&gt;|t|      [95.0% Conf. Int.]
 ------------------------------------------------------------------------------
 Intercept     38.9242      1.261     30.856      0.000        36.423    41.425
-<span class="gh">gnpcap        -0.0019      0.000     -8.309      0.000        -0.002    -0.001</span>
-<span class="gh">==============================================================================</span>
+gnpcap        -0.0019      0.000     -8.309      0.000        -0.002    -0.001
+==============================================================================
 Omnibus:                        1.735   Durbin-Watson:                   1.824
 Prob(Omnibus):                  0.420   Jarque-Bera (JB):                1.335
 Skew:                          -0.011   Prob(JB):                        0.513
-<span class="gh">Kurtosis:                       2.458   Cond. No.                     6.73e+03</span>
-<span class="gh">==============================================================================</span>
+Kurtosis:                       2.458   Cond. No.                     6.73e+03
+==============================================================================
 
 Warnings:
 [1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
 [2] The condition number is large, 6.73e+03. This might indicate that there are
 strong multicollinearity or other numerical problems.
-</code></pre></div>
-
+</code></pre>
 <p><img alt="png" src="/figures/ucla_ats_linreg_2_1_15.png"></p>
 <p><img alt="png" src="/figures/ucla_ats_linreg_2_1_16.png"></p>
 <p>Now we are going to modify the above scatterplot by adding a <a href="http://statsmodels.sourceforge.net/devel/generated/statsmodels.nonparametric.smoothers_lowess.lowess.html">lowess</a> (also called "loess") smoothing line. We show only the graph with the 0.4 smooth. </p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">statsmodels.nonparametric.smoothers_lowess</span> <span class="kn">import</span> <span class="n">lowess</span>
-<span class="n">lowess_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">lowess</span><span class="p">(</span><span class="n">endog</span> <span class="o">=</span> <span class="n">nations</span><span class="o">.</span><span class="n">birth</span><span class="p">,</span> <span class="n">exog</span> <span class="o">=</span> <span class="n">nations</span><span class="o">.</span><span class="n">gnpcap</span><span class="p">,</span> <span class="n">frac</span> <span class="o">=</span> <span class="mf">0.4</span><span class="p">),</span> <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;gnpcap&quot;</span><span class="p">,</span> <span class="s2">&quot;birth&quot;</span><span class="p">])</span>
+<pre><code class="language-python">from statsmodels.nonparametric.smoothers_lowess import lowess
+lowess_df = pd.DataFrame(lowess(endog = nations.birth, exog = nations.gnpcap, frac = 0.4), columns = [&quot;gnpcap&quot;, &quot;birth&quot;])
 
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lowess_df</span><span class="o">.</span><span class="n">gnpcap</span><span class="p">,</span> <span class="n">lowess_df</span><span class="o">.</span><span class="n">birth</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">nations</span><span class="o">.</span><span class="n">gnpcap</span><span class="p">,</span> <span class="n">nations</span><span class="o">.</span><span class="n">birth</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">nations</span><span class="o">.</span><span class="n">gnpcap</span><span class="p">,</span> <span class="n">lm</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">lm</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">nations</span><span class="o">.</span><span class="n">gnpcap</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;transform of gnpcap&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;transform of birth&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-</code></pre></div>
-
+plt.plot(lowess_df.gnpcap, lowess_df.birth)
+plt.scatter(nations.gnpcap, nations.birth)
+plt.plot(nations.gnpcap, lm.params[0] + lm.params[1] * nations.gnpcap, '-')
+plt.xlabel(&quot;transform of gnpcap&quot;)
+plt.ylabel(&quot;transform of birth&quot;)
+plt.show()
+</code></pre>
 <p><img alt="png" src="/figures/ucla_ats_linreg_2_1_17.png"></p>
 <p>The lowess line fits much better than the OLS linear regression. In trying to see how to remedy these, we notice that the gnpcap scores are quite skewed with most values being near 0, and a handful of values of 10,000 and higher.  This suggests to us that some transformation of the variable may be useful. One of the commonly used transformations is a log transformation. Let's try it below.  As you see, the scatterplot between lgnpcap and birth looks much better with the regression line going through the heart of the data.  Also, the plot of the residuals by predicted values look much more reasonable. </p>
-<div class="highlight"><pre><span></span><code><span class="n">nations</span><span class="p">[</span><span class="s2">&quot;log_gnpcap&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">nations</span><span class="o">.</span><span class="n">gnpcap</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
-<span class="n">lm2</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s2">&quot;birth ~ log_gnpcap&quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">nations</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="nb">print</span> <span class="n">lm2</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+<pre><code class="language-python">nations[&quot;log_gnpcap&quot;] = nations.gnpcap.map(lambda x: math.log(x))
+lm2 = smf.ols(&quot;birth ~ log_gnpcap&quot;, data = nations).fit()
+print lm2.summary()
 
-<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">lm2</span><span class="o">.</span><span class="n">predict</span><span class="p">(),</span> <span class="n">lm2</span><span class="o">.</span><span class="n">resid</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+plt.scatter(lm2.predict(), lm2.resid)
+plt.show()
 
-<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">nations</span><span class="o">.</span><span class="n">log_gnpcap</span><span class="p">,</span> <span class="n">nations</span><span class="o">.</span><span class="n">birth</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">nations</span><span class="o">.</span><span class="n">log_gnpcap</span><span class="p">,</span> <span class="n">lm2</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">lm2</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">nations</span><span class="o">.</span><span class="n">log_gnpcap</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>                            OLS Regression Results                            
+plt.scatter(nations.log_gnpcap, nations.birth)
+plt.plot(nations.log_gnpcap, lm2.params[0] + lm2.params[1] * nations.log_gnpcap, '-')
+plt.show()
+</code></pre>
+<pre><code>                            OLS Regression Results                            
 ==============================================================================
 Dep. Variable:                  birth   R-squared:                       0.571
 Model:                            OLS   Adj. R-squared:                  0.567
@@ -1034,41 +984,38 @@ Time:                        16:08:02   Log-Likelihood:                -392.77
 No. Observations:                 109   AIC:                             789.5
 Df Residuals:                     107   BIC:                             794.9
 Df Model:                           1                                         
-<span class="gh">Covariance Type:            nonrobust                                         </span>
-<span class="gh">==============================================================================</span>
+Covariance Type:            nonrobust                                         
+==============================================================================
                  coef    std err          t      P&gt;|t|      [95.0% Conf. Int.]
 ------------------------------------------------------------------------------
 Intercept     84.2773      4.397     19.168      0.000        75.561    92.993
-<span class="gh">log_gnpcap    -7.2385      0.606    -11.941      0.000        -8.440    -6.037</span>
-<span class="gh">==============================================================================</span>
+log_gnpcap    -7.2385      0.606    -11.941      0.000        -8.440    -6.037
+==============================================================================
 Omnibus:                        2.875   Durbin-Watson:                   1.790
 Prob(Omnibus):                  0.237   Jarque-Bera (JB):                2.267
 Skew:                           0.282   Prob(JB):                        0.322
-<span class="gh">Kurtosis:                       3.425   Cond. No.                         37.8</span>
-<span class="gh">==============================================================================</span>
+Kurtosis:                       3.425   Cond. No.                         37.8
+==============================================================================
 
 Warnings:
 [1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
-</code></pre></div>
-
+</code></pre>
 <p><img alt="png" src="/figures/ucla_ats_linreg_2_1_18.png"></p>
 <p><img alt="png" src="/figures/ucla_ats_linreg_2_1_19.png"></p>
 <p>This section has shown how you can use scatterplots to diagnose problems of non-linearity, both by looking at the scatterplots of the predictor and outcome variable, as well as by examining the residuals by predicted values.  These examples have focused on simple regression; however, similar techniques would be useful in multiple regression.  However, when using multiple regression, it would be more useful to examine partial regression plots instead of the simple scatterplots between the predictor variables and the outcome variable. </p>
 <h3>2.6 Model Specification</h3>
 <p>A model specification error can occur when one or more relevant variables are omitted from the model or one or more irrelevant variables are included in the model. If relevant variables are omitted from the model, the common variance they share with included variables may be wrongly attributed to those variables, and the error term is inflated. On the other hand, if irrelevant variables are included in the model, the common variance they share with included variables may be wrongly attributed to them. Model specification errors can substantially affect the estimate of regression coefficients.</p>
 <p>Consider the model below. This regression suggests that as class size increases the academic performance increases. Before we publish results saying that increased class size is associated with higher academic performance, let's check the model specification. </p>
-<div class="highlight"><pre><span></span><code><span class="n">elemapi2_0</span> <span class="o">=</span> <span class="n">elemapi2</span><span class="p">[</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">elemapi2</span><span class="o">.</span><span class="n">acs_k3</span><span class="p">)]</span>
-<span class="n">lm</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s2">&quot;api00 ~ acs_k3&quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">elemapi2_0</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="n">elemapi2_0</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="s2">&quot;fv&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">predict</span><span class="p">()</span>
-<span class="n">elemapi2_0</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="s2">&quot;fvsquare&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">elemapi2_0</span><span class="o">.</span><span class="n">fv</span> <span class="o">**</span> <span class="mi">2</span>
-</code></pre></div>
-
+<pre><code class="language-python">elemapi2_0 = elemapi2[~np.isnan(elemapi2.acs_k3)]
+lm = smf.ols(&quot;api00 ~ acs_k3&quot;, data = elemapi2_0).fit()
+elemapi2_0.loc[:, &quot;fv&quot;] = lm.predict()
+elemapi2_0.loc[:, &quot;fvsquare&quot;] = elemapi2_0.fv ** 2
+</code></pre>
 <p>There are a couple of methods to detect specification errors. A link test performs a model specification test for single-equation models. It is based on the idea that if a regression is properly specified, one should not be able to find any additional independent variables that are significant except by chance. To conduct this test, you need to obtain the fitted values from your regression and the squares of those values.  The model is then refit using these two variables as predictors. The fitted value should be significant because it is the predicted value. One the other hand, the fitted values squared shouldn't be significant, because if our model is specified correctly, the squared predictions should not have much of explanatory power. That is, we wouldn't  expect the fitted value squared to be a significant predictor if our model is specified correctly. So we will be looking at the p-value for the fitted value squared. </p>
-<div class="highlight"><pre><span></span><code><span class="n">lm</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s2">&quot;api00 ~ fv + fvsquare&quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">elemapi2_0</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="nb">print</span> <span class="n">lm</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>                            OLS Regression Results                            
+<pre><code class="language-python">lm = smf.ols(&quot;api00 ~ fv + fvsquare&quot;, data = elemapi2_0).fit()
+print lm.summary()
+</code></pre>
+<pre><code>                            OLS Regression Results                            
 ==============================================================================
 Dep. Variable:                  api00   R-squared:                       0.035
 Model:                            OLS   Adj. R-squared:                  0.030
@@ -1078,32 +1025,30 @@ Time:                        14:52:59   Log-Likelihood:                -2529.9
 No. Observations:                 398   AIC:                             5066.
 Df Residuals:                     395   BIC:                             5078.
 Df Model:                           2                                         
-<span class="gh">Covariance Type:            nonrobust                                         </span>
-<span class="gh">==============================================================================</span>
+Covariance Type:            nonrobust                                         
+==============================================================================
                  coef    std err          t      P&gt;|t|      [95.0% Conf. Int.]
 ------------------------------------------------------------------------------
 Intercept   3884.5065   2617.696      1.484      0.139     -1261.853  9030.866
 fv           -11.0501      8.105     -1.363      0.174       -26.984     4.883
-<span class="gh">fvsquare       0.0093      0.006      1.488      0.138        -0.003     0.022</span>
-<span class="gh">==============================================================================</span>
+fvsquare       0.0093      0.006      1.488      0.138        -0.003     0.022
+==============================================================================
 Omnibus:                      135.464   Durbin-Watson:                   1.420
 Prob(Omnibus):                  0.000   Jarque-Bera (JB):               20.532
 Skew:                           0.048   Prob(JB):                     3.48e-05
-<span class="gh">Kurtosis:                       1.891   Cond. No.                     1.58e+08</span>
-<span class="gh">==============================================================================</span>
+Kurtosis:                       1.891   Cond. No.                     1.58e+08
+==============================================================================
 
 Warnings:
 [1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
 [2] The condition number is large, 1.58e+08. This might indicate that there are
 strong multicollinearity or other numerical problems.
-</code></pre></div>
-
+</code></pre>
 <p>Let's try adding one more variable, meals, to the above model and then run the link test again. </p>
-<div class="highlight"><pre><span></span><code><span class="n">lm</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s2">&quot;api00 ~ acs_k3 + full + fv&quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">elemapi2_0</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="nb">print</span> <span class="n">lm</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>                            OLS Regression Results                            
+<pre><code class="language-python">lm = smf.ols(&quot;api00 ~ acs_k3 + full + fv&quot;, data = elemapi2_0).fit()
+print lm.summary()
+</code></pre>
+<pre><code>                            OLS Regression Results                            
 ==============================================================================
 Dep. Variable:                  api00   R-squared:                       0.339
 Model:                            OLS   Adj. R-squared:                  0.335
@@ -1113,41 +1058,39 @@ Time:                        14:54:29   Log-Likelihood:                -2454.6
 No. Observations:                 398   AIC:                             4915.
 Df Residuals:                     395   BIC:                             4927.
 Df Model:                           2                                         
-<span class="gh">Covariance Type:            nonrobust                                         </span>
-<span class="gh">==============================================================================</span>
+Covariance Type:            nonrobust                                         
+==============================================================================
                  coef    std err          t      P&gt;|t|      [95.0% Conf. Int.]
 ------------------------------------------------------------------------------
 Intercept     -0.3727      0.515     -0.724      0.469        -1.384     0.639
 acs_k3         6.4796      8.922      0.726      0.468       -11.060    24.020
 full           5.3898      0.396     13.598      0.000         4.611     6.169
-<span class="gh">fv             0.1057      0.271      0.390      0.697        -0.427     0.639</span>
-<span class="gh">==============================================================================</span>
+fv             0.1057      0.271      0.390      0.697        -0.427     0.639
+==============================================================================
 Omnibus:                       15.537   Durbin-Watson:                   1.367
 Prob(Omnibus):                  0.000   Jarque-Bera (JB):                7.217
 Skew:                          -0.017   Prob(JB):                       0.0271
-<span class="gh">Kurtosis:                       2.341   Cond. No.                     9.77e+17</span>
-<span class="gh">==============================================================================</span>
+Kurtosis:                       2.341   Cond. No.                     9.77e+17
+==============================================================================
 
 Warnings:
 [1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
 [2] The smallest eigenvalue is 1.79e-28. This might indicate that there are
 strong multicollinearity problems or that the design matrix is singular.
-</code></pre></div>
-
+</code></pre>
 <p>The link test is once again non-significant. Note that after including meals and full, the coefficient for class size is no longer significant. While acs_k3 does have a positive relationship with api00 when no other variables are in the model, when we include, and hence control for, other important variables, acs_k3 is no longer significantly related to api00 and its relationship to api00 is no longer positive. </p>
 <h3>2.7 Issues of Independence</h3>
 <p>The statement of this assumption is that the errors associated with one observation are not correlated with the errors of any other observation cover several different situations. Consider the case of collecting data from students in eight different elementary schools. It is likely that the students within each school will tend to be more like one another that students from different schools, that is, their errors are not independent. We will deal with this type of situation in Chapter 4.</p>
 <p>Another way in which the assumption of independence can be broken is when data are collected on the same variables over time. Let's say that we collect truancy data every semester for 12 years. In this situation it is likely that the errors for observation between adjacent semesters will be more highly correlated than for observations more separated in time. This is known as autocorrelation. When you have data that can be considered to be time-series, you should use the dw option that performs a Durbin-Watson test for correlated residuals.</p>
 <p>We don't have any time-series data, so we will use the elemapi2 dataset and pretend that snum indicates the time at which the data were collected. We will sort the data on snum to order the data according to our fake time variable and then we can run the regression analysis with the dw option to request the Durbin-Watson test. The Durbin-Watson statistic has a range from 0 to 4 with a midpoint of 2. The observed value in our example is less than 2, which is not surprising since our data are not truly time-series.  </p>
-<div class="highlight"><pre><span></span><code><span class="n">lm</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="n">formula</span> <span class="o">=</span> <span class="s2">&quot;api00 ~ enroll&quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">elemapi2</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="nb">print</span> <span class="n">lm</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
-<span class="nb">print</span> <span class="s2">&quot;Durbin-Watson test statistics is &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">stools</span><span class="o">.</span><span class="n">durbin_watson</span><span class="p">(</span><span class="n">lm</span><span class="o">.</span><span class="n">resid</span><span class="p">))</span>
+<pre><code class="language-python">lm = smf.ols(formula = &quot;api00 ~ enroll&quot;, data = elemapi2).fit()
+print lm.summary()
+print &quot;Durbin-Watson test statistics is &quot; + str(stools.durbin_watson(lm.resid))
 
-<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">elemapi2</span><span class="o">.</span><span class="n">snum</span><span class="p">,</span> <span class="n">lm</span><span class="o">.</span><span class="n">resid</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>                            OLS Regression Results                            
+plt.scatter(elemapi2.snum, lm.resid)
+plt.show()
+</code></pre>
+<pre><code>                            OLS Regression Results                            
 ==============================================================================
 Dep. Variable:                  api00   R-squared:                       0.101
 Model:                            OLS   Adj. R-squared:                  0.099
@@ -1157,53 +1100,51 @@ Time:                        15:00:28   Log-Likelihood:                -2528.8
 No. Observations:                 400   AIC:                             5062.
 Df Residuals:                     398   BIC:                             5070.
 Df Model:                           1                                         
-<span class="gh">Covariance Type:            nonrobust                                         </span>
-<span class="gh">==============================================================================</span>
+Covariance Type:            nonrobust                                         
+==============================================================================
                  coef    std err          t      P&gt;|t|      [95.0% Conf. Int.]
 ------------------------------------------------------------------------------
 Intercept    744.2514     15.933     46.711      0.000       712.928   775.575
-<span class="gh">enroll        -0.1999      0.030     -6.695      0.000        -0.259    -0.141</span>
-<span class="gh">==============================================================================</span>
+enroll        -0.1999      0.030     -6.695      0.000        -0.259    -0.141
+==============================================================================
 Omnibus:                       43.040   Durbin-Watson:                   1.342
 Prob(Omnibus):                  0.000   Jarque-Bera (JB):               17.113
 Skew:                           0.277   Prob(JB):                     0.000192
-<span class="gh">Kurtosis:                       2.152   Cond. No.                     1.26e+03</span>
-<span class="gh">==============================================================================</span>
+Kurtosis:                       2.152   Cond. No.                     1.26e+03
+==============================================================================
 
 Warnings:
 [1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
 [2] The condition number is large, 1.26e+03. This might indicate that there are
 strong multicollinearity or other numerical problems.
 Durbin-Watson test statistics is 1.34234658795
-</code></pre></div>
-
+</code></pre>
 <p><img alt="png" src="/figures/ucla_ats_linreg_2_1_20.png"></p>
 <h3>2.8 Summary</h3>
 <p>In this chapter, we have used a number of tools in SAS for determining whether our data meets the regression assumptions. Below, we list the major commands we demonstrated organized according to the assumption the command was shown to test.</p>
-<div class="highlight"><pre><span></span><code><span class="n">Detecting</span><span class="w"> </span><span class="n">Unusual</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="n">Influential</span><span class="w"> </span><span class="n">Data</span>
-<span class="w">    </span><span class="n">scatterplots</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">dependent</span><span class="w"> </span><span class="n">variables</span><span class="w"> </span><span class="n">versus</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">independent</span><span class="w"> </span><span class="n">variable</span>
-<span class="w">    </span><span class="n">looking</span><span class="w"> </span><span class="n">at</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">largest</span><span class="w"> </span><span class="n">values</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">studentized</span><span class="w"> </span><span class="n">residuals</span><span class="p">,</span><span class="w"> </span><span class="n">leverage</span><span class="p">,</span><span class="w"> </span><span class="n">Cook</span><span class="s1">&#39;s D, DFFITS and DFBETAs</span>
+<pre><code>Detecting Unusual and Influential Data
+    scatterplots of the dependent variables versus the independent variable
+    looking at the largest values of the studentized residuals, leverage, Cook's D, DFFITS and DFBETAs
 
-<span class="n">Tests</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">Normality</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">Residuals</span><span class="w"> </span><span class="n">Tests</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">Heteroscedasity</span>
-<span class="w">    </span><span class="n">kernel</span><span class="w"> </span><span class="n">density</span><span class="w"> </span><span class="n">plot</span>
-<span class="w">    </span><span class="n">quantile</span><span class="o">-</span><span class="n">quantile</span><span class="w"> </span><span class="n">plots</span>
-<span class="w">    </span><span class="n">standardized</span><span class="w"> </span><span class="n">normal</span><span class="w"> </span><span class="n">probability</span><span class="w"> </span><span class="n">plots</span>
-<span class="w">    </span><span class="n">Shapiro</span><span class="o">-</span><span class="n">Wilk</span><span class="w"> </span><span class="n">W</span><span class="w"> </span><span class="n">test</span>
-<span class="w">    </span><span class="n">scatterplot</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">residuals</span><span class="w"> </span><span class="n">versus</span><span class="w"> </span><span class="n">predicted</span><span class="w"> </span><span class="p">(</span><span class="n">fitted</span><span class="p">)</span><span class="w"> </span><span class="n">values</span>
-<span class="w">    </span><span class="n">White</span><span class="w"> </span><span class="n">test</span>
+Tests for Normality of Residuals Tests for Heteroscedasity
+    kernel density plot
+    quantile-quantile plots
+    standardized normal probability plots
+    Shapiro-Wilk W test
+    scatterplot of residuals versus predicted (fitted) values
+    White test
 
-<span class="n">Tests</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">Multicollinearity</span>
-<span class="w">    </span><span class="n">looking</span><span class="w"> </span><span class="n">at</span><span class="w"> </span><span class="n">VIF</span>
-<span class="w">    </span><span class="n">looking</span><span class="w"> </span><span class="n">at</span><span class="w"> </span><span class="n">tolerance</span>
+Tests for Multicollinearity
+    looking at VIF
+    looking at tolerance
 
-<span class="n">Tests</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">Non</span><span class="o">-</span><span class="n">Linearity</span>
-<span class="w">    </span><span class="n">scatterplot</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">independent</span><span class="w"> </span><span class="n">variable</span><span class="w"> </span><span class="n">versus</span><span class="w"> </span><span class="n">dependent</span><span class="w"> </span><span class="n">variable</span>
+Tests for Non-Linearity
+    scatterplot of independent variable versus dependent variable
 
-<span class="n">Tests</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">Model</span><span class="w"> </span><span class="n">Specification</span>
-<span class="w">    </span><span class="n">time</span><span class="w"> </span><span class="n">series</span>
-<span class="w">    </span><span class="n">Durbin</span><span class="o">-</span><span class="n">Watson</span><span class="w"> </span><span class="n">test</span>
-</code></pre></div>
-
+Tests for Model Specification
+    time series
+    Durbin-Watson test
+</code></pre>
 <h2>reference</h2>
 <ol>
 <li><a href="http://stats.stackexchange.com/questions/58141/interpreting-plot-lm">Interpreting plot.lm()</a></li>
@@ -1213,9 +1154,9 @@ Durbin-Watson test statistics is 1.34234658795
 <li><a href="http://statsmodels.sourceforge.net/devel/generated/statsmodels.nonparametric.smoothers_lowess.lowess.html">lowess smoothing</a></li>
 <li><a href="http://statsmodels.sourceforge.net/devel/generated/statsmodels.stats.outliers_influence.OLSInfluence.html">outlier influence</a></li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">statsmodels.stats.outliers_influence</span> <span class="kn">import</span> <span class="n">OLSInfluence</span>
-<span class="nb">print</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">OLSInfluence</span><span class="p">(</span><span class="n">lm</span><span class="p">)</span><span class="o">.</span><span class="n">influence</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Leverage&quot;</span><span class="p">)</span>
-</code></pre></div></div>
+<pre><code class="language-python">from statsmodels.stats.outliers_influence import OLSInfluence
+print pd.Series(OLSInfluence(lm).influence, name = &quot;Leverage&quot;)
+</code></pre></div>
     <footer>
 <p class="meta">
   <span class="byline author vcard">
@@ -1244,13 +1185,13 @@ Durbin-Watson test statistics is 1.34234658795
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -1268,7 +1209,7 @@ Durbin-Watson test statistics is 1.34234658795
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

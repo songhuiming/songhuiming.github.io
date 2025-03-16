@@ -94,14 +94,13 @@ window.addEventListener('load', () => {
 <time datetime="2017-05-27T00:00:00-05:00" pubdate>Sat 27 May 2017</time>    </p>
 </header>
 
-  <div class="entry-content"><div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+  <div class="entry-content"><pre><code class="language-python">import numpy as np
+import matplotlib.pyplot as plt
+import tensorflow as tf
 
-<span class="kn">from</span> <span class="nn">tensorflow.examples.tutorials.mnist</span> <span class="kn">import</span> <span class="n">input_data</span>
-<span class="n">mnist</span> <span class="o">=</span> <span class="n">input_data</span><span class="o">.</span><span class="n">read_data_sets</span><span class="p">(</span><span class="s2">&quot;MNIST_data/&quot;</span><span class="p">,</span> <span class="n">one_hot</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</code></pre></div>
-
+from tensorflow.examples.tutorials.mnist import input_data
+mnist = input_data.read_data_sets(&quot;MNIST_data/&quot;, one_hot=True)
+</code></pre>
 <h2>Data Introduction</h2>
 <p>The backgroupnd of MNIST data is introduced in <a href="https://www.tensorflow.org/versions/r0.11/tutorials/mnist/beginners/">MNIST For ML Beginners</a></p>
 <p>The MNIST data is split into three parts: 55,000 data points of training data (<code>mnist.train</code>), 10,000 points of test data (<code>mnist.test</code>), and 5,000 points of validation data (<code>mnist.validation</code>). This split is very important: it's essential in machine learning that we have separate data which we don't learn from so that we can make sure that what we've learned actually generalizes!</p>
@@ -122,101 +121,96 @@ window.addEventListener('load', () => {
 $$</div>
 <h3>Implementation</h3>
 <p>First we will define the input data.</p>
-<div class="highlight"><pre><span></span><code><span class="n">init_param</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">shape</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">random_normal</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<pre><code class="language-python">init_param = lambda shape: tf.random_normal(shape, dtype=tf.float32)
 
-<span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">name_scope</span><span class="p">(</span><span class="s2">&quot;IO&quot;</span><span class="p">):</span>
-    <span class="n">inputs</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="mi">784</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;X&quot;</span><span class="p">)</span>
-    <span class="n">targets</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Yhat&quot;</span><span class="p">)</span>
-</code></pre></div>
-
+with tf.name_scope(&quot;IO&quot;):
+    inputs = tf.placeholder(tf.float32, [None, 784], name=&quot;X&quot;)
+    targets = tf.placeholder(tf.float32, [None, 10], name=&quot;Yhat&quot;)
+</code></pre>
 <p>As explained above, Input data(training data x) is the array with shape of [55000, 784]. The target variable shape is [55000, 10]. <code>placeholder</code>: a value that we'll input when we ask TensorFlow to run a computation. It will enable you to assemble the graph first without knowing the values needed for computation. In the computation, you can feed the values to placeholders using a dictionary. <code>None</code> means that a dimension can be of any length.</p>
 <p>Next we will define the variables in the model. </p>
 <p><code>Variable</code> is a modifiable tensor that lives in TensorFlow's graph of interacting operations. <code>tf.Variable</code> is a class, but <code>tf.constant</code> is an operation. <code>tf.Variable</code> also hold some operations lile <code>assign</code>. <code>tf.Variable</code> must be initialized and can be evaluated to get the values.</p>
-<div class="highlight"><pre><span></span><code><span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">name_scope</span><span class="p">(</span><span class="s2">&quot;LogReg&quot;</span><span class="p">):</span>
-    <span class="n">W</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="n">init_param</span><span class="p">([</span><span class="mi">784</span><span class="p">,</span> <span class="mi">10</span><span class="p">]),</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;W&quot;</span><span class="p">)</span>
-    <span class="n">B</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="n">init_param</span><span class="p">([</span><span class="mi">10</span><span class="p">]))</span>
-    <span class="n">logits</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">W</span><span class="p">)</span> <span class="o">+</span> <span class="n">B</span>
-    <span class="n">y</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">logits</span><span class="p">)</span>
-</code></pre></div>
-
+<pre><code class="language-python">with tf.name_scope(&quot;LogReg&quot;):
+    W = tf.Variable(init_param([784, 10]), name=&quot;W&quot;)
+    B = tf.Variable(init_param([10]))
+    logits = tf.matmul(inputs, W) + B
+    y = tf.nn.softmax(logits)
+</code></pre>
 <p>Then we will define the loss function. The purpose it to optimize(minimize) the loss function to find the value of the parameters defined as variables.</p>
-<div class="highlight"><pre><span></span><code><span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">name_scope</span><span class="p">(</span><span class="s2">&quot;train&quot;</span><span class="p">):</span>
-    <span class="n">learning_rate</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">trainable</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-    <span class="n">cost_op</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">softmax_cross_entropy_with_logits</span><span class="p">(</span><span class="n">logits</span> <span class="o">=</span> <span class="n">logits</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">targets</span><span class="p">)</span>
-    <span class="n">cost_op</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">cost_op</span><span class="p">)</span> 
-    <span class="n">train_op</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">GradientDescentOptimizer</span><span class="p">(</span><span class="n">learning_rate</span><span class="p">)</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">cost_op</span><span class="p">)</span>
+<pre><code class="language-python">with tf.name_scope(&quot;train&quot;):
+    learning_rate = tf.Variable(0.5, trainable=False)
+    cost_op = tf.nn.softmax_cross_entropy_with_logits(logits = logits, labels = targets)
+    cost_op = tf.reduce_mean(cost_op) 
+    train_op = tf.train.GradientDescentOptimizer(learning_rate).minimize(cost_op)
 
-    <span class="n">correct_prediction</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">tf</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">targets</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
-    <span class="n">accuracy</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">correct_prediction</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">))</span><span class="o">*</span><span class="mi">100</span>
-</code></pre></div>
-
+    correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(targets,1))
+    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))*100
+</code></pre>
 <p>Finally is to loop through the epochs to minimize the loss function. The iteration will stop when it reaches the stoping condition or the max of epoch.</p>
 <p>Sometimes the input data will be very big(considering training the pictures with CNN in computer vision / object recognizatio). If dump all data into memory, it will cause the system crashed unless you have lots of ram installed. To avoid this, the best way is to split the input into different batches, then read in and train each batch. Please refer to <a href="http://songhuiming.github.io/pages/2017/02/26/tensorflowjian-jie-02/">tensorflow--02</a> for the details how batch and mini-batch works.</p>
-<div class="highlight"><pre><span></span><code><span class="n">tolerance</span> <span class="o">=</span> <span class="mf">1e-4</span>
-<span class="n">epochs</span> <span class="o">=</span> <span class="mi">1</span>
-<span class="n">last_cost</span> <span class="o">=</span> <span class="mf">0.0</span>
-<span class="n">alpha</span> <span class="o">=</span> <span class="mf">0.5</span>
-<span class="n">max_epochs</span> <span class="o">=</span> <span class="mi">10</span>
-<span class="n">batch_size</span> <span class="o">=</span> <span class="mi">100</span>
-<span class="n">costs</span> <span class="o">=</span> <span class="p">[]</span>
-<span class="n">sess</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span>
+<pre><code class="language-python">tolerance = 1e-4
+epochs = 1
+last_cost = 0.0
+alpha = 0.5
+max_epochs = 10
+batch_size = 100
+costs = []
+sess = tf.Session()
 
-<span class="k">with</span> <span class="n">sess</span><span class="o">.</span><span class="n">as_default</span><span class="p">():</span>
-    <span class="n">init</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">global_variables_initializer</span><span class="p">()</span>
-    <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">init</span><span class="p">)</span>
-    <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="n">learning_rate</span><span class="p">,</span> <span class="n">alpha</span><span class="p">))</span>
-    <span class="n">writer</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">FileWriter</span><span class="p">(</span><span class="s2">&quot;./tfboard&quot;</span><span class="p">,</span> <span class="n">sess</span><span class="o">.</span><span class="n">graph</span><span class="p">)</span>
-    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+with sess.as_default():
+    init = tf.global_variables_initializer()
+    sess.run(init)
+    sess.run(tf.assign(learning_rate, alpha))
+    writer = tf.summary.FileWriter(&quot;./tfboard&quot;, sess.graph)
+    while True:
 
-        <span class="n">num_batches</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">mnist</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">num_examples</span><span class="o">/</span><span class="n">batch_size</span><span class="p">)</span>
-        <span class="n">cost</span><span class="o">=</span><span class="mi">0</span>
-        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_batches</span><span class="p">):</span>
-            <span class="n">batch_xs</span><span class="p">,</span> <span class="n">batch_ys</span> <span class="o">=</span> <span class="n">mnist</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">next_batch</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)</span>
-            <span class="n">tcost</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="n">cost_op</span><span class="p">,</span> <span class="n">train_op</span><span class="p">],</span> <span class="n">feed_dict</span><span class="o">=</span><span class="p">{</span><span class="n">inputs</span><span class="p">:</span> <span class="n">batch_xs</span><span class="p">,</span> <span class="n">targets</span><span class="p">:</span> <span class="n">batch_ys</span><span class="p">})</span>
-            <span class="n">cost</span> <span class="o">+=</span> <span class="n">tcost</span>
-        <span class="n">cost</span> <span class="o">/=</span> <span class="n">num_batches</span>
+        num_batches = int(mnist.train.num_examples/batch_size)
+        cost=0
+        for _ in range(num_batches):
+            batch_xs, batch_ys = mnist.train.next_batch(batch_size)
+            tcost, _ = sess.run([cost_op, train_op], feed_dict={inputs: batch_xs, targets: batch_ys})
+            cost += tcost
+        cost /= num_batches
 
-        <span class="n">tcost</span> <span class="o">=</span> <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">cost_op</span><span class="p">,</span> <span class="n">feed_dict</span><span class="o">=</span><span class="p">{</span><span class="n">inputs</span><span class="p">:</span> <span class="n">mnist</span><span class="o">.</span><span class="n">test</span><span class="o">.</span><span class="n">images</span><span class="p">,</span> <span class="n">targets</span><span class="p">:</span> <span class="n">mnist</span><span class="o">.</span><span class="n">test</span><span class="o">.</span><span class="n">labels</span><span class="p">})</span>
-        <span class="n">costs</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">cost</span><span class="p">,</span> <span class="n">tcost</span><span class="p">])</span>
+        tcost = sess.run(cost_op, feed_dict={inputs: mnist.test.images, targets: mnist.test.labels})
+        costs.append([cost, tcost])
 
-        <span class="k">if</span> <span class="n">epochs</span><span class="o">%</span><span class="mi">5</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
-            <span class="n">acc</span> <span class="o">=</span> <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">accuracy</span><span class="p">,</span> <span class="n">feed_dict</span><span class="o">=</span><span class="p">{</span><span class="n">inputs</span><span class="p">:</span> <span class="n">mnist</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">images</span><span class="p">,</span> <span class="n">targets</span><span class="p">:</span> <span class="n">mnist</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">labels</span><span class="p">})</span>
-            <span class="nb">print</span> <span class="p">(</span><span class="s2">&quot;Epoch: </span><span class="si">%d</span><span class="s2"> - Error: </span><span class="si">%.4f</span><span class="s2"> - Accuracy - </span><span class="si">%.2f%%</span><span class="s2">&quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">cost</span><span class="p">,</span> <span class="n">acc</span><span class="p">))</span>
+        if epochs%5==0:
+            acc = sess.run(accuracy, feed_dict={inputs: mnist.train.images, targets: mnist.train.labels})
+            print (&quot;Epoch: %d - Error: %.4f - Accuracy - %.2f%%&quot; %(epochs, cost, acc))
 
-            <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">last_cost</span> <span class="o">-</span> <span class="n">cost</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">tolerance</span> <span class="ow">or</span> <span class="n">epochs</span> <span class="o">&gt;</span> <span class="n">max_epochs</span><span class="p">:</span>
-                <span class="k">break</span>
+            if abs(last_cost - cost) &lt; tolerance or epochs &gt; max_epochs:
+                break
 
-            <span class="n">last_cost</span> <span class="o">=</span> <span class="n">cost</span>
+            last_cost = cost
 
-        <span class="n">epochs</span> <span class="o">+=</span> <span class="mi">1</span>
+        epochs += 1
 
-    <span class="n">tcost</span><span class="p">,</span> <span class="n">taccuracy</span> <span class="o">=</span> <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="n">cost_op</span><span class="p">,</span> <span class="n">accuracy</span><span class="p">],</span> <span class="n">feed_dict</span><span class="o">=</span><span class="p">{</span><span class="n">inputs</span><span class="p">:</span> <span class="n">mnist</span><span class="o">.</span><span class="n">test</span><span class="o">.</span><span class="n">images</span><span class="p">,</span> <span class="n">targets</span><span class="p">:</span> <span class="n">mnist</span><span class="o">.</span><span class="n">test</span><span class="o">.</span><span class="n">labels</span><span class="p">})</span>
-    <span class="nb">print</span> <span class="p">(</span><span class="s2">&quot;Test Cost: </span><span class="si">%.4f</span><span class="s2"> - Accuracy: </span><span class="si">%.2f%%</span><span class="s2"> &quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">tcost</span><span class="p">,</span> <span class="n">taccuracy</span><span class="p">))</span>
-    <span class="n">test_plot</span> <span class="o">=</span> <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">feed_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">inputs</span><span class="p">:</span> <span class="n">mnist</span><span class="o">.</span><span class="n">test</span><span class="o">.</span><span class="n">images</span><span class="p">[:</span><span class="mi">9</span><span class="p">]})</span>
-</code></pre></div>
+    tcost, taccuracy = sess.run([cost_op, accuracy], feed_dict={inputs: mnist.test.images, targets: mnist.test.labels})
+    print (&quot;Test Cost: %.4f - Accuracy: %.2f%% &quot; %(tcost, taccuracy))
+    test_plot = sess.run(tf.argmax(y, 1), feed_dict = {inputs: mnist.test.images[:9]})
 
-<div class="highlight"><pre><span></span><code><span class="n">Epoch</span><span class="o">:</span><span class="w"> </span><span class="mi">5</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">Error</span><span class="o">:</span><span class="w"> </span><span class="mf">0.4307</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">Accuracy</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mf">89.50</span><span class="o">%</span>
-<span class="n">Epoch</span><span class="o">:</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">Error</span><span class="o">:</span><span class="w"> </span><span class="mf">0.3502</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">Accuracy</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mf">91.15</span><span class="o">%</span>
-<span class="n">Epoch</span><span class="o">:</span><span class="w"> </span><span class="mi">15</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">Error</span><span class="o">:</span><span class="w"> </span><span class="mf">0.3164</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">Accuracy</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mf">91.91</span><span class="o">%</span>
-<span class="n">Test</span><span class="w"> </span><span class="n">Cost</span><span class="o">:</span><span class="w"> </span><span class="mf">0.3292</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">Accuracy</span><span class="o">:</span><span class="w"> </span><span class="mf">91.27</span><span class="o">%</span>
-</code></pre></div>
+</code></pre>
+<pre><code>Epoch: 5 - Error: 0.4307 - Accuracy - 89.50%
+Epoch: 10 - Error: 0.3502 - Accuracy - 91.15%
+Epoch: 15 - Error: 0.3164 - Accuracy - 91.91%
+Test Cost: 0.3292 - Accuracy: 91.27%
+</code></pre>
+<pre><code class="language-python">%matplotlib inline
+fig = plt.figure(dpi=100, figsize=(9, 6))
+labels = np.argmax(mnist.test.labels[:9], axis = 1)
+for i in range(9):
+    fig.add_subplot(3, 3, i+1)
+    plt.imshow(mnist.test.images[i].reshape(28, 28))
+    plt.axis(&quot;off&quot;)
+    plt.tight_layout()
+    plt.title(&quot;pred: &quot; + str(test_plot[i]) + ', actual: ' + str(labels[i]))
+    #frame = plt.gca()
+    #frame.axes.get_xaxis().set_visible(False)
+    #frame.axes.get_yaxis().set_visible(False)
 
-<div class="highlight"><pre><span></span><code><span class="o">%</span><span class="n">matplotlib</span> <span class="n">inline</span>
-<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">dpi</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
-<span class="n">labels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">mnist</span><span class="o">.</span><span class="n">test</span><span class="o">.</span><span class="n">labels</span><span class="p">[:</span><span class="mi">9</span><span class="p">],</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
-<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">9</span><span class="p">):</span>
-    <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">mnist</span><span class="o">.</span><span class="n">test</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">28</span><span class="p">,</span> <span class="mi">28</span><span class="p">))</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s2">&quot;off&quot;</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;pred: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">test_plot</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">+</span> <span class="s1">&#39;, actual: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">labels</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
-    <span class="c1">#frame = plt.gca()</span>
-    <span class="c1">#frame.axes.get_xaxis().set_visible(False)</span>
-    <span class="c1">#frame.axes.get_yaxis().set_visible(False)</span>
-
-<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-</code></pre></div>
-
+plt.show()
+</code></pre>
 <p><img alt="png" src="/figures/20170527_tf_06_mnist_logistic_knn_01.png"></p>
 <h2>2. KNN</h2>
 <p><a href="https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm">KNN</a> is a non-parametric method for classification and regression. It will measure the distance and group the k nearest data together for classification or regression.</p>
@@ -232,119 +226,112 @@ $$</div>
 P(y = j | X = x) = \frac{1}{K} \sum_{i \in \mathcal{A}} I(y^{(i)} = j)
 $$</div>
 <p>Finally, our input <span class="math">\(x\)</span> gets assigned to the class with the largest probability.</p>
-<div class="highlight"><pre><span></span><code><span class="n">sess</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span>
+<pre><code class="language-python">sess = tf.Session()
 
 
-<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">13</span><span class="p">)</span>  <span class="c1"># set seed for reproducibility</span>
-<span class="n">train_size</span> <span class="o">=</span> <span class="mi">2000</span>
-<span class="n">test_size</span> <span class="o">=</span> <span class="mi">200</span>
-<span class="n">rand_train_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">mnist</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">images</span><span class="p">),</span> <span class="n">train_size</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<span class="n">rand_test_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">mnist</span><span class="o">.</span><span class="n">test</span><span class="o">.</span><span class="n">images</span><span class="p">),</span> <span class="n">test_size</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<span class="n">x_vals_train</span> <span class="o">=</span> <span class="n">mnist</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">rand_train_indices</span><span class="p">]</span>
-<span class="n">x_vals_test</span> <span class="o">=</span> <span class="n">mnist</span><span class="o">.</span><span class="n">test</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">rand_test_indices</span><span class="p">]</span>
-<span class="n">y_vals_train</span> <span class="o">=</span> <span class="n">mnist</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">labels</span><span class="p">[</span><span class="n">rand_train_indices</span><span class="p">]</span>
-<span class="n">y_vals_test</span> <span class="o">=</span> <span class="n">mnist</span><span class="o">.</span><span class="n">test</span><span class="o">.</span><span class="n">labels</span><span class="p">[</span><span class="n">rand_test_indices</span><span class="p">]</span>
+np.random.seed(13)  # set seed for reproducibility
+train_size = 2000
+test_size = 200
+rand_train_indices = np.random.choice(len(mnist.train.images), train_size, replace=False)
+rand_test_indices = np.random.choice(len(mnist.test.images), test_size, replace=False)
+x_vals_train = mnist.train.images[rand_train_indices]
+x_vals_test = mnist.test.images[rand_test_indices]
+y_vals_train = mnist.train.labels[rand_train_indices]
+y_vals_test = mnist.test.labels[rand_test_indices]
 
-<span class="n">k</span> <span class="o">=</span> <span class="mi">5</span>
-<span class="n">batch_size</span><span class="o">=</span><span class="mi">5</span>
+k = 5
+batch_size=5
 
-<span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">name_scope</span><span class="p">(</span><span class="s2">&quot;IO&quot;</span><span class="p">):</span>
-<span class="c1"># Placeholders</span>
-    <span class="n">x_data_train</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="mi">784</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-    <span class="n">x_data_test</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="mi">784</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-    <span class="n">y_target_train</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-    <span class="n">y_target_test</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+with tf.name_scope(&quot;IO&quot;):
+# Placeholders
+    x_data_train = tf.placeholder(shape=[None, 784], dtype=tf.float32)
+    x_data_test = tf.placeholder(shape=[None, 784], dtype=tf.float32)
+    y_target_train = tf.placeholder(shape=[None, 10], dtype=tf.float32)
+    y_target_test = tf.placeholder(shape=[None, 10], dtype=tf.float32)
 
-<span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">name_scope</span><span class="p">(</span><span class="s2">&quot;KNN&quot;</span><span class="p">):</span>    
-    <span class="c1">#each train and each test dist</span>
-    <span class="n">distance</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">x_data_train</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">x_data_test</span><span class="p">,</span><span class="mi">1</span><span class="p">))),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span> 
-    <span class="c1"># Get min distance index (Nearest neighbor)</span>
-    <span class="n">top_k_xvals</span><span class="p">,</span> <span class="n">top_k_indices</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">top_k</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">negative</span><span class="p">(</span><span class="n">distance</span><span class="p">),</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">)</span>
-    <span class="n">prediction_indices</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="n">y_target_train</span><span class="p">,</span> <span class="n">top_k_indices</span><span class="p">)</span>
-    <span class="c1"># Predict the mode category: k nearest nbrs may result in different preds, pick the pred with highest freq</span>
-    <span class="n">count_of_predictions</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">prediction_indices</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-    <span class="n">prediction</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">count_of_predictions</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-
-
-<span class="n">num_loops</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x_vals_test</span><span class="p">)</span><span class="o">/</span><span class="n">batch_size</span><span class="p">))</span>
-<span class="n">test_output</span> <span class="o">=</span> <span class="p">[]</span>
-<span class="n">actual_vals</span> <span class="o">=</span> <span class="p">[]</span>
-
-<span class="k">with</span> <span class="n">sess</span><span class="o">.</span><span class="n">as_default</span><span class="p">():</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_loops</span><span class="p">):</span>
-        <span class="n">init</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">global_variables_initializer</span><span class="p">()</span>
-        <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">init</span><span class="p">)</span>
-        <span class="n">min_index</span> <span class="o">=</span> <span class="n">i</span><span class="o">*</span><span class="n">batch_size</span>
-        <span class="n">max_index</span> <span class="o">=</span> <span class="nb">min</span><span class="p">((</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">batch_size</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">x_vals_train</span><span class="p">))</span>
-        <span class="n">x_batch</span> <span class="o">=</span> <span class="n">x_vals_test</span><span class="p">[</span><span class="n">min_index</span><span class="p">:</span><span class="n">max_index</span><span class="p">]</span> 
-        <span class="n">y_batch</span> <span class="o">=</span> <span class="n">y_vals_test</span><span class="p">[</span><span class="n">min_index</span><span class="p">:</span><span class="n">max_index</span><span class="p">]</span>
-        <span class="n">predictions</span> <span class="o">=</span> <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">prediction</span><span class="p">,</span> <span class="n">feed_dict</span><span class="o">=</span><span class="p">{</span><span class="n">x_data_train</span><span class="p">:</span> <span class="n">x_vals_train</span><span class="p">,</span> <span class="n">x_data_test</span><span class="p">:</span> <span class="n">x_batch</span><span class="p">,</span>
-                                             <span class="n">y_target_train</span><span class="p">:</span> <span class="n">y_vals_train</span><span class="p">,</span> <span class="n">y_target_test</span><span class="p">:</span> <span class="n">y_batch</span><span class="p">})</span>
-        <span class="n">test_output</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">predictions</span><span class="p">)</span>
-        <span class="n">actual_vals</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">y_batch</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
-
-    <span class="n">accuracy</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="mf">1.</span><span class="o">/</span><span class="n">test_size</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">test_size</span><span class="p">)</span> <span class="k">if</span> <span class="n">test_output</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">==</span><span class="n">actual_vals</span><span class="p">[</span><span class="n">i</span><span class="p">]])</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Accuracy on test data: </span><span class="si">%.2f%%</span><span class="s2"> &quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">accuracy</span><span class="p">))</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>Accuracy on test data: 0.87%
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="o">%</span><span class="n">matplotlib</span> <span class="n">inline</span>
-<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">dpi</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+with tf.name_scope(&quot;KNN&quot;):    
+    #each train and each test dist
+    distance = tf.reduce_sum(tf.abs(tf.subtract(x_data_train, tf.expand_dims(x_data_test,1))), axis=2) 
+    # Get min distance index (Nearest neighbor)
+    top_k_xvals, top_k_indices = tf.nn.top_k(tf.negative(distance), k=k)
+    prediction_indices = tf.gather(y_target_train, top_k_indices)
+    # Predict the mode category: k nearest nbrs may result in different preds, pick the pred with highest freq
+    count_of_predictions = tf.reduce_sum(prediction_indices, axis=1)
+    prediction = tf.argmax(count_of_predictions, axis=1)
 
 
-<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">9</span><span class="p">):</span>
-    <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">x_vals_test</span><span class="p">[:</span><span class="mi">9</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">28</span><span class="p">,</span> <span class="mi">28</span><span class="p">))</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s2">&quot;off&quot;</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;pred: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">test_output</span><span class="p">[:</span><span class="mi">9</span><span class="p">][</span><span class="n">i</span><span class="p">])</span> <span class="o">+</span> <span class="s1">&#39;, actual: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">actual_vals</span><span class="p">[:</span><span class="mi">9</span><span class="p">][</span><span class="n">i</span><span class="p">]))</span>
+num_loops = int(np.ceil(len(x_vals_test)/batch_size))
+test_output = []
+actual_vals = []
 
-<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-</code></pre></div>
+with sess.as_default():
+    for i in range(num_loops):
+        init = tf.global_variables_initializer()
+        sess.run(init)
+        min_index = i*batch_size
+        max_index = min((i+1)*batch_size,len(x_vals_train))
+        x_batch = x_vals_test[min_index:max_index] 
+        y_batch = y_vals_test[min_index:max_index]
+        predictions = sess.run(prediction, feed_dict={x_data_train: x_vals_train, x_data_test: x_batch,
+                                             y_target_train: y_vals_train, y_target_test: y_batch})
+        test_output.extend(predictions)
+        actual_vals.extend(np.argmax(y_batch, axis=1))
 
+    accuracy = sum([1./test_size for i in range(test_size) if test_output[i]==actual_vals[i]])
+    print(&quot;Accuracy on test data: %.2f%% &quot; %(accuracy))
+</code></pre>
+<pre><code>Accuracy on test data: 0.87%
+</code></pre>
+<pre><code class="language-python">%matplotlib inline
+fig = plt.figure(dpi=100, figsize=(9, 6))
+
+
+for i in range(9):
+    fig.add_subplot(3, 3, i+1)
+    plt.imshow(x_vals_test[:9][i].reshape(28, 28))
+    plt.axis(&quot;off&quot;)
+    plt.tight_layout()
+    plt.title(&quot;pred: &quot; + str(test_output[:9][i]) + ', actual: ' + str(actual_vals[:9][i]))
+
+plt.show()
+</code></pre>
 <p><img alt="png" src="/figures/20170527_tf_06_mnist_logistic_knn_02.png"></p>
 <h3>broadcasting</h3>
 <p>the dimension of xtrain and xtest are different. so the substraction cannot be applied directly. <code>tf.expand_dims(x_vals_test,1)</code> will add one dimension on the data. After expanding the dim, the substraction is fine becasue of broadcasting. It is the same as <code>np.expand_dim</code>. An example is given below.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>  <span class="c1"># 20x5</span>
-<span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>    <span class="c1"># 4x5</span>
-<span class="n">x</span> <span class="o">-</span> <span class="n">y</span> <span class="c1"># error</span>
+<pre><code class="language-python">import numpy as np
+x = np.arange(100).reshape(20, 5)  # 20x5
+y = np.arange(20).reshape(4, 5)    # 4x5
+x - y # error
 
-<span class="nb">print</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>        <span class="c1"># 4x1x5</span>
-<span class="nb">print</span><span class="p">((</span><span class="n">x</span>  <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>  <span class="c1"># 4x20x5</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">((</span><span class="n">x</span>  <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="mi">1</span><span class="p">))),</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>    <span class="c1"># 4x20</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>(4, 1, 5)
+print (np.expand_dims(y, 1).shape)        # 4x1x5
+print((x  - np.expand_dims(y, 1)).shape)  # 4x20x5
+print(np.sum(np.abs((x  - np.expand_dims(y, 1))), axis = 2).shape)    # 4x20
+</code></pre>
+<pre><code>(4, 1, 5)
 (4, 20, 5)
 (4, 20)
-</code></pre></div>
-
+</code></pre>
 <p><code>tf.reduce_sum(, axis = 2)</code> will calculate the sum on the given axis = 2. It is similar to <code>np.sum(, axis = 2)</code>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                </p>
-<div class="highlight"><pre><span></span><code><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">99</span><span class="p">)</span>
-<span class="n">float_formatter</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%.2f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">x</span>
+<pre><code class="language-python">np.random.seed(99)
+float_formatter = lambda x: &quot;%.2f&quot; % x
 
-<span class="n">s</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="mi">2</span><span class="p">)</span> 
-<span class="c1">#s = np.array(map(float_formatter, s))</span>
+s = np.round(np.random.normal(0, 1, 10), 2) 
+#s = np.array(map(float_formatter, s))
 
-<span class="nb">print</span> <span class="n">s</span>
+print s
 
-<span class="nb">print</span><span class="p">(</span><span class="o">-</span><span class="n">s</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="o">-</span><span class="n">s</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">][:</span><span class="mi">2</span><span class="p">]])</span>
+print(-s[np.argsort(-s)[::-1][:2]])
 
-<span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span> <span class="k">as</span> <span class="n">sess</span><span class="p">:</span>
-    <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">init</span><span class="p">)</span>
-    <span class="nb">print</span> <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">top_k</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">negative</span><span class="p">(</span><span class="n">s</span><span class="p">),</span> <span class="n">k</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
-</code></pre></div>
+with tf.Session() as sess:
+    sess.run(init)
+    print sess.run(tf.nn.top_k(tf.negative(s), k=2))
+</code></pre>
+<pre><code>[-0.14  2.06  0.28  1.33 -0.15 -0.07  0.76  0.83 -0.11 -2.37]
 
-<div class="highlight"><pre><span></span><code><span class="k">[-0.14  2.06  0.28  1.33 -0.15 -0.07  0.76  0.83 -0.11 -2.37]</span>
+[ 2.37  0.15]
 
-<span class="k">[ 2.37  0.15]</span>
-
-<span class="na">TopKV2(values</span><span class="o">=</span><span class="s">array([ 2.37,  0.15]), indices=array([9, 4], dtype=int32))</span>
-</code></pre></div>
-
+TopKV2(values=array([ 2.37,  0.15]), indices=array([9, 4], dtype=int32))
+</code></pre>
 <h2>Reference</h2>
 <ol>
 <li>
@@ -444,13 +431,13 @@ $$</div>
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -468,7 +455,7 @@ $$</div>
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

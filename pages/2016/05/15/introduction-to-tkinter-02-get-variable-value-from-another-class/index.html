@@ -102,92 +102,93 @@ window.addEventListener('load', () => {
 <li>确认到下一页面，打印，就会在console里面打印出来上面出入的文字</li>
 </ol>
 <p><img alt="test" src="/figures/20160516_tkinter_basic_intro_02_var_transfer_02.PNG"></p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">Tkinter</span> <span class="k">as</span> <span class="nn">tk</span>
-<span class="kn">import</span> <span class="nn">ttk</span>
+<pre><code class="language-python">import Tkinter as tk
+import ttk
 
-<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">目的： 在startPage上添加一个输入框，然后把输入的值在传递到pageOne打印出来</span>
+'''
+目的： 在startPage上添加一个输入框，然后把输入的值在传递到pageOne打印出来
 
-<span class="sd">步骤: 1.在startPage上添加一个Entry widget作为输入</span>
-<span class="sd">     2.在myFrame添加get_page函数来获取页面</span>
-<span class="sd">     3.最后在pageOne获取页面，从而获得value并打印出来</span>
-<span class="sd">&#39;&#39;&#39;</span>
+步骤: 1.在startPage上添加一个Entry widget作为输入
+     2.在myFrame添加get_page函数来获取页面
+     3.最后在pageOne获取页面，从而获得value并打印出来
+'''
 
-<span class="k">class</span> <span class="nc">myFrame1</span><span class="p">(</span><span class="n">tk</span><span class="o">.</span><span class="n">Tk</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="n">tk</span><span class="o">.</span><span class="n">Tk</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+class myFrame1(tk.Tk):
+    def __init__(self, *args, **kwargs):
+        tk.Tk.__init__(self, *args, **kwargs)
 
-        <span class="n">container</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">Frame</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-        <span class="n">container</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">side</span> <span class="o">=</span> <span class="s2">&quot;top&quot;</span><span class="p">,</span> <span class="n">fill</span> <span class="o">=</span> <span class="s2">&quot;both&quot;</span><span class="p">,</span> <span class="n">expand</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>  <span class="c1">#</span>
-        <span class="n">container</span><span class="o">.</span><span class="n">grid_rowconfigure</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">weight</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
-        <span class="n">container</span><span class="o">.</span><span class="n">grid_columnconfigure</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">weight</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+        container = tk.Frame(self)
+        container.pack(side = &quot;top&quot;, fill = &quot;both&quot;, expand = True)  #
+        container.grid_rowconfigure(0, weight = 1)
+        container.grid_columnconfigure(0, weight = 1)
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">frames</span> <span class="o">=</span> <span class="p">{}</span>
+        self.frames = {}
 
-        <span class="k">for</span> <span class="n">F</span> <span class="ow">in</span> <span class="p">(</span><span class="n">startPage</span><span class="p">,</span> <span class="n">pageOne</span><span class="p">):</span>
-            <span class="n">frame</span> <span class="o">=</span> <span class="n">F</span><span class="p">(</span><span class="n">container</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>  <span class="c1">#startPage继承了container</span>
-            <span class="n">frame</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">row</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">column</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">sticky</span><span class="o">=</span><span class="s2">&quot;nsew&quot;</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="p">[</span><span class="n">F</span><span class="p">]</span> <span class="o">=</span> <span class="n">frame</span>
+        for F in (startPage, pageOne):
+            frame = F(container, self)  #startPage继承了container
+            frame.grid(row=0, column=0, sticky=&quot;nsew&quot;)
+            self.frames[F] = frame
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">show_frame</span><span class="p">(</span><span class="n">startPage</span><span class="p">)</span>
+        self.show_frame(startPage)
 
-    <span class="k">def</span> <span class="nf">show_frame</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">page_name</span><span class="p">):</span>
-        <span class="n">frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="p">[</span><span class="n">page_name</span><span class="p">]</span>
-        <span class="n">frame</span><span class="o">.</span><span class="n">tkraise</span><span class="p">()</span>
+    def show_frame(self, page_name):
+        frame = self.frames[page_name]
+        frame.tkraise()
 
-    <span class="k">def</span> <span class="nf">get_page</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">page_name</span><span class="p">):</span>
-        <span class="k">for</span> <span class="n">page</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
-            <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">page</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span> <span class="o">==</span> <span class="n">page_name</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">page</span>
-        <span class="k">return</span> <span class="kc">None</span>     
-
-
-<span class="k">class</span> <span class="nc">startPage</span><span class="p">(</span><span class="n">tk</span><span class="o">.</span><span class="n">Frame</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">controller</span><span class="p">):</span>
-        <span class="n">tk</span><span class="o">.</span><span class="n">Frame</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">controller</span> <span class="o">=</span> <span class="n">controller</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">make_widget</span><span class="p">(</span><span class="n">controller</span><span class="p">)</span>
-
-        <span class="n">label</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">Label</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span> <span class="o">=</span> <span class="s2">&quot;StartPage&quot;</span><span class="p">)</span>
-        <span class="n">label</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">pady</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">padx</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span>
-
-        <span class="c1"># 在__init__下面，可以写self.controller或者controller，它们是一样的</span>
-        <span class="c1"># 但是在上面的show_frame（不在__init__下），那么就需要self.frames，要不然找不到frames</span>
-        <span class="n">b1</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">Button</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span> <span class="o">=</span> <span class="s2">&quot;Page One&quot;</span><span class="p">,</span> <span class="n">command</span> <span class="o">=</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">controller</span><span class="o">.</span><span class="n">show_frame</span><span class="p">(</span><span class="n">pageOne</span><span class="p">))</span>
-        <span class="n">b1</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
+    def get_page(self, page_name):
+        for page in self.frames.values():
+            if str(page.__class__.__name__) == page_name:
+                return page
+        return None     
 
 
-    <span class="k">def</span> <span class="nf">make_widget</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">controller</span><span class="p">):</span>
-        <span class="n">some_input</span> <span class="o">=</span> <span class="s2">&quot;test input widget&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">some_entry</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">Entry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">textvariable</span><span class="o">=</span><span class="n">some_input</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">some_entry</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
-        <span class="n">button1</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">Button</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s1">&#39;Confirm and go to next page&#39;</span><span class="p">,</span> <span class="n">command</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">controller</span><span class="o">.</span><span class="n">show_frame</span><span class="p">(</span><span class="n">pageOne</span><span class="p">))</span>
-        <span class="n">button1</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
+class startPage(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+        self.controller = controller
+        self.make_widget(controller)
 
-<span class="k">class</span> <span class="nc">pageOne</span><span class="p">(</span><span class="n">tk</span><span class="o">.</span><span class="n">Frame</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">controller</span><span class="p">):</span>
-        <span class="n">tk</span><span class="o">.</span><span class="n">Frame</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">controller</span> <span class="o">=</span> <span class="n">controller</span>
+        label = tk.Label(self, text = &quot;StartPage&quot;)
+        label.pack(pady = 10, padx = 10)
 
-        <span class="n">label</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">Label</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span> <span class="o">=</span> <span class="s2">&quot;Page one&quot;</span><span class="p">)</span>
-        <span class="n">label</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">pady</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">padx</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span>
-
-        <span class="n">b1</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">Button</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span> <span class="o">=</span> <span class="s2">&quot;go home&quot;</span><span class="p">,</span> <span class="n">command</span> <span class="o">=</span> <span class="k">lambda</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">show_frame</span><span class="p">(</span><span class="n">startPage</span><span class="p">))</span>
-        <span class="n">b1</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
-
-        <span class="n">b2</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">Button</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span> <span class="o">=</span> <span class="s2">&quot;print&quot;</span><span class="p">,</span> <span class="n">command</span> <span class="o">=</span> <span class="k">lambda</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">print_it</span><span class="p">())</span>
-        <span class="n">b2</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
-
-    <span class="k">def</span> <span class="nf">print_it</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">startpage</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">get_page</span><span class="p">(</span><span class="s2">&quot;startPage&quot;</span><span class="p">)</span>
-        <span class="n">value</span> <span class="o">=</span> <span class="n">startpage</span><span class="o">.</span><span class="n">some_entry</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
-        <span class="nb">print</span> <span class="n">value</span>
+        # 在__init__下面，可以写self.controller或者controller，它们是一样的
+        # 但是在上面的show_frame（不在__init__下），那么就需要self.frames，要不然找不到frames
+        b1 = tk.Button(self, text = &quot;Page One&quot;, command = lambda: controller.show_frame(pageOne))
+        b1.pack()
 
 
+    def make_widget(self, controller):
+        some_input = &quot;test input widget&quot;
+        self.some_entry = tk.Entry(self, textvariable=some_input, width=8)
+        self.some_entry.pack()
+        button1 = tk.Button(self, text='Confirm and go to next page', command=lambda: controller.show_frame(pageOne))
+        button1.pack()
 
-<span class="n">app1</span> <span class="o">=</span> <span class="n">myFrame1</span><span class="p">()</span>
-<span class="n">app1</span><span class="o">.</span><span class="n">mainloop</span><span class="p">()</span>
-</code></pre></div></div>
+class pageOne(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+        self.controller = controller
+
+        label = tk.Label(self, text = &quot;Page one&quot;)
+        label.pack(pady = 10, padx = 10)
+
+        b1 = tk.Button(self, text = &quot;go home&quot;, command = lambda: self.controller.show_frame(startPage))
+        b1.pack()
+
+        b2 = tk.Button(self, text = &quot;print&quot;, command = lambda: self.print_it())
+        b2.pack()
+
+    def print_it(self):
+        startpage = self.controller.get_page(&quot;startPage&quot;)
+        value = startpage.some_entry.get()
+        print value
+
+
+
+app1 = myFrame1()
+app1.mainloop()
+
+</code></pre></div>
     <footer>
 <p class="meta">
   <span class="byline author vcard">
@@ -216,13 +217,13 @@ window.addEventListener('load', () => {
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -240,7 +241,7 @@ window.addEventListener('load', () => {
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

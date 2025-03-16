@@ -97,90 +97,83 @@ window.addEventListener('load', () => {
   <div class="entry-content"><h1>1. pandas-highcharts</h1>
 <p><a href="https://github.com/gtnx/pandas-highcharts">pandas-highcharts</a> is very easy to use. It has some demos showing how to plot. The only con I found is I did not get how to draw dynamic graph through it.</p>
 <p>The following example is a small modification of the demo code.</p>
-<div class="highlight"><pre><span></span><code><span class="o">%</span><span class="n">load_ext</span> <span class="n">autoreload</span>
-<span class="o">%</span><span class="n">autoreload</span> <span class="mi">2</span>
+<pre><code class="language-python">%load_ext autoreload
+%autoreload 2
 
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">datetime</span>
-<span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">pandas.compat</span> <span class="kn">import</span> <span class="n">StringIO</span>
-<span class="kn">from</span> <span class="nn">pandas.io.common</span> <span class="kn">import</span> <span class="n">urlopen</span>
-<span class="kn">from</span> <span class="nn">IPython.display</span> <span class="kn">import</span> <span class="n">display</span><span class="p">,</span> <span class="n">display_pretty</span><span class="p">,</span> <span class="n">Javascript</span><span class="p">,</span> <span class="n">HTML</span>
-<span class="kn">from</span> <span class="nn">pandas_highcharts.core</span> <span class="kn">import</span> <span class="n">serialize</span>
-<span class="kn">from</span> <span class="nn">pandas_highcharts.display</span> <span class="kn">import</span> <span class="n">display_charts</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-</code></pre></div>
-
+import pandas as pd
+import datetime
+import os
+import numpy as np
+from pandas.compat import StringIO
+from pandas.io.common import urlopen
+from IPython.display import display, display_pretty, Javascript, HTML
+from pandas_highcharts.core import serialize
+from pandas_highcharts.display import display_charts
+import matplotlib.pyplot as plt
+</code></pre>
 <h2>1.1 spline plot of two series</h2>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">time</span>
-<span class="kn">import</span> <span class="nn">random</span>
+<pre><code class="language-python">import time
+import random
 
-<span class="n">s</span> <span class="o">=</span> <span class="p">[]</span>
-<span class="n">i</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-<span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">+</span> <span class="mi">100</span><span class="p">:</span>
-    <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
-    <span class="n">s</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">i</span><span class="p">,</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()])</span>
-<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">s</span> <span class="p">,</span> <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;dt&quot;</span><span class="p">,</span> <span class="s2">&quot;val1&quot;</span><span class="p">,</span> <span class="s2">&quot;val2&quot;</span><span class="p">])</span>
+s = []
+i = time.time()
+while i &lt; time.time() + 100:
+    i += 1
+    s.append([i, random.randint(0, 10), random.random()])
+df = pd.DataFrame(s , columns = [&quot;dt&quot;, &quot;val1&quot;, &quot;val2&quot;])
 
-<span class="n">df</span><span class="o">.</span><span class="n">dt</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;datetime64[s]&quot;</span><span class="p">)</span>
+df.dt = df.dt.astype(&quot;datetime64[s]&quot;)
 
-<span class="nb">print</span> <span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+print df.head()
 
-<span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">&quot;dt&quot;</span><span class="p">)</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>                   dt  val1      val2
+df = df.set_index(&quot;dt&quot;)
+</code></pre>
+<pre><code>                   dt  val1      val2
 0 2016-08-18 02:05:47     5  0.139195
 1 2016-08-18 02:05:48     9  0.419186
 2 2016-08-18 02:05:49     1  0.381455
 3 2016-08-18 02:05:50     6  0.275681
 4 2016-08-18 02:05:51     9  0.140637
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="n">display_charts</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Plot with pandas-highcharts&quot;</span><span class="p">)</span>
-</code></pre></div>
-
+</code></pre>
+<pre><code class="language-python">display_charts(df, title=&quot;Plot with pandas-highcharts&quot;)
+</code></pre>
 <p>Graph 3.  打印出数据(string)</p>
 <p><img alt="alt text" src="/figures/20160818_python_highcharts_test_01.PNG" title="Tex3"></p>
 <h2>1.2 cut to count frequency</h2>
-<div class="highlight"><pre><span></span><code><span class="n">pd</span><span class="o">.</span><span class="n">cut</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">),</span> <span class="mi">10</span><span class="p">,</span> <span class="n">right</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">retbins</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>([[0, 9.9), [0, 9.9), [0, 9.9), [0, 9.9), [0, 9.9), ..., [89.1, 99.099), [89.1, 99.099), [89.1, 99.099), [89.1, 99.099), [89.1, 99.099)]
+<pre><code class="language-python">pd.cut(range(100), 10, right = False, retbins = True)
+</code></pre>
+<pre><code>([[0, 9.9), [0, 9.9), [0, 9.9), [0, 9.9), [0, 9.9), ..., [89.1, 99.099), [89.1, 99.099), [89.1, 99.099), [89.1, 99.099), [89.1, 99.099)]
  Length: 100
  Categories (10, object): [[0, 9.9) &lt; [9.9, 19.8) &lt; [19.8, 29.7) &lt; [29.7, 39.6) ... [59.4, 69.3) &lt; [69.3, 79.2) &lt; [79.2, 89.1) &lt; [89.1, 99.099)],
  array([  0.   ,   9.9  ,  19.8  ,  29.7  ,  39.6  ,  49.5  ,  59.4  ,
          69.3  ,  79.2  ,  89.1  ,  99.099]))
-</code></pre></div>
+</code></pre>
+<pre><code class="language-python">import time
+import random
 
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">time</span>
-<span class="kn">import</span> <span class="nn">random</span>
+s = []
+i = time.time()
+while i &lt; time.time() + 100:
+    i += 1
+    s.append([i + random.normalvariate(0, 1) * 2000, random.randint(0, 10), random.random()])
+df = pd.DataFrame(s , columns = [&quot;dt&quot;, &quot;val1&quot;, &quot;val2&quot;])
 
-<span class="n">s</span> <span class="o">=</span> <span class="p">[]</span>
-<span class="n">i</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-<span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">+</span> <span class="mi">100</span><span class="p">:</span>
-    <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
-    <span class="n">s</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">i</span> <span class="o">+</span> <span class="n">random</span><span class="o">.</span><span class="n">normalvariate</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2000</span><span class="p">,</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()])</span>
-<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">s</span> <span class="p">,</span> <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;dt&quot;</span><span class="p">,</span> <span class="s2">&quot;val1&quot;</span><span class="p">,</span> <span class="s2">&quot;val2&quot;</span><span class="p">])</span>
+print df.head()
 
-<span class="nb">print</span> <span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+s = pd.cut(df.dt, 10, right = False, retbins = True)
 
-<span class="n">s</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">cut</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">right</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">retbins</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+freq = s[0].value_counts().values
+dt = s[1].tolist()[:10]
+print freq
+print dt
 
-<span class="n">freq</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span><span class="o">.</span><span class="n">values</span>
-<span class="n">dt</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()[:</span><span class="mi">10</span><span class="p">]</span>
-<span class="nb">print</span> <span class="n">freq</span>
-<span class="nb">print</span> <span class="n">dt</span>
+df_freq = pd.DataFrame({&quot;dt&quot; : dt, &quot;freq&quot; : freq})
+df_freq.dt = df_freq.dt.astype(&quot;datetime64[s]&quot;)
+df_freq = df_freq.set_index(&quot;dt&quot;)
 
-<span class="n">df_freq</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;dt&quot;</span> <span class="p">:</span> <span class="n">dt</span><span class="p">,</span> <span class="s2">&quot;freq&quot;</span> <span class="p">:</span> <span class="n">freq</span><span class="p">})</span>
-<span class="n">df_freq</span><span class="o">.</span><span class="n">dt</span> <span class="o">=</span> <span class="n">df_freq</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;datetime64[s]&quot;</span><span class="p">)</span>
-<span class="n">df_freq</span> <span class="o">=</span> <span class="n">df_freq</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">&quot;dt&quot;</span><span class="p">)</span>
-
-<span class="nb">print</span> <span class="n">df_freq</span><span class="o">.</span><span class="n">head</span><span class="p">()</span><span class="o">.</span><span class="n">to_string</span><span class="p">()</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>             dt  val1      val2
+print df_freq.head().to_string()
+</code></pre>
+<pre><code>             dt  val1      val2
 0  1.471485e+09     6  0.231597
 1  1.471489e+09     4  0.111525
 2  1.471485e+09    10  0.458811
@@ -195,11 +188,9 @@ dt
 2016-08-18 01:25:04    14
 2016-08-18 01:41:04    13
 2016-08-18 01:57:05    11
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="n">display_charts</span><span class="p">(</span><span class="n">df_freq</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;my first test&quot;</span><span class="p">)</span>
-</code></pre></div>
-
+</code></pre>
+<pre><code class="language-python">display_charts(df_freq, title=&quot;my first test&quot;)
+</code></pre>
 <p><img alt="alt text" src="/figures/20160818_python_highcharts_test_02.PNG" title="Tex3"></p>
 <h1>2. static plot in flask</h1>
 <p>To show the static highcharts plot through flask, a simple way is to prepare the data in python code, and render to the html page. The following is an example.</p>
@@ -209,133 +200,129 @@ dt
 * /static/js/main.js
 * /templates/index.html</p>
 <h2>2.1 app.py</h2>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">flask</span> <span class="kn">import</span> <span class="n">Flask</span><span class="p">,</span> <span class="n">render_template</span>
+<pre><code class="language-python">from flask import Flask, render_template
 
-<span class="n">app</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+app = Flask(__name__)
 
-<span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span>
-<span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/index&#39;</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">index</span><span class="p">(</span><span class="n">chartID</span> <span class="o">=</span> <span class="s1">&#39;chart_ID&#39;</span><span class="p">,</span> <span class="n">chart_type</span> <span class="o">=</span> <span class="s1">&#39;bar&#39;</span><span class="p">,</span> <span class="n">chart_height</span> <span class="o">=</span> <span class="mi">350</span><span class="p">):</span>
-    <span class="n">chart</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;renderTo&quot;</span><span class="p">:</span> <span class="n">chartID</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="n">chart_type</span><span class="p">,</span> <span class="s2">&quot;height&quot;</span><span class="p">:</span> <span class="n">chart_height</span><span class="p">,}</span>
-    <span class="n">series</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s1">&#39;Label1&#39;</span><span class="p">,</span> <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]},</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s1">&#39;Label2&#39;</span><span class="p">,</span> <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">]}]</span>
-    <span class="n">title</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s1">&#39;My Title&#39;</span><span class="p">}</span>
-    <span class="n">xAxis</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;categories&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;xAxis Data1&#39;</span><span class="p">,</span> <span class="s1">&#39;xAxis Data2&#39;</span><span class="p">,</span> <span class="s1">&#39;xAxis Data3&#39;</span><span class="p">]}</span>
-    <span class="n">yAxis</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s1">&#39;yAxis Label&#39;</span><span class="p">}}</span>
-    <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s1">&#39;index.html&#39;</span><span class="p">,</span> <span class="n">chartID</span><span class="o">=</span><span class="n">chartID</span><span class="p">,</span> <span class="n">chart</span><span class="o">=</span><span class="n">chart</span><span class="p">,</span> <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span> <span class="n">xAxis</span><span class="o">=</span><span class="n">xAxis</span><span class="p">,</span> <span class="n">yAxis</span><span class="o">=</span><span class="n">yAxis</span><span class="p">)</span>
+@app.route('/')
+@app.route('/index')
+def index(chartID = 'chart_ID', chart_type = 'bar', chart_height = 350):
+    chart = {&quot;renderTo&quot;: chartID, &quot;type&quot;: chart_type, &quot;height&quot;: chart_height,}
+    series = [{&quot;name&quot;: 'Label1', &quot;data&quot;: [1,2,3]}, {&quot;name&quot;: 'Label2', &quot;data&quot;: [4, 5, 6]}]
+    title = {&quot;text&quot;: 'My Title'}
+    xAxis = {&quot;categories&quot;: ['xAxis Data1', 'xAxis Data2', 'xAxis Data3']}
+    yAxis = {&quot;title&quot;: {&quot;text&quot;: 'yAxis Label'}}
+    return render_template('index.html', chartID=chartID, chart=chart, series=series, title=title, xAxis=xAxis, yAxis=yAxis)
 
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
-    <span class="n">app</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">debug</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="s1">&#39;0.0.0.0&#39;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8080</span><span class="p">,</span> <span class="n">passthrough_errors</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</code></pre></div>
-
+if __name__ == &quot;__main__&quot;:
+    app.run(debug = True, host='0.0.0.0', port=8080, passthrough_errors=True)
+</code></pre>
 <h2>2.2 index.html</h2>
-<div class="highlight"><pre><span></span><code><span class="cp">&lt;!DOCTYPE html&gt;</span>
-<span class="p">&lt;</span><span class="nt">html</span> <span class="na">lang</span><span class="o">=</span><span class="s">&quot;en&quot;</span><span class="p">&gt;</span>
-    <span class="p">&lt;</span><span class="nt">head</span><span class="p">&gt;</span>
-        <span class="p">&lt;</span><span class="nt">meta</span> <span class="na">name</span><span class="o">=</span><span class="s">&quot;viewport&quot;</span> <span class="na">content</span><span class="o">=</span><span class="s">&quot;width=device-width, initial-scale=1.0&quot;</span><span class="p">&gt;</span>
-        <span class="p">&lt;</span><span class="nt">meta</span> <span class="na">name</span><span class="o">=</span><span class="s">&quot;description&quot;</span> <span class="na">content</span><span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">&gt;</span>
-        <span class="p">&lt;</span><span class="nt">meta</span> <span class="na">name</span><span class="o">=</span><span class="s">&quot;keywords&quot;</span> <span class="na">content</span><span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">&gt;</span>
-        <span class="p">&lt;</span><span class="nt">meta</span> <span class="na">name</span><span class="o">=</span><span class="s">&quot;author&quot;</span> <span class="na">content</span><span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">&gt;</span>
-        <span class="p">&lt;</span><span class="nt">meta</span> <span class="na">charset</span><span class="o">=</span><span class="s">&quot;utf-8&quot;</span><span class="p">&gt;</span>
+<pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html lang=&quot;en&quot;&gt;
+    &lt;head&gt;
+        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
+        &lt;meta name=&quot;description&quot; content=&quot;&quot;&gt;
+        &lt;meta name=&quot;keywords&quot; content=&quot;&quot;&gt;
+        &lt;meta name=&quot;author&quot; content=&quot;&quot;&gt;
+        &lt;meta charset=&quot;utf-8&quot;&gt;
 
-        <span class="cm">&lt;!-- &lt;link href=&quot;../static/css/main.css&quot; rel=&quot;stylesheet&quot; type=&quot;text/css&quot; /&gt; --&gt;</span>
+        &lt;!-- &lt;link href=&quot;../static/css/main.css&quot; rel=&quot;stylesheet&quot; type=&quot;text/css&quot; /&gt; --&gt;
 
-        <span class="cm">&lt;!-- SUPPORT FOR IE6-8 OF HTML5 ELEMENTS --&gt;</span>
-        <span class="cm">&lt;!--[if lt IE 9]&gt;</span>
-<span class="cm">                    &lt;script src=&quot;http://html5shim.googlecode.com/svn/trunk/html5.js&quot;&gt;&lt;/script&gt;</span>
-<span class="cm">            &lt;![endif]--&gt;</span>
+        &lt;!-- SUPPORT FOR IE6-8 OF HTML5 ELEMENTS --&gt;
+        &lt;!--[if lt IE 9]&gt;
+                    &lt;script src=&quot;http://html5shim.googlecode.com/svn/trunk/html5.js&quot;&gt;&lt;/script&gt;
+            &lt;![endif]--&gt;
 
-        <span class="cm">&lt;!-- &lt;link rel=&quot;shortcut icon&quot; href=&quot;{{ url_for(&#39;static&#39;, filename=&#39;ico/favicon.ico&#39;) }}&quot;&gt; --&gt;</span>
+        &lt;!-- &lt;link rel=&quot;shortcut icon&quot; href=&quot;{{ url_for('static', filename='ico/favicon.ico') }}&quot;&gt; --&gt;
         {% block head %}
-            <span class="p">&lt;</span><span class="nt">title</span><span class="p">&gt;</span>{% block title %} Title!{% endblock %}<span class="p">&lt;/</span><span class="nt">title</span><span class="p">&gt;</span>
+            &lt;title&gt;{% block title %} Title!{% endblock %}&lt;/title&gt;
         {% endblock %}
-    <span class="p">&lt;/</span><span class="nt">head</span><span class="p">&gt;</span>
+    &lt;/head&gt;
 
-    <span class="p">&lt;</span><span class="nt">body</span><span class="p">&gt;</span>
-        <span class="p">&lt;</span><span class="nt">div</span> <span class="na">id</span><span class="o">=</span><span class="s">{{</span> <span class="na">chartID</span><span class="err">|</span><span class="na">safe</span> <span class="err">}}</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;chart&quot;</span> <span class="na">style</span><span class="o">=</span><span class="s">&quot;height: 100px; width: 500px&quot;</span><span class="p">&gt;&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
-        <span class="p">&lt;</span><span class="nt">script</span><span class="p">&gt;</span>
-<span class="w">            </span><span class="kd">var</span><span class="w"> </span><span class="nx">chart_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{{</span><span class="w"> </span><span class="nx">chartID</span><span class="o">|</span><span class="nx">safe</span><span class="w"> </span><span class="p">}}</span>
-<span class="w">            </span><span class="kd">var</span><span class="w"> </span><span class="nx">series</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{{</span><span class="w"> </span><span class="nx">series</span><span class="o">|</span><span class="nx">safe</span><span class="w"> </span><span class="p">}}</span>
-<span class="w">            </span><span class="kd">var</span><span class="w"> </span><span class="nx">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{{</span><span class="w"> </span><span class="nx">title</span><span class="o">|</span><span class="nx">safe</span><span class="w"> </span><span class="p">}}</span>
-<span class="w">            </span><span class="kd">var</span><span class="w"> </span><span class="nx">xAxis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{{</span><span class="w"> </span><span class="nx">xAxis</span><span class="o">|</span><span class="nx">safe</span><span class="w"> </span><span class="p">}}</span>
-<span class="w">            </span><span class="kd">var</span><span class="w"> </span><span class="nx">yAxis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{{</span><span class="w"> </span><span class="nx">yAxis</span><span class="o">|</span><span class="nx">safe</span><span class="w"> </span><span class="p">}}</span>
-<span class="w">            </span><span class="kd">var</span><span class="w"> </span><span class="nx">chart</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{{</span><span class="w"> </span><span class="nx">chart</span><span class="o">|</span><span class="nx">safe</span><span class="w"> </span><span class="p">}}</span>
-<span class="w">        </span><span class="p">&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
-            <span class="p">&lt;</span><span class="nt">script</span> <span class="na">src</span><span class="o">=</span><span class="s">&quot;http://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js&quot;</span><span class="p">&gt;&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
-            <span class="p">&lt;</span><span class="nt">script</span> <span class="na">src</span><span class="o">=</span><span class="s">&quot;http://code.highcharts.com/highcharts.js&quot;</span><span class="p">&gt;&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
-            <span class="p">&lt;</span><span class="nt">script</span> <span class="na">src</span><span class="o">=</span><span class="s">&quot;../static/js/main.js&quot;</span><span class="p">&gt;&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
-    <span class="p">&lt;/</span><span class="nt">body</span><span class="p">&gt;</span>
-<span class="p">&lt;/</span><span class="nt">html</span><span class="p">&gt;</span>
-</code></pre></div>
-
+    &lt;body&gt;
+        &lt;div id={{ chartID|safe }} class=&quot;chart&quot; style=&quot;height: 100px; width: 500px&quot;&gt;&lt;/div&gt;
+        &lt;script&gt;
+            var chart_id = {{ chartID|safe }}
+            var series = {{ series|safe }}
+            var title = {{ title|safe }}
+            var xAxis = {{ xAxis|safe }}
+            var yAxis = {{ yAxis|safe }}
+            var chart = {{ chart|safe }}
+        &lt;/script&gt;
+            &lt;script src=&quot;http://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js&quot;&gt;&lt;/script&gt;
+            &lt;script src=&quot;http://code.highcharts.com/highcharts.js&quot;&gt;&lt;/script&gt;
+            &lt;script src=&quot;../static/js/main.js&quot;&gt;&lt;/script&gt;
+    &lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
 <h2>2.3 main.css</h2>
-<div class="highlight"><pre><span></span><code><span class="o">*</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">margin</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="p">;</span>
-<span class="w">    </span><span class="k">padding</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="nt">header</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">background-color</span><span class="p">:</span><span class="nb">rgba</span><span class="p">(</span><span class="mi">33</span><span class="p">,</span><span class="w"> </span><span class="mi">33</span><span class="p">,</span><span class="w"> </span><span class="mi">33</span><span class="p">,</span><span class="w"> </span><span class="mf">0.9</span><span class="p">);</span>
-<span class="w">    </span><span class="k">color</span><span class="p">:</span><span class="mh">#ffffff</span><span class="p">;</span>
-<span class="w">    </span><span class="k">display</span><span class="p">:</span><span class="kc">block</span><span class="p">;</span>
-<span class="w">    </span><span class="k">font</span><span class="p">:</span><span class="w"> </span><span class="mi">14</span><span class="kt">px</span><span class="o">/</span><span class="mf">1.3</span><span class="w"> </span><span class="n">Arial</span><span class="p">,</span><span class="kc">sans-serif</span><span class="p">;</span>
-<span class="w">    </span><span class="k">height</span><span class="p">:</span><span class="mi">50</span><span class="kt">px</span><span class="p">;</span>
-<span class="w">    </span><span class="k">position</span><span class="p">:</span><span class="kc">relative</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="nt">header</span><span class="w"> </span><span class="nt">h2</span><span class="p">{</span>
-<span class="w">    </span><span class="k">font-size</span><span class="p">:</span><span class="w"> </span><span class="mi">22</span><span class="kt">px</span><span class="p">;</span>
-<span class="w">    </span><span class="k">margin</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="kt">px</span><span class="w"> </span><span class="kc">auto</span><span class="p">;</span>
-<span class="w">    </span><span class="k">padding</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="kt">px</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
-<span class="w">    </span><span class="k">width</span><span class="p">:</span><span class="w"> </span><span class="mi">80</span><span class="kt">%</span><span class="p">;</span>
-<span class="w">    </span><span class="k">text-align</span><span class="p">:</span><span class="w"> </span><span class="kc">center</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="nt">header</span><span class="w"> </span><span class="nt">a</span><span class="o">,</span><span class="w"> </span><span class="nt">a</span><span class="p">:</span><span class="nd">visited</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">text-decoration</span><span class="p">:</span><span class="kc">none</span><span class="p">;</span>
-<span class="w">    </span><span class="k">color</span><span class="p">:</span><span class="mh">#fcfcfc</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="nt">body</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">background</span><span class="p">:</span><span class="nb">url</span><span class="p">(</span><span class="s2">&quot;background.jpg&quot;</span><span class="p">)</span><span class="w"> </span><span class="kc">no-repeat</span><span class="w"> </span><span class="kc">scroll</span><span class="w"> </span><span class="kc">top</span><span class="w"> </span><span class="kc">center</span><span class="w"> </span><span class="kc">transparent</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="p">.</span><span class="nc">actions</span><span class="o">,</span><span class="w"> </span><span class="p">.</span><span class="nc">chart</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">margin</span><span class="p">:</span><span class="w"> </span><span class="mi">15</span><span class="kt">px</span><span class="w"> </span><span class="kc">auto</span><span class="p">;</span>
-<span class="w">    </span><span class="k">width</span><span class="p">:</span><span class="w"> </span><span class="mi">34</span><span class="kt">px</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="nt">button</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">background</span><span class="p">:</span><span class="w"> </span><span class="kc">none</span><span class="w"> </span><span class="kc">repeat</span><span class="w"> </span><span class="kc">scroll</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mh">#E3E3E3</span><span class="p">;</span>
-<span class="w">    </span><span class="k">border</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="kt">px</span><span class="w"> </span><span class="kc">solid</span><span class="w"> </span><span class="mh">#BBBBBB</span><span class="p">;</span>
-<span class="w">    </span><span class="k">border-radius</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="kt">px</span><span class="w"> </span><span class="mi">3</span><span class="kt">px</span><span class="w"> </span><span class="mi">3</span><span class="kt">px</span><span class="w"> </span><span class="mi">3</span><span class="kt">px</span><span class="p">;</span>
-<span class="w">    </span><span class="k">box-shadow</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mi">1</span><span class="kt">px</span><span class="w"> </span><span class="mi">1</span><span class="kt">px</span><span class="w"> </span><span class="mh">#F6F6F6</span><span class="w"> </span><span class="kc">inset</span><span class="p">;</span>
-<span class="w">    </span><span class="k">color</span><span class="p">:</span><span class="w"> </span><span class="mh">#333333</span><span class="p">;</span>
-<span class="w">    </span><span class="k">font</span><span class="p">:</span><span class="w"> </span><span class="kc">bold</span><span class="w"> </span><span class="mi">12</span><span class="kt">px</span><span class="p">;</span>
-<span class="w">    </span><span class="k">margin</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mi">5</span><span class="kt">px</span><span class="p">;</span>
-<span class="w">    </span><span class="k">padding</span><span class="p">:</span><span class="w"> </span><span class="mi">8</span><span class="kt">px</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mi">9</span><span class="kt">px</span><span class="p">;</span>
-<span class="w">    </span><span class="k">text-align</span><span class="p">:</span><span class="w"> </span><span class="kc">center</span><span class="p">;</span>
-<span class="w">    </span><span class="k">text-shadow</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mi">1</span><span class="kt">px</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mh">#FFFFFF</span><span class="p">;</span>
-<span class="w">    </span><span class="k">width</span><span class="p">:</span><span class="w"> </span><span class="mi">150</span><span class="kt">px</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="nt">button</span><span class="p">:</span><span class="nd">hover</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">background</span><span class="p">:</span><span class="w"> </span><span class="kc">none</span><span class="w"> </span><span class="kc">repeat</span><span class="w"> </span><span class="kc">scroll</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mh">#D9D9D9</span><span class="p">;</span>
-<span class="w">    </span><span class="k">box-shadow</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mi">1</span><span class="kt">px</span><span class="w"> </span><span class="mi">1</span><span class="kt">px</span><span class="w"> </span><span class="mh">#EAEAEA</span><span class="w"> </span><span class="kc">inset</span><span class="p">;</span>
-<span class="w">    </span><span class="k">color</span><span class="p">:</span><span class="w"> </span><span class="mh">#222222</span><span class="p">;</span>
-<span class="w">    </span><span class="k">cursor</span><span class="p">:</span><span class="w"> </span><span class="kc">pointer</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="nt">button</span><span class="p">:</span><span class="nd">active</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">background</span><span class="p">:</span><span class="w"> </span><span class="kc">none</span><span class="w"> </span><span class="kc">repeat</span><span class="w"> </span><span class="kc">scroll</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mh">#D0D0D0</span><span class="p">;</span>
-<span class="w">    </span><span class="k">box-shadow</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mi">1</span><span class="kt">px</span><span class="w"> </span><span class="mi">1</span><span class="kt">px</span><span class="w"> </span><span class="mh">#E3E3E3</span><span class="w"> </span><span class="kc">inset</span><span class="p">;</span>
-<span class="w">    </span><span class="k">color</span><span class="p">:</span><span class="w"> </span><span class="mh">#000000</span><span class="p">;</span>
-<span class="p">}</span>
-</code></pre></div>
-
+<pre><code class="language-css">* {
+    margin: 20;
+    padding: 100;
+}
+header {
+    background-color:rgba(33, 33, 33, 0.9);
+    color:#ffffff;
+    display:block;
+    font: 14px/1.3 Arial,sans-serif;
+    height:50px;
+    position:relative;
+}
+header h2{
+    font-size: 22px;
+    margin: 0px auto;
+    padding: 10px 0;
+    width: 80%;
+    text-align: center;
+}
+header a, a:visited {
+    text-decoration:none;
+    color:#fcfcfc;
+}
+body {
+    background:url(&quot;background.jpg&quot;) no-repeat scroll top center transparent;
+}
+.actions, .chart {
+    margin: 15px auto;
+    width: 34px;
+}
+button {
+    background: none repeat scroll 0 0 #E3E3E3;
+    border: 1px solid #BBBBBB;
+    border-radius: 3px 3px 3px 3px;
+    box-shadow: 0 0 1px 1px #F6F6F6 inset;
+    color: #333333;
+    font: bold 12px;
+    margin: 0 5px;
+    padding: 8px 0 9px;
+    text-align: center;
+    text-shadow: 0 1px 0 #FFFFFF;
+    width: 150px;
+}
+button:hover {
+    background: none repeat scroll 0 0 #D9D9D9;
+    box-shadow: 0 0 1px 1px #EAEAEA inset;
+    color: #222222;
+    cursor: pointer;
+}
+button:active {
+    background: none repeat scroll 0 0 #D0D0D0;
+    box-shadow: 0 0 1px 1px #E3E3E3 inset;
+    color: #000000;
+}
+</code></pre>
 <h1>2.4 main.js</h1>
-<div class="highlight"><pre><span></span><code><span class="nx">$</span><span class="p">(</span><span class="nb">document</span><span class="p">).</span><span class="nx">ready</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nx">$</span><span class="p">(</span><span class="nx">chart_id</span><span class="p">).</span><span class="nx">highcharts</span><span class="p">({</span>
-<span class="w">        </span><span class="nx">chart</span><span class="o">:</span><span class="w"> </span><span class="nx">chart</span><span class="p">,</span>
-<span class="w">        </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="nx">title</span><span class="p">,</span>
-<span class="w">        </span><span class="nx">xAxis</span><span class="o">:</span><span class="w"> </span><span class="nx">xAxis</span><span class="p">,</span>
-<span class="w">        </span><span class="nx">yAxis</span><span class="o">:</span><span class="w"> </span><span class="nx">yAxis</span><span class="p">,</span>
-<span class="w">        </span><span class="nx">series</span><span class="o">:</span><span class="w"> </span><span class="nx">series</span>
-<span class="w">    </span><span class="p">});</span>
-<span class="p">});</span>
-</code></pre></div>
-
+<pre><code class="language-javascript">$(document).ready(function() {
+    $(chart_id).highcharts({
+        chart: chart,
+        title: title,
+        xAxis: xAxis,
+        yAxis: yAxis,
+        series: series
+    });
+});
+</code></pre>
 <h1>3. An example of system monitor: Memory Usage Plot</h1>
 <p>The folder structure is like
 * /app.py
@@ -343,201 +330,197 @@ dt
 * /templates/mon.html</p>
 <p>The process is to catch the memory info in /proc/meminfo and save the data in mysql db. So first, we need to create the mysql db and tables.</p>
 <h2>3.0 create mysql db and table</h2>
-<div class="highlight"><pre><span></span><code><span class="n">mysql</span><span class="o">&gt;</span> <span class="n">create</span> <span class="n">database</span> <span class="n">falcon</span> <span class="n">character</span> <span class="nb">set</span> <span class="n">utf8</span><span class="p">;</span>
-<span class="n">Query</span> <span class="n">OK</span><span class="p">,</span> <span class="mi">1</span> <span class="n">row</span> <span class="n">affected</span> <span class="p">(</span><span class="mf">0.00</span> <span class="n">sec</span><span class="p">)</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="n">CREATE</span> <span class="n">TABLE</span> <span class="err">`</span><span class="n">stat</span><span class="err">`</span> <span class="p">(</span>
-  <span class="err">`</span><span class="nb">id</span><span class="err">`</span> <span class="nb">int</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span> <span class="n">unsigned</span> <span class="n">NOT</span> <span class="n">NULL</span> <span class="n">AUTO_INCREMENT</span><span class="p">,</span>
-  <span class="err">`</span><span class="n">host</span><span class="err">`</span> <span class="n">varchar</span><span class="p">(</span><span class="mi">256</span><span class="p">)</span> <span class="n">DEFAULT</span> <span class="n">NULL</span><span class="p">,</span>
-  <span class="err">`</span><span class="n">mem_free</span><span class="err">`</span> <span class="nb">int</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span> <span class="n">DEFAULT</span> <span class="n">NULL</span><span class="p">,</span>
-  <span class="err">`</span><span class="n">mem_usage</span><span class="err">`</span> <span class="nb">int</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span> <span class="n">DEFAULT</span> <span class="n">NULL</span><span class="p">,</span>
-  <span class="err">`</span><span class="n">mem_total</span><span class="err">`</span> <span class="nb">int</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span> <span class="n">DEFAULT</span> <span class="n">NULL</span><span class="p">,</span>
-  <span class="err">`</span><span class="n">load_avg</span><span class="err">`</span> <span class="n">varchar</span><span class="p">(</span><span class="mi">128</span><span class="p">)</span> <span class="n">DEFAULT</span> <span class="n">NULL</span><span class="p">,</span>
-  <span class="err">`</span><span class="n">time</span><span class="err">`</span> <span class="n">bigint</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span> <span class="n">DEFAULT</span> <span class="n">NULL</span><span class="p">,</span>
-  <span class="n">PRIMARY</span> <span class="n">KEY</span> <span class="p">(</span><span class="err">`</span><span class="nb">id</span><span class="err">`</span><span class="p">),</span>
-  <span class="n">KEY</span> <span class="err">`</span><span class="n">host</span><span class="err">`</span> <span class="p">(</span><span class="err">`</span><span class="n">host</span><span class="err">`</span><span class="p">(</span><span class="mi">255</span><span class="p">))</span>
-<span class="p">)</span> <span class="n">ENGINE</span><span class="o">=</span><span class="n">InnoDB</span> <span class="n">AUTO_INCREMENT</span><span class="o">=</span><span class="mi">0</span> <span class="n">DEFAULT</span> <span class="n">CHARSET</span><span class="o">=</span><span class="n">utf8</span><span class="p">;</span>
-</code></pre></div>
-
+<pre><code class="language-python">mysql&gt; create database falcon character set utf8;
+Query OK, 1 row affected (0.00 sec)
+</code></pre>
+<pre><code class="language-python">CREATE TABLE `stat` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `host` varchar(256) DEFAULT NULL,
+  `mem_free` int(11) DEFAULT NULL,
+  `mem_usage` int(11) DEFAULT NULL,
+  `mem_total` int(11) DEFAULT NULL,
+  `load_avg` varchar(128) DEFAULT NULL,
+  `time` bigint(11) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `host` (`host`(255))
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
+</code></pre>
 <h2>3.1 app.py</h2>
 <p>on the web server side, it will use flask.</p>
 <p>Once there is data post the page, python will run to insert that data into mysql table stat.</p>
 <p>Once the page is refreshed, <code>GET</code> method will be activated and the function <code>getdata()</code> will run to pull data from mysql db and data will be dumped to json file for highcharts to call.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">sys</span>
-<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;/usr/lib/python2.7/dist-packages&#39;</span><span class="p">)</span>
+<pre><code class="language-python">import sys
+sys.path.append('/usr/lib/python2.7/dist-packages')
 
-<span class="kn">import</span> <span class="nn">MySQLdb</span> <span class="k">as</span> <span class="nn">mysql</span>
-<span class="kn">import</span> <span class="nn">json</span>
-<span class="kn">from</span> <span class="nn">flask</span> <span class="kn">import</span> <span class="n">Flask</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">render_template</span>
+import MySQLdb as mysql
+import json
+from flask import Flask, request, render_template
 
-<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">run sql to create table</span>
+'''
+run sql to create table
 
-<span class="sd">CREATE TABLE `stat` (</span>
-<span class="sd">  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,</span>
-<span class="sd">  `host` varchar(256) DEFAULT NULL,</span>
-<span class="sd">  `mem_free` int(11) DEFAULT NULL,</span>
-<span class="sd">  `mem_usage` int(11) DEFAULT NULL,</span>
-<span class="sd">  `mem_total` int(11) DEFAULT NULL,</span>
-<span class="sd">  `load_avg` varchar(128) DEFAULT NULL,</span>
-<span class="sd">  `time` bigint(11) DEFAULT NULL,</span>
-<span class="sd">  PRIMARY KEY (`id`),</span>
-<span class="sd">  KEY `host` (`host`(255))</span>
-<span class="sd">) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;</span>
+CREATE TABLE `stat` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `host` varchar(256) DEFAULT NULL,
+  `mem_free` int(11) DEFAULT NULL,
+  `mem_usage` int(11) DEFAULT NULL,
+  `mem_total` int(11) DEFAULT NULL,
+  `load_avg` varchar(128) DEFAULT NULL,
+  `time` bigint(11) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `host` (`host`(255))
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8;
 
-<span class="sd">&#39;&#39;&#39;</span>
+'''
 
 
 
-<span class="n">app</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+app = Flask(__name__)
 
-<span class="n">db</span> <span class="o">=</span> <span class="n">mysql</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="s2">&quot;root&quot;</span><span class="p">,</span> <span class="n">passwd</span><span class="o">=</span><span class="s2">&quot;password&quot;</span><span class="p">,</span> <span class="n">db</span><span class="o">=</span><span class="s2">&quot;twitterdb&quot;</span><span class="p">,</span> <span class="n">charset</span><span class="o">=</span><span class="s2">&quot;utf8&quot;</span><span class="p">)</span>
-<span class="n">db</span><span class="o">.</span><span class="n">autocommit</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">c</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+db = mysql.connect(user=&quot;root&quot;, passwd=&quot;password&quot;, db=&quot;twitterdb&quot;, charset=&quot;utf8&quot;)
+db.autocommit(True)
+c = db.cursor()
 
-<span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;GET&quot;</span><span class="p">,</span> <span class="s2">&quot;POST&quot;</span><span class="p">])</span>
-<span class="k">def</span> <span class="nf">hello</span><span class="p">():</span>
-    <span class="n">sql</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;POST&quot;</span><span class="p">:</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">json</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">sql</span> <span class="o">=</span> <span class="s2">&quot;INSERT INTO `stat` (`host`,`mem_free`,`mem_usage`,`mem_total`,`load_avg`,`time`) VALUES(&#39;</span><span class="si">%s</span><span class="s2">&#39;, &#39;</span><span class="si">%d</span><span class="s2">&#39;, &#39;</span><span class="si">%d</span><span class="s2">&#39;, &#39;</span><span class="si">%d</span><span class="s2">&#39;, &#39;</span><span class="si">%s</span><span class="s2">&#39;, &#39;</span><span class="si">%d</span><span class="s2">&#39;)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;Host&#39;</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;MemFree&#39;</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;MemUsage&#39;</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;MemTotal&#39;</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;LoadAvg&#39;</span><span class="p">],</span> <span class="nb">int</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;Time&#39;</span><span class="p">]))</span>
-            <span class="n">ret</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
-        <span class="k">except</span> <span class="n">mysql</span><span class="o">.</span><span class="n">IntegrityError</span><span class="p">:</span>
-            <span class="k">pass</span>
-        <span class="k">return</span> <span class="s2">&quot;OK&quot;</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s2">&quot;mon.html&quot;</span><span class="p">)</span>
+@app.route(&quot;/&quot;, methods=[&quot;GET&quot;, &quot;POST&quot;])
+def hello():
+    sql = &quot;&quot;
+    if request.method == &quot;POST&quot;:
+        data = request.json
+        try:
+            sql = &quot;INSERT INTO `stat` (`host`,`mem_free`,`mem_usage`,`mem_total`,`load_avg`,`time`) VALUES('%s', '%d', '%d', '%d', '%s', '%d')&quot; % (data['Host'], data['MemFree'], data['MemUsage'], data['MemTotal'], data['LoadAvg'], int(data['Time']))
+            ret = c.execute(sql)
+        except mysql.IntegrityError:
+            pass
+        return &quot;OK&quot;
+    else:
+        return render_template(&quot;mon.html&quot;)
 
-<span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/data&quot;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;GET&quot;</span><span class="p">])</span>
-<span class="k">def</span> <span class="nf">getdata</span><span class="p">():</span>
-    <span class="n">c</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;SELECT `time`,`mem_usage` FROM `stat`&quot;</span><span class="p">)</span>
-    <span class="n">ones</span> <span class="o">=</span> <span class="p">[[</span><span class="n">i</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="mi">1000</span><span class="p">,</span> <span class="n">i</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">c</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()]</span>
-    <span class="k">return</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">(</span><span class="si">%s</span><span class="s2">);&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;callback&#39;</span><span class="p">),</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">ones</span><span class="p">))</span>
+@app.route(&quot;/data&quot;, methods=[&quot;GET&quot;])
+def getdata():
+    c.execute(&quot;SELECT `time`,`mem_usage` FROM `stat`&quot;)
+    ones = [[i[0]*1000, i[1]] for i in c.fetchall()]
+    return &quot;%s(%s);&quot; % (request.args.get('callback'), json.dumps(ones))
 
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
-    <span class="n">app</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s2">&quot;localhost&quot;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8888</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</code></pre></div>
+if __name__ == &quot;__main__&quot;:
+    app.run(host=&quot;localhost&quot;, port=8888, debug=True)
 
+</code></pre>
 <h2>3.2 python_monitor.py</h2>
 <p>This will read the /proc/meminfo data and dump data to the web page.</p>
-<div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python</span>
-<span class="c1">#coding=utf-8</span>
-<span class="kn">import</span> <span class="nn">inspect</span>
-<span class="kn">import</span> <span class="nn">time</span>
-<span class="kn">import</span> <span class="nn">urllib</span><span class="o">,</span> <span class="nn">urllib2</span>
-<span class="kn">import</span> <span class="nn">json</span>
-<span class="kn">import</span> <span class="nn">socket</span>
-<span class="k">class</span> <span class="nc">mon</span><span class="p">:</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="k">def</span> <span class="nf">getTime</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">())</span> <span class="o">+</span> <span class="mi">8</span> <span class="o">*</span> <span class="mi">3600</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">getHost</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">socket</span><span class="o">.</span><span class="n">gethostname</span><span class="p">()</span>
-    <span class="k">def</span> <span class="nf">getLoadAvg</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;/proc/loadavg&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">load_open</span><span class="p">:</span>
-            <span class="n">a</span> <span class="o">=</span> <span class="n">load_open</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()[:</span><span class="mi">3</span><span class="p">]</span>
-            <span class="k">return</span> <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">getMemTotal</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;/proc/meminfo&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">mem_open</span><span class="p">:</span>
-            <span class="n">a</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">mem_open</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">1</span><span class="p">])</span>
-            <span class="k">return</span> <span class="n">a</span> <span class="o">/</span> <span class="mi">1024</span>
-    <span class="k">def</span> <span class="nf">getMemUsage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">noBufferCache</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">noBufferCache</span><span class="p">:</span>
-            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;/proc/meminfo&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">mem_open</span><span class="p">:</span>
-                <span class="n">T</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">mem_open</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">1</span><span class="p">])</span>
-                <span class="n">F</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">mem_open</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">1</span><span class="p">])</span>
-                <span class="n">B</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">mem_open</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">1</span><span class="p">])</span>
-                <span class="n">C</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">mem_open</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">1</span><span class="p">])</span>
-                <span class="k">return</span> <span class="p">(</span><span class="n">T</span><span class="o">-</span><span class="n">F</span><span class="o">-</span><span class="n">B</span><span class="o">-</span><span class="n">C</span><span class="p">)</span><span class="o">/</span><span class="mi">1024</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;/proc/meminfo&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">mem_open</span><span class="p">:</span>
-                <span class="n">a</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">mem_open</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">1</span><span class="p">])</span> <span class="o">-</span> <span class="nb">int</span><span class="p">(</span><span class="n">mem_open</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">1</span><span class="p">])</span>
-                <span class="k">return</span> <span class="n">a</span> <span class="o">/</span> <span class="mi">1024</span>
-    <span class="k">def</span> <span class="nf">getMemFree</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">noBufferCache</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">noBufferCache</span><span class="p">:</span>
-            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;/proc/meminfo&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">mem_open</span><span class="p">:</span>
-                <span class="n">T</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">mem_open</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">1</span><span class="p">])</span>
-                <span class="n">F</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">mem_open</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">1</span><span class="p">])</span>
-                <span class="n">B</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">mem_open</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">1</span><span class="p">])</span>
-                <span class="n">C</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">mem_open</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">1</span><span class="p">])</span>
-                <span class="k">return</span> <span class="p">(</span><span class="n">F</span><span class="o">+</span><span class="n">B</span><span class="o">+</span><span class="n">C</span><span class="p">)</span><span class="o">/</span><span class="mi">1024</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;/proc/meminfo&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">mem_open</span><span class="p">:</span>
-                <span class="n">mem_open</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
-                <span class="n">a</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">mem_open</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">1</span><span class="p">])</span>
-                <span class="k">return</span> <span class="n">a</span> <span class="o">/</span> <span class="mi">1024</span>
-    <span class="k">def</span> <span class="nf">runAllGet</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">for</span> <span class="n">fun</span> <span class="ow">in</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getmembers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predicate</span><span class="o">=</span><span class="n">inspect</span><span class="o">.</span><span class="n">ismethod</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">fun</span><span class="p">[</span><span class="mi">0</span><span class="p">][:</span><span class="mi">3</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;get&#39;</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">fun</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">3</span><span class="p">:]]</span> <span class="o">=</span> <span class="n">fun</span><span class="p">[</span><span class="mi">1</span><span class="p">]()</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+<pre><code class="language-python">#!/usr/bin/env python
+#coding=utf-8
+import inspect
+import time
+import urllib, urllib2
+import json
+import socket
+class mon:
+    def __init__(self):
+        self.data = {}
+    def getTime(self):
+        return str(int(time.time()) + 8 * 3600)
+    def getHost(self):
+        return socket.gethostname()
+    def getLoadAvg(self):
+        with open('/proc/loadavg') as load_open:
+            a = load_open.read().split()[:3]
+            return ','.join(a)
+    def getMemTotal(self):
+        with open('/proc/meminfo') as mem_open:
+            a = int(mem_open.readline().split()[1])
+            return a / 1024
+    def getMemUsage(self, noBufferCache=True):
+        if noBufferCache:
+            with open('/proc/meminfo') as mem_open:
+                T = int(mem_open.readline().split()[1])
+                F = int(mem_open.readline().split()[1])
+                B = int(mem_open.readline().split()[1])
+                C = int(mem_open.readline().split()[1])
+                return (T-F-B-C)/1024
+        else:
+            with open('/proc/meminfo') as mem_open:
+                a = int(mem_open.readline().split()[1]) - int(mem_open.readline().split()[1])
+                return a / 1024
+    def getMemFree(self, noBufferCache=True):
+        if noBufferCache:
+            with open('/proc/meminfo') as mem_open:
+                T = int(mem_open.readline().split()[1])
+                F = int(mem_open.readline().split()[1])
+                B = int(mem_open.readline().split()[1])
+                C = int(mem_open.readline().split()[1])
+                return (F+B+C)/1024
+        else:
+            with open('/proc/meminfo') as mem_open:
+                mem_open.readline()
+                a = int(mem_open.readline().split()[1])
+                return a / 1024
+    def runAllGet(self):
+        for fun in inspect.getmembers(self, predicate=inspect.ismethod):
+            if fun[0][:3] == 'get':
+                self.data[fun[0][3:]] = fun[1]()
+        return self.data
 
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
-    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-        <span class="n">m</span> <span class="o">=</span> <span class="n">mon</span><span class="p">()</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">runAllGet</span><span class="p">()</span>
-        <span class="nb">print</span> <span class="s2">&quot;data is </span><span class="si">%s</span><span class="s2"> &quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-        <span class="n">req</span> <span class="o">=</span> <span class="n">urllib2</span><span class="o">.</span><span class="n">Request</span><span class="p">(</span><span class="s2">&quot;http://localhost:8888&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="p">{</span><span class="s1">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="s1">&#39;application/json&#39;</span><span class="p">})</span>
-        <span class="n">f</span> <span class="o">=</span> <span class="n">urllib2</span><span class="o">.</span><span class="n">urlopen</span><span class="p">(</span><span class="n">req</span><span class="p">)</span>
-        <span class="nb">print</span> <span class="n">f</span>
-        <span class="n">response</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
-        <span class="nb">print</span> <span class="s2">&quot;response is </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
-        <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
-</code></pre></div>
-
+if __name__ == &quot;__main__&quot;:
+    while True:
+        m = mon()
+        data = m.runAllGet()
+        print &quot;data is %s &quot; %(data)
+        req = urllib2.Request(&quot;http://localhost:8888&quot;, json.dumps(data), {'Content-Type': 'application/json'})
+        f = urllib2.urlopen(req)
+        print f
+        response = f.read()
+        print &quot;response is %s&quot; %(response)
+        f.close()
+        time.sleep(5)
+</code></pre>
 <h2>3.3 mon.html</h2>
 <p>This will use highcharts.</p>
-<div class="highlight"><pre><span></span><code>[root@91it templates]# cat mon.html
-<span class="p">&lt;</span><span class="nt">title</span><span class="p">&gt;</span>memory monitor<span class="p">&lt;/</span><span class="nt">title</span><span class="p">&gt;</span>
-<span class="cp">&lt;!DOCTYPE HTML&gt;</span>
-<span class="p">&lt;</span><span class="nt">html</span><span class="p">&gt;</span>
-    <span class="p">&lt;</span><span class="nt">head</span><span class="p">&gt;</span>
-        <span class="p">&lt;</span><span class="nt">meta</span> <span class="na">http-equiv</span><span class="o">=</span><span class="s">&quot;Content-Type&quot;</span> <span class="na">content</span><span class="o">=</span><span class="s">&quot;text/html; charset=utf-8&quot;</span><span class="p">&gt;</span>
-        <span class="p">&lt;</span><span class="nt">title</span><span class="p">&gt;</span>Highstock Example<span class="p">&lt;/</span><span class="nt">title</span><span class="p">&gt;</span>
-        <span class="cm">&lt;!-- &lt;script type=&quot;text/javascript&quot; src=&quot;{{ url_for(&#39;static&#39;, filename=&#39;jquery.min.js&#39;) }}&quot;&gt;&lt;/script&gt; --&gt;</span>
-        <span class="p">&lt;</span><span class="nt">script</span> <span class="na">type</span><span class="o">=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src</span><span class="o">=</span><span class="s">&quot;http://ajax.useso.com/ajax/libs/jquery/1.8.2/jquery.min.js&quot;</span><span class="p">&gt;&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
-        <span class="p">&lt;</span><span class="nt">style</span> <span class="na">type</span><span class="o">=</span><span class="s">&quot;text/css&quot;</span><span class="p">&gt;</span>
-<span class="o">$</span><span class="p">{</span><span class="err">demo.css</span><span class="p">}</span>
-<span class="w">        </span><span class="p">&lt;/</span><span class="nt">style</span><span class="p">&gt;</span>
-        <span class="p">&lt;</span><span class="nt">script</span> <span class="na">type</span><span class="o">=</span><span class="s">&quot;text/javascript&quot;</span><span class="p">&gt;</span>
-<span class="nx">$</span><span class="p">(</span><span class="kd">function</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nx">$</span><span class="p">.</span><span class="nx">getJSON</span><span class="p">(</span><span class="s1">&#39;/data?callback=?&#39;</span><span class="p">,</span><span class="w"> </span><span class="kd">function</span><span class="w"> </span><span class="p">(</span><span class="nx">data</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="c1">// Create the chart</span>
-<span class="w">        </span><span class="nx">$</span><span class="p">(</span><span class="s1">&#39;#container&#39;</span><span class="p">).</span><span class="nx">highcharts</span><span class="p">(</span><span class="s1">&#39;StockChart&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="nx">rangeSelector</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                </span><span class="nx">inputEnabled</span><span class="o">:</span><span class="w"> </span><span class="nx">$</span><span class="p">(</span><span class="s1">&#39;#container&#39;</span><span class="p">).</span><span class="nx">width</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">480</span><span class="p">,</span>
-<span class="w">                </span><span class="nx">selected</span><span class="o">:</span><span class="w"> </span><span class="mf">1</span>
-<span class="w">            </span><span class="p">},</span>
-<span class="w">            </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                </span><span class="nx">text</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;memory monitor&#39;</span>
-<span class="w">            </span><span class="p">},</span>
-<span class="w">            </span><span class="nx">series</span><span class="o">:</span><span class="w"> </span><span class="p">[{</span>
-<span class="w">                </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;memory monitor&#39;</span><span class="p">,</span>
-<span class="w">                </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="nx">data</span><span class="p">,</span>
-<span class="w">                </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;spline&#39;</span><span class="p">,</span>
-<span class="w">                </span><span class="nx">tooltip</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                    </span><span class="nx">valueDecimals</span><span class="o">:</span><span class="w"> </span><span class="mf">2</span>
-<span class="w">                </span><span class="p">}</span>
-<span class="w">            </span><span class="p">}]</span>
-<span class="w">        </span><span class="p">});</span>
-<span class="w">    </span><span class="p">});</span>
-<span class="p">});</span>
-<span class="w">        </span><span class="p">&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
-    <span class="p">&lt;/</span><span class="nt">head</span><span class="p">&gt;</span>
-    <span class="p">&lt;</span><span class="nt">body</span><span class="p">&gt;</span>
-<span class="cm">&lt;!-- &lt;script src=&quot;{{ url_for(&#39;static&#39;, filename=&#39;highstock.js&#39;) }}&quot;&gt;&lt;/script&gt; --&gt;</span>
-<span class="p">&lt;</span><span class="nt">script</span> <span class="na">src</span><span class="o">=</span><span class="s">&quot;http://cdnjs.cloudflare.com/ajax/libs/highstock/2.0.4/highstock.js&quot;</span><span class="p">&gt;&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
-<span class="cm">&lt;!-- &lt;script src=&quot;{{ url_for(&#39;static&#39;, filename=&#39;exporting.js&#39;) }}&quot;&gt;&lt;/script&gt; --&gt;</span>
-<span class="p">&lt;</span><span class="nt">script</span> <span class="na">src</span><span class="o">=</span><span class="s">&quot;http://code.highcharts.com/modules/exporting.js&quot;</span><span class="p">&gt;&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
-<span class="p">&lt;</span><span class="nt">div</span> <span class="na">id</span><span class="o">=</span><span class="s">&quot;container&quot;</span> <span class="na">style</span><span class="o">=</span><span class="s">&quot;height: 400px&quot;</span><span class="p">&gt;&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
-    <span class="p">&lt;/</span><span class="nt">body</span><span class="p">&gt;</span>
-<span class="p">&lt;/</span><span class="nt">html</span><span class="p">&gt;</span>
-</code></pre></div>
-
+<pre><code class="language-html">[root@91it templates]# cat mon.html
+&lt;title&gt;memory monitor&lt;/title&gt;
+&lt;!DOCTYPE HTML&gt;
+&lt;html&gt;
+    &lt;head&gt;
+        &lt;meta http-equiv=&quot;Content-Type&quot; content=&quot;text/html; charset=utf-8&quot;&gt;
+        &lt;title&gt;Highstock Example&lt;/title&gt;
+        &lt;!-- &lt;script type=&quot;text/javascript&quot; src=&quot;{{ url_for('static', filename='jquery.min.js') }}&quot;&gt;&lt;/script&gt; --&gt;
+        &lt;script type=&quot;text/javascript&quot; src=&quot;http://ajax.useso.com/ajax/libs/jquery/1.8.2/jquery.min.js&quot;&gt;&lt;/script&gt;
+        &lt;style type=&quot;text/css&quot;&gt;
+${demo.css}
+        &lt;/style&gt;
+        &lt;script type=&quot;text/javascript&quot;&gt;
+$(function () {
+    $.getJSON('/data?callback=?', function (data) {
+        // Create the chart
+        $('#container').highcharts('StockChart', {
+            rangeSelector: {
+                inputEnabled: $('#container').width() &gt; 480,
+                selected: 1
+            },
+            title: {
+                text: 'memory monitor'
+            },
+            series: [{
+                name: 'memory monitor',
+                data: data,
+                type: 'spline',
+                tooltip: {
+                    valueDecimals: 2
+                }
+            }]
+        });
+    });
+});
+        &lt;/script&gt;
+    &lt;/head&gt;
+    &lt;body&gt;
+&lt;!-- &lt;script src=&quot;{{ url_for('static', filename='highstock.js') }}&quot;&gt;&lt;/script&gt; --&gt;
+&lt;script src=&quot;http://cdnjs.cloudflare.com/ajax/libs/highstock/2.0.4/highstock.js&quot;&gt;&lt;/script&gt;
+&lt;!-- &lt;script src=&quot;{{ url_for('static', filename='exporting.js') }}&quot;&gt;&lt;/script&gt; --&gt;
+&lt;script src=&quot;http://code.highcharts.com/modules/exporting.js&quot;&gt;&lt;/script&gt;
+&lt;div id=&quot;container&quot; style=&quot;height: 400px&quot;&gt;&lt;/div&gt;
+    &lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
 <p>first run <code>python app.py</code> and then run <code>nohup python python_monitor.py &gt; null 2&gt;&amp;1 &amp;</code>. After it is run, input <code>http://localhost:8888/</code> to check the result and <code>http://localhost:8888/data</code> to view data.</p>
 <p><img alt="alt text" src="/figures/20160818_python_highcharts_test_03.PNG" title="Tex3"></p>
 <h2>Reference</h2>
@@ -555,8 +538,8 @@ dt
 <p><a href="http://www.highcharts.com/docs/working-with-data/live-data">highcharts live data</a></p>
 </li>
 </ol>
-<div class="highlight"><pre><span></span><code>
-</code></pre></div></div>
+<pre><code class="language-python">
+</code></pre></div>
     <footer>
 <p class="meta">
   <span class="byline author vcard">
@@ -585,13 +568,13 @@ dt
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -609,7 +592,7 @@ dt
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

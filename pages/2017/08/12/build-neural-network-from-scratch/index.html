@@ -202,71 +202,62 @@ where <span class="math">\(d_2 \triangleq d_3 \cdot \Theta_2 \odot \left(a_2 \od
     \Theta_1^{i + 1} &amp;= \Theta_1^{i} + \lambda  \frac{\partial {C}}{\partial {\Theta_1^{i}}} 
 \end{aligned}</div>
 <h3>4. Code</h3>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
-<span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]])</span>
-<span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<pre><code class="language-python">import numpy as np
+np.random.seed(10)
+x = np.array([[0, 0, 1], [0, 1, 1], [1, 0, 1], [1, 1, 1]])
+y = np.array([0, 1, 1, 0]).reshape(4, -1)
 
-<span class="n">a1</span> <span class="o">=</span> <span class="n">x</span>
-<span class="n">theta1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="mi">12</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">-</span> <span class="mi">1</span>
-<span class="n">theta2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">-</span> <span class="mi">1</span>
+a1 = x
+theta1 = np.random.random(12).reshape(4, 3) * 2 - 1
+theta2 = np.random.random(4).reshape(1, 4) * 2 - 1
 
-<span class="n">learning_rate</span> <span class="o">=</span> <span class="mi">1</span>
+learning_rate = 1
 
-<span class="k">def</span> <span class="nf">sigmoid</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-    <span class="k">return</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">x</span><span class="p">))</span>
+def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
 
-<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">100000</span><span class="p">):</span>
-    <span class="c1"># forward propagation: including the first layer and the second layer</span>
-    <span class="n">z1</span> <span class="o">=</span> <span class="n">a1</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">theta1</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
-    <span class="n">a2</span> <span class="o">=</span> <span class="n">sigmoid</span><span class="p">(</span><span class="n">z1</span><span class="p">)</span> 
-    <span class="n">z2</span> <span class="o">=</span> <span class="n">a2</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">theta2</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
-    <span class="n">a3</span> <span class="o">=</span> <span class="n">sigmoid</span><span class="p">(</span><span class="n">z2</span><span class="p">)</span> 
+for i in range(100000):
+    # forward propagation: including the first layer and the second layer
+    z1 = a1.dot(theta1.T)
+    a2 = sigmoid(z1) 
+    z2 = a2.dot(theta2.T)
+    a3 = sigmoid(z2) 
 
-    <span class="c1"># backpropagation: chain rules of the partial derivatives</span>
-    <span class="n">a3_error</span> <span class="o">=</span> <span class="n">y</span> <span class="o">-</span> <span class="n">a3</span>
-    <span class="n">theta2_grad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">a3_error</span> <span class="o">*</span> <span class="p">(</span><span class="n">a3</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">a3</span><span class="p">))),</span> <span class="n">a2</span><span class="p">)</span> 
-    <span class="n">theta1_grad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">a3_error</span> <span class="o">*</span> <span class="p">(</span><span class="n">a3</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">a3</span><span class="p">)),</span>  <span class="n">theta2</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">a2</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">a2</span><span class="p">))),</span> <span class="n">a1</span><span class="p">)</span>
+    # backpropagation: chain rules of the partial derivatives
+    a3_error = y - a3
+    theta2_grad = np.dot(np.transpose(a3_error * (a3 * (1 - a3))), a2) 
+    theta1_grad = np.dot(np.transpose(np.dot(a3_error * (a3 * (1 - a3)),  theta2) * (a2 * (1 - a2))), a1)
 
-    <span class="c1"># update the parameters until the gradient converges to 0</span>
-    <span class="n">theta2</span> <span class="o">+=</span> <span class="n">learning_rate</span> <span class="o">*</span> <span class="n">theta2_grad</span>
-    <span class="n">theta1</span> <span class="o">+=</span> <span class="n">learning_rate</span> <span class="o">*</span> <span class="n">theta1_grad</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="n">theta2</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>array([[ -3.16174322,  10.29352444,  11.40818558,  -4.45945196]])
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="n">theta1</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>array([[ 3.35916278, -3.32786847,  1.87094082],
+    # update the parameters until the gradient converges to 0
+    theta2 += learning_rate * theta2_grad
+    theta1 += learning_rate * theta1_grad
+</code></pre>
+<pre><code class="language-python">theta2
+</code></pre>
+<pre><code>array([[ -3.16174322,  10.29352444,  11.40818558,  -4.45945196]])
+</code></pre>
+<pre><code class="language-python">theta1
+</code></pre>
+<pre><code>array([[ 3.35916278, -3.32786847,  1.87094082],
        [ 5.84130712, -5.98365309, -3.07635286],
        [-6.45870855,  6.34717945, -3.30437575],
        [-3.91182875,  3.95761648,  2.17740367]])
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="n">a3</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>array([[ 0.00276657],
+</code></pre>
+<pre><code class="language-python">a3
+</code></pre>
+<pre><code>array([[ 0.00276657],
        [ 0.99710763],
        [ 0.99718615],
        [ 0.00243296]])
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="c1"># The prediction is</span>
-<span class="n">a3</span> <span class="o">&gt;</span> <span class="mf">0.5</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="k">array</span><span class="p">(</span><span class="o">[</span><span class="n">[False</span><span class="o">]</span><span class="p">,</span>
-<span class="w">       </span><span class="o">[</span><span class="n"> True</span><span class="o">]</span><span class="p">,</span>
-<span class="w">       </span><span class="o">[</span><span class="n"> True</span><span class="o">]</span><span class="p">,</span>
-<span class="w">       </span><span class="o">[</span><span class="n">False</span><span class="o">]</span><span class="err">]</span><span class="p">,</span><span class="w"> </span><span class="n">dtype</span><span class="o">=</span><span class="n">bool</span><span class="p">)</span>
-</code></pre></div>
-
+</code></pre>
+<pre><code class="language-python"># The prediction is
+a3 &gt; 0.5
+</code></pre>
+<pre><code>array([[False],
+       [ True],
+       [ True],
+       [False]], dtype=bool)
+</code></pre>
 <p>The above is a simple example to introduce the insides of a neural network: how to calculate the forward propagation from input data to the prediction output and the cost function, how to calcualte the back propagatin of the partial derivatives with chain rules, and how to update the parameters until the gradients converging to zero, although in fact neural network is not necessary for this simple example since there are only 4 data points but we have introduced 16 parameters(parameters in <span class="math">\(\Theta_1\)</span> and <span class="math">\(\Theta_2\)</span>).</p>
 <h2>Example 2</h2>
 <p>The following example is a more real data question: I collect 60 verifacation code graphs. Each graph has 4 characters. The user needs to recognize these 4 characters correctly to get correct input verification.</p>
@@ -330,168 +321,166 @@ where <span class="math">\(d_2 \triangleq d_3 \cdot \Theta_2 \odot \left(a_2 \od
 <li>put all together</li>
 </ol>
 <h4>Shape of the data</h4>
-<div class="highlight"><pre><span></span><code>Theta1.T: 261 x 200
+<pre><code>Theta1.T: 261 x 200
 Theta2.T: 201 x 200
 Theta3.T: 201 x 36
 
-X: 240 <span class="gs">* 260</span>
-<span class="gs">a1: 240 *</span> 261
-z2: 240 <span class="gs">* 200</span>
-<span class="gs">a2: 240 *</span> 200 -&gt; 240 <span class="gs">* 201</span>
-<span class="gs">z3: 240 *</span> 201
-a3: 240 <span class="gs">* 200 -&gt; 240 *</span> 201
-z4: 240 <span class="gs">* 36</span>
-<span class="gs">a4: 240 *</span> 36
+X: 240 * 260
+a1: 240 * 261
+z2: 240 * 200
+a2: 240 * 200 -&gt; 240 * 201
+z3: 240 * 201
+a3: 240 * 200 -&gt; 240 * 201
+z4: 240 * 36
+a4: 240 * 36
 
 y_matirx: 240 * 36
-</code></pre></div>
+</code></pre>
+<pre><code class="language-python">import scipy.io
+import os
+import scipy.signal
+import pandas as pd
+import numpy as np
+from PIL import Image
+import scipy.optimize as opt
+</code></pre>
+<pre><code class="language-python">word = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l',\
+        'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
 
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">scipy.io</span>
-<span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">import</span> <span class="nn">scipy.signal</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">PIL</span> <span class="kn">import</span> <span class="n">Image</span>
-<span class="kn">import</span> <span class="nn">scipy.optimize</span> <span class="k">as</span> <span class="nn">opt</span>
-</code></pre></div>
+mypath = r'data/yanzhengma/'
+train_data = pd.read_pickle(mypath + 'train_data.pkl')
 
-<div class="highlight"><pre><span></span><code><span class="n">word</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;0&#39;</span><span class="p">,</span> <span class="s1">&#39;1&#39;</span><span class="p">,</span> <span class="s1">&#39;2&#39;</span><span class="p">,</span> <span class="s1">&#39;3&#39;</span><span class="p">,</span> <span class="s1">&#39;4&#39;</span><span class="p">,</span> <span class="s1">&#39;5&#39;</span><span class="p">,</span> <span class="s1">&#39;6&#39;</span><span class="p">,</span> <span class="s1">&#39;7&#39;</span><span class="p">,</span> <span class="s1">&#39;8&#39;</span><span class="p">,</span> <span class="s1">&#39;9&#39;</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="s1">&#39;c&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="s1">&#39;e&#39;</span><span class="p">,</span> <span class="s1">&#39;f&#39;</span><span class="p">,</span> <span class="s1">&#39;g&#39;</span><span class="p">,</span> <span class="s1">&#39;h&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="s1">&#39;j&#39;</span><span class="p">,</span> <span class="s1">&#39;k&#39;</span><span class="p">,</span> <span class="s1">&#39;l&#39;</span><span class="p">,</span>\
-        <span class="s1">&#39;m&#39;</span><span class="p">,</span> <span class="s1">&#39;n&#39;</span><span class="p">,</span> <span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="s1">&#39;p&#39;</span><span class="p">,</span> <span class="s1">&#39;q&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="s1">&#39;s&#39;</span><span class="p">,</span> <span class="s1">&#39;t&#39;</span><span class="p">,</span> <span class="s1">&#39;u&#39;</span><span class="p">,</span> <span class="s1">&#39;v&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="s1">&#39;z&#39;</span><span class="p">]</span>
+</code></pre>
+<pre><code class="language-python">
+def sigmoid(x, derivative = False):
+    if derivative == True:
+        return x * (1 - x)
+    else:
+        return 1 / (1 + np.exp(-x))
 
-<span class="n">mypath</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;data/yanzhengma/&#39;</span>
-<span class="n">train_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_pickle</span><span class="p">(</span><span class="n">mypath</span> <span class="o">+</span> <span class="s1">&#39;train_data.pkl&#39;</span><span class="p">)</span>
-</code></pre></div>
+def rand_init_weights(layer_in, layer_out):
+    epsilon_init = 0.1
+    return np.random.rand(layer_out, 1 + layer_in) * 2 * epsilon_init - epsilon_init
 
-<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">sigmoid</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">derivative</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
-    <span class="k">if</span> <span class="n">derivative</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">x</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">x</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">x</span><span class="p">))</span>
+def nn_gradient(nn_params, input_layer_size, hidden_layer_size, num_labels, X, y, lambda_param):
+    '''
+    theta1: 200x261
+    theta2: 200x201
+    theta3: 36x201
+    a1: 240x261
+    z2: 240x200
+    a2: 240x200 -&gt; 240x201
+    z3: 240x200
+    a3: 240x2-- -&gt; 240x201
+    z4: 240x36
+    a4: 240x36
+    d4: 240x36
+    d3: 240x201 -&gt; 240x200
+    d2: 240x201 -&gt; 240x200
+    theta1_grad: 200x261
+    theta2_grad: 200x201
+    theta3_grad: 36x201
+    final output: 200x261 + 200x201 + 36x201 = 99636
+    '''
+    theta1 = nn_params[0:hidden_layer_size * (input_layer_size + 1)].reshape(hidden_layer_size, input_layer_size + 1)
+    theta2 = nn_params[(hidden_layer_size * (input_layer_size + 1)) : \
+                       (hidden_layer_size * (input_layer_size + 1) + \
+                        hidden_layer_size * (hidden_layer_size + 1))].reshape(hidden_layer_size, hidden_layer_size + 1)
+    theta3 = nn_params[(hidden_layer_size * (input_layer_size + 1) + \
+                        hidden_layer_size * (hidden_layer_size + 1)):].reshape(num_labels, hidden_layer_size + 1)
+    n = np.shape(X)[0]
+    a1 = np.append(np.ones((n, 1)), X, axis = 1)
+    z2 = a1.dot(theta1.T)
+    a2 = sigmoid(z2)
+    a2 = np.append(np.ones((n, 1)), a2, axis = 1)
+    z3 = a2.dot(theta2.T)
+    a3 = sigmoid(z3)
+    a3 = np.append(np.ones((n, 1)), a3, axis = 1)
+    z4 = a3.dot(theta3.T)
+    a4 = sigmoid(z4)
 
-<span class="k">def</span> <span class="nf">rand_init_weights</span><span class="p">(</span><span class="n">layer_in</span><span class="p">,</span> <span class="n">layer_out</span><span class="p">):</span>
-    <span class="n">epsilon_init</span> <span class="o">=</span> <span class="mf">0.1</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">layer_out</span><span class="p">,</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">layer_in</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">epsilon_init</span> <span class="o">-</span> <span class="n">epsilon_init</span>
+    y_matrix = np.zeros((n, num_labels))
+    for i in range(num_labels):
+        y_matrix[:, i] = (y == (i + 1)).reshape(-1)
 
-<span class="k">def</span> <span class="nf">nn_gradient</span><span class="p">(</span><span class="n">nn_params</span><span class="p">,</span> <span class="n">input_layer_size</span><span class="p">,</span> <span class="n">hidden_layer_size</span><span class="p">,</span> <span class="n">num_labels</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">lambda_param</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">    theta1: 200x261</span>
-<span class="sd">    theta2: 200x201</span>
-<span class="sd">    theta3: 36x201</span>
-<span class="sd">    a1: 240x261</span>
-<span class="sd">    z2: 240x200</span>
-<span class="sd">    a2: 240x200 -&gt; 240x201</span>
-<span class="sd">    z3: 240x200</span>
-<span class="sd">    a3: 240x2-- -&gt; 240x201</span>
-<span class="sd">    z4: 240x36</span>
-<span class="sd">    a4: 240x36</span>
-<span class="sd">    d4: 240x36</span>
-<span class="sd">    d3: 240x201 -&gt; 240x200</span>
-<span class="sd">    d2: 240x201 -&gt; 240x200</span>
-<span class="sd">    theta1_grad: 200x261</span>
-<span class="sd">    theta2_grad: 200x201</span>
-<span class="sd">    theta3_grad: 36x201</span>
-<span class="sd">    final output: 200x261 + 200x201 + 36x201 = 99636</span>
-<span class="sd">    &#39;&#39;&#39;</span>
-    <span class="n">theta1</span> <span class="o">=</span> <span class="n">nn_params</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">hidden_layer_size</span> <span class="o">*</span> <span class="p">(</span><span class="n">input_layer_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">hidden_layer_size</span><span class="p">,</span> <span class="n">input_layer_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="n">theta2</span> <span class="o">=</span> <span class="n">nn_params</span><span class="p">[(</span><span class="n">hidden_layer_size</span> <span class="o">*</span> <span class="p">(</span><span class="n">input_layer_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span> <span class="p">:</span> \
-                       <span class="p">(</span><span class="n">hidden_layer_size</span> <span class="o">*</span> <span class="p">(</span><span class="n">input_layer_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> \
-                        <span class="n">hidden_layer_size</span> <span class="o">*</span> <span class="p">(</span><span class="n">hidden_layer_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">hidden_layer_size</span><span class="p">,</span> <span class="n">hidden_layer_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="n">theta3</span> <span class="o">=</span> <span class="n">nn_params</span><span class="p">[(</span><span class="n">hidden_layer_size</span> <span class="o">*</span> <span class="p">(</span><span class="n">input_layer_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> \
-                        <span class="n">hidden_layer_size</span> <span class="o">*</span> <span class="p">(</span><span class="n">hidden_layer_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)):]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">num_labels</span><span class="p">,</span> <span class="n">hidden_layer_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="n">n</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">X</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="n">a1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span> <span class="n">X</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="n">z2</span> <span class="o">=</span> <span class="n">a1</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">theta1</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
-    <span class="n">a2</span> <span class="o">=</span> <span class="n">sigmoid</span><span class="p">(</span><span class="n">z2</span><span class="p">)</span>
-    <span class="n">a2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span> <span class="n">a2</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="n">z3</span> <span class="o">=</span> <span class="n">a2</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">theta2</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
-    <span class="n">a3</span> <span class="o">=</span> <span class="n">sigmoid</span><span class="p">(</span><span class="n">z3</span><span class="p">)</span>
-    <span class="n">a3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span> <span class="n">a3</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="n">z4</span> <span class="o">=</span> <span class="n">a3</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">theta3</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
-    <span class="n">a4</span> <span class="o">=</span> <span class="n">sigmoid</span><span class="p">(</span><span class="n">z4</span><span class="p">)</span>
+    d4 = a4 - y_matrix
+    d3 = d4.dot(theta3) * a3 * (1 - a3)   
+    d3 = d3[:, 1:]
+    d2 = d3.dot(theta2) * a2 * (1 - a2)  
+    d2 = d2[:, 1:]
+    theta1_grad = 1 / n * (d2.T.dot(a1))
+    theta2_grad = 1 / n * (d3.T.dot(a2)) 
+    theta3_grad = 1 / n * (d4.T.dot(a3))  
+    return np.append(np.append(theta1_grad.flatten(), theta2_grad.flatten(), axis = 0), theta3_grad.flatten(), axis = 0)
 
-    <span class="n">y_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="n">num_labels</span><span class="p">))</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_labels</span><span class="p">):</span>
-        <span class="n">y_matrix</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">y</span> <span class="o">==</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+def nn_cost(nn_params, input_layer_size, hidden_layer_size, num_labels, X, y, lambda_param):
+    theta1 = nn_params[0:(hidden_layer_size * (input_layer_size + 1))].reshape(hidden_layer_size, input_layer_size + 1)
+    theta2 = nn_params[(hidden_layer_size * (input_layer_size + 1)) : \
+                       (hidden_layer_size * (input_layer_size + 1) + \
+                        hidden_layer_size * (hidden_layer_size + 1))].reshape(hidden_layer_size, hidden_layer_size + 1)
+    theta3 = nn_params[(hidden_layer_size * (input_layer_size + 1) + \
+                        hidden_layer_size * (hidden_layer_size + 1)):].reshape(num_labels, hidden_layer_size + 1)
+    n = np.shape(X)[0]
+    a1 = np.append(np.ones((n, 1)), X, axis = 1)
+    z2 = a1.dot(theta1.T)
+    a2 = sigmoid(z2)
+    a2 = np.append(np.ones((n, 1)), a2, axis = 1)
+    z3 = a2.dot(theta2.T)
+    a3 = sigmoid(z3)
+    a3 = np.append(np.ones((n, 1)), a3, axis = 1)
+    z4 = a3.dot(theta3.T)
+    a4 = sigmoid(z4)
 
-    <span class="n">d4</span> <span class="o">=</span> <span class="n">a4</span> <span class="o">-</span> <span class="n">y_matrix</span>
-    <span class="n">d3</span> <span class="o">=</span> <span class="n">d4</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">theta3</span><span class="p">)</span> <span class="o">*</span> <span class="n">a3</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">a3</span><span class="p">)</span>   
-    <span class="n">d3</span> <span class="o">=</span> <span class="n">d3</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:]</span>
-    <span class="n">d2</span> <span class="o">=</span> <span class="n">d3</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">theta2</span><span class="p">)</span> <span class="o">*</span> <span class="n">a2</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">a2</span><span class="p">)</span>  
-    <span class="n">d2</span> <span class="o">=</span> <span class="n">d2</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:]</span>
-    <span class="n">theta1_grad</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">n</span> <span class="o">*</span> <span class="p">(</span><span class="n">d2</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">a1</span><span class="p">))</span>
-    <span class="n">theta2_grad</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">n</span> <span class="o">*</span> <span class="p">(</span><span class="n">d3</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">a2</span><span class="p">))</span> 
-    <span class="n">theta3_grad</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">n</span> <span class="o">*</span> <span class="p">(</span><span class="n">d4</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">a3</span><span class="p">))</span>  
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">theta1_grad</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">theta2_grad</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span><span class="p">),</span> <span class="n">theta3_grad</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+    y_matrix = np.zeros((n, num_labels))
+    for i in range(num_labels):
+        y_matrix[:, i] = (y == (i + 1)).reshape(-1)
 
-<span class="k">def</span> <span class="nf">nn_cost</span><span class="p">(</span><span class="n">nn_params</span><span class="p">,</span> <span class="n">input_layer_size</span><span class="p">,</span> <span class="n">hidden_layer_size</span><span class="p">,</span> <span class="n">num_labels</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">lambda_param</span><span class="p">):</span>
-    <span class="n">theta1</span> <span class="o">=</span> <span class="n">nn_params</span><span class="p">[</span><span class="mi">0</span><span class="p">:(</span><span class="n">hidden_layer_size</span> <span class="o">*</span> <span class="p">(</span><span class="n">input_layer_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">hidden_layer_size</span><span class="p">,</span> <span class="n">input_layer_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="n">theta2</span> <span class="o">=</span> <span class="n">nn_params</span><span class="p">[(</span><span class="n">hidden_layer_size</span> <span class="o">*</span> <span class="p">(</span><span class="n">input_layer_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span> <span class="p">:</span> \
-                       <span class="p">(</span><span class="n">hidden_layer_size</span> <span class="o">*</span> <span class="p">(</span><span class="n">input_layer_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> \
-                        <span class="n">hidden_layer_size</span> <span class="o">*</span> <span class="p">(</span><span class="n">hidden_layer_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">hidden_layer_size</span><span class="p">,</span> <span class="n">hidden_layer_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="n">theta3</span> <span class="o">=</span> <span class="n">nn_params</span><span class="p">[(</span><span class="n">hidden_layer_size</span> <span class="o">*</span> <span class="p">(</span><span class="n">input_layer_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> \
-                        <span class="n">hidden_layer_size</span> <span class="o">*</span> <span class="p">(</span><span class="n">hidden_layer_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)):]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">num_labels</span><span class="p">,</span> <span class="n">hidden_layer_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="n">n</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">X</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="n">a1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span> <span class="n">X</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="n">z2</span> <span class="o">=</span> <span class="n">a1</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">theta1</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
-    <span class="n">a2</span> <span class="o">=</span> <span class="n">sigmoid</span><span class="p">(</span><span class="n">z2</span><span class="p">)</span>
-    <span class="n">a2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span> <span class="n">a2</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="n">z3</span> <span class="o">=</span> <span class="n">a2</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">theta2</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
-    <span class="n">a3</span> <span class="o">=</span> <span class="n">sigmoid</span><span class="p">(</span><span class="n">z3</span><span class="p">)</span>
-    <span class="n">a3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span> <span class="n">a3</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="n">z4</span> <span class="o">=</span> <span class="n">a3</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">theta3</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
-    <span class="n">a4</span> <span class="o">=</span> <span class="n">sigmoid</span><span class="p">(</span><span class="n">z4</span><span class="p">)</span>
+    return -(1 / n) * (np.sum(np.sum(y_matrix * np.log(a4))) + np.sum(np.sum((1 - y_matrix) * np.log(1 - a4)))) + \
+        lambda_param / ((2 * n) * np.sum(np.sum(theta1[:, 1:]**2)) + np.sum(np.sum(theta2[:, 1:]**2)) + \
+                        np.sum(np.sum(theta3[:, 1:]**2)))
 
-    <span class="n">y_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="n">num_labels</span><span class="p">))</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_labels</span><span class="p">):</span>
-        <span class="n">y_matrix</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">y</span> <span class="o">==</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+def predict(theta1, theta2, theta3, X):
+    n = np.shape(X)[0]
+    p = np.zeros((n, 1))
+    h1 = sigmoid(np.append(np.ones((n, 1)), X, 1).dot(theta1.T))
+    h2 = sigmoid(np.append(np.ones((n, 1)), h1, 1).dot(theta2.T))
+    h3 = sigmoid(np.append(np.ones((n, 1)), h2, 1).dot(theta3.T))
+    p = np.ndarray.argmax(h3, axis = 1).reshape([p.shape[0], 1])
+    return p + 1
 
-    <span class="k">return</span> <span class="o">-</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="n">n</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">y_matrix</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">a4</span><span class="p">)))</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="mi">1</span> <span class="o">-</span> <span class="n">y_matrix</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">a4</span><span class="p">))))</span> <span class="o">+</span> \
-        <span class="n">lambda_param</span> <span class="o">/</span> <span class="p">((</span><span class="mi">2</span> <span class="o">*</span> <span class="n">n</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">theta1</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:]</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">theta2</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:]</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span> <span class="o">+</span> \
-                        <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">theta3</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:]</span><span class="o">**</span><span class="mi">2</span><span class="p">)))</span>
+def test(train_data = train_data):
+    data = train_data
+    X = train_data['X']
+    y = train_data['y']
+    input_layer_size = 260
+    hidden_layer_size = 200
+    num_labels = 36
 
-<span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="n">theta1</span><span class="p">,</span> <span class="n">theta2</span><span class="p">,</span> <span class="n">theta3</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
-    <span class="n">n</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">X</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
-    <span class="n">h1</span> <span class="o">=</span> <span class="n">sigmoid</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span> <span class="n">X</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">theta1</span><span class="o">.</span><span class="n">T</span><span class="p">))</span>
-    <span class="n">h2</span> <span class="o">=</span> <span class="n">sigmoid</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span> <span class="n">h1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">theta2</span><span class="o">.</span><span class="n">T</span><span class="p">))</span>
-    <span class="n">h3</span> <span class="o">=</span> <span class="n">sigmoid</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span> <span class="n">h2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">theta3</span><span class="o">.</span><span class="n">T</span><span class="p">))</span>
-    <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">h3</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">([</span><span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">])</span>
-    <span class="k">return</span> <span class="n">p</span> <span class="o">+</span> <span class="mi">1</span>
+    initial_theta1 = rand_init_weights(input_layer_size, hidden_layer_size)
+    initial_theta2 = rand_init_weights(hidden_layer_size, hidden_layer_size)
+    initial_theta3 = rand_init_weights(hidden_layer_size, num_labels)
 
-<span class="k">def</span> <span class="nf">test</span><span class="p">(</span><span class="n">train_data</span> <span class="o">=</span> <span class="n">train_data</span><span class="p">):</span>
-    <span class="n">data</span> <span class="o">=</span> <span class="n">train_data</span>
-    <span class="n">X</span> <span class="o">=</span> <span class="n">train_data</span><span class="p">[</span><span class="s1">&#39;X&#39;</span><span class="p">]</span>
-    <span class="n">y</span> <span class="o">=</span> <span class="n">train_data</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span>
-    <span class="n">input_layer_size</span> <span class="o">=</span> <span class="mi">260</span>
-    <span class="n">hidden_layer_size</span> <span class="o">=</span> <span class="mi">200</span>
-    <span class="n">num_labels</span> <span class="o">=</span> <span class="mi">36</span>
+    initial_nn_params = np.append(np.append(initial_theta1.flatten(), initial_theta2.flatten()), initial_theta3.flatten())
+    lambda_param = 0.1
+    result = opt.minimize(fun = nn_cost, x0 = initial_nn_params, \
+                          args = (input_layer_size, hidden_layer_size, num_labels, X, y, lambda_param), \
+                          method = &quot;CG&quot;, jac = nn_gradient, options = {&quot;maxiter&quot;: 100})
+    nn_params = result.x
+    theta1 = nn_params[0:hidden_layer_size*(input_layer_size + 1)].reshape(hidden_layer_size, input_layer_size + 1)
+    theta2 = nn_params[hidden_layer_size*(input_layer_size + 1) : \
+                       (hidden_layer_size*(input_layer_size + 1) + \
+                        hidden_layer_size * (hidden_layer_size + 1))].reshape(hidden_layer_size, hidden_layer_size + 1)
+    theta3 = nn_params[(hidden_layer_size * (input_layer_size + 1) + \
+                        hidden_layer_size * (hidden_layer_size + 1)):].reshape(num_labels, hidden_layer_size + 1)
+    pred = predict(theta1, theta2, theta3, X)
+    print(&quot;Training Accuracy: &quot;, np.mean(pred == y) * 100, &quot;%&quot;)
+    return
 
-    <span class="n">initial_theta1</span> <span class="o">=</span> <span class="n">rand_init_weights</span><span class="p">(</span><span class="n">input_layer_size</span><span class="p">,</span> <span class="n">hidden_layer_size</span><span class="p">)</span>
-    <span class="n">initial_theta2</span> <span class="o">=</span> <span class="n">rand_init_weights</span><span class="p">(</span><span class="n">hidden_layer_size</span><span class="p">,</span> <span class="n">hidden_layer_size</span><span class="p">)</span>
-    <span class="n">initial_theta3</span> <span class="o">=</span> <span class="n">rand_init_weights</span><span class="p">(</span><span class="n">hidden_layer_size</span><span class="p">,</span> <span class="n">num_labels</span><span class="p">)</span>
+test()
 
-    <span class="n">initial_nn_params</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">initial_theta1</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">initial_theta2</span><span class="o">.</span><span class="n">flatten</span><span class="p">()),</span> <span class="n">initial_theta3</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span>
-    <span class="n">lambda_param</span> <span class="o">=</span> <span class="mf">0.1</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">opt</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">fun</span> <span class="o">=</span> <span class="n">nn_cost</span><span class="p">,</span> <span class="n">x0</span> <span class="o">=</span> <span class="n">initial_nn_params</span><span class="p">,</span> \
-                          <span class="n">args</span> <span class="o">=</span> <span class="p">(</span><span class="n">input_layer_size</span><span class="p">,</span> <span class="n">hidden_layer_size</span><span class="p">,</span> <span class="n">num_labels</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">lambda_param</span><span class="p">),</span> \
-                          <span class="n">method</span> <span class="o">=</span> <span class="s2">&quot;CG&quot;</span><span class="p">,</span> <span class="n">jac</span> <span class="o">=</span> <span class="n">nn_gradient</span><span class="p">,</span> <span class="n">options</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;maxiter&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">})</span>
-    <span class="n">nn_params</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">x</span>
-    <span class="n">theta1</span> <span class="o">=</span> <span class="n">nn_params</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">hidden_layer_size</span><span class="o">*</span><span class="p">(</span><span class="n">input_layer_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">hidden_layer_size</span><span class="p">,</span> <span class="n">input_layer_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="n">theta2</span> <span class="o">=</span> <span class="n">nn_params</span><span class="p">[</span><span class="n">hidden_layer_size</span><span class="o">*</span><span class="p">(</span><span class="n">input_layer_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="p">:</span> \
-                       <span class="p">(</span><span class="n">hidden_layer_size</span><span class="o">*</span><span class="p">(</span><span class="n">input_layer_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> \
-                        <span class="n">hidden_layer_size</span> <span class="o">*</span> <span class="p">(</span><span class="n">hidden_layer_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">hidden_layer_size</span><span class="p">,</span> <span class="n">hidden_layer_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="n">theta3</span> <span class="o">=</span> <span class="n">nn_params</span><span class="p">[(</span><span class="n">hidden_layer_size</span> <span class="o">*</span> <span class="p">(</span><span class="n">input_layer_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> \
-                        <span class="n">hidden_layer_size</span> <span class="o">*</span> <span class="p">(</span><span class="n">hidden_layer_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)):]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">num_labels</span><span class="p">,</span> <span class="n">hidden_layer_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="n">pred</span> <span class="o">=</span> <span class="n">predict</span><span class="p">(</span><span class="n">theta1</span><span class="p">,</span> <span class="n">theta2</span><span class="p">,</span> <span class="n">theta3</span><span class="p">,</span> <span class="n">X</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Training Accuracy: &quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">pred</span> <span class="o">==</span> <span class="n">y</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100</span><span class="p">,</span> <span class="s2">&quot;%&quot;</span><span class="p">)</span>
-    <span class="k">return</span>
-
-<span class="n">test</span><span class="p">()</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>(&#39;Training Accuracy: &#39;, 100.0000000, &#39;%&#39;)
-</code></pre></div>
-
+</code></pre>
+<pre><code>('Training Accuracy: ', 100.0000000, '%')
+</code></pre>
 <script type="text/javascript">if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
     var align = "center",
         indent = "0em",
@@ -582,13 +571,13 @@ y_matirx: 240 * 36
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -606,7 +595,7 @@ y_matirx: 240 * 36
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

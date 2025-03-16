@@ -96,55 +96,52 @@ window.addEventListener('load', () => {
 
   <div class="entry-content"><h2>1 - Simple and Multiple Regression</h2>
 <h3>Outline</h3>
-<div class="highlight"><pre><span></span><code><span class="mf">1.0</span><span class="w"> </span><span class="nb">Int</span><span class="n">roduction</span>
-<span class="mf">1.1</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="n">First</span><span class="w"> </span><span class="n">Regression</span><span class="w"> </span><span class="n">Analysis</span>
-<span class="mf">1.2</span><span class="w"> </span><span class="n">Multiple</span><span class="w"> </span><span class="n">regression</span>
-<span class="mf">1.3</span><span class="w"> </span><span class="kd">Data</span><span class="w"> </span><span class="n">Analysis</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">Examining</span><span class="w"> </span><span class="kd">Data</span><span class="w"> </span>
-<span class="mf">1.4</span><span class="w"> </span><span class="n">Summary</span>
-<span class="mf">1.5</span><span class="w"> </span><span class="kr">For</span><span class="w"> </span><span class="n">more</span><span class="w"> </span><span class="n">information</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">Reference</span>
-</code></pre></div>
-
+<pre><code>1.0 Introduction
+1.1 A First Regression Analysis
+1.2 Multiple regression
+1.3 Data Analysis / Examining Data 
+1.4 Summary
+1.5 For more information / Reference
+</code></pre>
 <h3>1.0 Introduction</h3>
 <p>This first Chapter will cover topics in simple and multiple regression, as well as the supporting tasks that are important in preparing to analyze your data, e.g., data checking, getting familiar with your data file, and examining the distribution of your variables.  We will illustrate the basics of simple and multiple regression and demonstrate the importance of inspecting, checking and verifying your data before accepting the results of your analysis. </p>
 <p>In this chapter, and in subsequent chapters, I will be using a data file called elemapi from the California Department of Education's API 2000 dataset.  This data file contains a measure of school academic performance as well as other attributes of the elementary schools, such as, class size, enrollment, poverty, etc.</p>
 <h3>1.1 A First Regression Analysis</h3>
 <p>Let's dive right in and perform a regression analysis using the variables api00, acs_k3, meals and full. These measure the academic performance of the school (api00), the average class size in kindergarten through 3rd grade (acs_k3), the percentage of students receiving free meals (meals) - which is an indicator of poverty, and the percentage of teachers who have full teaching credentials (full). We expect that better academic performance would be associated with lower class size, fewer students receiving free meals, and a higher percentage of teachers having full teaching credentials.  </p>
 <p>First I will import some of the necessary modules in python. Typically I will use <code>statsmodels</code> here whose result is the same as <code>lm</code> in R. <code>sklearn</code> is very popular in data mining considering speed but its result will be different from R or SAS. </p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">itertools</span>
-<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">chain</span><span class="p">,</span> <span class="n">combinations</span>
-<span class="kn">import</span> <span class="nn">statsmodels.formula.api</span> <span class="k">as</span> <span class="nn">smf</span>
-<span class="kn">import</span> <span class="nn">scipy.stats</span> <span class="k">as</span> <span class="nn">scipystats</span>
-<span class="kn">import</span> <span class="nn">statsmodels.api</span> <span class="k">as</span> <span class="nn">sm</span>
-<span class="kn">import</span> <span class="nn">statsmodels.stats.stattools</span> <span class="k">as</span> <span class="nn">stools</span>
-<span class="kn">import</span> <span class="nn">statsmodels.stats</span> <span class="k">as</span> <span class="nn">stats</span> 
-<span class="kn">from</span> <span class="nn">statsmodels.graphics.regressionplots</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
-<span class="kn">import</span> <span class="nn">copy</span>
-<span class="kn">from</span> <span class="nn">sklearn.cross_validation</span> <span class="kn">import</span> <span class="n">train_test_split</span>
-<span class="kn">import</span> <span class="nn">math</span>
-<span class="kn">import</span> <span class="nn">time</span>
+<pre><code class="language-python">import pandas as pd
+import numpy as np
+import itertools
+from itertools import chain, combinations
+import statsmodels.formula.api as smf
+import scipy.stats as scipystats
+import statsmodels.api as sm
+import statsmodels.stats.stattools as stools
+import statsmodels.stats as stats 
+from statsmodels.graphics.regressionplots import *
+import matplotlib.pyplot as plt
+import seaborn as sns
+import copy
+from sklearn.cross_validation import train_test_split
+import math
+import time
 
-<span class="o">%</span><span class="n">matplotlib</span> <span class="n">inline</span> 
-<span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;figure.figsize&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">12</span><span class="p">)</span>
+%matplotlib inline 
+plt.rcParams['figure.figsize'] = (16, 12)
 
-<span class="n">mypath</span> <span class="o">=</span>  <span class="sa">r</span><span class="s1">&#39;D:\Dropbox\ipynb_download\ipynb_blog</span><span class="se">\\</span><span class="s1">&#39;</span>
+mypath =  r'D:\Dropbox\ipynb_download\ipynb_blog\\'
 
-<span class="n">elemapi</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_pickle</span><span class="p">(</span><span class="n">mypath</span> <span class="o">+</span> <span class="sa">r</span><span class="s1">&#39;elemapi.pkl&#39;</span><span class="p">)</span>   
+elemapi = pd.read_pickle(mypath + r'elemapi.pkl')   
 
-<span class="nb">print</span> <span class="n">elemapi</span><span class="p">[[</span><span class="s1">&#39;api00&#39;</span><span class="p">,</span> <span class="s1">&#39;acs_k3&#39;</span><span class="p">,</span> <span class="s1">&#39;meals&#39;</span><span class="p">,</span>  <span class="s1">&#39;full&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>   api00  acs_k3  meals  full
+print elemapi[['api00', 'acs_k3', 'meals',  'full']].head()
+</code></pre>
+<pre><code>   api00  acs_k3  meals  full
 0    693    16.0   67.0  76.0
 1    570    15.0   92.0  79.0
 2    546    17.0   97.0  68.0
 3    571    20.0   90.0  87.0
 4    478    18.0   89.0  87.0
-</code></pre></div>
-
+</code></pre>
 <p>There are different way to run linear regression in statsmodels. One is using formula as R did. Another one is input the data directly. I will show them both here. And both of them will give the same result.</p>
 <p>Personally I prefer the first way, the reasons are:</p>
 <ol>
@@ -155,104 +152,99 @@ window.addEventListener('load', () => {
 <p>the first way will take care of the missing data while the second will not.</p>
 </li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">1. using formula as R did</span>
-<span class="sd">&#39;&#39;&#39;</span>
-<span class="nb">print</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">40</span> <span class="o">+</span> <span class="s1">&#39; smf.ols in R formula &#39;</span> <span class="o">+</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">40</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
-<span class="n">lm</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="n">formula</span> <span class="o">=</span> <span class="s1">&#39;api00 ~ ell&#39;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">elemapi</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="nb">print</span> <span class="n">lm</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+<pre><code class="language-python">'''
+1. using formula as R did
+'''
+print '-'*40 + ' smf.ols in R formula ' + '-'*40 + '\n'
+lm = smf.ols(formula = 'api00 ~ ell', data = elemapi).fit()
+print lm.summary()
 
-<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">elemapi</span><span class="o">.</span><span class="n">ell</span><span class="p">,</span> <span class="n">elemapi</span><span class="o">.</span><span class="n">api00</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="s1">&#39;g&#39;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">elemapi</span><span class="o">.</span><span class="n">ell</span><span class="p">,</span> <span class="n">lm</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">lm</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">elemapi</span><span class="o">.</span><span class="n">ell</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;ell&#39;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;api00&#39;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Linear Regression Plot&quot;</span><span class="p">)</span>
-</code></pre></div>
+plt.figure()
+plt.scatter(elemapi.ell, elemapi.api00, c = 'g')
+plt.plot(elemapi.ell, lm.params[0] + lm.params[1] * elemapi.ell)
+plt.xlabel('ell')
+plt.ylabel('api00')
+plt.title(&quot;Linear Regression Plot&quot;)
+</code></pre>
+<pre><code>---------------------------------------- smf.ols in R formula ----------------------------------------
 
-<div class="highlight"><pre><span></span><code><span class="o">----------------------------------------</span><span class="w"> </span><span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">R</span><span class="w"> </span><span class="n">formula</span><span class="w"> </span><span class="o">----------------------------------------</span>
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:                  api00   R-squared:                       0.604
+Model:                            OLS   Adj. R-squared:                  0.603
+Method:                 Least Squares   F-statistic:                     582.3
+Date:                Tue, 27 Dec 2016   Prob (F-statistic):           8.06e-79
+Time:                        15:10:45   Log-Likelihood:                -2272.4
+No. Observations:                 384   AIC:                             4549.
+Df Residuals:                     382   BIC:                             4557.
+Df Model:                           1                                         
+Covariance Type:            nonrobust                                         
+==============================================================================
+                 coef    std err          t      P&gt;|t|      [95.0% Conf. Int.]
+------------------------------------------------------------------------------
+Intercept    790.1777      7.428    106.375      0.000       775.572   804.783
+ell           -4.4213      0.183    -24.132      0.000        -4.782    -4.061
+==============================================================================
+Omnibus:                        7.163   Durbin-Watson:                   1.505
+Prob(Omnibus):                  0.028   Jarque-Bera (JB):                7.192
+Skew:                          -0.308   Prob(JB):                       0.0274
+Kurtosis:                       2.737   Cond. No.                         65.5
+==============================================================================
 
-<span class="w">                            </span><span class="n">OLS</span><span class="w"> </span><span class="n">Regression</span><span class="w"> </span><span class="n">Results</span><span class="w">                            </span>
-<span class="o">==============================================================================</span>
-<span class="n">Dep</span><span class="o">.</span><span class="w"> </span><span class="n">Variable</span><span class="p">:</span><span class="w">                  </span><span class="n">api00</span><span class="w">   </span><span class="n">R</span><span class="o">-</span><span class="n">squared</span><span class="p">:</span><span class="w">                       </span><span class="mf">0.604</span>
-<span class="n">Model</span><span class="p">:</span><span class="w">                            </span><span class="n">OLS</span><span class="w">   </span><span class="n">Adj</span><span class="o">.</span><span class="w"> </span><span class="n">R</span><span class="o">-</span><span class="n">squared</span><span class="p">:</span><span class="w">                  </span><span class="mf">0.603</span>
-<span class="n">Method</span><span class="p">:</span><span class="w">                 </span><span class="n">Least</span><span class="w"> </span><span class="n">Squares</span><span class="w">   </span><span class="n">F</span><span class="o">-</span><span class="n">statistic</span><span class="p">:</span><span class="w">                     </span><span class="mf">582.3</span>
-<span class="n">Date</span><span class="p">:</span><span class="w">                </span><span class="n">Tue</span><span class="p">,</span><span class="w"> </span><span class="mi">27</span><span class="w"> </span><span class="n">Dec</span><span class="w"> </span><span class="mi">2016</span><span class="w">   </span><span class="n">Prob</span><span class="w"> </span><span class="p">(</span><span class="n">F</span><span class="o">-</span><span class="n">statistic</span><span class="p">):</span><span class="w">           </span><span class="mf">8.06e-79</span>
-<span class="n">Time</span><span class="p">:</span><span class="w">                        </span><span class="mi">15</span><span class="p">:</span><span class="mi">10</span><span class="p">:</span><span class="mi">45</span><span class="w">   </span><span class="n">Log</span><span class="o">-</span><span class="n">Likelihood</span><span class="p">:</span><span class="w">                </span><span class="o">-</span><span class="mf">2272.4</span>
-<span class="n">No</span><span class="o">.</span><span class="w"> </span><span class="n">Observations</span><span class="p">:</span><span class="w">                 </span><span class="mi">384</span><span class="w">   </span><span class="n">AIC</span><span class="p">:</span><span class="w">                             </span><span class="mf">4549.</span>
-<span class="n">Df</span><span class="w"> </span><span class="n">Residuals</span><span class="p">:</span><span class="w">                     </span><span class="mi">382</span><span class="w">   </span><span class="n">BIC</span><span class="p">:</span><span class="w">                             </span><span class="mf">4557.</span>
-<span class="n">Df</span><span class="w"> </span><span class="n">Model</span><span class="p">:</span><span class="w">                           </span><span class="mi">1</span><span class="w">                                         </span>
-<span class="n">Covariance</span><span class="w"> </span><span class="n">Type</span><span class="p">:</span><span class="w">            </span><span class="n">nonrobust</span><span class="w">                                         </span>
-<span class="o">==============================================================================</span>
-<span class="w">                 </span><span class="n">coef</span><span class="w">    </span><span class="n">std</span><span class="w"> </span><span class="n">err</span><span class="w">          </span><span class="n">t</span><span class="w">      </span><span class="n">P</span><span class="o">&gt;|</span><span class="n">t</span><span class="o">|</span><span class="w">      </span><span class="p">[</span><span class="mf">95.0</span><span class="o">%</span><span class="w"> </span><span class="n">Conf</span><span class="o">.</span><span class="w"> </span><span class="n">Int</span><span class="o">.</span><span class="p">]</span>
-<span class="o">------------------------------------------------------------------------------</span>
-<span class="n">Intercept</span><span class="w">    </span><span class="mf">790.1777</span><span class="w">      </span><span class="mf">7.428</span><span class="w">    </span><span class="mf">106.375</span><span class="w">      </span><span class="mf">0.000</span><span class="w">       </span><span class="mf">775.572</span><span class="w">   </span><span class="mf">804.783</span>
-<span class="n">ell</span><span class="w">           </span><span class="o">-</span><span class="mf">4.4213</span><span class="w">      </span><span class="mf">0.183</span><span class="w">    </span><span class="o">-</span><span class="mf">24.132</span><span class="w">      </span><span class="mf">0.000</span><span class="w">        </span><span class="o">-</span><span class="mf">4.782</span><span class="w">    </span><span class="o">-</span><span class="mf">4.061</span>
-<span class="o">==============================================================================</span>
-<span class="n">Omnibus</span><span class="p">:</span><span class="w">                        </span><span class="mf">7.163</span><span class="w">   </span><span class="n">Durbin</span><span class="o">-</span><span class="n">Watson</span><span class="p">:</span><span class="w">                   </span><span class="mf">1.505</span>
-<span class="n">Prob</span><span class="p">(</span><span class="n">Omnibus</span><span class="p">):</span><span class="w">                  </span><span class="mf">0.028</span><span class="w">   </span><span class="n">Jarque</span><span class="o">-</span><span class="n">Bera</span><span class="w"> </span><span class="p">(</span><span class="n">JB</span><span class="p">):</span><span class="w">                </span><span class="mf">7.192</span>
-<span class="n">Skew</span><span class="p">:</span><span class="w">                          </span><span class="o">-</span><span class="mf">0.308</span><span class="w">   </span><span class="n">Prob</span><span class="p">(</span><span class="n">JB</span><span class="p">):</span><span class="w">                       </span><span class="mf">0.0274</span>
-<span class="n">Kurtosis</span><span class="p">:</span><span class="w">                       </span><span class="mf">2.737</span><span class="w">   </span><span class="n">Cond</span><span class="o">.</span><span class="w"> </span><span class="n">No</span><span class="o">.</span><span class="w">                         </span><span class="mf">65.5</span>
-<span class="o">==============================================================================</span>
-
-<span class="n">Warnings</span><span class="p">:</span>
-<span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="n">Standard</span><span class="w"> </span><span class="n">Errors</span><span class="w"> </span><span class="n">assume</span><span class="w"> </span><span class="n">that</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">covariance</span><span class="w"> </span><span class="n">matrix</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">errors</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="n">correctly</span><span class="w"> </span><span class="n">specified</span><span class="o">.</span>
-
+Warnings:
+[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
 
 
 
 
-<span class="o">&lt;</span><span class="n">matplotlib</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">Text</span><span class="w"> </span><span class="n">at</span><span class="w"> </span><span class="mh">0x25792668</span><span class="o">&gt;</span>
-</code></pre></div>
 
+&lt;matplotlib.text.Text at 0x25792668&gt;
+</code></pre>
 <p><img alt="png" src="/figures/ucla_ats_linreg_1_01.png"></p>
-<div class="highlight"><pre><span></span><code><span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">2. using data input directly</span>
-<span class="sd">&#39;&#39;&#39;</span>
-<span class="nb">print</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">40</span> <span class="o">+</span> <span class="s1">&#39; sm.OLS with direct input data &#39;</span> <span class="o">+</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">40</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
-<span class="n">lm2</span> <span class="o">=</span> <span class="n">sm</span><span class="o">.</span><span class="n">OLS</span><span class="p">(</span><span class="n">elemapi</span><span class="p">[</span><span class="s1">&#39;api00&#39;</span><span class="p">],</span> <span class="n">sm</span><span class="o">.</span><span class="n">add_constant</span><span class="p">(</span><span class="n">elemapi</span><span class="p">[[</span><span class="s1">&#39;ell&#39;</span><span class="p">]]))</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="nb">print</span> <span class="n">lm2</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
-</code></pre></div>
+<pre><code class="language-python">'''
+2. using data input directly
+'''
+print '-'*40 + ' sm.OLS with direct input data ' + '-'*40 + '\n'
+lm2 = sm.OLS(elemapi['api00'], sm.add_constant(elemapi[['ell']])).fit()
+print lm2.summary()
+</code></pre>
+<pre><code>---------------------------------------- sm.OLS with direct input data ----------------------------------------
 
-<div class="highlight"><pre><span></span><code><span class="o">----------------------------------------</span><span class="w"> </span><span class="n">sm</span><span class="o">.</span><span class="n">OLS</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="n">direct</span><span class="w"> </span><span class="n">input</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">----------------------------------------</span>
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:                  api00   R-squared:                       0.604
+Model:                            OLS   Adj. R-squared:                  0.603
+Method:                 Least Squares   F-statistic:                     582.3
+Date:                Tue, 20 Dec 2016   Prob (F-statistic):           8.06e-79
+Time:                        21:13:43   Log-Likelihood:                -2272.4
+No. Observations:                 384   AIC:                             4549.
+Df Residuals:                     382   BIC:                             4557.
+Df Model:                           1                                         
+Covariance Type:            nonrobust                                         
+==============================================================================
+                 coef    std err          t      P&gt;|t|      [95.0% Conf. Int.]
+------------------------------------------------------------------------------
+const        790.1777      7.428    106.375      0.000       775.572   804.783
+ell           -4.4213      0.183    -24.132      0.000        -4.782    -4.061
+==============================================================================
+Omnibus:                        7.163   Durbin-Watson:                   1.505
+Prob(Omnibus):                  0.028   Jarque-Bera (JB):                7.192
+Skew:                          -0.308   Prob(JB):                       0.0274
+Kurtosis:                       2.737   Cond. No.                         65.5
+==============================================================================
 
-<span class="w">                            </span><span class="n">OLS</span><span class="w"> </span><span class="n">Regression</span><span class="w"> </span><span class="n">Results</span><span class="w">                            </span>
-<span class="o">==============================================================================</span>
-<span class="n">Dep</span><span class="o">.</span><span class="w"> </span><span class="n">Variable</span><span class="p">:</span><span class="w">                  </span><span class="n">api00</span><span class="w">   </span><span class="n">R</span><span class="o">-</span><span class="n">squared</span><span class="p">:</span><span class="w">                       </span><span class="mf">0.604</span>
-<span class="n">Model</span><span class="p">:</span><span class="w">                            </span><span class="n">OLS</span><span class="w">   </span><span class="n">Adj</span><span class="o">.</span><span class="w"> </span><span class="n">R</span><span class="o">-</span><span class="n">squared</span><span class="p">:</span><span class="w">                  </span><span class="mf">0.603</span>
-<span class="n">Method</span><span class="p">:</span><span class="w">                 </span><span class="n">Least</span><span class="w"> </span><span class="n">Squares</span><span class="w">   </span><span class="n">F</span><span class="o">-</span><span class="n">statistic</span><span class="p">:</span><span class="w">                     </span><span class="mf">582.3</span>
-<span class="n">Date</span><span class="p">:</span><span class="w">                </span><span class="n">Tue</span><span class="p">,</span><span class="w"> </span><span class="mi">20</span><span class="w"> </span><span class="n">Dec</span><span class="w"> </span><span class="mi">2016</span><span class="w">   </span><span class="n">Prob</span><span class="w"> </span><span class="p">(</span><span class="n">F</span><span class="o">-</span><span class="n">statistic</span><span class="p">):</span><span class="w">           </span><span class="mf">8.06e-79</span>
-<span class="n">Time</span><span class="p">:</span><span class="w">                        </span><span class="mi">21</span><span class="p">:</span><span class="mi">13</span><span class="p">:</span><span class="mi">43</span><span class="w">   </span><span class="n">Log</span><span class="o">-</span><span class="n">Likelihood</span><span class="p">:</span><span class="w">                </span><span class="o">-</span><span class="mf">2272.4</span>
-<span class="n">No</span><span class="o">.</span><span class="w"> </span><span class="n">Observations</span><span class="p">:</span><span class="w">                 </span><span class="mi">384</span><span class="w">   </span><span class="n">AIC</span><span class="p">:</span><span class="w">                             </span><span class="mf">4549.</span>
-<span class="n">Df</span><span class="w"> </span><span class="n">Residuals</span><span class="p">:</span><span class="w">                     </span><span class="mi">382</span><span class="w">   </span><span class="n">BIC</span><span class="p">:</span><span class="w">                             </span><span class="mf">4557.</span>
-<span class="n">Df</span><span class="w"> </span><span class="n">Model</span><span class="p">:</span><span class="w">                           </span><span class="mi">1</span><span class="w">                                         </span>
-<span class="n">Covariance</span><span class="w"> </span><span class="n">Type</span><span class="p">:</span><span class="w">            </span><span class="n">nonrobust</span><span class="w">                                         </span>
-<span class="o">==============================================================================</span>
-<span class="w">                 </span><span class="n">coef</span><span class="w">    </span><span class="n">std</span><span class="w"> </span><span class="n">err</span><span class="w">          </span><span class="n">t</span><span class="w">      </span><span class="n">P</span><span class="o">&gt;|</span><span class="n">t</span><span class="o">|</span><span class="w">      </span><span class="p">[</span><span class="mf">95.0</span><span class="o">%</span><span class="w"> </span><span class="n">Conf</span><span class="o">.</span><span class="w"> </span><span class="n">Int</span><span class="o">.</span><span class="p">]</span>
-<span class="o">------------------------------------------------------------------------------</span>
-<span class="k">const</span><span class="w">        </span><span class="mf">790.1777</span><span class="w">      </span><span class="mf">7.428</span><span class="w">    </span><span class="mf">106.375</span><span class="w">      </span><span class="mf">0.000</span><span class="w">       </span><span class="mf">775.572</span><span class="w">   </span><span class="mf">804.783</span>
-<span class="n">ell</span><span class="w">           </span><span class="o">-</span><span class="mf">4.4213</span><span class="w">      </span><span class="mf">0.183</span><span class="w">    </span><span class="o">-</span><span class="mf">24.132</span><span class="w">      </span><span class="mf">0.000</span><span class="w">        </span><span class="o">-</span><span class="mf">4.782</span><span class="w">    </span><span class="o">-</span><span class="mf">4.061</span>
-<span class="o">==============================================================================</span>
-<span class="n">Omnibus</span><span class="p">:</span><span class="w">                        </span><span class="mf">7.163</span><span class="w">   </span><span class="n">Durbin</span><span class="o">-</span><span class="n">Watson</span><span class="p">:</span><span class="w">                   </span><span class="mf">1.505</span>
-<span class="n">Prob</span><span class="p">(</span><span class="n">Omnibus</span><span class="p">):</span><span class="w">                  </span><span class="mf">0.028</span><span class="w">   </span><span class="n">Jarque</span><span class="o">-</span><span class="n">Bera</span><span class="w"> </span><span class="p">(</span><span class="n">JB</span><span class="p">):</span><span class="w">                </span><span class="mf">7.192</span>
-<span class="n">Skew</span><span class="p">:</span><span class="w">                          </span><span class="o">-</span><span class="mf">0.308</span><span class="w">   </span><span class="n">Prob</span><span class="p">(</span><span class="n">JB</span><span class="p">):</span><span class="w">                       </span><span class="mf">0.0274</span>
-<span class="n">Kurtosis</span><span class="p">:</span><span class="w">                       </span><span class="mf">2.737</span><span class="w">   </span><span class="n">Cond</span><span class="o">.</span><span class="w"> </span><span class="n">No</span><span class="o">.</span><span class="w">                         </span><span class="mf">65.5</span>
-<span class="o">==============================================================================</span>
-
-<span class="n">Warnings</span><span class="p">:</span>
-<span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="n">Standard</span><span class="w"> </span><span class="n">Errors</span><span class="w"> </span><span class="n">assume</span><span class="w"> </span><span class="n">that</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">covariance</span><span class="w"> </span><span class="n">matrix</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">errors</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="n">correctly</span><span class="w"> </span><span class="n">specified</span><span class="o">.</span>
-</code></pre></div>
-
+Warnings:
+[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+</code></pre>
 <h3>1.2 Multiple variable regression</h3>
 <p>Most of the time one variable in the model will not give us enough power to use. Usually multiple variables will be used in the model. As described about, let's try 3 variables in the model.</p>
-<div class="highlight"><pre><span></span><code><span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">1. using formula as R did</span>
-<span class="sd">&#39;&#39;&#39;</span>
-<span class="n">lm</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="n">formula</span> <span class="o">=</span> <span class="s1">&#39;api00 ~ acs_k3 + meals + full&#39;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">elemapi</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="nb">print</span> <span class="n">lm</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>                            OLS Regression Results                            
+<pre><code class="language-python">'''
+1. using formula as R did
+'''
+lm = smf.ols(formula = 'api00 ~ acs_k3 + meals + full', data = elemapi).fit()
+print lm.summary()
+</code></pre>
+<pre><code>                            OLS Regression Results                            
 ==============================================================================
 Dep. Variable:                  api00   R-squared:                       0.669
 Model:                            OLS   Adj. R-squared:                  0.666
@@ -262,37 +254,35 @@ Time:                        17:07:12   Log-Likelihood:                -1670.8
 No. Observations:                 299   AIC:                             3350.
 Df Residuals:                     295   BIC:                             3364.
 Df Model:                           3                                         
-<span class="gh">Covariance Type:            nonrobust                                         </span>
-<span class="gh">==============================================================================</span>
+Covariance Type:            nonrobust                                         
+==============================================================================
                  coef    std err          t      P&gt;|t|      [95.0% Conf. Int.]
 ------------------------------------------------------------------------------
 Intercept    908.5016     28.887     31.451      0.000       851.652   965.351
 acs_k3        -2.7820      1.420     -1.959      0.051        -5.577     0.013
 meals         -3.7020      0.160    -23.090      0.000        -4.018    -3.386
-<span class="gh">full           0.1214      0.093      1.299      0.195        -0.063     0.305</span>
-<span class="gh">==============================================================================</span>
+full           0.1214      0.093      1.299      0.195        -0.063     0.305
+==============================================================================
 Omnibus:                        1.986   Durbin-Watson:                   1.463
 Prob(Omnibus):                  0.370   Jarque-Bera (JB):                1.971
 Skew:                           0.141   Prob(JB):                        0.373
-<span class="gh">Kurtosis:                       2.719   Cond. No.                         750.</span>
-<span class="gh">==============================================================================</span>
+Kurtosis:                       2.719   Cond. No.                         750.
+==============================================================================
 
 Warnings:
 [1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
-</code></pre></div>
-
+</code></pre>
 <p>however, if I rum <code>sm.OLS(elemapi['api00'], sm.add_constant(elemapi[['acs_k3', 'meals',  'full']])).fit()</code> I will get errors like "LinAlgError: SVD did not converge". The reason is there are missing data in 'acs_k3' and 'meals'. Thus results in the singular value decomposition of the hat matrix failed. To fix it, I need to drop any row with missing data first. After that, it will run successfully and the result is exactly the same as above.</p>
-<div class="highlight"><pre><span></span><code><span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">2. using data input directly</span>
-<span class="sd">&#39;&#39;&#39;</span>
-<span class="n">data</span> <span class="o">=</span> <span class="n">elemapi</span><span class="p">[[</span><span class="s1">&#39;api00&#39;</span><span class="p">,</span> <span class="s1">&#39;acs_k3&#39;</span><span class="p">,</span> <span class="s1">&#39;meals&#39;</span><span class="p">,</span>  <span class="s1">&#39;full&#39;</span><span class="p">]]</span>
-<span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">how</span> <span class="o">=</span> <span class="s1">&#39;any&#39;</span><span class="p">)</span>
+<pre><code class="language-python">'''
+2. using data input directly
+'''
+data = elemapi[['api00', 'acs_k3', 'meals',  'full']]
+data = data.dropna(axis = 0, how = 'any')
 
-<span class="n">lm2</span> <span class="o">=</span> <span class="n">sm</span><span class="o">.</span><span class="n">OLS</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;api00&#39;</span><span class="p">],</span> <span class="n">sm</span><span class="o">.</span><span class="n">add_constant</span><span class="p">(</span><span class="n">data</span><span class="p">[[</span><span class="s1">&#39;acs_k3&#39;</span><span class="p">,</span> <span class="s1">&#39;meals&#39;</span><span class="p">,</span>  <span class="s1">&#39;full&#39;</span><span class="p">]]))</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="nb">print</span> <span class="n">lm2</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>                            OLS Regression Results                            
+lm2 = sm.OLS(data['api00'], sm.add_constant(data[['acs_k3', 'meals',  'full']])).fit()
+print lm2.summary()
+</code></pre>
+<pre><code>                            OLS Regression Results                            
 ==============================================================================
 Dep. Variable:                  api00   R-squared:                       0.669
 Model:                            OLS   Adj. R-squared:                  0.666
@@ -302,25 +292,24 @@ Time:                        17:10:47   Log-Likelihood:                -1670.8
 No. Observations:                 299   AIC:                             3350.
 Df Residuals:                     295   BIC:                             3364.
 Df Model:                           3                                         
-<span class="gh">Covariance Type:            nonrobust                                         </span>
-<span class="gh">==============================================================================</span>
+Covariance Type:            nonrobust                                         
+==============================================================================
                  coef    std err          t      P&gt;|t|      [95.0% Conf. Int.]
 ------------------------------------------------------------------------------
 const        908.5016     28.887     31.451      0.000       851.652   965.351
 acs_k3        -2.7820      1.420     -1.959      0.051        -5.577     0.013
 meals         -3.7020      0.160    -23.090      0.000        -4.018    -3.386
-<span class="gh">full           0.1214      0.093      1.299      0.195        -0.063     0.305</span>
-<span class="gh">==============================================================================</span>
+full           0.1214      0.093      1.299      0.195        -0.063     0.305
+==============================================================================
 Omnibus:                        1.986   Durbin-Watson:                   1.463
 Prob(Omnibus):                  0.370   Jarque-Bera (JB):                1.971
 Skew:                           0.141   Prob(JB):                        0.373
-<span class="gh">Kurtosis:                       2.719   Cond. No.                         750.</span>
-<span class="gh">==============================================================================</span>
+Kurtosis:                       2.719   Cond. No.                         750.
+==============================================================================
 
 Warnings:
 [1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
-</code></pre></div>
-
+</code></pre>
 <h3>1.3 Data Analysis</h3>
 <p>Generally, when we get the data we will do some analysis of the data. </p>
 <p>For numeric data, we will usualy do:</p>
@@ -342,11 +331,10 @@ Warnings:
 <p>we will pick 4 variables from the elemapi data as an example. </p>
 <h4>1.3.1. The <code>df.describe()</code> will gives the summary information like how many non-missing values there, mean, stdev, and the five number summary.</h4>
 <p>As we can see, api00 and full does not have missing values and their length is 384. acs_k3 has 382 non-missing values, so it has two missing data. meals has 301 non-missing values so it has 83 missings.</p>
-<div class="highlight"><pre><span></span><code><span class="n">sample_data</span> <span class="o">=</span> <span class="n">elemapi</span><span class="p">[[</span><span class="s1">&#39;api00&#39;</span><span class="p">,</span> <span class="s1">&#39;acs_k3&#39;</span><span class="p">,</span> <span class="s1">&#39;meals&#39;</span><span class="p">,</span>  <span class="s1">&#39;full&#39;</span><span class="p">]]</span>
-<span class="nb">print</span> <span class="n">sample_data</span><span class="o">.</span><span class="n">describe</span><span class="p">()</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>            api00      acs_k3       meals        full
+<pre><code class="language-python">sample_data = elemapi[['api00', 'acs_k3', 'meals',  'full']]
+print sample_data.describe()
+</code></pre>
+<pre><code>            api00      acs_k3       meals        full
 count  384.000000  382.000000  301.000000  384.000000
 mean   649.421875   18.534031   71.890365   65.124271
 std    143.020564    5.104436   24.367696   40.823987
@@ -355,110 +343,98 @@ min    369.000000  -21.000000    6.000000    0.420000
 50%    646.500000         NaN         NaN   87.000000
 75%    763.500000         NaN         NaN   97.000000
 max    940.000000   25.000000  100.000000  100.000000
-</code></pre></div>
-
+</code></pre>
 <h4>1.3.2. plot the histogram and the density plot</h4>
 <p>From the hist plot, the data api00 is pretty even. There is no special concentration.</p>
 <p>From the box plot below, we did not see there is any outliers.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">gaussian_kde</span>
+<pre><code class="language-python">from scipy.stats import gaussian_kde
 
-<span class="n">plt</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">elemapi</span><span class="o">.</span><span class="n">api00</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="n">normed</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">facecolor</span> <span class="o">=</span> <span class="s1">&#39;g&#39;</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">)</span>
+plt.hist(elemapi.api00, 20, normed = 1, facecolor = 'g', alpha = 0.5)
 
-<span class="c1"># add density plot</span>
-<span class="n">density</span> <span class="o">=</span> <span class="n">gaussian_kde</span><span class="p">(</span><span class="n">elemapi</span><span class="o">.</span><span class="n">api00</span><span class="p">)</span>
-<span class="n">xs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">300</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="mi">500</span><span class="p">)</span>
-<span class="n">density</span><span class="o">.</span><span class="n">covariance_factor</span> <span class="o">=</span> <span class="k">lambda</span> <span class="p">:</span> <span class="mf">.2</span>
-<span class="n">density</span><span class="o">.</span><span class="n">_compute_covariance</span><span class="p">()</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">density</span><span class="p">(</span><span class="n">xs</span><span class="p">),</span> <span class="n">color</span> <span class="o">=</span> <span class="s2">&quot;b&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-</code></pre></div>
-
+# add density plot
+density = gaussian_kde(elemapi.api00)
+xs = np.linspace(300, 1000, 500)
+density.covariance_factor = lambda : .2
+density._compute_covariance()
+plt.plot(xs, density(xs), color = &quot;b&quot;)
+plt.show()
+</code></pre>
 <p><img alt="png" src="/figures/ucla_ats_linreg_1_02.png"></p>
-<div class="highlight"><pre><span></span><code><span class="n">plt</span><span class="o">.</span><span class="n">boxplot</span><span class="p">(</span><span class="n">elemapi</span><span class="o">.</span><span class="n">api00</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;gD&#39;</span><span class="p">)</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>{&#39;boxes&#39;: [&lt;matplotlib.lines.Line2D at 0x18adfb00&gt;],
- &#39;caps&#39;: [&lt;matplotlib.lines.Line2D at 0x18af37b8&gt;,
+<pre><code class="language-python">plt.boxplot(elemapi.api00, 0, 'gD')
+</code></pre>
+<pre><code>{'boxes': [&lt;matplotlib.lines.Line2D at 0x18adfb00&gt;],
+ 'caps': [&lt;matplotlib.lines.Line2D at 0x18af37b8&gt;,
   &lt;matplotlib.lines.Line2D at 0x18af3d30&gt;],
- &#39;fliers&#39;: [&lt;matplotlib.lines.Line2D at 0x18aff860&gt;],
- &#39;means&#39;: [],
- &#39;medians&#39;: [&lt;matplotlib.lines.Line2D at 0x18aff2e8&gt;],
- &#39;whiskers&#39;: [&lt;matplotlib.lines.Line2D at 0x18adfc18&gt;,
+ 'fliers': [&lt;matplotlib.lines.Line2D at 0x18aff860&gt;],
+ 'means': [],
+ 'medians': [&lt;matplotlib.lines.Line2D at 0x18aff2e8&gt;],
+ 'whiskers': [&lt;matplotlib.lines.Line2D at 0x18adfc18&gt;,
   &lt;matplotlib.lines.Line2D at 0x18af3240&gt;]}
-</code></pre></div>
-
+</code></pre>
 <p><img alt="png" src="/figures/ucla_ats_linreg_1_03.png"></p>
 <h4>1.3.3. The correlation of the data</h4>
 <p><code>df.corr()</code> will give the correlation matrix of all the variables. Pick the corresponding row or column will give us the correlation between that variables with all the other variables.</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># check correlation between each variable and api00</span>
-<span class="nb">print</span> <span class="n">elemapi</span><span class="o">.</span><span class="n">corr</span><span class="p">()</span><span class="o">.</span><span class="n">ix</span><span class="p">[</span><span class="s1">&#39;api00&#39;</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">sort_values</span><span class="p">()</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="nx">mealcat</span><span class="w">    </span><span class="o">-</span><span class="m m-Double">0.865752</span>
-<span class="nx">meals</span><span class="w">      </span><span class="o">-</span><span class="m m-Double">0.815576</span>
-<span class="nx">ell</span><span class="w">        </span><span class="o">-</span><span class="m m-Double">0.777091</span>
-<span class="nx">not_hsg</span><span class="w">    </span><span class="o">-</span><span class="m m-Double">0.681712</span>
-<span class="nx">emer</span><span class="w">       </span><span class="o">-</span><span class="m m-Double">0.596273</span>
-<span class="nx">yr_rnd</span><span class="w">     </span><span class="o">-</span><span class="m m-Double">0.487599</span>
-<span class="nx">hsg</span><span class="w">        </span><span class="o">-</span><span class="m m-Double">0.361842</span>
-<span class="nx">enroll</span><span class="w">     </span><span class="o">-</span><span class="m m-Double">0.329078</span>
-<span class="nx">mobility</span><span class="w">   </span><span class="o">-</span><span class="m m-Double">0.191732</span>
-<span class="nx">growth</span><span class="w">     </span><span class="o">-</span><span class="m m-Double">0.102593</span>
-<span class="nx">acs_k3</span><span class="w">     </span><span class="o">-</span><span class="m m-Double">0.095982</span>
-<span class="nx">dnum</span><span class="w">        </span><span class="m m-Double">0.007991</span>
-<span class="nx">acs_46</span><span class="w">      </span><span class="m m-Double">0.223256</span>
-<span class="nx">some_col</span><span class="w">    </span><span class="m m-Double">0.258125</span>
-<span class="nx">snum</span><span class="w">        </span><span class="m m-Double">0.259491</span>
-<span class="nx">full</span><span class="w">        </span><span class="m m-Double">0.424186</span>
-<span class="nx">col_grad</span><span class="w">    </span><span class="m m-Double">0.529277</span>
-<span class="nx">grad_sch</span><span class="w">    </span><span class="m m-Double">0.632367</span>
-<span class="nx">avg_ed</span><span class="w">      </span><span class="m m-Double">0.793012</span>
-<span class="nx">api99</span><span class="w">       </span><span class="m m-Double">0.985950</span>
-<span class="nx">api00</span><span class="w">       </span><span class="m m-Double">1.000000</span>
-<span class="nx">Name</span><span class="p">:</span><span class="w"> </span><span class="nx">api00</span><span class="p">,</span><span class="w"> </span><span class="nx">dtype</span><span class="p">:</span><span class="w"> </span><span class="nx">float64</span>
-</code></pre></div>
-
+<pre><code class="language-python"># check correlation between each variable and api00
+print elemapi.corr().ix['api00', :].sort_values()
+</code></pre>
+<pre><code>mealcat    -0.865752
+meals      -0.815576
+ell        -0.777091
+not_hsg    -0.681712
+emer       -0.596273
+yr_rnd     -0.487599
+hsg        -0.361842
+enroll     -0.329078
+mobility   -0.191732
+growth     -0.102593
+acs_k3     -0.095982
+dnum        0.007991
+acs_46      0.223256
+some_col    0.258125
+snum        0.259491
+full        0.424186
+col_grad    0.529277
+grad_sch    0.632367
+avg_ed      0.793012
+api99       0.985950
+api00       1.000000
+Name: api00, dtype: float64
+</code></pre>
 <h4>1.3.4. scatter plot of all the variables in the data</h4>
 <p>This will scatter plot all the pairs of the data so that we can easily find their relations. If there is too many variables, this is not a good way because there are too many graphs to display. In that case, the correlation will be easier to check.</p>
-<div class="highlight"><pre><span></span><code><span class="n">sns</span><span class="o">.</span><span class="n">pairplot</span><span class="p">(</span><span class="n">elemapi</span><span class="p">[[</span><span class="s1">&#39;api00&#39;</span><span class="p">,</span> <span class="s1">&#39;acs_k3&#39;</span><span class="p">,</span> <span class="s1">&#39;meals&#39;</span><span class="p">,</span>  <span class="s1">&#39;full&#39;</span><span class="p">,</span> <span class="s1">&#39;ell&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">how</span> <span class="o">=</span> <span class="s1">&#39;any&#39;</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span><span class="p">))</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>&lt;seaborn.axisgrid.PairGrid at 0x1d83e6d8&gt;
-</code></pre></div>
-
+<pre><code class="language-python">sns.pairplot(elemapi[['api00', 'acs_k3', 'meals',  'full', 'ell']].dropna(how = 'any', axis = 0))
+</code></pre>
+<pre><code>&lt;seaborn.axisgrid.PairGrid at 0x1d83e6d8&gt;
+</code></pre>
 <p><img alt="png" src="/figures/ucla_ats_linreg_1_04.png"></p>
 <h4>1.3.5. keneral density plot</h4>
 <p>R has a very friendly function <code>plot(density(data, bw=0.5))</code> to let us plot the kernal density function. Here is try to mimic that in python. From the plot we can observe that the ell variable skewed to the right.</p>
-<div class="highlight"><pre><span></span><code><span class="n">sns</span><span class="o">.</span><span class="n">kdeplot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">elemapi</span><span class="o">.</span><span class="n">ell</span><span class="p">),</span> <span class="n">bw</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>&lt;matplotlib.axes._subplots.AxesSubplot at 0x25336f98&gt;
-</code></pre></div>
-
+<pre><code class="language-python">sns.kdeplot(np.array(elemapi.ell), bw=0.5)
+</code></pre>
+<pre><code>&lt;matplotlib.axes._subplots.AxesSubplot at 0x25336f98&gt;
+</code></pre>
 <p><img alt="png" src="/figures/ucla_ats_linreg_1_05.png"></p>
 <h4>1.3.6. categorical variable frequency</h4>
 <p>For categorical variable, most of the time we care about if there is any missing data, and what is the frequency of the values. We can see for acs_k3, there are about 137 data points equal to 19.</p>
-<div class="highlight"><pre><span></span><code><span class="n">elemapi</span><span class="o">.</span><span class="n">acs_k3</span><span class="o">.</span><span class="n">value_counts</span><span class="p">(</span><span class="n">dropna</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">sort_index</span><span class="p">()</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="o">-</span><span class="m m-Double">21.0</span><span class="w">      </span><span class="mi">3</span>
-<span class="o">-</span><span class="m m-Double">20.0</span><span class="w">      </span><span class="mi">2</span>
-<span class="o">-</span><span class="m m-Double">19.0</span><span class="w">      </span><span class="mi">1</span>
-<span class="w"> </span><span class="m m-Double">14.0</span><span class="w">      </span><span class="mi">2</span>
-<span class="w"> </span><span class="m m-Double">15.0</span><span class="w">      </span><span class="mi">1</span>
-<span class="w"> </span><span class="m m-Double">16.0</span><span class="w">     </span><span class="mi">14</span>
-<span class="w"> </span><span class="m m-Double">17.0</span><span class="w">     </span><span class="mi">19</span>
-<span class="w"> </span><span class="m m-Double">18.0</span><span class="w">     </span><span class="mi">59</span>
-<span class="w"> </span><span class="m m-Double">19.0</span><span class="w">    </span><span class="mi">137</span>
-<span class="w"> </span><span class="m m-Double">20.0</span><span class="w">     </span><span class="mi">94</span>
-<span class="w"> </span><span class="m m-Double">21.0</span><span class="w">     </span><span class="mi">39</span>
-<span class="w"> </span><span class="m m-Double">22.0</span><span class="w">      </span><span class="mi">7</span>
-<span class="w"> </span><span class="m m-Double">23.0</span><span class="w">      </span><span class="mi">3</span>
-<span class="w"> </span><span class="m m-Double">25.0</span><span class="w">      </span><span class="mi">1</span>
-<span class="nx">NaN</span><span class="w">        </span><span class="mi">2</span>
-<span class="nx">Name</span><span class="p">:</span><span class="w"> </span><span class="nx">acs_k3</span><span class="p">,</span><span class="w"> </span><span class="nx">dtype</span><span class="p">:</span><span class="w"> </span><span class="nx">int64</span>
-</code></pre></div>
-
+<pre><code class="language-python">elemapi.acs_k3.value_counts(dropna = False).sort_index()
+</code></pre>
+<pre><code>-21.0      3
+-20.0      2
+-19.0      1
+ 14.0      2
+ 15.0      1
+ 16.0     14
+ 17.0     19
+ 18.0     59
+ 19.0    137
+ 20.0     94
+ 21.0     39
+ 22.0      7
+ 23.0      3
+ 25.0      1
+NaN        2
+Name: acs_k3, dtype: int64
+</code></pre>
 <h3>1.4 Summary</h3>
 <p>Most of the time, when I get the data, I will do single variable analysis to check the distribution of my data and missing information. If data is not big, I will check the pairwise relations by pairwise scatter plot or the correlations.</p>
 <p>If there is missing, how to do? Drop the data or consider of any way to impute the missingt data?</p>
@@ -505,13 +481,13 @@ max    940.000000   25.000000  100.000000  100.000000
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -529,7 +505,7 @@ max    940.000000   25.000000  100.000000  100.000000
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

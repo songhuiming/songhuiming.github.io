@@ -108,49 +108,48 @@ window.addEventListener('load', () => {
 </ol>
 <h2>1. 记忆化递归</h2>
 <p>在记忆体中，空字符串的解码方式为1.</p>
-<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Solution</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">numDecodings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">return</span> <span class="mi">0</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">m_ways</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">m_ways</span><span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+<pre><code class="language-python">class Solution(object):
+    def numDecodings(self, s):
+        if len(s) == 0:
+            return 0
+        self.m_ways = {}
+        self.m_ways[&quot;&quot;] = 1
 
-        <span class="k">def</span> <span class="nf">ways</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">m_ways</span><span class="p">:</span>
-                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">m_ways</span><span class="p">[</span><span class="n">s</span><span class="p">]</span>
-            <span class="k">if</span> <span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;0&quot;</span><span class="p">:</span>
-                <span class="k">return</span> <span class="mi">0</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-                <span class="k">return</span> <span class="mi">1</span>
-            <span class="n">w</span> <span class="o">=</span> <span class="n">ways</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
-            <span class="n">prefix</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">s</span><span class="p">[:</span><span class="mi">2</span><span class="p">])</span>
-            <span class="k">if</span> <span class="n">prefix</span> <span class="o">&lt;=</span> <span class="mi">26</span><span class="p">:</span>
-                <span class="n">w</span> <span class="o">+=</span> <span class="n">ways</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="mi">2</span><span class="p">:])</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">m_ways</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">=</span> <span class="n">w</span>
-            <span class="k">return</span> <span class="n">w</span>
-        <span class="k">return</span> <span class="n">ways</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
-</code></pre></div>
-
+        def ways(s):
+            if s in self.m_ways:
+                return self.m_ways[s]
+            if s[0] == &quot;0&quot;:
+                return 0
+            if len(s) == 1:
+                return 1
+            w = ways(s[1:])
+            prefix = int(s[:2])
+            if prefix &lt;= 26:
+                w += ways(s[2:])
+            self.m_ways[s] = w
+            return w
+        return ways(s)
+</code></pre>
 <h2>2. 记忆化递归, 使用index来考虑子问题</h2>
-<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">numDecodings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">return</span> <span class="mi">0</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">m_ways</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="k">def</span> <span class="nf">ways</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">l</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">m_ways</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">m_ways</span><span class="p">[</span><span class="n">l</span><span class="p">]</span>
-        <span class="k">if</span> <span class="n">s</span><span class="p">[</span><span class="n">l</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;0&quot;</span><span class="p">:</span>
-            <span class="k">return</span> <span class="mi">0</span>
-        <span class="k">if</span> <span class="n">l</span> <span class="o">&gt;=</span> <span class="n">r</span><span class="p">:</span>
-            <span class="k">return</span> <span class="mi">1</span>
-        <span class="n">w</span> <span class="o">=</span> <span class="n">ways</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">l</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
-        <span class="n">prefix</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="n">l</span><span class="p">])</span> <span class="o">*</span> <span class="mi">10</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="n">l</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span>
-        <span class="k">if</span> <span class="n">prefix</span> <span class="o">&lt;=</span> <span class="mi">26</span><span class="p">:</span>
-            <span class="n">w</span> <span class="o">+=</span> <span class="n">ways</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">l</span> <span class="o">+</span> <span class="mi">2</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">m_ways</span><span class="p">[</span><span class="n">l</span><span class="p">]</span> <span class="o">=</span> <span class="n">w</span>
-        <span class="k">return</span> <span class="n">w</span>
-    <span class="k">return</span> <span class="n">ways</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
-</code></pre></div></div>
+<pre><code class="language-python">def numDecodings(self, s):
+    if len(s) == 0:
+        return 0
+    self.m_ways = {}
+    def ways(s, l, r):
+        if l in self.m_ways:
+            return self.m_ways[l]
+        if s[l] == &quot;0&quot;:
+            return 0
+        if l &gt;= r:
+            return 1
+        w = ways(s, l + 1, r)
+        prefix = int(s[l]) * 10 + int(s[l + 1])
+        if prefix &lt;= 26:
+            w += ways(s, l + 2, r)
+        self.m_ways[l] = w
+        return w
+    return ways(s, 0, len(s) - 1)
+</code></pre></div>
     <footer>
 <p class="meta">
   <span class="byline author vcard">
@@ -179,13 +178,13 @@ window.addEventListener('load', () => {
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -203,7 +202,7 @@ window.addEventListener('load', () => {
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

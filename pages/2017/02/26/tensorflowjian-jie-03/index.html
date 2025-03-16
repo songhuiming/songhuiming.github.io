@@ -141,38 +141,34 @@ window.addEventListener('load', () => {
 </ul>
 <p><img alt="png" src="/figures/20170225_tensorflow_intro_p3_09.png"></p>
 <p>TF中，它们可以写为</p>
-<div class="highlight"><pre><span></span><code>x = tf.placeholder(tf.float, [1,n])
+<pre><code>x = tf.placeholder(tf.float, [1,n])
 W = tf.Variable(tf.zeros[n,1])
-</code></pre></div>
-
+</code></pre>
 <p>注意，我们用<em>tf.zeros</em>来表示W，也就是说把W=(W1, W2, ..., Wn)全部初始化为0.</p>
 <ul>
 <li>数学上矩阵相乘是对应的向量点的乘积的和。所以自然的，特征（下图中间）和系数（下图右边）的矩阵相乘就是我们想要的结果（下图左边）。这也就是上面描述的n个特征的线性回归表达式的第一部分（缺少了截距）.</li>
 </ul>
 <p><img alt="png" src="/figures/20170225_tensorflow_intro_p3_10.png"></p>
 <p>TF当中，这个相乘可以表示为</p>
-<div class="highlight"><pre><span></span><code>y = tf.matmul(x, W)
-</code></pre></div>
-
+<pre><code>y = tf.matmul(x, W)
+</code></pre>
 <ul>
 <li>一个多行的feature矩阵(每一行表示一个数据点的n个feature)乘以系数矩阵就得到多行的结果(每行表示一个数据点的结果)。所以通过矩阵相乘我们可以把线性回归模型表达成数据点的矩阵乘以系数矩阵。</li>
 </ul>
 <p>注意： feature矩阵的x的表达式会更加复杂，比如我们用x11，x12而不是x1 x2，这是因为feature矩阵(下图中间)已经从一个数据点的n个feature(1行乘以n列)的变成了m个数据点的n个feature(m行乘以n列)。</p>
 <p><img alt="png" src="/figures/20170225_tensorflow_intro_p3_11.png"></p>
 <p>TF中的表达形式为</p>
-<div class="highlight"><pre><span></span><code><span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="p">[</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">])</span>
-<span class="n">W</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">zeros</span><span class="p">[</span><span class="n">n</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
-<span class="n">y</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">W</span><span class="p">)</span>
-</code></pre></div>
-
+<pre><code class="language-python">x = tf.placeholder(tf.float, [m, n])
+W = tf.Variable(tf.zeros[n,1])
+y = tf.matmul(x, W)
+</code></pre>
 <ul>
 <li>最后，在矩阵的每一行加一个常数项，就会在结果矩阵中加入常数项</li>
 </ul>
 <p>在TF中，x和W已经表达成矩阵，不管有多少个feature或者多少个数据点，都可以简化为</p>
-<div class="highlight"><pre><span></span><code><span class="n">b</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">zeros</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-<span class="n">y</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">W</span><span class="p">)</span> <span class="o">+</span> <span class="n">b</span>
-</code></pre></div>
-
+<pre><code class="language-python">b = tf.Variable(tf.zeros[1])
+y = tf.matmul(x, W) + b
+</code></pre>
 <h2>Tensorflow多特征备忘录</h2>
 <p>我们做了一个比较的表格来总结从单feature到多feature的线性回归模型的变化</p>
 <p><img alt="png" src="/figures/20170225_tensorflow_intro_p3_12.png"></p>
@@ -212,13 +208,13 @@ W = tf.Variable(tf.zeros[n,1])
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -236,7 +232,7 @@ W = tf.Variable(tf.zeros[n,1])
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

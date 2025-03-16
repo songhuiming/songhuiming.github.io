@@ -110,40 +110,38 @@ window.addEventListener('load', () => {
 <p><span class="math">\(y = \alpha + \beta_1 \times x + \beta_2 \times (x + 15) I(x &gt; -15) + \beta_3 \times (x - 10) I(x &gt; 10)\)</span></p>
 <p><span class="math">\(y = 3 - 2 \times x + 3 \times (x + 15) I(x &gt; -15) - 5 \times (x - 10) I(x &gt; 10)\)</span></p>
 <p>python code to generate the simulation data. In different intervals of x, the relation between x and y is different.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">import</span> <span class="nn">statsmodels.formula.api</span> <span class="k">as</span> <span class="nn">smf</span>
+<pre><code class="language-python">import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import statsmodels.formula.api as smf
 
-<span class="c1"># plot inline rather than pop out</span>
-<span class="o">%</span><span class="n">matplotlib</span> <span class="n">inline</span>
-<span class="c1"># change the plot size, default is (6, 4) which is a little small</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;figure.figsize&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">12</span><span class="p">)</span>
+# plot inline rather than pop out
+%matplotlib inline
+# change the plot size, default is (6, 4) which is a little small
+plt.rcParams['figure.figsize'] = (16, 12)
 
-<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">9999</span><span class="p">)</span>
-<span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span> <span class="o">*</span> <span class="mi">10</span>
-<span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">x</span> <span class="o">&lt;</span> <span class="o">-</span><span class="mi">15</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span> <span class="o">*</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">3</span> <span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">x</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">,</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">48</span><span class="p">,</span> <span class="o">-</span><span class="mi">4</span> <span class="o">*</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">98</span><span class="p">))</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">s</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="sa">u</span><span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="n">marker</span> <span class="o">=</span> <span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;scatter plt&#39;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-</code></pre></div>
-
+np.random.seed(9999)
+x = np.random.normal(0, 1, 1000) * 10
+y = np.where(x &lt; -15, -2 * x + 3 , np.where(x &lt; 10, x + 48, -4 * x + 98)) + np.random.normal(0, 3, 1000)
+plt.scatter(x, y, s = 5, color = u'b', marker = '.', label = 'scatter plt')
+plt.show()
+</code></pre>
 <p><img alt="png" src="/figures/20150912_piecewise_linear_regression_01.png"></p>
 <p>As you can see, the relation between x and y is not simplely linear. If use linear regression to fit this, the regression line will be like the following:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># linear regression</span>
-<span class="n">f1</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="n">formula</span> <span class="o">=</span> <span class="s1">&#39;y ~ x&#39;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">dtest</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="n">dtest</span><span class="p">[</span><span class="s1">&#39;f1_pred&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">f1</span><span class="o">.</span><span class="n">predict</span><span class="p">()</span>
-<span class="c1"># print f1.summary()</span>
+<pre><code class="language-python"># linear regression
+f1 = smf.ols(formula = 'y ~ x', data = dtest).fit()
+dtest['f1_pred'] = f1.predict()
+# print f1.summary()
 
-<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
-<span class="n">fig</span><span class="o">.</span><span class="n">patch</span><span class="o">.</span><span class="n">set_alpha</span> <span class="o">=</span> <span class="mf">0.5</span>
+fig = plt.figure()
+fig.patch.set_alpha = 0.5
 
-<span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">linestyle</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;k&#39;</span><span class="p">,</span> <span class="n">linewidth</span> <span class="o">=</span> <span class="mf">0.25</span><span class="p">,</span> <span class="n">markeredgecolor</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">,</span> <span class="n">marker</span> <span class="o">=</span> <span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;scatter plot&#39;</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">dtest</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">dtest</span><span class="o">.</span><span class="n">f1_pred</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;blue&#39;</span><span class="p">,</span> <span class="n">linestyle</span> <span class="o">=</span> <span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="n">linewidth</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">markeredgecolor</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">,</span> <span class="n">marker</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;lin-reg&#39;</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span><span class="s1">&#39;$y = 44.25 - 0.0645 x$&#39;</span><span class="p">,</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">43</span><span class="p">),</span> <span class="n">xytext</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">),</span> <span class="n">fontsize</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span> <span class="n">textcoords</span> <span class="o">=</span> <span class="s1">&#39;axes fraction&#39;</span><span class="p">,</span>  <span class="n">arrowprops</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">facecolor</span> <span class="o">=</span> <span class="s1">&#39;grey&#39;</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;grey&#39;</span><span class="p">))</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-</code></pre></div>
-
+ax = fig.add_subplot(111)
+ax.plot(x, y, linestyle = '', color = 'k', linewidth = 0.25, markeredgecolor='none', marker = '.', label = r'scatter plot')
+ax.plot(dtest.x, dtest.f1_pred, color = 'blue', linestyle = '-', linewidth = 1, markeredgecolor='none', marker = '', label = r'lin-reg')
+ax.annotate('$y = 44.25 - 0.0645 x$', (10, 43), xytext = (0.5, 0.4), fontsize = 20, textcoords = 'axes fraction',  arrowprops = dict(facecolor = 'grey', color = 'grey'))
+plt.show()
+</code></pre>
 <p><img alt="png" src="/figures/20150912_piecewise_linear_regression_02.png"></p>
 <p><strong>Piecewise linear regression: </strong></p>
 <ol>
@@ -155,56 +153,54 @@ window.addEventListener('load', () => {
 </li>
 </ol>
 <p>As is shown, the piecewise linear regression fits the data much better than linear regression directly.</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># piecewise linear data prepare</span>
-<span class="n">x1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">x</span> <span class="o">&gt;</span> <span class="o">-</span><span class="mi">15</span><span class="p">,</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-<span class="n">x2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">x</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">,</span> <span class="n">x</span> <span class="o">-</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-<span class="n">dtest</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">])</span><span class="o">.</span><span class="n">T</span>
-<span class="n">dtest</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;x1&#39;</span><span class="p">,</span> <span class="s1">&#39;x2&#39;</span><span class="p">]</span>
+<pre><code class="language-python"># piecewise linear data prepare
+x1 = np.where(x &gt; -15, x + 15, 0)
+x2 = np.where(x &gt; 10, x - 10, 0)
+dtest = pd.DataFrame([y, x, x1, x2]).T
+dtest.columns = ['y', 'x', 'x1', 'x2']
 
-<span class="c1"># piecewise linear regression</span>
-<span class="n">f2</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="n">formula</span> <span class="o">=</span> <span class="s1">&#39;y ~ x + x1 + x2&#39;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">dtest</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="n">dtest</span><span class="p">[</span><span class="s1">&#39;f2_pred&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">f2</span><span class="o">.</span><span class="n">predict</span><span class="p">()</span>
-<span class="c1"># print f2.summary()</span>
+# piecewise linear regression
+f2 = smf.ols(formula = 'y ~ x + x1 + x2', data = dtest).fit()
+dtest['f2_pred'] = f2.predict()
+# print f2.summary()
 
-<span class="n">dtest</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="n">inplace</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+dtest.sort('x', inplace = True)
 
-<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">12</span><span class="p">))</span>
+fig = plt.figure(figsize = (16, 12))
 
-<span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+ax = fig.add_subplot(111)
 
-<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">linestyle</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;k&#39;</span><span class="p">,</span> <span class="n">linewidth</span> <span class="o">=</span> <span class="mf">0.25</span><span class="p">,</span> <span class="n">markeredgecolor</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">,</span> <span class="n">marker</span> <span class="o">=</span> <span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;scatter plot&#39;</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">dtest</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">dtest</span><span class="o">.</span><span class="n">f2_pred</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="n">linestyle</span> <span class="o">=</span> <span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="n">linewidth</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">markeredgecolor</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">,</span> <span class="n">marker</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;pw-reg&#39;</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Y&#39;</span><span class="p">,</span> <span class="n">labelpad</span> <span class="o">=</span> <span class="mi">6</span><span class="p">)</span>
+ax.plot(x, y, linestyle = '', color = 'k', linewidth = 0.25, markeredgecolor='none', marker = '.', label = r'scatter plot')
+ax.plot(dtest.x, dtest.f2_pred, color = 'b', linestyle = '-', linewidth = 2, markeredgecolor='none', marker = '', label = r'pw-reg')
+ax.set_ylabel('Y', labelpad = 6)
 
-<span class="c1"># pd.DataFrame([x, f2_pred]).to_excel(r&#39;c:\test.xlsx&#39;)</span>
+# pd.DataFrame([x, f2_pred]).to_excel(r'c:\test.xlsx')
 
-<span class="n">ax</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span><span class="s1">&#39;-2x + 3&#39;</span><span class="p">,</span> <span class="p">(</span><span class="o">-</span><span class="mi">25</span><span class="p">,</span> <span class="mi">53</span><span class="p">),</span> <span class="n">xytext</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="mf">.95</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">),</span> <span class="n">fontsize</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span> <span class="n">textcoords</span> <span class="o">=</span> <span class="s1">&#39;axes fraction&#39;</span><span class="p">,</span> <span class="n">arrowprops</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">facecolor</span> <span class="o">=</span> <span class="s1">&#39;grey&#39;</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;grey&#39;</span><span class="p">))</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span><span class="s1">&#39;x + 48&#39;</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">48</span><span class="p">),</span> <span class="n">xytext</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.35</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">),</span> <span class="n">fontsize</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span> <span class="n">textcoords</span> <span class="o">=</span> <span class="s1">&#39;axes fraction&#39;</span><span class="p">,</span> <span class="n">arrowprops</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">facecolor</span> <span class="o">=</span> <span class="s1">&#39;grey&#39;</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;grey&#39;</span><span class="p">))</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span><span class="s1">&#39;-4x + 98&#39;</span><span class="p">,</span> <span class="p">(</span><span class="mi">18</span><span class="p">,</span> <span class="mi">20</span><span class="p">),</span> <span class="n">xytext</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">),</span> <span class="n">fontsize</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span> <span class="n">textcoords</span> <span class="o">=</span> <span class="s1">&#39;axes fraction&#39;</span><span class="p">,</span> <span class="n">arrowprops</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">facecolor</span> <span class="o">=</span> <span class="s1">&#39;grey&#39;</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;grey&#39;</span><span class="p">))</span>
+ax.annotate('-2x + 3', (-25, 53), xytext = (-.95, 0.4), fontsize = 20, textcoords = 'axes fraction', arrowprops = dict(facecolor = 'grey', color = 'grey'))
+ax.annotate('x + 48', (0, 48), xytext = (0.35, 0.9), fontsize = 20, textcoords = 'axes fraction', arrowprops = dict(facecolor = 'grey', color = 'grey'))
+ax.annotate('-4x + 98', (18, 20), xytext = (0.7, 0.2), fontsize = 20, textcoords = 'axes fraction', arrowprops = dict(facecolor = 'grey', color = 'grey'))
 
 
-<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">ncol</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+plt.legend(loc = 3, ncol = 1)
 
-<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-</code></pre></div>
-
+plt.show()
+</code></pre>
 <p><img alt="png" src="/figures/20150912_piecewise_linear_regression_03.png"></p>
 <h1>Using np.piecewise</h1>
 <p><code>np.piecewise</code> will evaluate a piecewise-defined function. After the piecewise linear function is defined, we can use <code>optimize.curve_fit</code> to find the optimized solution to the parameters. The benefit is you don't need to define the cutoff point. It will automatically solve the function: finding both the coefficients and the cutoff points.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">optimize</span>
+<pre><code class="language-python">from scipy import optimize
 
-<span class="k">def</span> <span class="nf">piecewise_linear</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">k1</span><span class="p">,</span> <span class="n">k2</span><span class="p">,</span> <span class="n">k3</span><span class="p">):</span>
-    <span class="n">condlist</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="o">&lt;</span> <span class="n">x0</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span> <span class="o">&gt;=</span> <span class="n">x0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">x</span> <span class="o">&lt;</span> <span class="n">x1</span><span class="p">),</span> <span class="n">x</span> <span class="o">&gt;=</span> <span class="n">x1</span><span class="p">]</span>
-    <span class="n">funclist</span> <span class="o">=</span> <span class="p">[</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">k1</span><span class="o">*</span><span class="n">x</span> <span class="o">+</span> <span class="n">b</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">k1</span><span class="o">*</span><span class="n">x</span> <span class="o">+</span> <span class="n">b</span> <span class="o">+</span> <span class="n">k2</span><span class="o">*</span><span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">x0</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">k1</span><span class="o">*</span><span class="n">x</span> <span class="o">+</span> <span class="n">b</span> <span class="o">+</span> <span class="n">k2</span><span class="o">*</span><span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">x0</span><span class="p">)</span> <span class="o">+</span> <span class="n">k3</span><span class="o">*</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">x1</span><span class="p">)]</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">piecewise</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">condlist</span><span class="p">,</span> <span class="n">funclist</span><span class="p">)</span>
+def piecewise_linear(x, x0, x1, b, k1, k2, k3):
+    condlist = [x &lt; x0, (x &gt;= x0) &amp; (x &lt; x1), x &gt;= x1]
+    funclist = [lambda x: k1*x + b, lambda x: k1*x + b + k2*(x-x0), lambda x: k1*x + b + k2*(x-x0) + k3*(x - x1)]
+    return np.piecewise(x, condlist, funclist)
 
-<span class="n">p</span> <span class="p">,</span> <span class="n">e</span> <span class="o">=</span> <span class="n">optimize</span><span class="o">.</span><span class="n">curve_fit</span><span class="p">(</span><span class="n">piecewise_linear</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+p , e = optimize.curve_fit(piecewise_linear, x, y)
 
-<span class="n">xd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">30</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="s2">&quot;o&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xd</span><span class="p">,</span> <span class="n">piecewise_linear</span><span class="p">(</span><span class="n">xd</span><span class="p">,</span> <span class="o">*</span><span class="n">p</span><span class="p">))</span>
-</code></pre></div>
-
+xd = np.linspace(-30, 30, 1000)
+plt.plot(x, y, &quot;o&quot;)
+plt.plot(xd, piecewise_linear(xd, *p))
+</code></pre>
 <h2>Referral</h2>
 <ol>
 <li><a href="https://stackoverflow.com/a/49907309/1876887">How to apply piecewise linear fit in Python?</a></li>
@@ -299,13 +295,13 @@ window.addEventListener('load', () => {
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -323,7 +319,7 @@ window.addEventListener('load', () => {
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

@@ -113,34 +113,31 @@ window.addEventListener('load', () => {
 <p><img alt="png" src="/figures/20170225_tensorflow_intro_p2_01.png"></p>
 <p>在机器学习的论文中，我们经常会遇到‘training’这个词。我们首先来看看在TF中它的含义。</p>
 <h2>线性回归模型</h2>
-<div class="highlight"><pre><span></span><code>Linear Model (in TF notation): y = tf.matmul(x,W) + b
-</code></pre></div>
-
+<pre><code>Linear Model (in TF notation): y = tf.matmul(x,W) + b
+</code></pre>
 <p>线性回归的目的是找出<code>W</code>和<code>b</code>,对给定的feature值(x),当我们把<code>W</code>,<code>b</code>和<code>x</code>带入模型，我们可以得到<strong>prediction</strong>(y)。</p>
 <p>要得到<code>W</code>和<code>b</code>，我们需要用给定的数据(真实的feature值x和真实的结果y_， 注意y_的下划线)来训练(<strong>train</strong>)模型。</p>
 <h2>Training Illustrated</h2>
 <p>要找到最优的<code>W</code>和<code>b</code>，我们需要定义一个损失函数用来衡量对<strong>某一个给定的feature（x）值</strong>，预测值（y）和真实值(y_)之间的差异。为了简化，我们用最小平方差的和(MSE)作为损失函数。</p>
-<div class="highlight"><pre><span></span><code>Cost function (in TF notation): tf.reduce_mean(tf.square(y_ - y))
-</code></pre></div>
-
+<pre><code>Cost function (in TF notation): tf.reduce_mean(tf.square(y_ - y))
+</code></pre>
 <p>通过最小化损失函数，我们可以得到好的<code>W</code>和<code>b</code>的值。</p>
 <p>用来做训练的程序代码非常简单，我们用[A,B,C,D]来标记各个部分。下面将会用到。</p>
-<div class="highlight"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="p">(</span><span class="n">snip</span><span class="p">)</span><span class="w"> </span><span class="k">Variable</span><span class="o">/</span><span class="n">Constants</span><span class="w"> </span><span class="n">declarations</span><span class="w"> </span><span class="p">(</span><span class="n">snip</span><span class="p">)</span><span class="w"> </span><span class="p">...</span>
-<span class="err">#</span><span class="w"> </span><span class="o">[</span><span class="n">A</span><span class="o">]</span><span class="w"> </span><span class="n">TF</span><span class="p">.</span><span class="n">Graph</span>
-<span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tf</span><span class="p">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">W</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">b</span>
-<span class="n">cost</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tf</span><span class="p">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">tf</span><span class="p">.</span><span class="nf">square</span><span class="p">(</span><span class="n">y_</span><span class="o">-</span><span class="n">y</span><span class="p">))</span>
-<span class="err">#</span><span class="w"> </span><span class="o">[</span><span class="n">B</span><span class="o">]</span><span class="w"> </span><span class="n">Train</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="n">fixed</span><span class="w"> </span><span class="s1">&#39;learn_rate&#39;</span>
-<span class="n">learn_rate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.1</span>
-<span class="n">train_step</span><span class="w"> </span><span class="o">=</span>
-<span class="w">    </span><span class="n">tf</span><span class="p">.</span><span class="n">train</span><span class="p">.</span><span class="n">GradientDescentOptimizer</span><span class="p">(</span><span class="n">learn_rate</span><span class="p">).</span><span class="n">minimize</span><span class="p">(</span><span class="n">cost</span><span class="p">)</span>
-<span class="k">for</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="k">range</span><span class="p">(</span><span class="n">steps</span><span class="p">)</span><span class="err">:</span>
-<span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="o">[</span><span class="n">C</span><span class="o">]</span><span class="w"> </span><span class="k">Prepare</span><span class="w"> </span><span class="n">datapoints</span>
-<span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="p">(</span><span class="n">snip</span><span class="p">)</span><span class="w"> </span><span class="n">Code</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="k">prepare</span><span class="w"> </span><span class="n">datapoint</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">xs</span><span class="p">,</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="n">ys</span><span class="w"> </span><span class="p">(</span><span class="n">snip</span><span class="p">)</span><span class="w"> </span><span class="p">...</span>
-<span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="o">[</span><span class="n">D</span><span class="o">]</span><span class="w"> </span><span class="n">Feed</span><span class="w"> </span><span class="k">Data</span><span class="w"> </span><span class="k">at</span><span class="w"> </span><span class="k">each</span><span class="w"> </span><span class="n">step</span><span class="o">/</span><span class="n">epoch</span><span class="w"> </span><span class="k">into</span><span class="w"> </span><span class="s1">&#39;train_step&#39;</span>
-<span class="w">  </span><span class="n">feed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">{</span><span class="w"> </span><span class="nl">x</span><span class="p">:</span><span class="w"> </span><span class="n">xs</span><span class="p">,</span><span class="w"> </span><span class="nl">y_</span><span class="p">:</span><span class="w"> </span><span class="n">ys</span><span class="w"> </span><span class="err">}</span>
-<span class="w">  </span><span class="n">sess</span><span class="p">.</span><span class="n">run</span><span class="p">(</span><span class="n">train_step</span><span class="p">,</span><span class="w"> </span><span class="n">feed_dict</span><span class="o">=</span><span class="n">feed</span><span class="p">)</span>
-</code></pre></div>
-
+<pre><code># ... (snip) Variable/Constants declarations (snip) ...
+# [A] TF.Graph
+y = tf.matmul(x,W) + b
+cost = tf.reduce_mean(tf.square(y_-y))
+# [B] Train with fixed 'learn_rate'
+learn_rate = 0.1
+train_step =
+    tf.train.GradientDescentOptimizer(learn_rate).minimize(cost)
+for i in range(steps):
+  # [C] Prepare datapoints
+  # ... (snip) Code to prepare datapoint as xs, and ys (snip) ...
+  # [D] Feed Data at each step/epoch into 'train_step'
+  feed = { x: xs, y_: ys }
+  sess.run(train_step, feed_dict=feed)
+</code></pre>
 <p>A当中的线性模型和损失函数可以被表示成下面的TF流程图</p>
 <p><img alt="png" src="/figures/20170225_tensorflow_intro_p2_02.png"></p>
 <p>下一步，我们要选择一个C当中的数据(x, y_)，输入到D当中来得到预测值(y)和损失函数。TF流程图如下：</p>
@@ -179,14 +176,14 @@ window.addEventListener('load', () => {
 <p>使用stochastic, mini-batch, batch gradient descent 的优缺点见下图</p>
 <p><img alt="png" src="/figures/20170225_tensorflow_intro_p2_10.png"></p>
 <p>要在stochastic, mini-batch, batch gradient descent这三个办法中切换，我们只需要在下面的[C]当中设置不同的batch大小，然后根据batch大小把对应的batch的数据点输入到模型训练[D]中。</p>
-<div class="highlight"><pre><span></span><code><span class="gh">#</span> * all_xs: All the feature values
-<span class="gh">#</span> * all_ys: All the outcome values
-<span class="gh">#</span> datapoint_size: Number of points/entries in all_xs/all_ys
-<span class="gh">#</span> batch_size: Configure this to:
-<span class="gh">#</span>             1: stochastic mode
-<span class="gh">#</span>             integer &lt; datapoint_size: mini-batch mode
-<span class="gh">#</span>             datapoint_size: batch mode
-<span class="gh">#</span> i: Current epoch number
+<pre><code># * all_xs: All the feature values
+# * all_ys: All the outcome values
+# datapoint_size: Number of points/entries in all_xs/all_ys
+# batch_size: Configure this to:
+#             1: stochastic mode
+#             integer &lt; datapoint_size: mini-batch mode
+#             datapoint_size: batch mode
+# i: Current epoch number
 if datapoint_size == batch_size:
   # Batch mode so select all points starting from index 0
   batch_start_idx = 0
@@ -203,12 +200,11 @@ else:
   batch_ys = all_ys[batch_start_idx:batch_end_idx]
 
 
-<span class="gh">#</span> Get batched datapoints into xs, ys, which is fed into
-<span class="gh">#</span> &#39;train_step&#39;
+# Get batched datapoints into xs, ys, which is fed into
+# 'train_step'
 xs = np.array(batch_xs)
 ys = np.array(batch_ys)
-</code></pre></div>
-
+</code></pre>
 <h3>Learn Rate的变化</h3>
 <p>学习速度(Learn Rate)指的是梯度下降来调整<code>W</code>和<code>b</code>的这时候，每次增加或者减小的大小。当learn rate比较小的时候，前进速度会很慢，但是会渐渐收敛到最小损失函数值。当learn rate比较大的时候，达到最小损失函数的速度会比较快，但是有可能会走过头，导致找不到最小值。</p>
 <p>要克服这一点，肯多ML的实际操作是开始的时候用比较大的learn rate（假设初始的损失函数离最小值比较远），然后每个epoch渐渐减小learn rate以防止走过头。</p>
@@ -218,20 +214,19 @@ ys = np.array(batch_ys)
 <h3>使用tf.placeholder建Learn Rate</h3>
 <p>如前所述，我们在<em>tf.train.GradientDescentOptimizer</em>当中用<em>tf.placeholder</em>来申明<em>Learn Rate</em>的时候，我们可以在每个epoch中输入不同的值。这类似于在每个epoch中我们用<em>tf.placeholders</em>来输入不同的数据点到x, y_。</p>
 <p>这样做需要两个小的改动:</p>
-<div class="highlight"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="k">Modify</span><span class="w"> </span><span class="o">[</span><span class="n">B</span><span class="o">]</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">make</span><span class="w"> </span><span class="s1">&#39;learn_rate&#39;</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="s1">&#39;tf.placeholder&#39;</span>
-<span class="err">#</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="n">supply</span><span class="w"> </span><span class="n">it</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="s1">&#39;learning_rate&#39;</span><span class="w"> </span><span class="k">parameter</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="k">of</span>
-<span class="err">#</span><span class="w"> </span><span class="n">tf</span><span class="p">.</span><span class="n">train</span><span class="p">.</span><span class="n">GradientDescentOptimizer</span>
-<span class="n">learn_rate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tf</span><span class="p">.</span><span class="n">placeholder</span><span class="p">(</span><span class="n">tf</span><span class="p">.</span><span class="n">float32</span><span class="p">,</span><span class="w"> </span><span class="n">shape</span><span class="o">=</span><span class="err">[]</span><span class="p">)</span>
-<span class="n">train_step</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tf</span><span class="p">.</span><span class="n">train</span><span class="p">.</span><span class="n">GradientDescentOptimizer</span><span class="p">(</span>
-<span class="w">    </span><span class="n">learning_rate</span><span class="o">=</span><span class="n">learn_rate</span><span class="p">).</span><span class="n">minimize</span><span class="p">(</span><span class="n">cost</span><span class="p">)</span>
-<span class="err">#</span><span class="w"> </span><span class="k">Modify</span><span class="w"> </span><span class="o">[</span><span class="n">D</span><span class="o">]</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="k">include</span><span class="w"> </span><span class="n">feed</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="s1">&#39;learn_rate&#39;</span><span class="w"> </span><span class="k">value</span><span class="p">,</span>
-<span class="err">#</span><span class="w"> </span><span class="n">which</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="s1">&#39;initial_learn_rate&#39;</span><span class="w"> </span><span class="n">divided</span><span class="w"> </span><span class="k">by</span>
-<span class="err">#</span><span class="w"> </span><span class="s1">&#39;i&#39;</span><span class="w"> </span><span class="p">(</span><span class="k">current</span><span class="w"> </span><span class="n">epoch</span><span class="w"> </span><span class="n">number</span><span class="p">)</span>
-<span class="err">#</span><span class="w"> </span><span class="nl">NOTE</span><span class="p">:</span><span class="w"> </span><span class="n">Oversimplified</span><span class="p">.</span><span class="w"> </span><span class="k">For</span><span class="w"> </span><span class="n">example</span><span class="w"> </span><span class="k">only</span><span class="p">.</span>
-<span class="n">feed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">{</span><span class="w"> </span><span class="nl">x</span><span class="p">:</span><span class="w"> </span><span class="n">xs</span><span class="p">,</span><span class="w"> </span><span class="nl">y_</span><span class="p">:</span><span class="w"> </span><span class="n">ys</span><span class="p">,</span><span class="w"> </span><span class="nl">learn_rate</span><span class="p">:</span><span class="w"> </span><span class="n">initial_learn_rate</span><span class="o">/</span><span class="n">i</span><span class="w"> </span><span class="err">}</span>
-<span class="n">sess</span><span class="p">.</span><span class="n">run</span><span class="p">(</span><span class="n">train_step</span><span class="p">,</span><span class="w"> </span><span class="n">feed_dict</span><span class="o">=</span><span class="n">feed</span><span class="p">)</span>
-</code></pre></div>
-
+<pre><code># Modify [B] to make 'learn_rate' a 'tf.placeholder'
+# and supply it to the 'learning_rate' parameter name of
+# tf.train.GradientDescentOptimizer
+learn_rate = tf.placeholder(tf.float32, shape=[])
+train_step = tf.train.GradientDescentOptimizer(
+    learning_rate=learn_rate).minimize(cost)
+# Modify [D] to include feed a 'learn_rate' value,
+# which is the 'initial_learn_rate' divided by
+# 'i' (current epoch number)
+# NOTE: Oversimplified. For example only.
+feed = { x: xs, y_: ys, learn_rate: initial_learn_rate/i }
+sess.run(train_step, feed_dict=feed)
+</code></pre>
 <h2>总结</h2>
 <p>我们演示了机器学习的训练是什么意思，以及在Tensorflow中怎么定义模型和损失函数。然后通过输入数据点到梯度下降优化器，进行循环来得到<code>W</code>和<code>b</code>的值。我们还讨论了训练过程中两个常见的变化：每个epoch中使用不同的数据集的大小，以及使用不同的learn rate。</p>
 <h3>下一章</h3>
@@ -271,13 +266,13 @@ ys = np.array(batch_ys)
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -295,7 +290,7 @@ ys = np.array(batch_ys)
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

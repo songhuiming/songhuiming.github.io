@@ -94,38 +94,39 @@ window.addEventListener('load', () => {
 <time datetime="2016-05-10T00:00:00-05:00" pubdate>Tue 10 May 2016</time>    </p>
 </header>
 
-  <div class="entry-content"><div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>apt<span class="w"> </span>update
-sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>open-vm-tools<span class="w"> </span>open-vm-tools-desktop<span class="w"> </span>-y
+  <div class="entry-content"><pre><code class="language-bash">
+sudo apt update
+sudo apt install open-vm-tools open-vm-tools-desktop -y
 
-sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>python3-pip
-
-
-<span class="c1">######### 1. 在安装 pelican 之前，先备份pelicanconf.py </span>
-cp<span class="w"> </span>~/Dropbox/blog/pelicanconf.py<span class="w"> </span>~/Dropbox/blog/pelicanconf.py.backup
+sudo apt install python3-pip
 
 
-<span class="c1"># After new install of OS </span>
-conda<span class="w"> </span>create<span class="w"> </span>-n<span class="w"> </span>blog<span class="w"> </span>--clone<span class="w"> </span>base
+######### 1. 在安装 pelican 之前，先备份pelicanconf.py 
+cp ~/Dropbox/blog/pelicanconf.py ~/Dropbox/blog/pelicanconf.py.backup
 
-sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>pelican
-sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>markdown
-pip<span class="w"> </span>install<span class="w"> </span>typogrify
 
-<span class="nb">cd</span><span class="w"> </span>~/Dropbox/blog/pelican-plugins/
+# After new install of OS 
+conda create -n blog --clone base
+
+sudo apt-get install pelican
+sudo apt-get install markdown
+pip install typogrify
+
+cd ~/Dropbox/blog/pelican-plugins/
 https://github.com/pelican-plugins/render-math.git
 
-pelican-quickstart<span class="w"> </span><span class="c1"># to initialize and setup</span>
+pelican-quickstart # to initialize and setup
 
 
 
 
-<span class="c1">######### 2. every time to update blog</span>
+######### 2. every time to update blog
 
-conda<span class="w"> </span>activate<span class="w"> </span>blog
-<span class="nb">cd</span><span class="w"> </span>Dropbox/blog
+conda activate blog
+cd Dropbox/blog
 
 
-make<span class="w"> </span>clean<span class="w">  </span><span class="c1"># which will delete the blog/output folder</span>
+make clean  # which will delete the blog/output folder
 
 ./00.run.sh
 
@@ -134,38 +135,39 @@ http://0.0.0.0:8000/
 
 
 
-<span class="c1">######### 3. 在 Conda 中，你可以打包当前的虚拟环境并分享给别人，主要有以下两种方式：</span>
+######### 3. 在 Conda 中，你可以打包当前的虚拟环境并分享给别人，主要有以下两种方式：
 
-<span class="c1">### 3.1. 使用 YAML 文件（推荐，适用于跨平台）</span>
+### 3.1. 使用 YAML 文件（推荐，适用于跨平台）
 
-<span class="c1"># 创建一个 environment.yml 文件，其中包含所有依赖项。</span>
-conda<span class="w"> </span>env<span class="w"> </span><span class="nb">export</span><span class="w"> </span>&gt;<span class="w"> </span>~/blog_virtual_environment.yml
+# 创建一个 environment.yml 文件，其中包含所有依赖项。
+conda env export &gt; ~/blog_virtual_environment.yml
 
-<span class="c1"># 如果你不想导出特定于本地系统的路径（如 prefix），可以使用：</span>
-conda<span class="w"> </span>env<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-v<span class="w"> </span><span class="s2">&quot;^prefix&quot;</span><span class="w"> </span>&gt;<span class="w"> </span>environment.yml
+# 如果你不想导出特定于本地系统的路径（如 prefix），可以使用：
+conda env export | grep -v &quot;^prefix&quot; &gt; environment.yml
 
-<span class="c1"># 使用 environment.yml 创建环境</span>
+# 使用 environment.yml 创建环境
 
-conda<span class="w"> </span>env<span class="w"> </span>create<span class="w"> </span>-f<span class="w"> </span>~/blog_virtual_environment.yml
-conda<span class="w"> </span>activate<span class="w"> </span>blog
+conda env create -f ~/blog_virtual_environment.yml
+conda activate blog
 
 
-<span class="c1">### 3.2. 使用 conda-pack （适用于完整打包 &amp; 离线安装）</span>
+### 3.2. 使用 conda-pack （适用于完整打包 &amp; 离线安装）
 
-<span class="c1"># 安装 conda-pack. Conda 已经安装了，可以忽略</span>
-conda<span class="w"> </span>install<span class="w"> </span>conda-pack
+# 安装 conda-pack. Conda 已经安装了，可以忽略
+conda install conda-pack
 
-<span class="c1"># 打包环境: 这个命令会生成 blog.tar.gz，包含整个 Conda 环境。</span>
-conda<span class="w"> </span>pack<span class="w"> </span>-n<span class="w"> </span>blog<span class="w"> </span>-o<span class="w"> </span>blog.tar.gz
+# 打包环境: 这个命令会生成 blog.tar.gz，包含整个 Conda 环境。
+conda pack -n blog -o blog.tar.gz
 
-<span class="c1"># 解压并使用</span>
-mkdir<span class="w"> </span>-p<span class="w"> </span>/home/shm/anaconda3/envs/blog/
-cp<span class="w"> </span>conda_virt_env_blog.tar.gz<span class="w"> </span>blog.tar.gz
-tar<span class="w"> </span>-xzf<span class="w"> </span>blog.tar.gz<span class="w"> </span>-C<span class="w"> </span>/home/shm/anaconda3/envs/blog/
-<span class="nb">source</span><span class="w"> </span>/home/shm/anaconda3/envs/blog/bin/activate
+# 解压并使用
+mkdir -p /home/shm/anaconda3/envs/blog/
+cp conda_virt_env_blog.tar.gz blog.tar.gz
+tar -xzf blog.tar.gz -C /home/shm/anaconda3/envs/blog/
+source /home/shm/anaconda3/envs/blog/bin/activate
 
 conda-unpack
-</code></pre></div></div>
+
+</code></pre></div>
     <footer>
 <p class="meta">
   <span class="byline author vcard">
@@ -194,13 +196,13 @@ conda-unpack
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -218,7 +220,7 @@ conda-unpack
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

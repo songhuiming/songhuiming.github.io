@@ -94,11 +94,10 @@ window.addEventListener('load', () => {
 <time datetime="2017-05-13T00:00:00-05:00" pubdate>Sat 13 May 2017</time>    </p>
 </header>
 
-  <div class="entry-content"><div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span><span class="o">,</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
-<span class="kn">import</span> <span class="nn">math</span>
-</code></pre></div>
-
+  <div class="entry-content"><pre><code class="language-python">import numpy as np, pandas as pd
+from matplotlib import pyplot as plt
+import math
+</code></pre>
 <p>Gradient Descent is one of the optimization method by changing the parameters values in the negative gradient direction.</p>
 <p>Let us assume the multi-variable function <span class="math">\(F(\theta|x)\)</span> is differenable about <span class="math">\(\theta\)</span>. It is first order differentation to <span class="math">\(x\)</span> is denoted as <span class="math">\(\triangledown F(\theta|x)\)</span>. To find the maximum(mimimum) of <span class="math">\(F(\theta|x)\)</span> by iteration, we will let the parameter <span class="math">\(\theta\)</span> change its value a little every time. The value changed along the gradient direction will be the fastest way to converge. So, from iteration <span class="math">\(\theta^{i}\)</span> to iteration <span class="math">\(\theta^{i+1}\)</span> we will let
 </p>
@@ -125,51 +124,46 @@ window.addEventListener('load', () => {
  &amp;= -2X'(Y - XW)
 \end{aligned}</div>
 <p>Now we will show how to use this gradient to find the final value of <span class="math">\(W\)</span>.</p>
-<div class="highlight"><pre><span></span><code><span class="n">ns</span> <span class="o">=</span> <span class="mi">100</span>
-<span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">c_</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">ns</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">ns</span><span class="p">)]</span>
-<span class="n">y</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">dot</span><span class="p">([[</span><span class="mi">3</span><span class="p">],</span> <span class="p">[</span><span class="mi">8</span><span class="p">]])</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">ns</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<pre><code class="language-python">ns = 100
+x = np.c_[np.ones(ns), np.linspace(0, 10, ns)]
+y = x.dot([[3], [8]]) + np.random.normal(0, 1, ns).reshape(-1, 1)
 
-<span class="k">def</span> <span class="nf">loss</span><span class="p">(</span><span class="n">w</span><span class="p">):</span>
-    <span class="n">e</span> <span class="o">=</span> <span class="n">y</span> <span class="o">-</span> <span class="n">x</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">w</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">e</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
-</code></pre></div>
-
+def loss(w):
+    e = y - x.dot(w)
+    return e.T.dot(e)
+</code></pre>
 <p>The initial value of <span class="math">\(W\)</span> will be </p>
 <div class="math">$$W_0 = [0, 0]'$$</div>
 <p>For each loop, </p>
 <div class="math">$$W_{i+1} = W_i - \frac{\partial L}{\partial W} \times \lambda$$</div>
-<div class="highlight"><pre><span></span><code><span class="n">w0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-<span class="n">learning_rate</span> <span class="o">=</span> <span class="mf">0.00001</span>
+<pre><code class="language-python">w0 = np.array([0.0, 0.0]).reshape(2, 1)
+learning_rate = 0.00001
 
-<span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
-<span class="n">w</span> <span class="o">=</span> <span class="n">w0</span>
-<span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-    <span class="n">l1</span> <span class="o">=</span> <span class="n">loss</span><span class="p">(</span><span class="n">w</span><span class="p">)</span>
-    <span class="n">dldw</span> <span class="o">=</span> <span class="o">-</span><span class="mi">2</span> <span class="o">*</span> <span class="n">x</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="n">x</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">w</span><span class="p">))</span>
-    <span class="n">w_new</span> <span class="o">=</span> <span class="n">w</span> <span class="o">-</span> <span class="n">dldw</span> <span class="o">*</span> <span class="n">learning_rate</span>
-    <span class="n">l2</span> <span class="o">=</span> <span class="n">loss</span><span class="p">(</span><span class="n">w_new</span><span class="p">)</span>
-    <span class="n">w</span> <span class="o">=</span> <span class="n">w_new</span>
-    <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
-    <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">10000</span> <span class="ow">or</span> <span class="nb">abs</span><span class="p">(</span><span class="n">l1</span> <span class="o">-</span> <span class="n">l2</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.00001</span><span class="p">:</span>
-        <span class="k">break</span>
+i = 0
+w = w0
+while True:
+    l1 = loss(w)
+    dldw = -2 * x.T.dot(y - x.dot(w))
+    w_new = w - dldw * learning_rate
+    l2 = loss(w_new)
+    w = w_new
+    i += 1
+    if i &gt; 10000 or abs(l1 - l2) &lt; 0.00001:
+        break
 
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The final value from gradient descent is alpha_0 = </span><span class="si">%.2f</span><span class="s2">, alpha_1 = </span><span class="si">%.2f</span><span class="s2">&quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">w</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">w</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>The final value from gradient descent is alpha_0 = 2.41, alpha_1 = 8.09
-</code></pre></div>
-
+print(&quot;The final value from gradient descent is alpha_0 = %.2f, alpha_1 = %.2f&quot; %(w[0], w[1]))
+</code></pre>
+<pre><code>The final value from gradient descent is alpha_0 = 2.41, alpha_1 = 8.09
+</code></pre>
 <p><img alt="alt text" src="/figures/20170513_gradient_descent_linreg_animation.gif" title="Linear Regression"></p>
 <p>For linear regression, we have the analytical solution(or closed-form solution) in the form:</p>
 <div class="math">$$W = (X'X)^{-1}X'Y$$</div>
 <p>So the analytical solution can be calculated directly in python. The analytical solution is: constant = 2.73 and the slope is 8.02.</p>
-<div class="highlight"><pre><span></span><code><span class="n">regres</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">((</span><span class="n">x</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The regression result is alpha_0 = </span><span class="si">{0:.2f}</span><span class="s2">, alpha_1 = </span><span class="si">{1:.2f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">regres</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">2</span><span class="p">),</span> <span class="nb">round</span><span class="p">(</span><span class="n">regres</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">2</span><span class="p">)))</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="n">The</span><span class="w"> </span><span class="n">regression</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="n">alpha_0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">2.43</span><span class="p">,</span><span class="w"> </span><span class="n">alpha_1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">8.09</span>
-</code></pre></div>
-
+<pre><code class="language-python">regres = np.linalg.inv((x.T.dot(x))).dot(x.T.dot(y))
+print(&quot;The regression result is alpha_0 = {0:.2f}, alpha_1 = {1:.2f}&quot;.format(round(regres[0], 2), round(regres[1], 2)))
+</code></pre>
+<pre><code>The regression result is alpha_0 = 2.43, alpha_1 = 8.09
+</code></pre>
 <h2>Logistic Regression</h2>
 <p>Random variable <span class="math">\(Y\)</span> has <a href="https://en.wikipedia.org/wiki/Bernoulli_distribution">Bernoulli distribution</a>:
 </p>
@@ -209,69 +203,62 @@ window.addEventListener('load', () => {
 $$</div>
 <p>Next an example is shown how to use gradient descent to find the solution of <span class="math">\(W\)</span> to maximize the likelihood function.The link function is of the form:</p>
 <div class="math">$$\log \frac{p}{1-p} = \beta_0 + \beta_1 x_1 + \beta_2 x_2$$</div>
-<div class="highlight"><pre><span></span><code><span class="n">w</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">99</span><span class="p">)</span>
-<span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">c_</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">2</span><span class="p">)]</span>
-<span class="n">s</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> 
-<span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">s</span><span class="p">))</span> 
-<span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">binomial</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-</code></pre></div>
+<pre><code class="language-python">w = np.array([1, 2, 5]).reshape(3, 1)
+np.random.seed(99)
+x = np.c_[np.ones(100).reshape(100, 1), np.random.normal(0, 2, 200).reshape(100, 2)]
+s = x.dot(w) + np.random.normal(0, 1, 100).reshape(100, 1) 
+p = np.exp(s) / (1 + np.exp(s)) 
+y = np.random.binomial(1, p).reshape(100, 1)
+</code></pre>
+<pre><code class="language-python">def sgd(x, y, w):
+    expval = np.exp(x[:, :].dot(w))
+    return np.sum([expval / (1 + expval) - y] * x, axis = 1).reshape(3, -1)
+</code></pre>
+<pre><code class="language-python">w0 = np.zeros(3).reshape(3, 1)
+learning_rate = 0.01
 
-<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">sgd</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">w</span><span class="p">):</span>
-    <span class="n">expval</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">x</span><span class="p">[:,</span> <span class="p">:]</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">w</span><span class="p">))</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">([</span><span class="n">expval</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">expval</span><span class="p">)</span> <span class="o">-</span> <span class="n">y</span><span class="p">]</span> <span class="o">*</span> <span class="n">x</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-</code></pre></div>
+i = 0
+w = w0
+while True:
+    dlldw = sgd(x, y, w)
+    w_new = w - dlldw * learning_rate
+    i += 1
+    if i &gt; 1000 or sum((w - w_new)**2)&lt;0.00001:
+        break
+    w = w_new
 
-<div class="highlight"><pre><span></span><code><span class="n">w0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-<span class="n">learning_rate</span> <span class="o">=</span> <span class="mf">0.01</span>
-
-<span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
-<span class="n">w</span> <span class="o">=</span> <span class="n">w0</span>
-<span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-    <span class="n">dlldw</span> <span class="o">=</span> <span class="n">sgd</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span>
-    <span class="n">w_new</span> <span class="o">=</span> <span class="n">w</span> <span class="o">-</span> <span class="n">dlldw</span> <span class="o">*</span> <span class="n">learning_rate</span>
-    <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
-    <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">1000</span> <span class="ow">or</span> <span class="nb">sum</span><span class="p">((</span><span class="n">w</span> <span class="o">-</span> <span class="n">w_new</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">&lt;</span><span class="mf">0.00001</span><span class="p">:</span>
-        <span class="k">break</span>
-    <span class="n">w</span> <span class="o">=</span> <span class="n">w_new</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The fitting result from gradient descent is beta0 = </span><span class="si">%.2f</span><span class="s2">, beta1 = </span><span class="si">%.2f</span><span class="s2">, beta2 = </span><span class="si">%.2f</span><span class="s2">&quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">w</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">w</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">w</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>The fitting result from gradient descent is beta0 = 1.09, beta1 = 1.82, beta2 = 5.20
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">y</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="p">)</span> <span class="o">==</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="n">y</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="p">)</span> <span class="o">==</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="n">color</span> <span class="o">=</span> <span class="s2">&quot;#aa66cc&quot;</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s2">&quot;Y = 1&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">y</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="p">)</span> <span class="o">==</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="n">y</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="p">)</span> <span class="o">==</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="n">color</span> <span class="o">=</span> <span class="s2">&quot;#00aabb&quot;</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s2">&quot;Y = 0&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="o">-</span><span class="mf">0.2</span> <span class="o">-</span> <span class="mf">0.4</span> <span class="o">*</span> <span class="n">x</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">color</span> <span class="o">=</span> <span class="s2">&quot;#4285F4&quot;</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s2">&quot;True Separation Line&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="o">-</span><span class="n">x</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">w</span><span class="p">[:</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">w</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">]),</span> <span class="n">color</span> <span class="o">=</span> <span class="s2">&quot;#00C851&quot;</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s2">&quot;Fitted Separation Line&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;X1&quot;</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;#42a5f5&#39;</span><span class="p">,</span> <span class="n">size</span> <span class="o">=</span> <span class="s2">&quot;18&quot;</span><span class="p">)</span>
-<span class="n">h</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;X2&#39;</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;#42a5f5&#39;</span><span class="p">,</span> <span class="n">size</span> <span class="o">=</span> <span class="s2">&quot;18&quot;</span><span class="p">)</span>
-<span class="n">h</span><span class="o">.</span><span class="n">set_rotation</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Logistic Regression Separation Line&quot;</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s2">&quot;#42a5f5&quot;</span><span class="p">,</span> <span class="n">size</span> <span class="o">=</span> <span class="s2">&quot;18&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-</code></pre></div>
-
+print(&quot;The fitting result from gradient descent is beta0 = %.2f, beta1 = %.2f, beta2 = %.2f&quot; %(w[0], w[1], w[2]))
+</code></pre>
+<pre><code>The fitting result from gradient descent is beta0 = 1.09, beta1 = 1.82, beta2 = 5.20
+</code></pre>
+<pre><code class="language-python">plt.scatter(x[y.reshape(100, ) ==1, 1], x[y.reshape(100, ) ==1, 2], color = &quot;#aa66cc&quot;, label = &quot;Y = 1&quot;)
+plt.scatter(x[y.reshape(100, ) ==0, 1], x[y.reshape(100, ) ==0, 2], color = &quot;#00aabb&quot;, label = &quot;Y = 0&quot;)
+plt.plot(x[:, 1], -0.2 - 0.4 * x[:, 1], color = &quot;#4285F4&quot;, label = &quot;True Separation Line&quot;)
+plt.plot(x[:, 1], -x[:, :2].dot(w[:2, 0] / w[2, 0]), color = &quot;#00C851&quot;, label = &quot;Fitted Separation Line&quot;)
+plt.xlabel(&quot;X1&quot;, color = '#42a5f5', size = &quot;18&quot;)
+h = plt.ylabel('X2', color = '#42a5f5', size = &quot;18&quot;)
+h.set_rotation(0)
+plt.title(&quot;Logistic Regression Separation Line&quot;, color = &quot;#42a5f5&quot;, size = &quot;18&quot;)
+plt.legend(loc=2)
+</code></pre>
 <p><img alt="png" src="/figures/20170513_gradient_descent_logistic_01.png"></p>
 <p><img alt="alt text" src="/figures/20170513_gradient_descent_logistic_animation.gif" title="Logistic Regression"></p>
 <p>The same as linear regression, we can use <code>sklearn</code>(it also use gradient method to solve) or <code>statsmodels</code>(it is the same as traditional method like R or SAS did) to get the regression result for this example:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">LogisticRegression</span>
-<span class="n">logfit</span> <span class="o">=</span> <span class="n">LogisticRegression</span><span class="p">()</span>
-<span class="n">logfit</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
-<span class="n">sklearn_w</span> <span class="o">=</span> <span class="n">logfit</span><span class="o">.</span><span class="n">coef_</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The fitting result from gradient descent is beta0 = </span><span class="si">%.2f</span><span class="s2">, beta1 = </span><span class="si">%.2f</span><span class="s2">, beta2 = </span><span class="si">%.2f</span><span class="s2">&quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">sklearn_w</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">sklearn_w</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">sklearn_w</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+<pre><code class="language-python">from sklearn.linear_model import LogisticRegression
+logfit = LogisticRegression()
+logfit.fit(x, y)
+sklearn_w = logfit.coef_[0]
+print(&quot;The fitting result from gradient descent is beta0 = %.2f, beta1 = %.2f, beta2 = %.2f&quot; %(sklearn_w[0], sklearn_w[1], sklearn_w[2]))
 
-<span class="c1"># import statsmodels.formula.api as smf</span>
-<span class="c1"># import statsmodels.api as sm</span>
-<span class="c1"># import pandas as pd</span>
-<span class="c1"># mydata = pd.DataFrame(np.c_[x, y], columns = [&quot;const&quot;, &quot;x1&quot;, &quot;x2&quot;, &quot;y&quot;])</span>
-<span class="c1"># mod1 = smf.glm(formula = &quot;y ~ x1 + x2&quot;, data=mydata, family=sm.families.Binomial()).fit()</span>
-<span class="c1"># print (mod1.params)</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>The fitting result from gradient descent is beta0 = 0.27, beta1 = 0.95, beta2 = 2.72
-</code></pre></div>
-
+# import statsmodels.formula.api as smf
+# import statsmodels.api as sm
+# import pandas as pd
+# mydata = pd.DataFrame(np.c_[x, y], columns = [&quot;const&quot;, &quot;x1&quot;, &quot;x2&quot;, &quot;y&quot;])
+# mod1 = smf.glm(formula = &quot;y ~ x1 + x2&quot;, data=mydata, family=sm.families.Binomial()).fit()
+# print (mod1.params)
+</code></pre>
+<pre><code>The fitting result from gradient descent is beta0 = 0.27, beta1 = 0.95, beta2 = 2.72
+</code></pre>
 <p><a href="https://mdbootstrap.com/css/colors/">bootstrap color hex value</a></p>
 <script type="text/javascript">if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
     var align = "center",
@@ -363,13 +350,13 @@ $$</div>
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -387,7 +374,7 @@ $$</div>
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

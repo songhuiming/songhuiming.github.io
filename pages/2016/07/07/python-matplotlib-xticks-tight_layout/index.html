@@ -96,107 +96,105 @@ window.addEventListener('load', () => {
 
   <div class="entry-content"><p>Suppose in the data there is a column called yq, which is the year and quarter. we want to make this yq as the x tick in the plot. if you simply <code>plt.plot(df.yq, df.actual)</code>, it will not work because of the scale of yq.</p>
 <p>The solution is to set the size of the data as x in the plot, and then reset the tick by the yq value.</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># carete the sample data</span>
-<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;yq&#39;</span><span class="p">,</span> <span class="s1">&#39;actual&#39;</span><span class="p">,</span> <span class="s1">&#39;pred&#39;</span><span class="p">])</span>
-<span class="n">df</span><span class="p">[</span><span class="s1">&#39;yq&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">200702</span><span class="p">,</span> <span class="mi">200703</span><span class="p">,</span> <span class="mi">200704</span><span class="p">,</span> <span class="mi">200801</span><span class="p">,</span> <span class="mi">200802</span><span class="p">,</span> <span class="mi">200803</span><span class="p">,</span> <span class="mi">200804</span><span class="p">,</span> <span class="mi">200901</span><span class="p">,</span> <span class="mi">200902</span><span class="p">,</span> <span class="mi">200903</span><span class="p">]</span>
-<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">999</span><span class="p">)</span>
-<span class="n">df</span><span class="p">[</span><span class="s1">&#39;actual&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
-<span class="n">df</span><span class="p">[</span><span class="s1">&#39;pred&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;actual&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<pre><code class="language-python"># carete the sample data
+df = pd.DataFrame(columns = ['yq', 'actual', 'pred'])
+df['yq'] = [200702, 200703, 200704, 200801, 200802, 200803, 200804, 200901, 200902, 200903]
+np.random.seed(999)
+df['actual'] = np.random.random(10)
+df['pred'] = df['actual'] + np.random.normal(0, 0.1, 10)
 
-<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">()</span>
-<span class="c1"># plot x from 1 to 10, like a time series</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="n">df</span><span class="o">.</span><span class="n">actual</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;actual&#39;</span><span class="p">)</span>
-<span class="c1"># also x from 1 to 10</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="n">df</span><span class="o">.</span><span class="n">pred</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;pred&#39;</span><span class="p">)</span>
-<span class="c1"># set yq as the x tick</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">))</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">yq</span><span class="o">.</span><span class="n">tolist</span><span class="p">()],</span> <span class="n">rotation</span> <span class="o">=</span> <span class="s1">&#39;vertical&#39;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
-</code></pre></div>
+plt.subplot()
+# plot x from 1 to 10, like a time series
+plt.plot(range(1, df.shape[0] + 1), df.actual, label = 'actual')
+# also x from 1 to 10
+plt.plot(range(1, df.shape[0] + 1), df.pred, label = 'pred')
+# set yq as the x tick
+plt.xticks(range(1, df.shape[0] + 1), [str(int(x)) for x in df.yq.tolist()], rotation = 'vertical')
+plt.legend()
 
+</code></pre>
 <p><img alt="png" src="/figures/20160707_plt_x_string_as_tick.PNG"></p>
 <p>This is for the plot of the IFRS9 predicted data and actual data.</p>
-<div class="highlight"><pre><span></span><code><span class="c1">#1. make up code to generate the sample data</span>
-<span class="n">rating</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">]</span>
-<span class="n">yq</span> <span class="o">=</span> <span class="p">[</span><span class="mi">200701</span><span class="p">,</span> <span class="mi">200702</span><span class="p">,</span> <span class="mi">200703</span><span class="p">,</span> <span class="mi">200704</span><span class="p">,</span> <span class="mi">200801</span><span class="p">,</span> <span class="mi">200802</span><span class="p">,</span> <span class="mi">200803</span><span class="p">,</span> <span class="mi">200804</span><span class="p">,</span>
-      <span class="mi">200901</span><span class="p">,</span> <span class="mi">200902</span><span class="p">,</span> <span class="mi">200903</span><span class="p">,</span> <span class="mi">200904</span><span class="p">,</span> <span class="mi">201001</span><span class="p">,</span> <span class="mi">201002</span><span class="p">,</span> <span class="mi">201003</span><span class="p">,</span> <span class="mi">201004</span><span class="p">]</span>
-<span class="c1"># multiple index from two list combination</span>
-<span class="n">tindex</span> <span class="o">=</span>  <span class="n">pd</span><span class="o">.</span><span class="n">MultiIndex</span><span class="o">.</span><span class="n">from_tuples</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="n">rating</span><span class="p">,</span> <span class="n">yq</span><span class="p">))</span><span class="o">*</span><span class="mi">20</span><span class="p">,</span> <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;rating&#39;</span><span class="p">,</span> <span class="s1">&#39;yq&#39;</span><span class="p">])</span>
-<span class="n">testdata</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;actual&#39;</span><span class="p">,</span> <span class="s1">&#39;pred&#39;</span><span class="p">],</span> <span class="n">index</span> <span class="o">=</span> <span class="n">tindex</span><span class="p">)</span>
-<span class="n">testdata</span><span class="p">[</span><span class="s1">&#39;actual&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tindex</span><span class="p">))</span>
-<span class="n">testdata</span><span class="p">[</span><span class="s1">&#39;pred&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">testdata</span><span class="p">[</span><span class="s1">&#39;actual&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">tindex</span><span class="p">))</span>
-<span class="c1"># set index to columns and sort it</span>
-<span class="n">testdata</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">inplace</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
-<span class="n">testdata</span> <span class="o">=</span> <span class="n">testdata</span><span class="o">.</span><span class="n">sort</span><span class="p">([</span><span class="s1">&#39;rating&#39;</span><span class="p">,</span> <span class="s1">&#39;yq&#39;</span><span class="p">])</span>
-<span class="c1"># add the cumulative qtr for the data, although I know it is 20 here. but in actual, it varies for different pdrr &amp; yq</span>
-<span class="n">grouped</span> <span class="o">=</span> <span class="n">testdata</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s1">&#39;rating&#39;</span><span class="p">,</span> <span class="s1">&#39;yq&#39;</span><span class="p">])</span>
-<span class="n">qtrs</span> <span class="o">=</span> <span class="p">[]</span>
-<span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">grouped</span><span class="p">:</span>
-    <span class="n">qtrs</span> <span class="o">=</span> <span class="n">qtrs</span> <span class="o">+</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">group</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+<pre><code class="language-python">#1. make up code to generate the sample data
+rating = ['A', 'B', 'C']
+yq = [200701, 200702, 200703, 200704, 200801, 200802, 200803, 200804,
+      200901, 200902, 200903, 200904, 201001, 201002, 201003, 201004]
+# multiple index from two list combination
+tindex =  pd.MultiIndex.from_tuples(list(itertools.product(rating, yq))*20, names = ['rating', 'yq'])
+testdata = pd.DataFrame(columns = ['actual', 'pred'], index = tindex)
+testdata['actual'] = np.random.random(len(tindex))
+testdata['pred'] = testdata['actual'] + np.random.normal(0, 0.1, len(tindex))
+# set index to columns and sort it
+testdata.reset_index(inplace = True)
+testdata = testdata.sort(['rating', 'yq'])
+# add the cumulative qtr for the data, although I know it is 20 here. but in actual, it varies for different pdrr &amp; yq
+grouped = testdata.groupby(['rating', 'yq'])
+qtrs = []
+for name, group in grouped:
+    qtrs = qtrs + range(1, group.shape[0] + 1)
 
-<span class="n">testdata</span><span class="p">[</span><span class="s1">&#39;qtrs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">qtrs</span>
+testdata['qtrs'] = qtrs
 
-<span class="c1"># define the plot function</span>
-<span class="k">def</span> <span class="nf">vertical_compare</span><span class="p">(</span><span class="n">indata</span> <span class="o">=</span> <span class="n">testdata</span><span class="p">,</span> <span class="n">qtr</span> <span class="o">=</span> <span class="mi">4</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">    qtr=4 for 1 yr, 8 for 2 yrs, 12 for 3 yrs</span>
-<span class="sd">    &#39;&#39;&#39;</span>
+# define the plot function
+def vertical_compare(indata = testdata, qtr = 4):
+    '''
+    qtr=4 for 1 yr, 8 for 2 yrs, 12 for 3 yrs
+    '''
 
-    <span class="n">allpdrr</span> <span class="o">=</span> <span class="n">indata</span><span class="o">.</span><span class="n">rating</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
-    <span class="n">allpdrr_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">allpdrr</span><span class="p">)</span>
+    allpdrr = indata.rating.unique()
+    allpdrr_len = len(allpdrr)
 
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">allpdrr_len</span><span class="p">):</span>
+    for i in range(allpdrr_len):
 
-        <span class="n">pdrr</span> <span class="o">=</span> <span class="n">allpdrr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        pdrr = allpdrr[i]
 
-        <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">allpdrr_len</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">),</span> <span class="mi">2</span><span class="p">,</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        plt.subplot(math.ceil(allpdrr_len / 2.0), 2, i + 1)
 
-        <span class="n">df</span> <span class="o">=</span> <span class="n">indata</span><span class="o">.</span><span class="n">ix</span><span class="p">[(</span><span class="n">indata</span><span class="o">.</span><span class="n">rating</span> <span class="o">==</span> <span class="n">pdrr</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">indata</span><span class="o">.</span><span class="n">qtrs</span> <span class="o">==</span> <span class="n">qtr</span><span class="p">),</span> <span class="p">:]</span>
+        df = indata.ix[(indata.rating == pdrr) &amp; (indata.qtrs == qtr), :]
 
-        <span class="c1"># in the title with &#39;y=0.85&#39; to adjust the position of the title; &#39;&gt;1&#39; will be outside the plot</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">qtr</span><span class="o">/</span><span class="mi">4</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; yr pd plot for rating --- &quot;</span> <span class="o">+</span> <span class="n">pdrr</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="mf">0.85</span><span class="p">)</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="n">df</span><span class="o">.</span><span class="n">actual</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;actual&#39;</span><span class="p">)</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="n">df</span><span class="o">.</span><span class="n">pred</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;pred&#39;</span><span class="p">)</span>
-        <span class="c1"># to make the tick on x plot as yq, which is one of the data column</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">))</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">yq</span><span class="o">.</span><span class="n">tolist</span><span class="p">()],</span> <span class="n">rotation</span> <span class="o">=</span> <span class="mi">90</span><span class="p">)</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
-        <span class="c1"># with &#39;tight_layout()&#39; the graph looks better</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+        # in the title with 'y=0.85' to adjust the position of the title; '&gt;1' will be outside the plot
+        plt.title(str(qtr/4) + &quot; yr pd plot for rating --- &quot; + pdrr, y = 0.85)
+        plt.plot(range(1, df.shape[0] + 1), df.actual, label = 'actual')
+        plt.plot(range(1, df.shape[0] + 1), df.pred, label = 'pred')
+        # to make the tick on x plot as yq, which is one of the data column
+        plt.xticks(range(1, df.shape[0] + 1), [str(int(x)) for x in df.yq.tolist()], rotation = 90)
+        plt.legend()
+        # with 'tight_layout()' the graph looks better
+        plt.tight_layout()
 
-    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-</code></pre></div>
-
+    plt.show()
+</code></pre>
 <p><img alt="png" src="/figures/20160707_plt_x_string_as_tick_02.PNG"></p>
 <p>As you can see, it is a little crowd in the x ticks. Can we hide some ticks so that it is more clearly shown? The awnser is yes. We can adjust the <code>xticks</code> as below. if it is plot in <code>fig, ax = plt.subplot()</code>, then you can use <code>set_visible(False)</code> to adjust as shown in the reference.</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># define the plot function</span>
-<span class="k">def</span> <span class="nf">vertical_compare</span><span class="p">(</span><span class="n">indata</span> <span class="o">=</span> <span class="n">testdata</span><span class="p">,</span> <span class="n">qtr</span> <span class="o">=</span> <span class="mi">4</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">    qtr=4 for 1 yr, 8 for 2 yrs, 12 for 3 yrs</span>
-<span class="sd">    &#39;&#39;&#39;</span>
+<pre><code class="language-python"># define the plot function
+def vertical_compare(indata = testdata, qtr = 4):
+    '''
+    qtr=4 for 1 yr, 8 for 2 yrs, 12 for 3 yrs
+    '''
 
-    <span class="n">allpdrr</span> <span class="o">=</span> <span class="n">indata</span><span class="o">.</span><span class="n">rating</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
-    <span class="n">allpdrr_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">allpdrr</span><span class="p">)</span>
+    allpdrr = indata.rating.unique()
+    allpdrr_len = len(allpdrr)
 
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">allpdrr_len</span><span class="p">):</span>
+    for i in range(allpdrr_len):
 
-        <span class="n">pdrr</span> <span class="o">=</span> <span class="n">allpdrr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        pdrr = allpdrr[i]
 
-        <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">allpdrr_len</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">),</span> <span class="mi">2</span><span class="p">,</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        plt.subplot(math.ceil(allpdrr_len / 2.0), 2, i + 1)
 
-        <span class="n">df</span> <span class="o">=</span> <span class="n">indata</span><span class="o">.</span><span class="n">ix</span><span class="p">[(</span><span class="n">indata</span><span class="o">.</span><span class="n">rating</span> <span class="o">==</span> <span class="n">pdrr</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">indata</span><span class="o">.</span><span class="n">qtrs</span> <span class="o">==</span> <span class="n">qtr</span><span class="p">),</span> <span class="p">:]</span>
+        df = indata.ix[(indata.rating == pdrr) &amp; (indata.qtrs == qtr), :]
 
-        <span class="c1"># in the title with &#39;y=0.85&#39; to adjust the position of the title; &#39;&gt;1&#39; will be outside the plot</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">qtr</span><span class="o">/</span><span class="mi">4</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; yr pd plot for rating --- &quot;</span> <span class="o">+</span> <span class="n">pdrr</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="mf">0.85</span><span class="p">)</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="n">df</span><span class="o">.</span><span class="n">actual</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;actual&#39;</span><span class="p">)</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="n">df</span><span class="o">.</span><span class="n">pred</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;pred&#39;</span><span class="p">)</span>
-        <span class="c1"># to make the tick on x plot as yq, which is one of the data column</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)[::</span><span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">))</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">yq</span><span class="o">.</span><span class="n">tolist</span><span class="p">()][::</span><span class="mi">2</span><span class="p">],</span> <span class="n">rotation</span> <span class="o">=</span> <span class="mi">90</span><span class="p">)</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
-        <span class="c1"># with &#39;tight_layout()&#39; the graph looks better</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+        # in the title with 'y=0.85' to adjust the position of the title; '&gt;1' will be outside the plot
+        plt.title(str(qtr/4) + &quot; yr pd plot for rating --- &quot; + pdrr, y = 0.85)
+        plt.plot(range(1, df.shape[0] + 1), df.actual, label = 'actual')
+        plt.plot(range(1, df.shape[0] + 1), df.pred, label = 'pred')
+        # to make the tick on x plot as yq, which is one of the data column
+        plt.xticks(range(1, df.shape[0] + 1)[::2], [str(int(x)) for x in df.yq.tolist()][::2], rotation = 90)
+        plt.legend()
+        # with 'tight_layout()' the graph looks better
+        plt.tight_layout()
 
-    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-</code></pre></div>
-
+    plt.show()
+</code></pre>
 <p><img alt="png" src="/figures/20160707_plt_x_string_as_tick_03.PNG"></p>
 <h3>Reference:</h3>
 <p><a href="http://matplotlib.org/examples/ticks_and_spines/ticklabels_demo_rotation.html#ticks-and-spines-example-code-ticklabels-demo-rotation-py">ticks_and_spines example code: ticklabels_demo_rotation.py</a></p>
@@ -230,13 +228,13 @@ window.addEventListener('load', () => {
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -254,7 +252,7 @@ window.addEventListener('load', () => {
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

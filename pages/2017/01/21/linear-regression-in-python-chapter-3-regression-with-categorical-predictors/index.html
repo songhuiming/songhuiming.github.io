@@ -96,111 +96,103 @@ window.addEventListener('load', () => {
 
   <div class="entry-content"><h2>3 - Regression with Categorical Predictors</h2>
 <h3>Chapter Outline</h3>
-<div class="highlight"><pre><span></span><code><span class="mf">3.0</span><span class="w"> </span><span class="n">Regression</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="n">categorical</span><span class="w"> </span><span class="n">predictors</span>
-<span class="mf">3.1</span><span class="w"> </span><span class="n">Regression</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="mf">0</span><span class="o">/</span><span class="mf">1</span><span class="w"> </span><span class="n">variable</span>
-<span class="mf">3.2</span><span class="w"> </span><span class="n">Regression</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="mf">1</span><span class="o">/</span><span class="mf">2</span><span class="w"> </span><span class="n">variable</span>
-<span class="mf">3.3</span><span class="w"> </span><span class="n">Regression</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="mf">1</span><span class="o">/</span><span class="mf">2</span><span class="o">/</span><span class="mf">3</span><span class="w"> </span><span class="n">variable</span>
-<span class="mf">3.4</span><span class="w"> </span><span class="n">Regression</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="n">multiple</span><span class="w"> </span><span class="n">categorical</span><span class="w"> </span><span class="n">predictors</span>
-<span class="mf">3.5</span><span class="w"> </span><span class="n">Categorical</span><span class="w"> </span><span class="n">predictor</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="nb">int</span><span class="n">eractions</span>
-<span class="mf">3.6</span><span class="w"> </span><span class="kr">Cont</span><span class="n">inuous</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="n">categorical</span><span class="w"> </span><span class="n">variables</span>
-<span class="mf">3.7</span><span class="w"> </span><span class="nb">Int</span><span class="n">eractions</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="kr">cont</span><span class="n">inuous</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="mf">0</span><span class="o">/</span><span class="mf">1</span><span class="w"> </span><span class="n">categorical</span><span class="w"> </span><span class="n">variables</span>
-<span class="mf">3.8</span><span class="w"> </span><span class="kr">Cont</span><span class="n">inuous</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="n">categorical</span><span class="w"> </span><span class="n">variables</span><span class="p">,</span><span class="w"> </span><span class="nb">int</span><span class="n">eraction</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="mf">1</span><span class="o">/</span><span class="mf">2</span><span class="o">/</span><span class="mf">3</span><span class="w"> </span><span class="n">variable</span>
-<span class="mf">3.9</span><span class="w"> </span><span class="n">Summary</span>
-<span class="mf">3.10</span><span class="w"> </span><span class="kr">For</span><span class="w"> </span><span class="n">more</span><span class="w"> </span><span class="n">information</span>
-</code></pre></div>
-
+<pre><code>3.0 Regression with categorical predictors
+3.1 Regression with a 0/1 variable
+3.2 Regression with a 1/2 variable
+3.3 Regression with a 1/2/3 variable
+3.4 Regression with multiple categorical predictors
+3.5 Categorical predictor with interactions
+3.6 Continuous and categorical variables
+3.7 Interactions of continuous by 0/1 categorical variables
+3.8 Continuous and categorical variables, interaction with 1/2/3 variable
+3.9 Summary
+3.10 For more information
+</code></pre>
 <h2>3.0 Introduction</h2>
 <p>In the previous two chapters, we have focused on regression analyses using continuous variables. However, it is possible to include categorical predictors in a regression analysis, but it requires some extra work in performing the analysis and extra work in properly interpreting the results.  This chapter will illustrate how you can use Python for including categorical predictors in your analysis and describe how to interpret the results of such analyses.</p>
 <p>This chapter will use the elemapi2 data that you have seen in the prior chapters. We will focus on four variables api00, some_col, yr_rnd and mealcat, which takes meals and breaks it up into three categories. Let's have a quick look at these variables.  </p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">itertools</span>
-<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">chain</span><span class="p">,</span> <span class="n">combinations</span>
-<span class="kn">import</span> <span class="nn">statsmodels.formula.api</span> <span class="k">as</span> <span class="nn">smf</span>
-<span class="kn">import</span> <span class="nn">scipy.stats</span> <span class="k">as</span> <span class="nn">scipystats</span>
-<span class="kn">import</span> <span class="nn">statsmodels.api</span> <span class="k">as</span> <span class="nn">sm</span>
-<span class="kn">import</span> <span class="nn">statsmodels.stats.stattools</span> <span class="k">as</span> <span class="nn">stools</span>
-<span class="kn">import</span> <span class="nn">statsmodels.stats</span> <span class="k">as</span> <span class="nn">stats</span>
-<span class="kn">from</span> <span class="nn">statsmodels.graphics.regressionplots</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
-<span class="kn">import</span> <span class="nn">copy</span>
-<span class="kn">from</span> <span class="nn">sklearn.cross_validation</span> <span class="kn">import</span> <span class="n">train_test_split</span>
-<span class="kn">import</span> <span class="nn">math</span>
-<span class="kn">import</span> <span class="nn">time</span>
+<pre><code class="language-python">import pandas as pd
+import numpy as np
+import itertools
+from itertools import chain, combinations
+import statsmodels.formula.api as smf
+import scipy.stats as scipystats
+import statsmodels.api as sm
+import statsmodels.stats.stattools as stools
+import statsmodels.stats as stats
+from statsmodels.graphics.regressionplots import *
+import matplotlib.pyplot as plt
+import seaborn as sns
+import copy
+from sklearn.cross_validation import train_test_split
+import math
+import time
 
-<span class="o">%</span><span class="n">matplotlib</span> <span class="n">inline</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;figure.figsize&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+%matplotlib inline
+plt.rcParams['figure.figsize'] = (8, 6)
 
-<span class="n">mypath</span> <span class="o">=</span>  <span class="sa">r</span><span class="s1">&#39;F:\Dropbox\ipynb_notes\ipynb_blog</span><span class="se">\\</span><span class="s1">&#39;</span>
+mypath =  r'F:\Dropbox\ipynb_notes\ipynb_blog\\'
 
-<span class="n">elemapi2</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">mypath</span> <span class="o">+</span> <span class="sa">r</span><span class="s1">&#39;elemapi2.csv&#39;</span><span class="p">)</span>   
-</code></pre></div>
+elemapi2 = pd.read_csv(mypath + r'elemapi2.csv')   
+</code></pre>
+<pre><code class="language-python">elemapi2_sel = elemapi2.ix[:, [&quot;api00&quot;, &quot;some_col&quot;, &quot;yr_rnd&quot;, &quot;mealcat&quot;]]
+</code></pre>
+<pre><code class="language-python">print elemapi2_sel.describe()
 
-<div class="highlight"><pre><span></span><code><span class="n">elemapi2_sel</span> <span class="o">=</span> <span class="n">elemapi2</span><span class="o">.</span><span class="n">ix</span><span class="p">[:,</span> <span class="p">[</span><span class="s2">&quot;api00&quot;</span><span class="p">,</span> <span class="s2">&quot;some_col&quot;</span><span class="p">,</span> <span class="s2">&quot;yr_rnd&quot;</span><span class="p">,</span> <span class="s2">&quot;mealcat&quot;</span><span class="p">]]</span>
-</code></pre></div>
+def cv_desc(df, var):
+    return df[var].value_counts(dropna = False)
 
-<div class="highlight"><pre><span></span><code><span class="nb">print</span> <span class="n">elemapi2_sel</span><span class="o">.</span><span class="n">describe</span><span class="p">()</span>
-
-<span class="k">def</span> <span class="nf">cv_desc</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">var</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">df</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">(</span><span class="n">dropna</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
-
-<span class="nb">print</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>  
-<span class="nb">print</span> <span class="n">cv_desc</span><span class="p">(</span><span class="n">elemapi2_sel</span><span class="p">,</span> <span class="s1">&#39;mealcat&#39;</span><span class="p">)</span>
-<span class="nb">print</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>  
-<span class="nb">print</span> <span class="n">cv_desc</span><span class="p">(</span><span class="n">elemapi2_sel</span><span class="p">,</span> <span class="s1">&#39;yr_rnd&#39;</span><span class="p">)</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="w">            </span><span class="nx">api00</span><span class="w">    </span><span class="nx">some_col</span><span class="w">     </span><span class="nx">yr_rnd</span><span class="w">     </span><span class="nx">mealcat</span>
-<span class="nx">count</span><span class="w">  </span><span class="m m-Double">400.000000</span><span class="w">  </span><span class="m m-Double">400.000000</span><span class="w">  </span><span class="m m-Double">400.00000</span><span class="w">  </span><span class="m m-Double">400.000000</span>
-<span class="nx">mean</span><span class="w">   </span><span class="m m-Double">647.622500</span><span class="w">   </span><span class="m m-Double">19.712500</span><span class="w">    </span><span class="m m-Double">0.23000</span><span class="w">    </span><span class="m m-Double">2.015000</span>
-<span class="nx">std</span><span class="w">    </span><span class="m m-Double">142.248961</span><span class="w">   </span><span class="m m-Double">11.336938</span><span class="w">    </span><span class="m m-Double">0.42136</span><span class="w">    </span><span class="m m-Double">0.819423</span>
-<span class="nx">min</span><span class="w">    </span><span class="m m-Double">369.000000</span><span class="w">    </span><span class="m m-Double">0.000000</span><span class="w">    </span><span class="m m-Double">0.00000</span><span class="w">    </span><span class="m m-Double">1.000000</span>
-<span class="mi">25</span><span class="o">%</span><span class="w">    </span><span class="m m-Double">523.750000</span><span class="w">   </span><span class="m m-Double">12.000000</span><span class="w">    </span><span class="m m-Double">0.00000</span><span class="w">    </span><span class="m m-Double">1.000000</span>
-<span class="mi">50</span><span class="o">%</span><span class="w">    </span><span class="m m-Double">643.000000</span><span class="w">   </span><span class="m m-Double">19.000000</span><span class="w">    </span><span class="m m-Double">0.00000</span><span class="w">    </span><span class="m m-Double">2.000000</span>
-<span class="mi">75</span><span class="o">%</span><span class="w">    </span><span class="m m-Double">762.250000</span><span class="w">   </span><span class="m m-Double">28.000000</span><span class="w">    </span><span class="m m-Double">0.00000</span><span class="w">    </span><span class="m m-Double">3.000000</span>
-<span class="nx">max</span><span class="w">    </span><span class="m m-Double">940.000000</span><span class="w">   </span><span class="m m-Double">67.000000</span><span class="w">    </span><span class="m m-Double">1.00000</span><span class="w">    </span><span class="m m-Double">3.000000</span>
+print '\n'  
+print cv_desc(elemapi2_sel, 'mealcat')
+print '\n'  
+print cv_desc(elemapi2_sel, 'yr_rnd')
+</code></pre>
+<pre><code>            api00    some_col     yr_rnd     mealcat
+count  400.000000  400.000000  400.00000  400.000000
+mean   647.622500   19.712500    0.23000    2.015000
+std    142.248961   11.336938    0.42136    0.819423
+min    369.000000    0.000000    0.00000    1.000000
+25%    523.750000   12.000000    0.00000    1.000000
+50%    643.000000   19.000000    0.00000    2.000000
+75%    762.250000   28.000000    0.00000    3.000000
+max    940.000000   67.000000    1.00000    3.000000
 
 
-<span class="mi">3</span><span class="w">    </span><span class="mi">137</span>
-<span class="mi">2</span><span class="w">    </span><span class="mi">132</span>
-<span class="mi">1</span><span class="w">    </span><span class="mi">131</span>
-<span class="nx">Name</span><span class="p">:</span><span class="w"> </span><span class="nx">mealcat</span><span class="p">,</span><span class="w"> </span><span class="nx">dtype</span><span class="p">:</span><span class="w"> </span><span class="nx">int64</span>
+3    137
+2    132
+1    131
+Name: mealcat, dtype: int64
 
 
-<span class="mi">0</span><span class="w">    </span><span class="mi">308</span>
-<span class="mi">1</span><span class="w">     </span><span class="mi">92</span>
-<span class="nx">Name</span><span class="p">:</span><span class="w"> </span><span class="nx">yr_rnd</span><span class="p">,</span><span class="w"> </span><span class="nx">dtype</span><span class="p">:</span><span class="w"> </span><span class="nx">int64</span>
-</code></pre></div>
-
+0    308
+1     92
+Name: yr_rnd, dtype: int64
+</code></pre>
 <p>The variable api00 is a measure of the performance of the students. The variable some_col is a continuous variable that measures the percentage of the parents in the school who have attended college. The variable yr_rnd is a categorical variable that is coded 0 if the school is not year round, and 1 if year round. The variable meals is the percentage of students who are receiving state sponsored free meals and can be used as an indicator of poverty. This was broken into 3 categories (to make equally sized groups) creating the variable mealcat. The following macro function created for this dataset gives us codebook type information on a variable that we specify. It gives the information of the number of unique values that a variable take.</p>
-<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">codebook</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">var</span><span class="p">):</span>
-    <span class="n">title</span> <span class="o">=</span> <span class="s2">&quot;Codebook for &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">var</span><span class="p">)</span>
-    <span class="n">unique_values</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">())</span>
-    <span class="n">max_v</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
-    <span class="n">min_v</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
-    <span class="n">n_miss</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">isnull</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">var</span><span class="p">]))</span>
-    <span class="n">mean</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
-    <span class="n">stdev</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">std</span><span class="p">()</span>
-    <span class="nb">print</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;title&#39;</span><span class="p">:</span> <span class="n">title</span><span class="p">,</span> <span class="s1">&#39;unique values&#39;</span><span class="p">:</span> <span class="n">unique_values</span><span class="p">,</span> <span class="s1">&#39;max value&#39;</span> <span class="p">:</span> <span class="n">max_v</span><span class="p">,</span> <span class="s1">&#39;min value&#39;</span><span class="p">:</span> <span class="n">min_v</span><span class="p">,</span> <span class="s1">&#39;num of missing&#39;</span> <span class="p">:</span> <span class="n">n_miss</span><span class="p">,</span> <span class="s1">&#39;mean&#39;</span> <span class="p">:</span> <span class="n">mean</span><span class="p">,</span> <span class="s1">&#39;stdev&#39;</span> <span class="p">:</span> <span class="n">stdev</span><span class="p">},</span> <span class="n">index</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-    <span class="k">return</span>
+<pre><code class="language-python">def codebook(df, var):
+    title = &quot;Codebook for &quot; + str(var)
+    unique_values = len(df[var].unique())
+    max_v = df[var].max()
+    min_v = df[var].min()
+    n_miss = sum(pd.isnull(df[var]))
+    mean = df[var].mean()
+    stdev = df[var].std()
+    print pd.DataFrame({'title': title, 'unique values': unique_values, 'max value' : max_v, 'min value': min_v, 'num of missing' : n_miss, 'mean' : mean, 'stdev' : stdev}, index = [0])
+    return
 
-<span class="n">codebook</span><span class="p">(</span><span class="n">elemapi2_sel</span><span class="p">,</span> <span class="s1">&#39;api00&#39;</span><span class="p">)</span>
-</code></pre></div>
+codebook(elemapi2_sel, 'api00')
+</code></pre>
+<pre><code>   max value      mean  min value  num of missing       stdev  \
+0        940  647.6225        369               0  142.248961
 
-<div class="highlight"><pre><span></span><code><span class="w">   </span><span class="nv">max</span><span class="w"> </span><span class="nv">value</span><span class="w">      </span><span class="nv">mean</span><span class="w">  </span><span class="nv">min</span><span class="w"> </span><span class="nv">value</span><span class="w">  </span><span class="nv">num</span><span class="w"> </span><span class="nv">of</span><span class="w"> </span><span class="nv">missing</span><span class="w">       </span><span class="nv">stdev</span><span class="w">  </span>\
-<span class="mi">0</span><span class="w">        </span><span class="mi">940</span><span class="w">  </span><span class="mi">647</span>.<span class="mi">6225</span><span class="w">        </span><span class="mi">369</span><span class="w">               </span><span class="mi">0</span><span class="w">  </span><span class="mi">142</span>.<span class="mi">248961</span>
-
-<span class="w">                </span><span class="nv">title</span><span class="w">  </span><span class="nv">unique</span><span class="w"> </span><span class="nv">values</span><span class="w">  </span>
-<span class="mi">0</span><span class="w">  </span><span class="nv">Codebook</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nv">api00</span><span class="w">            </span><span class="mi">271</span>
-</code></pre></div>
-
+                title  unique values  
+0  Codebook for api00            271
+</code></pre>
 <h2>3.1 Regression with a 0/1 variable</h2>
 <p>The simplest example of a categorical predictor in a regression analysis is a 0/1 variable, also called a dummy variable or sometimes an indicator variable. Let's use the variable yr_rnd as an example of a dummy variable. We can include a dummy variable as a predictor in a regression analysis as shown below.</p>
-<div class="highlight"><pre><span></span><code><span class="n">reg</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="n">formula</span> <span class="o">=</span> <span class="s2">&quot;api00 ~ yr_rnd&quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">elemapi2_sel</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="n">reg</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
-</code></pre></div>
-
+<pre><code class="language-python">reg = smf.ols(formula = &quot;api00 ~ yr_rnd&quot;, data = elemapi2_sel).fit()
+reg.summary()
+</code></pre>
 <table class="simpletable">
 <caption>OLS Regression Results</caption>
 <tr>
@@ -258,42 +250,37 @@ window.addEventListener('load', () => {
 </table>
 
 <p>This may seem odd at first, but this is a legitimate analysis. But what does this mean? Let's go back to basics and write out the regression equation that this model implies.</p>
-<div class="highlight"><pre><span></span><code>api00 = Intercept + Byr_rnd * yr_rnd
-</code></pre></div>
-
+<pre><code>api00 = Intercept + Byr_rnd * yr_rnd
+</code></pre>
 <p>where Intercept is the intercept (or constant) and we use Byr_rnd to represent the coefficient for variable yr_rnd.  Filling in the values from the regression equation, we get</p>
-<div class="highlight"><pre><span></span><code>api00 = 684.539 + -160.5064 * yr_rnd
-</code></pre></div>
-
+<pre><code>api00 = 684.539 + -160.5064 * yr_rnd
+</code></pre>
 <p>If a school is not a year-round school (i.e., yr_rnd is 0) the regression equation would simplify to</p>
-<div class="highlight"><pre><span></span><code><span class="n">api00</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">constant</span><span class="w">    </span><span class="o">+</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">Byr_rnd</span>
-<span class="n">api00</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">684.539</span><span class="w">     </span><span class="o">+</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="o">-</span><span class="mf">160.5064</span><span class="w">  </span>
-<span class="n">api00</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">684.539</span>
-</code></pre></div>
-
+<pre><code>api00 = constant    + 0 * Byr_rnd
+api00 = 684.539     + 0 * -160.5064  
+api00 = 684.539
+</code></pre>
 <p>If a school is a year-round school, the regression equation would simplify to</p>
-<div class="highlight"><pre><span></span><code><span class="n">api00</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">constant</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">Byr_rnd</span>
-<span class="n">api00</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">684.539</span><span class="w">  </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="o">-</span><span class="mf">160.5064</span>
-<span class="n">api00</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">524.0326</span>
-</code></pre></div>
-
+<pre><code>api00 = constant + 1 * Byr_rnd
+api00 = 684.539  + 1 * -160.5064
+api00 = 524.0326
+</code></pre>
 <p>We can graph the observed values and the predicted values as shown below. Although yr_rnd only has two values, we can still draw a regression line showing the relationship between yr_rnd and api00.  Based on the results above, we see that the predicted value for non-year round schools is 684.539 and the predicted value for the year round schools is 524.032, and the slope of the line is negative, which makes sense since the coefficient for yr_rnd was negative (-160.5064).    </p>
-<div class="highlight"><pre><span></span><code><span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">elemapi2_sel</span><span class="o">.</span><span class="n">yr_rnd</span><span class="p">,</span> <span class="n">elemapi2_sel</span><span class="o">.</span><span class="n">api00</span><span class="p">,</span> <span class="n">marker</span> <span class="o">=</span> <span class="s2">&quot;+&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">elemapi2_sel</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;yr_rnd == 0&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">api00</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">elemapi2_sel</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;yr_rnd == 1&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">api00</span><span class="p">)],</span> <span class="s1">&#39;r--&#39;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;api 2000&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;year round school&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-</code></pre></div>
+<pre><code class="language-python">plt.scatter(elemapi2_sel.yr_rnd, elemapi2_sel.api00, marker = &quot;+&quot;)
+plt.plot([0, 1], [np.mean(elemapi2_sel.query('yr_rnd == 0').api00), np.mean(elemapi2_sel.query('yr_rnd == 1').api00)], 'r--')
+plt.ylabel(&quot;api 2000&quot;)
+plt.xlabel(&quot;year round school&quot;)
+plt.show()
 
+</code></pre>
 <p><img alt="png" src="/figures/ucla_ats_linreg_3_1_01.png"></p>
 <p>Let's compare these predicted values to the mean api00 scores for the year-round and non-year-round students. Let's create a format for variable yr_rnd and mealcat so we can label these categorical variables. Notice that we use the format statement in groupby aggregate mean below to show value labels for variable yr_rnd.</p>
-<div class="highlight"><pre><span></span><code><span class="n">elemapi2_sel</span><span class="p">[</span><span class="s2">&quot;yr_rnd_c&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">elemapi2_sel</span><span class="o">.</span><span class="n">yr_rnd</span><span class="o">.</span><span class="n">map</span><span class="p">({</span><span class="mi">0</span><span class="p">:</span> <span class="s2">&quot;No&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span> <span class="s2">&quot;Yes&quot;</span><span class="p">})</span>
-<span class="n">elemapi2_sel</span><span class="p">[</span><span class="s2">&quot;mealcat_c&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">elemapi2_sel</span><span class="o">.</span><span class="n">mealcat</span><span class="o">.</span><span class="n">map</span><span class="p">({</span><span class="mi">1</span><span class="p">:</span> <span class="s2">&quot;0-46</span><span class="si">% f</span><span class="s2">ree meals&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="s2">&quot;47-80</span><span class="si">% f</span><span class="s2">ree meals&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">:</span> <span class="s2">&quot;1-100</span><span class="si">% f</span><span class="s2">ree meals&quot;</span><span class="p">})</span>
+<pre><code class="language-python">elemapi2_sel[&quot;yr_rnd_c&quot;] = elemapi2_sel.yr_rnd.map({0: &quot;No&quot;, 1: &quot;Yes&quot;})
+elemapi2_sel[&quot;mealcat_c&quot;] = elemapi2_sel.mealcat.map({1: &quot;0-46% free meals&quot;, 2: &quot;47-80% free meals&quot;, 3: &quot;1-100% free meals&quot;})
 
-<span class="n">elemapi2_sel_group</span> <span class="o">=</span> <span class="n">elemapi2_sel</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;yr_rnd_c&quot;</span><span class="p">)</span>
-<span class="n">elemapi2_sel_group</span><span class="o">.</span><span class="n">api00</span><span class="o">.</span><span class="n">agg</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">])</span>
-</code></pre></div>
-
+elemapi2_sel_group = elemapi2_sel.groupby(&quot;yr_rnd_c&quot;)
+elemapi2_sel_group.api00.agg([np.mean, np.std])
+</code></pre>
 <div>
 <table border="1" class="dataframe">
   <thead>
@@ -326,34 +313,29 @@ window.addEventListener('load', () => {
 <p>As you see, the regression equation predicts that for a school, the value of api00 will be the mean value of the group determined by the school type.</p>
 <p>Let's relate these predicted values back to the regression equation. For the non-year-round schools, their mean is the same as the intercept (684.539). The coefficient for yr_rnd is the amount we need to add to get the mean for the year-round schools, i.e., we need to add -160.5064 to get 524.0326, the mean for the non year-round schools. In other words, Byr_rnd is the mean api00 score for the year-round schools minus the mean api00 score for the non year-round schools, i.e., mean(year-round) - mean(non year-round).</p>
 <p>It may be surprising to note that this regression analysis with a single dummy variable is the same as doing a t-test comparing the mean api00 for the year-round schools with the non year-round schools (see below). <strong>You can see that the t value below is the same as the t value for yr_rnd in the regression above</strong>. This is because Byr_rnd compares the non year-rounds and non year-rounds (since the coefficient is mean(year round)-mean(non year-round)).</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># pooled ttest, assume equal population variance</span>
-<span class="nb">print</span> <span class="n">scipystats</span><span class="o">.</span><span class="n">ttest_ind</span><span class="p">(</span><span class="n">elemapi2_sel</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;yr_rnd == 0&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">api00</span><span class="p">,</span> <span class="n">elemapi2_sel</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;yr_rnd == 1&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">api00</span><span class="p">)</span>
+<pre><code class="language-python"># pooled ttest, assume equal population variance
+print scipystats.ttest_ind(elemapi2_sel.query('yr_rnd == 0').api00, elemapi2_sel.query('yr_rnd == 1').api00)
 
-<span class="c1"># does not assume equal variance</span>
-<span class="nb">print</span> <span class="n">scipystats</span><span class="o">.</span><span class="n">ttest_ind</span><span class="p">(</span><span class="n">elemapi2_sel</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;yr_rnd == 0&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">api00</span><span class="p">,</span> <span class="n">elemapi2_sel</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;yr_rnd == 1&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">api00</span><span class="p">,</span> <span class="n">equal_var</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>Ttest_indResult(statistic=10.781500136400451, pvalue=5.9647081127888056e-24)
+# does not assume equal variance
+print scipystats.ttest_ind(elemapi2_sel.query('yr_rnd == 0').api00, elemapi2_sel.query('yr_rnd == 1').api00, equal_var = False)
+</code></pre>
+<pre><code>Ttest_indResult(statistic=10.781500136400451, pvalue=5.9647081127888056e-24)
 Ttest_indResult(statistic=12.57105956566846, pvalue=5.2973148066493157e-27)
-</code></pre></div>
-
+</code></pre>
 <p>Since a <strong>t-test is the same as doing an anova</strong>, we can get the same results using anova as well.</p>
-<div class="highlight"><pre><span></span><code><span class="nb">print</span> <span class="n">scipystats</span><span class="o">.</span><span class="n">f_oneway</span><span class="p">(</span><span class="n">elemapi2_sel</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;yr_rnd == 0&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">api00</span><span class="p">,</span> <span class="n">elemapi2_sel</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;yr_rnd == 1&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">api00</span><span class="p">)</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>F_onewayResult(statistic=116.2407451912029, pvalue=5.9647081127907988e-24)
-</code></pre></div>
-
+<pre><code class="language-python">print scipystats.f_oneway(elemapi2_sel.query('yr_rnd == 0').api00, elemapi2_sel.query('yr_rnd == 1').api00)
+</code></pre>
+<pre><code>F_onewayResult(statistic=116.2407451912029, pvalue=5.9647081127907988e-24)
+</code></pre>
 <p>If we square the t-value from the t-test, we get the same value as the F-value from anova:
 <span style="color:red">10.78^2=116.21</span> (with a little rounding error.)</p>
 <h2>3.2 Regression with a 1/2 variable</h2>
 <p>A categorical predictor variable does not have to be coded 0/1 to be used in a regression model. It is easier to understand and interpret the results from a model with dummy variables, but the results from a variable coded 1/2 yield essentially the same results.</p>
 <p>Lets make a copy of the variable yr_rnd called yr_rnd2 that is coded 1/2, 1=non year-round and 2=year-round.</p>
-<div class="highlight"><pre><span></span><code><span class="n">elemapi2_sel</span><span class="p">[</span><span class="s2">&quot;yr_rnd2&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">elemapi2_sel</span><span class="p">[</span><span class="s2">&quot;yr_rnd&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
-<span class="n">reg</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s2">&quot;api00 ~ yr_rnd2&quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">elemapi2_sel</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="n">reg</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
-</code></pre></div>
-
+<pre><code class="language-python">elemapi2_sel[&quot;yr_rnd2&quot;] = elemapi2_sel[&quot;yr_rnd&quot;] + 1
+reg = smf.ols(&quot;api00 ~ yr_rnd2&quot;, data = elemapi2_sel).fit()
+reg.summary()
+</code></pre>
 <table class="simpletable">
 <caption>OLS Regression Results</caption>
 <tr>
@@ -416,10 +398,9 @@ Ttest_indResult(statistic=12.57105956566846, pvalue=5.2973148066493157e-27)
 <h2>3.3 Regression with a 1/2/3 variable</h2>
 <h3>3.3.1 Manually creating dummy variables</h3>
 <p>Say, that we would like to examine the relationship between the amount of poverty and api scores. We don't have a measure of poverty, but we can use mealcat as a proxy for a measure of poverty. From the previous section, we have seen that variable mealcat has three unique values. These are the levels of percent of students on free meals. We can associate a value label to variable mealcat to make it more meaningful for us when we run python regression with mealcat.</p>
-<div class="highlight"><pre><span></span><code><span class="n">elemapi2_sel_group</span> <span class="o">=</span> <span class="n">elemapi2_sel</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;mealcat_c&quot;</span><span class="p">)</span>
-<span class="n">elemapi2_sel_group</span><span class="o">.</span><span class="n">api00</span><span class="o">.</span><span class="n">agg</span><span class="p">([</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">])</span>
-</code></pre></div>
-
+<pre><code class="language-python">elemapi2_sel_group = elemapi2_sel.groupby(&quot;mealcat_c&quot;)
+elemapi2_sel_group.api00.agg([lambda x: x.shape[0], np.mean, np.std])
+</code></pre>
 <div>
 <table border="1" class="dataframe">
   <thead>
@@ -459,10 +440,9 @@ Ttest_indResult(statistic=12.57105956566846, pvalue=5.2973148066493157e-27)
 </table>
 </div>
 
-<div class="highlight"><pre><span></span><code><span class="n">lm</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s1">&#39;api00 ~ mealcat&#39;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">elemapi2_sel</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="n">lm</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
-</code></pre></div>
-
+<pre><code class="language-python">lm = smf.ols('api00 ~ mealcat', data = elemapi2_sel).fit()
+lm.summary()
+</code></pre>
 <table class="simpletable">
 <caption>OLS Regression Results</caption>
 <tr>
@@ -520,22 +500,20 @@ Ttest_indResult(statistic=12.57105956566846, pvalue=5.2973148066493157e-27)
 </table>
 
 <p>This is looking at the linear effect of mealcat with api00, but mealcat is not an interval variable. Instead, you will want to code the variable so that all the information concerning the three levels is accounted for. In general, we need to go through a data step to create dummy variables. For example, in order to create dummy variables for mealcat, we can do the following using <strong>sklearn</strong> to create dummy variables.  </p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">sklearn</span> <span class="kn">import</span> <span class="n">preprocessing</span>
-<span class="n">le_mealcat</span> <span class="o">=</span> <span class="n">preprocessing</span><span class="o">.</span><span class="n">LabelEncoder</span><span class="p">()</span>
-<span class="n">elemapi2_sel</span><span class="p">[</span><span class="s1">&#39;mealcat_dummy&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">le_mealcat</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">elemapi2_sel</span><span class="o">.</span><span class="n">mealcat</span><span class="p">)</span>
+<pre><code class="language-python">from sklearn import preprocessing
+le_mealcat = preprocessing.LabelEncoder()
+elemapi2_sel['mealcat_dummy'] = le_mealcat.fit_transform(elemapi2_sel.mealcat)
 
-<span class="n">elemapi2_sel</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;mealcat_dummy&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">size</span><span class="p">()</span>
+elemapi2_sel.groupby('mealcat_dummy').size()
 
 
-<span class="n">ohe</span> <span class="o">=</span> <span class="n">preprocessing</span><span class="o">.</span><span class="n">OneHotEncoder</span><span class="p">()</span>
-<span class="n">dummy</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">ohe</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">elemapi2_sel</span><span class="o">.</span><span class="n">mealcat</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">toarray</span><span class="p">(),</span> <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;mealcat1&quot;</span><span class="p">,</span> <span class="s2">&quot;mealcat2&quot;</span><span class="p">,</span> <span class="s2">&quot;mealcat3&quot;</span><span class="p">])</span>
-<span class="n">elemapi2_sel</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">elemapi2_sel</span><span class="p">,</span> <span class="n">dummy</span><span class="p">],</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="n">lm</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s1">&#39;api00 ~ mealcat2 + mealcat3&#39;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">elemapi2_sel</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="n">lm</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
-</code></pre></div>
-
+ohe = preprocessing.OneHotEncoder()
+dummy = pd.DataFrame(ohe.fit_transform(elemapi2_sel.mealcat.reshape(-1,1)).toarray(), columns = [&quot;mealcat1&quot;, &quot;mealcat2&quot;, &quot;mealcat3&quot;])
+elemapi2_sel = pd.concat([elemapi2_sel, dummy], axis = 1)
+</code></pre>
+<pre><code class="language-python">lm = smf.ols('api00 ~ mealcat2 + mealcat3', data = elemapi2_sel).fit()
+lm.summary()
+</code></pre>
 <table class="simpletable">
 <caption>OLS Regression Results</caption>
 <tr>
@@ -602,24 +580,21 @@ Ttest_indResult(statistic=12.57105956566846, pvalue=5.2973148066493157e-27)
 </table>
 
 <p>The interpretation of the coefficients is much like that for the binary variables. Group 1 is the omitted group, so Intercept is the mean for group 1. The coefficient for mealcat2 is the mean for group 2 minus the mean of the omitted group (group 1). And the coefficient for mealcat3 is the mean of group 3 minus the mean of group 1. You can verify this by comparing the coefficients with the means of the groups.</p>
-<div class="highlight"><pre><span></span><code><span class="n">elemapi2_sel</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;mealcat&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">api00</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="nx">mealcat</span>
-<span class="mi">1</span><span class="w">    </span><span class="m m-Double">805.717557</span>
-<span class="mi">2</span><span class="w">    </span><span class="m m-Double">639.393939</span>
-<span class="mi">3</span><span class="w">    </span><span class="m m-Double">504.379562</span>
-<span class="nx">Name</span><span class="p">:</span><span class="w"> </span><span class="nx">api00</span><span class="p">,</span><span class="w"> </span><span class="nx">dtype</span><span class="p">:</span><span class="w"> </span><span class="nx">float64</span>
-</code></pre></div>
-
+<pre><code class="language-python">elemapi2_sel.groupby(&quot;mealcat&quot;).api00.mean()
+</code></pre>
+<pre><code>mealcat
+1    805.717557
+2    639.393939
+3    504.379562
+Name: api00, dtype: float64
+</code></pre>
 <p>Based on these results, we can say that the three groups differ in their api00 scores, and that in particular group 2 is significantly different from group1 (because mealcat2 was significant) and group 3 is significantly different from group 1 (because mealcat3 was significant).</p>
 <h3>3.3.2 More on dummy coding</h3>
 <p>Of course, there is the way of coding by hand. I will ignore it here.</p>
 <h3>3.3.3 run regression with categorical variable directly</h3>
-<div class="highlight"><pre><span></span><code><span class="n">lm</span> <span class="o">=</span> <span class="n">lm</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s1">&#39;api00 ~ C(mealcat)&#39;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">elemapi2_sel</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="n">lm</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
-</code></pre></div>
-
+<pre><code class="language-python">lm = lm = smf.ols('api00 ~ C(mealcat)', data = elemapi2_sel).fit()
+lm.summary()
+</code></pre>
 <table class="simpletable">
 <caption>OLS Regression Results</caption>
 <tr>
@@ -683,26 +658,23 @@ Ttest_indResult(statistic=12.57105956566846, pvalue=5.2973148066493157e-27)
 <p>It is generally very convenient to use dummy coding but it is not the only kind of coding that can be used. As you have seen, when you use dummy coding one of the groups becomes the reference group and all of the other groups are compared to that group. This may not be the most interesting set of comparisons.</p>
 <p>Say you want to compare group 1 with 2, and group 2 with group 3. You need to generate a coding scheme that forms these 2 comparisons. In python, we can first generate the corresponding coding scheme in a data step shown below and use them in the regression.</p>
 <p>We create two dummy variables, one for group 1 and the other for group 3.  </p>
-<div class="highlight"><pre><span></span><code><span class="n">elemapi2_sel</span> <span class="o">=</span> <span class="n">elemapi2</span><span class="o">.</span><span class="n">ix</span><span class="p">[:,</span> <span class="p">[</span><span class="s2">&quot;api00&quot;</span><span class="p">,</span> <span class="s2">&quot;some_col&quot;</span><span class="p">,</span> <span class="s2">&quot;yr_rnd&quot;</span><span class="p">,</span> <span class="s2">&quot;mealcat&quot;</span><span class="p">]]</span>
+<pre><code class="language-python">elemapi2_sel = elemapi2.ix[:, [&quot;api00&quot;, &quot;some_col&quot;, &quot;yr_rnd&quot;, &quot;mealcat&quot;]]
 
-<span class="n">elemapi2_sel</span><span class="p">[</span><span class="s2">&quot;mealcat1&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">elemapi2_sel</span><span class="o">.</span><span class="n">mealcat</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">2.0</span> <span class="o">/</span> <span class="mi">3</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span><span class="o">/</span><span class="mi">3</span><span class="p">)</span>
-<span class="n">elemapi2_sel</span><span class="p">[</span><span class="s2">&quot;mealcat2&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">elemapi2_sel</span><span class="o">.</span><span class="n">mealcat</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> <span class="mf">2.0</span> <span class="o">/</span> <span class="mi">3</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span><span class="o">/</span><span class="mi">3</span><span class="p">)</span>
-<span class="n">elemapi2_sel</span><span class="p">[</span><span class="s2">&quot;mealcat3&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">elemapi2_sel</span><span class="o">.</span><span class="n">mealcat</span> <span class="o">==</span> <span class="mi">3</span><span class="p">,</span> <span class="mf">2.0</span> <span class="o">/</span> <span class="mi">3</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span><span class="o">/</span><span class="mi">3</span><span class="p">)</span>
+elemapi2_sel[&quot;mealcat1&quot;] = np.where(elemapi2_sel.mealcat == 1, 2.0 / 3, -1.0/3)
+elemapi2_sel[&quot;mealcat2&quot;] = np.where(elemapi2_sel.mealcat == 2, 2.0 / 3, -1.0/3)
+elemapi2_sel[&quot;mealcat3&quot;] = np.where(elemapi2_sel.mealcat == 3, 2.0 / 3, -1.0/3)
 
-<span class="n">elemapi2_sel</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s2">&quot;mealcat&quot;</span><span class="p">,</span> <span class="s2">&quot;mealcat1&quot;</span><span class="p">,</span>  <span class="s2">&quot;mealcat3&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">size</span><span class="p">()</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="nx">mealcat</span><span class="w">  </span><span class="nx">mealcat1</span><span class="w">   </span><span class="nx">mealcat3</span>
-<span class="mi">1</span><span class="w">         </span><span class="m m-Double">0.666667</span><span class="w">  </span><span class="o">-</span><span class="m m-Double">0.333333</span><span class="w">    </span><span class="mi">131</span>
-<span class="mi">2</span><span class="w">        </span><span class="o">-</span><span class="m m-Double">0.333333</span><span class="w">  </span><span class="o">-</span><span class="m m-Double">0.333333</span><span class="w">    </span><span class="mi">132</span>
-<span class="mi">3</span><span class="w">        </span><span class="o">-</span><span class="m m-Double">0.333333</span><span class="w">   </span><span class="m m-Double">0.666667</span><span class="w">    </span><span class="mi">137</span>
-<span class="nx">dtype</span><span class="p">:</span><span class="w"> </span><span class="nx">int64</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="n">lm</span> <span class="o">=</span> <span class="n">lm</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s1">&#39;api00 ~ mealcat1 + mealcat3&#39;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">elemapi2_sel</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="n">lm</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
-</code></pre></div>
-
+elemapi2_sel.groupby([&quot;mealcat&quot;, &quot;mealcat1&quot;,  &quot;mealcat3&quot;]).size()
+</code></pre>
+<pre><code>mealcat  mealcat1   mealcat3
+1         0.666667  -0.333333    131
+2        -0.333333  -0.333333    132
+3        -0.333333   0.666667    137
+dtype: int64
+</code></pre>
+<pre><code class="language-python">lm = lm = smf.ols('api00 ~ mealcat1 + mealcat3', data = elemapi2_sel).fit()
+lm.summary()
+</code></pre>
 <table class="simpletable">
 <caption>OLS Regression Results</caption>
 <tr>
@@ -767,16 +739,15 @@ Ttest_indResult(statistic=12.57105956566846, pvalue=5.2973148066493157e-27)
 <h2>3.4 Regression with two categorical predictors</h2>
 <h3>3.4.1 Manually creating dummy variables</h3>
 <p>Previously we looked at using yr_rnd to predict api00 and we have also looked at using mealcat to predict api00. Let's include the parameter estimates for each model below.</p>
-<div class="highlight"><pre><span></span><code><span class="n">lm</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s1">&#39;api00 ~ yr_rnd&#39;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">elemapi2_sel</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="nb">print</span> <span class="n">lm</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+<pre><code class="language-python">lm = smf.ols('api00 ~ yr_rnd', data = elemapi2_sel).fit()
+print lm.summary()
 
-<span class="nb">print</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+print '\n'
 
-<span class="n">lm</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s1">&#39;api00 ~ mealcat1 + mealcat2&#39;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">elemapi2_sel</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="nb">print</span> <span class="n">lm</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>                            OLS Regression Results                            
+lm = smf.ols('api00 ~ mealcat1 + mealcat2', data = elemapi2_sel).fit()
+print lm.summary()
+</code></pre>
+<pre><code>                            OLS Regression Results                            
 ==============================================================================
 Dep. Variable:                  api00   R-squared:                       0.226
 Model:                            OLS   Adj. R-squared:                  0.224
@@ -786,18 +757,18 @@ Time:                        14:23:42   Log-Likelihood:                -2498.9
 No. Observations:                 400   AIC:                             5002.
 Df Residuals:                     398   BIC:                             5010.
 Df Model:                           1                                         
-<span class="gh">Covariance Type:            nonrobust                                         </span>
-<span class="gh">==============================================================================</span>
+Covariance Type:            nonrobust                                         
+==============================================================================
                  coef    std err          t      P&gt;|t|      [95.0% Conf. Int.]
 ------------------------------------------------------------------------------
 Intercept    684.5390      7.140     95.878      0.000       670.503   698.575
-<span class="gh">yr_rnd      -160.5064     14.887    -10.782      0.000      -189.774  -131.239</span>
-<span class="gh">==============================================================================</span>
+yr_rnd      -160.5064     14.887    -10.782      0.000      -189.774  -131.239
+==============================================================================
 Omnibus:                       45.748   Durbin-Watson:                   1.499
 Prob(Omnibus):                  0.000   Jarque-Bera (JB):               13.162
 Skew:                           0.006   Prob(JB):                      0.00139
-<span class="gh">Kurtosis:                       2.111   Cond. No.                         2.53</span>
-<span class="gh">==============================================================================</span>
+Kurtosis:                       2.111   Cond. No.                         2.53
+==============================================================================
 
 Warnings:
 [1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
@@ -813,31 +784,29 @@ Time:                        14:23:42   Log-Likelihood:                -2269.0
 No. Observations:                 400   AIC:                             4544.
 Df Residuals:                     397   BIC:                             4556.
 Df Model:                           2                                         
-<span class="gh">Covariance Type:            nonrobust                                         </span>
-<span class="gh">==============================================================================</span>
+Covariance Type:            nonrobust                                         
+==============================================================================
                  coef    std err          t      P&gt;|t|      [95.0% Conf. Int.]
 ------------------------------------------------------------------------------
 Intercept    649.8304      3.531    184.021      0.000       642.888   656.773
 mealcat1     301.3380      8.629     34.922      0.000       284.374   318.302
-<span class="gh">mealcat2     135.0144      8.612     15.677      0.000       118.083   151.945</span>
-<span class="gh">==============================================================================</span>
+mealcat2     135.0144      8.612     15.677      0.000       118.083   151.945
+==============================================================================
 Omnibus:                        1.593   Durbin-Watson:                   1.541
 Prob(Omnibus):                  0.451   Jarque-Bera (JB):                1.684
 Skew:                          -0.139   Prob(JB):                        0.431
-<span class="gh">Kurtosis:                       2.847   Cond. No.                         2.98</span>
-<span class="gh">==============================================================================</span>
+Kurtosis:                       2.847   Cond. No.                         2.98
+==============================================================================
 
 Warnings:
 [1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
-</code></pre></div>
-
+</code></pre>
 <p>In the first model with only yr_rnd as the only predictor, the intercept term is the mean api score for the non-year-round schools. The coefficient for yr_rnd is the difference between the year round and non-year round group. In the second model, the coefficient for mealcat1 is the difference between mealcat=1 and mealcat=3, and the coefficient for mealcat2 is the difference between mealcat=2 and mealcat=3. The intercept is the mean for the mealcat=3.</p>
 <p>Of course, we can include both yr_rnd and mealcat together in the same model. Now the question is how to interpret the coefficients.</p>
-<div class="highlight"><pre><span></span><code><span class="n">lm</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s1">&#39;api00 ~ yr_rnd + mealcat1 + mealcat2&#39;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">elemapi2_sel</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="nb">print</span> <span class="n">lm</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>                            OLS Regression Results                            
+<pre><code class="language-python">lm = smf.ols('api00 ~ yr_rnd + mealcat1 + mealcat2', data = elemapi2_sel).fit()
+print lm.summary()
+</code></pre>
+<pre><code>                            OLS Regression Results                            
 ==============================================================================
 Dep. Variable:                  api00   R-squared:                       0.767
 Model:                            OLS   Adj. R-squared:                  0.765
@@ -847,25 +816,24 @@ Time:                        21:18:55   Log-Likelihood:                -2258.6
 No. Observations:                 400   AIC:                             4525.
 Df Residuals:                     396   BIC:                             4541.
 Df Model:                           3                                         
-<span class="gh">Covariance Type:            nonrobust                                         </span>
-<span class="gh">==============================================================================</span>
+Covariance Type:            nonrobust                                         
+==============================================================================
                  coef    std err          t      P&gt;|t|      [95.0% Conf. Int.]
 ------------------------------------------------------------------------------
 Intercept    659.5396      4.043    163.126      0.000       651.591   667.488
 yr_rnd       -42.9601      9.362     -4.589      0.000       -61.365   -24.555
 mealcat1     281.6832      9.446     29.821      0.000       263.113   300.253
-<span class="gh">mealcat2     117.9458      9.189     12.836      0.000        99.881   136.011</span>
-<span class="gh">==============================================================================</span>
+mealcat2     117.9458      9.189     12.836      0.000        99.881   136.011
+==============================================================================
 Omnibus:                        1.210   Durbin-Watson:                   1.584
 Prob(Omnibus):                  0.546   Jarque-Bera (JB):                1.279
 Skew:                          -0.086   Prob(JB):                        0.528
-<span class="gh">Kurtosis:                       2.783   Cond. No.                         3.95</span>
-<span class="gh">==============================================================================</span>
+Kurtosis:                       2.783   Cond. No.                         3.95
+==============================================================================
 
 Warnings:
 [1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
-</code></pre></div>
-
+</code></pre>
 <p>Let's dig below the surface and see how the coefficients relate to the predicted values. Let's view the cells formed by crossing yr_rnd and mealcat and number the cells from cell1 to cell6.</p>
 <p>|   |  mealcat=1    | mealcat=2     |  mealcat=3    | <br>
 |--:    |--:    |--:    |--:    |--:    |
@@ -882,11 +850,10 @@ Warnings:
 <p>We should note that if you computed the predicted values for each cell, they would not exactly match the means in the six cells.  The predicted means would be close to the observed means in the cells, but not exactly the same.  This is because our model only has main effects and assumes that the difference between cell1 and cell4 is exactly the same as the difference between cells 2 and 5 which is the same as the difference between cells 3 and 5.  Since the observed values don't follow this pattern, there is some discrepancy between the predicted means and observed means.</p>
 <h3>3.4.2 Using the <code>C</code> formula directly</h3>
 <p>We can run the same analysis using the categorical formula without manually coding the dummy variables.  </p>
-<div class="highlight"><pre><span></span><code><span class="n">lm</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s1">&#39;api00 ~ yr_rnd + C(mealcat)&#39;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">elemapi2_sel</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="nb">print</span> <span class="n">lm</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>                            OLS Regression Results                            
+<pre><code class="language-python">lm = smf.ols('api00 ~ yr_rnd + C(mealcat)', data = elemapi2_sel).fit()
+print lm.summary()
+</code></pre>
+<pre><code>                            OLS Regression Results                            
 ==============================================================================
 Dep. Variable:                  api00   R-squared:                       0.767
 Model:                            OLS   Adj. R-squared:                  0.765
@@ -896,56 +863,52 @@ Time:                        14:24:47   Log-Likelihood:                -2258.6
 No. Observations:                 400   AIC:                             4525.
 Df Residuals:                     396   BIC:                             4541.
 Df Model:                           3                                         
-<span class="gh">Covariance Type:            nonrobust                                         </span>
-<span class="gh">===================================================================================</span>
+Covariance Type:            nonrobust                                         
+===================================================================================
                       coef    std err          t      P&gt;|t|      [95.0% Conf. Int.]
 -----------------------------------------------------------------------------------
 Intercept         808.0131      6.040    133.777      0.000       796.139   819.888
 C(mealcat)[T.2]  -163.7374      8.515    -19.229      0.000      -180.478  -146.997
 C(mealcat)[T.3]  -281.6832      9.446    -29.821      0.000      -300.253  -263.113
-<span class="gh">yr_rnd            -42.9601      9.362     -4.589      0.000       -61.365   -24.555</span>
-<span class="gh">==============================================================================</span>
+yr_rnd            -42.9601      9.362     -4.589      0.000       -61.365   -24.555
+==============================================================================
 Omnibus:                        1.210   Durbin-Watson:                   1.584
 Prob(Omnibus):                  0.546   Jarque-Bera (JB):                1.279
 Skew:                          -0.086   Prob(JB):                        0.528
-<span class="gh">Kurtosis:                       2.783   Cond. No.                         4.17</span>
-<span class="gh">==============================================================================</span>
+Kurtosis:                       2.783   Cond. No.                         4.17
+==============================================================================
 
 Warnings:
 [1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
-</code></pre></div>
-
+</code></pre>
 <p>In summary, these results indicate the differences between year round and non-year round schools is significant, and the differences among the three mealcat groups are significant.</p>
 <h2>3.5 Categorical predictor with interactions</h2>
 <h3>3.5.1 Manually creating dummy variables</h3>
 <p>Let's perform the same analysis that we performed above, this time let's include the interaction of mealcat by yr_rnd. In this section we show how to do it by manually creating all the dummy variables. We use the array structure again. This time we have to declare two set of arrays, one for the dummy variables of mealcat and one for the interaction of yr_rnd and mealcat.</p>
-<div class="highlight"><pre><span></span><code><span class="n">elemapi2_sel</span> <span class="o">=</span> <span class="n">elemapi2</span><span class="o">.</span><span class="n">ix</span><span class="p">[:,</span> <span class="p">[</span><span class="s2">&quot;api00&quot;</span><span class="p">,</span> <span class="s2">&quot;some_col&quot;</span><span class="p">,</span> <span class="s2">&quot;yr_rnd&quot;</span><span class="p">,</span> <span class="s2">&quot;mealcat&quot;</span><span class="p">]]</span>
+<pre><code class="language-python">elemapi2_sel = elemapi2.ix[:, [&quot;api00&quot;, &quot;some_col&quot;, &quot;yr_rnd&quot;, &quot;mealcat&quot;]]
 
-<span class="n">ohe</span> <span class="o">=</span> <span class="n">preprocessing</span><span class="o">.</span><span class="n">OneHotEncoder</span><span class="p">()</span>
-<span class="n">dummy</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">ohe</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">elemapi2_sel</span><span class="o">.</span><span class="n">mealcat</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">toarray</span><span class="p">(),</span> <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;mealcat1&quot;</span><span class="p">,</span> <span class="s2">&quot;mealcat2&quot;</span><span class="p">,</span> <span class="s2">&quot;mealcat3&quot;</span><span class="p">])</span>
-<span class="n">mealxynd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">dummy</span><span class="p">,</span> <span class="n">elemapi2</span><span class="o">.</span><span class="n">yr_rnd</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
-<span class="n">mealxynd</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;mealxynd1&quot;</span><span class="p">,</span> <span class="s2">&quot;mealxynd2&quot;</span><span class="p">,</span> <span class="s2">&quot;mealxynd3&quot;</span><span class="p">]</span>
-<span class="n">elemapi2_sel</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">elemapi2_sel</span><span class="p">,</span> <span class="n">dummy</span><span class="p">,</span> <span class="n">mealxynd</span><span class="p">],</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+ohe = preprocessing.OneHotEncoder()
+dummy = pd.DataFrame(ohe.fit_transform(elemapi2_sel.mealcat.reshape(-1,1)).toarray(), columns = [&quot;mealcat1&quot;, &quot;mealcat2&quot;, &quot;mealcat3&quot;])
+mealxynd = np.multiply(dummy, elemapi2.yr_rnd.reshape(-1, 1))
+mealxynd.columns = [&quot;mealxynd1&quot;, &quot;mealxynd2&quot;, &quot;mealxynd3&quot;]
+elemapi2_sel = pd.concat([elemapi2_sel, dummy, mealxynd], axis = 1)
 
-<span class="n">elemapi2_sel</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s2">&quot;yr_rnd&quot;</span><span class="p">,</span> <span class="s2">&quot;mealcat&quot;</span><span class="p">,</span> <span class="s2">&quot;mealxynd1&quot;</span><span class="p">,</span> <span class="s2">&quot;mealxynd2&quot;</span><span class="p">,</span> <span class="s2">&quot;mealxynd3&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">size</span><span class="p">()</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="nx">yr_rnd</span><span class="w">  </span><span class="nx">mealcat</span><span class="w">  </span><span class="nx">mealxynd1</span><span class="w">  </span><span class="nx">mealxynd2</span><span class="w">  </span><span class="nx">mealxynd3</span>
-<span class="mi">0</span><span class="w">       </span><span class="mi">1</span><span class="w">        </span><span class="m m-Double">0.0</span><span class="w">        </span><span class="m m-Double">0.0</span><span class="w">        </span><span class="m m-Double">0.0</span><span class="w">          </span><span class="mi">124</span>
-<span class="w">        </span><span class="mi">2</span><span class="w">        </span><span class="m m-Double">0.0</span><span class="w">        </span><span class="m m-Double">0.0</span><span class="w">        </span><span class="m m-Double">0.0</span><span class="w">          </span><span class="mi">117</span>
-<span class="w">        </span><span class="mi">3</span><span class="w">        </span><span class="m m-Double">0.0</span><span class="w">        </span><span class="m m-Double">0.0</span><span class="w">        </span><span class="m m-Double">0.0</span><span class="w">           </span><span class="mi">67</span>
-<span class="mi">1</span><span class="w">       </span><span class="mi">1</span><span class="w">        </span><span class="m m-Double">1.0</span><span class="w">        </span><span class="m m-Double">0.0</span><span class="w">        </span><span class="m m-Double">0.0</span><span class="w">            </span><span class="mi">7</span>
-<span class="w">        </span><span class="mi">2</span><span class="w">        </span><span class="m m-Double">0.0</span><span class="w">        </span><span class="m m-Double">1.0</span><span class="w">        </span><span class="m m-Double">0.0</span><span class="w">           </span><span class="mi">15</span>
-<span class="w">        </span><span class="mi">3</span><span class="w">        </span><span class="m m-Double">0.0</span><span class="w">        </span><span class="m m-Double">0.0</span><span class="w">        </span><span class="m m-Double">1.0</span><span class="w">           </span><span class="mi">70</span>
-<span class="nx">dtype</span><span class="p">:</span><span class="w"> </span><span class="nx">int64</span>
-</code></pre></div>
-
+elemapi2_sel.groupby([&quot;yr_rnd&quot;, &quot;mealcat&quot;, &quot;mealxynd1&quot;, &quot;mealxynd2&quot;, &quot;mealxynd3&quot;]).size()
+</code></pre>
+<pre><code>yr_rnd  mealcat  mealxynd1  mealxynd2  mealxynd3
+0       1        0.0        0.0        0.0          124
+        2        0.0        0.0        0.0          117
+        3        0.0        0.0        0.0           67
+1       1        1.0        0.0        0.0            7
+        2        0.0        1.0        0.0           15
+        3        0.0        0.0        1.0           70
+dtype: int64
+</code></pre>
 <p>Now let's add these dummy variables for interaction between yr_rnd and mealcat to our model. We can all add a test statement to test the overall interaction. The output shows that the interaction effect is not significant.</p>
-<div class="highlight"><pre><span></span><code><span class="n">lm</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s1">&#39;api00 ~ yr_rnd + mealcat1 + mealcat2 + mealxynd1 + mealxynd2&#39;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">elemapi2_sel</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="nb">print</span> <span class="n">lm</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>                            OLS Regression Results                            
+<pre><code class="language-python">lm = smf.ols('api00 ~ yr_rnd + mealcat1 + mealcat2 + mealxynd1 + mealxynd2', data = elemapi2_sel).fit()
+print lm.summary()
+</code></pre>
+<pre><code>                            OLS Regression Results                            
 ==============================================================================
 Dep. Variable:                  api00   R-squared:                       0.769
 Model:                            OLS   Adj. R-squared:                  0.766
@@ -955,8 +918,8 @@ Time:                        14:26:06   Log-Likelihood:                -2257.5
 No. Observations:                 400   AIC:                             4527.
 Df Residuals:                     394   BIC:                             4551.
 Df Model:                           5                                         
-<span class="gh">Covariance Type:            nonrobust                                         </span>
-<span class="gh">==============================================================================</span>
+Covariance Type:            nonrobust                                         
+==============================================================================
                  coef    std err          t      P&gt;|t|      [95.0% Conf. Int.]
 ------------------------------------------------------------------------------
 Intercept    521.4925      8.414     61.978      0.000       504.950   538.035
@@ -964,18 +927,17 @@ yr_rnd       -33.4925     11.771     -2.845      0.005       -56.635   -10.350
 mealcat1     288.1929     10.443     27.597      0.000       267.662   308.724
 mealcat2     123.7810     10.552     11.731      0.000       103.036   144.526
 mealxynd1    -40.7644     29.231     -1.395      0.164       -98.233    16.704
-<span class="gh">mealxynd2    -18.2476     22.256     -0.820      0.413       -62.003    25.508</span>
-<span class="gh">==============================================================================</span>
+mealxynd2    -18.2476     22.256     -0.820      0.413       -62.003    25.508
+==============================================================================
 Omnibus:                        1.439   Durbin-Watson:                   1.583
 Prob(Omnibus):                  0.487   Jarque-Bera (JB):                1.484
 Skew:                          -0.096   Prob(JB):                        0.476
-<span class="gh">Kurtosis:                       2.771   Cond. No.                         10.4</span>
-<span class="gh">==============================================================================</span>
+Kurtosis:                       2.771   Cond. No.                         10.4
+==============================================================================
 
 Warnings:
 [1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
-</code></pre></div>
-
+</code></pre>
 <p>It is important to note how the meaning of the coefficients change in the presence of these interaction terms. For example, in the prior model, with only main effects, we could interpret Byr_rnd as the difference between the year round and non year round schools. However, now that we have added the interaction term, the term Byr_rnd represents the difference between cell3 and cell6, or the difference between the year round and non-year round schools when mealcat=3 (because mealcat=3 was the omitted group). The presence of an interaction would imply that the difference between year round and non-year round schools depends on the level of mealcat. The interaction terms Bmealxynd1 and Bmealxynd2 represent the extent to which the difference between the year round/non year round schools changes when mealcat=1 and when mealcat=2 (as compared to the reference group, mealcat=3). For example the term Bmealxynd1 represents the difference between year round and non-year round for mealcat=1 versus the difference for mealcat=3. In other words, Bmealxynd1 in this design is (cell1-cell4) - (cell3-cell6), or it represents how much the effect of yr_rnd differs between mealcat=1 and mealcat=3.</p>
 <p>Below we have shown the predicted values for the six cells in terms of the coefficients in the model.  If you compare this to the main effects model, you will see that the predicted values are the same except for the addition of mealxynd1 (in cell 4) and mealxynd2 (in cell 5).  </p>
 <p>|   |  mealcat=1    | mealcat=2     |  mealcat=3    | <br>
@@ -985,11 +947,10 @@ Warnings:
 <p>It can be very tricky to interpret these interaction terms if you wish to form specific comparisons. For example, if you wanted to perform a test of the simple main effect of yr_rnd when mealcat=1, i.e., comparing compare cell1 with cell4, you would want to compare Intercept+ mealcat1 versus Intercept + mealcat1 + yr_rnd + mealxynd1 and since Intercept and Imealcat1 would drop out.</p>
 <h3>3.5.2 Using anova</h3>
 <p>Constructing these interactions can be easier. We can also avoid manually coding our dummy variables. As you see below, the <code>C</code> formula gives us the test of the overall main effects and interactions without the need to perform subsequent test commands.</p>
-<div class="highlight"><pre><span></span><code><span class="n">lm</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s1">&#39;api00 ~ C(yr_rnd) * C(mealcat)&#39;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">elemapi2_sel</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="nb">print</span> <span class="n">lm</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>                            OLS Regression Results                            
+<pre><code class="language-python">lm = smf.ols('api00 ~ C(yr_rnd) * C(mealcat)', data = elemapi2_sel).fit()
+print lm.summary()
+</code></pre>
+<pre><code>                            OLS Regression Results                            
 ==============================================================================
 Dep. Variable:                  api00   R-squared:                       0.769
 Model:                            OLS   Adj. R-squared:                  0.766
@@ -999,8 +960,8 @@ Time:                        21:54:22   Log-Likelihood:                -2257.5
 No. Observations:                 400   AIC:                             4527.
 Df Residuals:                     394   BIC:                             4551.
 Df Model:                           5                                         
-<span class="gh">Covariance Type:            nonrobust                                         </span>
-<span class="gh">==================================================================================================</span>
+Covariance Type:            nonrobust                                         
+==================================================================================================
                                      coef    std err          t      P&gt;|t|      [95.0% Conf. Int.]
 --------------------------------------------------------------------------------------------------
 Intercept                        809.6855      6.185    130.911      0.000       797.526   821.845
@@ -1008,36 +969,34 @@ C(yr_rnd)[T.1]                   -74.2569     26.756     -2.775      0.006      
 C(mealcat)[T.2]                 -164.4120      8.877    -18.522      0.000      -181.864  -146.960
 C(mealcat)[T.3]                 -288.1929     10.443    -27.597      0.000      -308.724  -267.662
 C(yr_rnd)[T.1]:C(mealcat)[T.2]    22.5167     32.752      0.687      0.492       -41.873    86.907
-<span class="gh">C(yr_rnd)[T.1]:C(mealcat)[T.3]    40.7644     29.231      1.395      0.164       -16.704    98.233</span>
-<span class="gh">==============================================================================</span>
+C(yr_rnd)[T.1]:C(mealcat)[T.3]    40.7644     29.231      1.395      0.164       -16.704    98.233
+==============================================================================
 Omnibus:                        1.439   Durbin-Watson:                   1.583
 Prob(Omnibus):                  0.487   Jarque-Bera (JB):                1.484
 Skew:                          -0.096   Prob(JB):                        0.476
-<span class="gh">Kurtosis:                       2.771   Cond. No.                         16.4</span>
-<span class="gh">==============================================================================</span>
+Kurtosis:                       2.771   Cond. No.                         16.4
+==============================================================================
 
 Warnings:
 [1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
-</code></pre></div>
-
+</code></pre>
 <p>The results from above show us the effect of yr_rnd at each of the three levels of mealcat. We can see that the comparison for mealcat = 1 matches those we computed above using the test statement, however, it was much easier and less error prone using the lsmeans statement.</p>
 <p>Although this section has focused on how to handle analyses involving interactions, these particular results show no indication of interaction. We could decide to omit interaction terms from future analyses having found the interactions to be non-significant. This would simplify future analyses, however including the interaction term can be useful to assure readers that the interaction term is non-significant.</p>
 <h2>3.6 Continuous and categorical variables</h2>
 <h3>3.6.1 Using regression</h3>
 <p>Say that we wish to analyze both continuous and categorical variables in one analysis. For example, let's include yr_rnd and some_col in the same analysis. We can also plot the predicted values against some_col using plot statement.</p>
-<div class="highlight"><pre><span></span><code><span class="n">elemapi2_</span> <span class="o">=</span> <span class="n">elemapi2</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<pre><code class="language-python">elemapi2_ = elemapi2.copy()
 
-<span class="n">lm</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s1">&#39;api00 ~ yr_rnd + some_col&#39;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">elemapi2_</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="nb">print</span> <span class="n">lm</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+lm = smf.ols('api00 ~ yr_rnd + some_col', data = elemapi2_).fit()
+print lm.summary()
 
-<span class="n">elemapi2_</span><span class="p">[</span><span class="s1">&#39;pred&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">predict</span><span class="p">()</span>
+elemapi2_['pred'] = lm.predict()
 
-<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">elemapi2_</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;yr_rnd == 0&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">some_col</span><span class="p">,</span> <span class="n">elemapi2_</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;yr_rnd == 0&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">pred</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="n">marker</span> <span class="o">=</span> <span class="s2">&quot;o&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">elemapi2_</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;yr_rnd == 1&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">some_col</span><span class="p">,</span> <span class="n">elemapi2_</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;yr_rnd == 1&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">pred</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">marker</span> <span class="o">=</span> <span class="s2">&quot;+&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>                            OLS Regression Results                            
+plt.scatter(elemapi2_.query('yr_rnd == 0').some_col, elemapi2_.query('yr_rnd == 0').pred, c = &quot;b&quot;, marker = &quot;o&quot;)
+plt.scatter(elemapi2_.query('yr_rnd == 1').some_col, elemapi2_.query('yr_rnd == 1').pred, c = &quot;r&quot;, marker = &quot;+&quot;)
+plt.plot()
+</code></pre>
+<pre><code>                            OLS Regression Results                            
 ==============================================================================
 Dep. Variable:                  api00   R-squared:                       0.257
 Model:                            OLS   Adj. R-squared:                  0.253
@@ -1047,33 +1006,31 @@ Time:                        14:27:31   Log-Likelihood:                -2490.8
 No. Observations:                 400   AIC:                             4988.
 Df Residuals:                     397   BIC:                             5000.
 Df Model:                           2                                         
-<span class="gh">Covariance Type:            nonrobust                                         </span>
-<span class="gh">==============================================================================</span>
+Covariance Type:            nonrobust                                         
+==============================================================================
                  coef    std err          t      P&gt;|t|      [95.0% Conf. Int.]
 ------------------------------------------------------------------------------
 Intercept    637.8581     13.503     47.237      0.000       611.311   664.405
 yr_rnd      -149.1591     14.875    -10.027      0.000      -178.403  -119.915
-<span class="gh">some_col       2.2357      0.553      4.044      0.000         1.149     3.323</span>
-<span class="gh">==============================================================================</span>
+some_col       2.2357      0.553      4.044      0.000         1.149     3.323
+==============================================================================
 Omnibus:                       23.070   Durbin-Watson:                   1.565
 Prob(Omnibus):                  0.000   Jarque-Bera (JB):                9.935
 Skew:                           0.125   Prob(JB):                      0.00696
-<span class="gh">Kurtosis:                       2.269   Cond. No.                         62.5</span>
-<span class="gh">==============================================================================</span>
+Kurtosis:                       2.269   Cond. No.                         62.5
+==============================================================================
 
 Warnings:
 [1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
-</code></pre></div>
-
+</code></pre>
 <p><img alt="png" src="/figures/ucla_ats_linreg_3_1_02.png"></p>
 <p>The coefficient for some_col indicates that for every unit increase in some_col the api00 score is predicted to increase by 2.23 units. This is the slope of the lines shown in the above graph. The graph has two lines, one for the year round schools and one for the non-year round schools. The coefficient for yr_rnd is -149.16, indicating that as yr_rnd increases by 1 unit, the api00 score is expected to decrease by about 149 units. As you can see in the graph, the top line is about 150 units higher than the lower line. You can see that the intercept is 637 and that is where the upper line crosses the Y axis when X is 0. The lower line crosses the line about 150 units lower at about 487.</p>
 <h3>3.6.2 Using categorical variable directly</h3>
 <p>We can run this analysis using the categorical variable directly. We need to use the specify which variables should be considered as categorical variables.  </p>
-<div class="highlight"><pre><span></span><code><span class="n">lm</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s1">&#39;api00 ~ C(yr_rnd) + some_col&#39;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">elemapi2_</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="nb">print</span> <span class="n">lm</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>                            OLS Regression Results                            
+<pre><code class="language-python">lm = smf.ols('api00 ~ C(yr_rnd) + some_col', data = elemapi2_).fit()
+print lm.summary()
+</code></pre>
+<pre><code>                            OLS Regression Results                            
 ==============================================================================
 Dep. Variable:                  api00   R-squared:                       0.257
 Model:                            OLS   Adj. R-squared:                  0.253
@@ -1083,30 +1040,28 @@ Time:                        14:29:38   Log-Likelihood:                -2490.8
 No. Observations:                 400   AIC:                             4988.
 Df Residuals:                     397   BIC:                             5000.
 Df Model:                           2                                         
-<span class="gh">Covariance Type:            nonrobust                                         </span>
-<span class="gh">==================================================================================</span>
+Covariance Type:            nonrobust                                         
+==================================================================================
                      coef    std err          t      P&gt;|t|      [95.0% Conf. Int.]
 ----------------------------------------------------------------------------------
 Intercept        637.8581     13.503     47.237      0.000       611.311   664.405
 C(yr_rnd)[T.1]  -149.1591     14.875    -10.027      0.000      -178.403  -119.915
-<span class="gh">some_col           2.2357      0.553      4.044      0.000         1.149     3.323</span>
-<span class="gh">==============================================================================</span>
+some_col           2.2357      0.553      4.044      0.000         1.149     3.323
+==============================================================================
 Omnibus:                       23.070   Durbin-Watson:                   1.565
 Prob(Omnibus):                  0.000   Jarque-Bera (JB):                9.935
 Skew:                           0.125   Prob(JB):                      0.00696
-<span class="gh">Kurtosis:                       2.269   Cond. No.                         62.5</span>
-<span class="gh">==============================================================================</span>
+Kurtosis:                       2.269   Cond. No.                         62.5
+==============================================================================
 
 Warnings:
 [1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
-</code></pre></div>
-
+</code></pre>
 <h2>3.7 Interactions of Continuous by 0/1 Categorical variables</h2>
 <p>Above we showed an analysis that looked at the relationship between some_col and api00 and also included yr_rnd.  We saw that this produced a graph where we saw the relationship between some_col and api00 but there were two regression lines, one higher than the other but with equal slope.  Such a model assumed that the slope was the same for the two groups.  Perhaps the slope might be different for these groups.  Let's run the regressions separately for these two groups beginning with the non-year round schools.</p>
-<div class="highlight"><pre><span></span><code><span class="n">lm_0</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="n">formula</span> <span class="o">=</span> <span class="s2">&quot;api00 ~ some_col&quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">elemapi2</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;yr_rnd == 0&#39;</span><span class="p">))</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="n">lm_0</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
-</code></pre></div>
-
+<pre><code class="language-python">lm_0 = smf.ols(formula = &quot;api00 ~ some_col&quot;, data = elemapi2.query('yr_rnd == 0')).fit()
+lm_0.summary()
+</code></pre>
 <table class="simpletable">
 <caption>OLS Regression Results</caption>
 <tr>
@@ -1163,35 +1118,31 @@ Warnings:
 </tr>
 </table>
 
-<div class="highlight"><pre><span></span><code><span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">elemapi2</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;yr_rnd == 0&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">some_col</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">elemapi2</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;yr_rnd == 0&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">api00</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s2">&quot;actual&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">elemapi2</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;yr_rnd == 0&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">some_col</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">lm_0</span><span class="o">.</span><span class="n">predict</span><span class="p">(),</span> <span class="n">c</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s2">&quot;predict&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-</code></pre></div>
-
+<pre><code class="language-python">plt.scatter(elemapi2.query('yr_rnd == 0').some_col.values, elemapi2.query('yr_rnd == 0').api00.values, label = &quot;actual&quot;)
+plt.scatter(elemapi2.query('yr_rnd == 0').some_col.values, lm_0.predict(), c = &quot;r&quot;, label = &quot;predict&quot;)
+plt.legend()
+plt.show()
+</code></pre>
 <p><img alt="png" src="/figures/ucla_ats_linreg_3_1_03.png"></p>
 <p>Likewise, let's look at the year round schools and we will use the same symbol statements as above.</p>
-<div class="highlight"><pre><span></span><code><span class="n">lm_1</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="n">formula</span> <span class="o">=</span> <span class="s2">&quot;api00 ~ some_col&quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">elemapi2</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;yr_rnd == 1&#39;</span><span class="p">))</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">elemapi2</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;yr_rnd == 1&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">some_col</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">elemapi2</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;yr_rnd == 1&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">api00</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s2">&quot;actual&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">elemapi2</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;yr_rnd == 1&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">some_col</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">lm_1</span><span class="o">.</span><span class="n">predict</span><span class="p">(),</span> <span class="n">c</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s2">&quot;predict&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-</code></pre></div>
-
+<pre><code class="language-python">lm_1 = smf.ols(formula = &quot;api00 ~ some_col&quot;, data = elemapi2.query('yr_rnd == 1')).fit()
+plt.scatter(elemapi2.query('yr_rnd == 1').some_col.values, elemapi2.query('yr_rnd == 1').api00.values, label = &quot;actual&quot;)
+plt.scatter(elemapi2.query('yr_rnd == 1').some_col.values, lm_1.predict(), c = &quot;r&quot;, label = &quot;predict&quot;)
+plt.legend()
+plt.show()
+</code></pre>
 <p><img alt="png" src="/figures/ucla_ats_linreg_3_1_04.png"></p>
 <p>Note that the slope of the regression line looks much steeper for the year round schools than for the non-year round schools. This is confirmed by the regression equations that show the slope for the year round schools to be higher (7.4) than non-year round schools (1.3). We can compare these to see if these are significantly different from each other by including the interaction of some_col by yr_rnd, an interaction of a continuous variable by a categorical variable.</p>
 <h2>3.7.1 Computing interactions manually</h2>
 <p>We will start by manually computing the interaction of some_col by yr_rnd.</p>
 <p>Next, let's make a variable that is the interaction of some college (some_col) and year round schools (yr_rnd) called yrxsome.</p>
-<div class="highlight"><pre><span></span><code><span class="n">yrxsome_elemapi</span> <span class="o">=</span> <span class="n">elemapi2</span>
-<span class="n">yrxsome_elemapi</span><span class="p">[</span><span class="s2">&quot;yrxsome&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">yrxsome_elemapi</span><span class="o">.</span><span class="n">yr_rnd</span> <span class="o">*</span> <span class="n">yrxsome_elemapi</span><span class="o">.</span><span class="n">some_col</span>
-</code></pre></div>
-
+<pre><code class="language-python">yrxsome_elemapi = elemapi2
+yrxsome_elemapi[&quot;yrxsome&quot;] = yrxsome_elemapi.yr_rnd * yrxsome_elemapi.some_col
+</code></pre>
 <p>We can now run the regression that tests whether the coefficient for some_col is significantly different for year round schools and non-year round schools. Indeed, the yrxsome interaction effect is significant.</p>
-<div class="highlight"><pre><span></span><code><span class="n">lm</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s2">&quot;api00 ~ some_col + yr_rnd + yrxsome&quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">yrxsome_elemapi</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="n">lm</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
-</code></pre></div>
-
+<pre><code class="language-python">lm = smf.ols(&quot;api00 ~ some_col + yr_rnd + yrxsome&quot;, data = yrxsome_elemapi).fit()
+lm.summary()
+</code></pre>
 <table class="simpletable">
 <caption>OLS Regression Results</caption>
 <tr>
@@ -1255,50 +1206,43 @@ Warnings:
 </table>
 
 <p>We can then save the predicted values to a data set and graph the predicted values for the two types of schools by some_col. You can see how the two lines have quite different slopes, consistent with the fact that the yrxsome interaction was significant.   </p>
-<div class="highlight"><pre><span></span><code><span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">yrxsome_elemapi</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;yr_rnd == 0&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">some_col</span><span class="p">,</span> <span class="n">lm</span><span class="o">.</span><span class="n">predict</span><span class="p">()[</span><span class="n">yrxsome_elemapi</span><span class="o">.</span><span class="n">yr_rnd</span><span class="o">.</span><span class="n">values</span> <span class="o">==</span> <span class="mi">0</span><span class="p">],</span> <span class="n">marker</span> <span class="o">=</span> <span class="s2">&quot;+&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">yrxsome_elemapi</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;yr_rnd == 1&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">some_col</span><span class="p">,</span> <span class="n">lm</span><span class="o">.</span><span class="n">predict</span><span class="p">()[</span><span class="n">yrxsome_elemapi</span><span class="o">.</span><span class="n">yr_rnd</span><span class="o">.</span><span class="n">values</span> <span class="o">==</span> <span class="mi">1</span><span class="p">],</span> <span class="n">c</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">marker</span> <span class="o">=</span> <span class="s2">&quot;x&quot;</span><span class="p">)</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>&lt;matplotlib.collections.PathCollection at 0x1107b780&gt;
-</code></pre></div>
-
+<pre><code class="language-python">plt.scatter(yrxsome_elemapi.query('yr_rnd == 0').some_col, lm.predict()[yrxsome_elemapi.yr_rnd.values == 0], marker = &quot;+&quot;)
+plt.scatter(yrxsome_elemapi.query('yr_rnd == 1').some_col, lm.predict()[yrxsome_elemapi.yr_rnd.values == 1], c = &quot;r&quot;, marker = &quot;x&quot;)
+</code></pre>
+<pre><code>&lt;matplotlib.collections.PathCollection at 0x1107b780&gt;
+</code></pre>
 <p><img alt="png" src="/figures/ucla_ats_linreg_3_1_05.png"></p>
 <p>We can also create a plot including the data points. There are multiple ways of doing this and we'll show both ways and their graphs here.</p>
-<div class="highlight"><pre><span></span><code><span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">yrxsome_elemapi</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;yr_rnd == 0&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">some_col</span><span class="p">,</span> <span class="n">lm</span><span class="o">.</span><span class="n">predict</span><span class="p">()[</span><span class="n">yrxsome_elemapi</span><span class="o">.</span><span class="n">yr_rnd</span><span class="o">.</span><span class="n">values</span> <span class="o">==</span> <span class="mi">0</span><span class="p">],</span> <span class="n">marker</span> <span class="o">=</span> <span class="s2">&quot;+&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">yrxsome_elemapi</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;yr_rnd == 1&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">some_col</span><span class="p">,</span> <span class="n">lm</span><span class="o">.</span><span class="n">predict</span><span class="p">()[</span><span class="n">yrxsome_elemapi</span><span class="o">.</span><span class="n">yr_rnd</span><span class="o">.</span><span class="n">values</span> <span class="o">==</span> <span class="mi">1</span><span class="p">],</span> <span class="n">c</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">marker</span> <span class="o">=</span> <span class="s2">&quot;x&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">yrxsome_elemapi</span><span class="o">.</span><span class="n">some_col</span><span class="p">,</span> <span class="n">yrxsome_elemapi</span><span class="o">.</span><span class="n">api00</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="s2">&quot;black&quot;</span><span class="p">,</span> <span class="n">marker</span> <span class="o">=</span> <span class="s2">&quot;*&quot;</span><span class="p">)</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>&lt;matplotlib.collections.PathCollection at 0x1282cf98&gt;
-</code></pre></div>
-
+<pre><code class="language-python">plt.scatter(yrxsome_elemapi.query('yr_rnd == 0').some_col, lm.predict()[yrxsome_elemapi.yr_rnd.values == 0], marker = &quot;+&quot;)
+plt.scatter(yrxsome_elemapi.query('yr_rnd == 1').some_col, lm.predict()[yrxsome_elemapi.yr_rnd.values == 1], c = &quot;r&quot;, marker = &quot;x&quot;)
+plt.scatter(yrxsome_elemapi.some_col, yrxsome_elemapi.api00, c = &quot;black&quot;, marker = &quot;*&quot;)
+</code></pre>
+<pre><code>&lt;matplotlib.collections.PathCollection at 0x1282cf98&gt;
+</code></pre>
 <p><img alt="png" src="/figures/ucla_ats_linreg_3_1_06.png"></p>
 <p>We can further enhance it so the data points are marked with different symbols. The graph above used the same kind of symbols for the data points for both types of schools. Let's make separate variables for the api00 scores for the two types of schools called api0 for the non-year round schools and api1 for the year round schools.</p>
-<div class="highlight"><pre><span></span><code><span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">yrxsome_elemapi</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;yr_rnd == 0&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">some_col</span><span class="p">,</span> <span class="n">lm</span><span class="o">.</span><span class="n">predict</span><span class="p">()[</span><span class="n">yrxsome_elemapi</span><span class="o">.</span><span class="n">yr_rnd</span><span class="o">.</span><span class="n">values</span> <span class="o">==</span> <span class="mi">0</span><span class="p">],</span> <span class="n">marker</span> <span class="o">=</span> <span class="s2">&quot;+&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">yrxsome_elemapi</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;yr_rnd == 1&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">some_col</span><span class="p">,</span> <span class="n">lm</span><span class="o">.</span><span class="n">predict</span><span class="p">()[</span><span class="n">yrxsome_elemapi</span><span class="o">.</span><span class="n">yr_rnd</span><span class="o">.</span><span class="n">values</span> <span class="o">==</span> <span class="mi">1</span><span class="p">],</span> <span class="n">c</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">marker</span> <span class="o">=</span> <span class="s2">&quot;x&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">yrxsome_elemapi</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;yr_rnd == 0&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">some_col</span><span class="p">,</span> <span class="n">yrxsome_elemapi</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;yr_rnd == 0&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">api00</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="s2">&quot;black&quot;</span><span class="p">,</span> <span class="n">marker</span> <span class="o">=</span> <span class="s2">&quot;*&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">yrxsome_elemapi</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;yr_rnd == 1&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">some_col</span><span class="p">,</span> <span class="n">yrxsome_elemapi</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;yr_rnd == 1&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">api00</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">marker</span> <span class="o">=</span> <span class="s2">&quot;d&quot;</span><span class="p">)</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>&lt;matplotlib.collections.PathCollection at 0x129dccf8&gt;
-</code></pre></div>
-
+<pre><code class="language-python">plt.scatter(yrxsome_elemapi.query('yr_rnd == 0').some_col, lm.predict()[yrxsome_elemapi.yr_rnd.values == 0], marker = &quot;+&quot;)
+plt.scatter(yrxsome_elemapi.query('yr_rnd == 1').some_col, lm.predict()[yrxsome_elemapi.yr_rnd.values == 1], c = &quot;r&quot;, marker = &quot;x&quot;)
+plt.scatter(yrxsome_elemapi.query('yr_rnd == 0').some_col, yrxsome_elemapi.query('yr_rnd == 0').api00, c = &quot;black&quot;, marker = &quot;*&quot;)
+plt.scatter(yrxsome_elemapi.query('yr_rnd == 1').some_col, yrxsome_elemapi.query('yr_rnd == 1').api00, c = &quot;r&quot;, marker = &quot;d&quot;)
+</code></pre>
+<pre><code>&lt;matplotlib.collections.PathCollection at 0x129dccf8&gt;
+</code></pre>
 <p><img alt="png" src="/figures/ucla_ats_linreg_3_1_07.png"></p>
 <p>Let's quickly run the regressions again where we performed separate regressions for the two groups. We first split data to yr_rnd = 0 group and yr_rnd = 1 group. Then run regression of api00 to some_col in each group seperately.</p>
-<div class="highlight"><pre><span></span><code><span class="n">yrxsome_elemapi_0</span> <span class="o">=</span> <span class="n">yrxsome_elemapi</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;yr_rnd == 0&#39;</span><span class="p">)</span>
-<span class="n">yrxsome_elemapi_1</span> <span class="o">=</span> <span class="n">yrxsome_elemapi</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;yr_rnd == 1&#39;</span><span class="p">)</span>
+<pre><code class="language-python">yrxsome_elemapi_0 = yrxsome_elemapi.query('yr_rnd == 0')
+yrxsome_elemapi_1 = yrxsome_elemapi.query('yr_rnd == 1')
 
 
-<span class="n">lm_0</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s2">&quot;api00 ~ some_col&quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">yrxsome_elemapi_0</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="nb">print</span> <span class="n">lm_0</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+lm_0 = smf.ols(&quot;api00 ~ some_col&quot;, data = yrxsome_elemapi_0).fit()
+print lm_0.summary()
 
-<span class="nb">print</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+print '\n'
 
-<span class="n">lm_1</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s2">&quot;api00 ~ some_col&quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">yrxsome_elemapi_1</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="nb">print</span> <span class="n">lm_1</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>                            OLS Regression Results                            
+lm_1 = smf.ols(&quot;api00 ~ some_col&quot;, data = yrxsome_elemapi_1).fit()
+print lm_1.summary()
+</code></pre>
+<pre><code>                            OLS Regression Results                            
 ==============================================================================
 Dep. Variable:                  api00   R-squared:                       0.016
 Model:                            OLS   Adj. R-squared:                  0.013
@@ -1308,18 +1252,18 @@ Time:                        13:43:39   Log-Likelihood:                -1938.2
 No. Observations:                 308   AIC:                             3880.
 Df Residuals:                     306   BIC:                             3888.
 Df Model:                           1                                         
-<span class="gh">Covariance Type:            nonrobust                                         </span>
-<span class="gh">==============================================================================</span>
+Covariance Type:            nonrobust                                         
+==============================================================================
                  coef    std err          t      P&gt;|t|      [95.0% Conf. Int.]
 ------------------------------------------------------------------------------
 Intercept    655.1103     15.237     42.995      0.000       625.128   685.093
-<span class="gh">some_col       1.4094      0.636      2.217      0.027         0.158     2.660</span>
-<span class="gh">==============================================================================</span>
+some_col       1.4094      0.636      2.217      0.027         0.158     2.660
+==============================================================================
 Omnibus:                       63.461   Durbin-Watson:                   1.531
 Prob(Omnibus):                  0.000   Jarque-Bera (JB):               13.387
 Skew:                          -0.003   Prob(JB):                      0.00124
-<span class="gh">Kurtosis:                       1.979   Cond. No.                         48.9</span>
-<span class="gh">==============================================================================</span>
+Kurtosis:                       1.979   Cond. No.                         48.9
+==============================================================================
 
 Warnings:
 [1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
@@ -1335,28 +1279,26 @@ Time:                        13:43:39   Log-Likelihood:                -527.68
 No. Observations:                  92   AIC:                             1059.
 Df Residuals:                      90   BIC:                             1064.
 Df Model:                           1                                         
-<span class="gh">Covariance Type:            nonrobust                                         </span>
-<span class="gh">==============================================================================</span>
+Covariance Type:            nonrobust                                         
+==============================================================================
                  coef    std err          t      P&gt;|t|      [95.0% Conf. Int.]
 ------------------------------------------------------------------------------
 Intercept    407.0391     16.515     24.647      0.000       374.230   439.848
-<span class="gh">some_col       7.4026      0.918      8.067      0.000         5.580     9.226</span>
-<span class="gh">==============================================================================</span>
+some_col       7.4026      0.918      8.067      0.000         5.580     9.226
+==============================================================================
 Omnibus:                        5.042   Durbin-Watson:                   1.457
 Prob(Omnibus):                  0.080   Jarque-Bera (JB):                4.324
 Skew:                           0.471   Prob(JB):                        0.115
-<span class="gh">Kurtosis:                       3.492   Cond. No.                         37.7</span>
-<span class="gh">==============================================================================</span>
+Kurtosis:                       3.492   Cond. No.                         37.7
+==============================================================================
 
 Warnings:
 [1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
-</code></pre></div>
-
+</code></pre>
 <p>Now, let's show the regression for both types of schools with the interaction term.</p>
-<div class="highlight"><pre><span></span><code><span class="n">lm</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s2">&quot;api00 ~ some_col + yr_rnd + yrxsome&quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">yrxsome_elemapi</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="n">lm</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
-</code></pre></div>
-
+<pre><code class="language-python">lm = smf.ols(&quot;api00 ~ some_col + yr_rnd + yrxsome&quot;, data = yrxsome_elemapi).fit()
+lm.summary()
+</code></pre>
 <table class="simpletable">
 <caption>OLS Regression Results</caption>
 <tr>
@@ -1421,20 +1363,17 @@ Warnings:
 
 <p>Note that <strong>the coefficient for some_col in the combined analysis is the same as the coefficient for some_col for the non-year round schools? This is because non-year round schools are the reference group</strong>. Then, <strong>the coefficient for the yrxsome interaction in the combined analysis is the Bsome_col for the year round schools (7.4) minus Bsome_col for the non year round schools (1.41) yielding 5.99</strong>. This interaction is the difference in the slopes of some_col for the two types of schools, and this is why this is useful for testing whether the regression lines for the two types of schools are equal. If the two types of schools had the same regression coefficient for some_col, then the coefficient for the yrxsome interaction would be 0. In this case, the difference is significant, indicating that the regression lines are significantly different.</p>
 <p>So, if we look at the graph of the two regression lines we can see the difference in the slopes of the regression lines (see graph below).  Indeed, we can see that the non-year round schools (the solid line) have a smaller slope (1.4) than the slope for the year round schools (7.4).  <strong>The difference between these slopes is 5.99, which is the coefficient for yrxsome</strong>.</p>
-<div class="highlight"><pre><span></span><code><span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">yrxsome_elemapi</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;yr_rnd == 0&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">some_col</span><span class="p">,</span> <span class="n">lm</span><span class="o">.</span><span class="n">predict</span><span class="p">()[</span><span class="n">yrxsome_elemapi</span><span class="o">.</span><span class="n">yr_rnd</span><span class="o">.</span><span class="n">values</span> <span class="o">==</span> <span class="mi">0</span><span class="p">],</span> <span class="n">marker</span> <span class="o">=</span> <span class="s2">&quot;+&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">yrxsome_elemapi</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;yr_rnd == 1&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">some_col</span><span class="p">,</span> <span class="n">lm</span><span class="o">.</span><span class="n">predict</span><span class="p">()[</span><span class="n">yrxsome_elemapi</span><span class="o">.</span><span class="n">yr_rnd</span><span class="o">.</span><span class="n">values</span> <span class="o">==</span> <span class="mi">1</span><span class="p">],</span> <span class="n">c</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">marker</span> <span class="o">=</span> <span class="s2">&quot;x&quot;</span><span class="p">)</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>&lt;matplotlib.collections.PathCollection at 0x12bba390&gt;
-</code></pre></div>
-
+<pre><code class="language-python">plt.scatter(yrxsome_elemapi.query('yr_rnd == 0').some_col, lm.predict()[yrxsome_elemapi.yr_rnd.values == 0], marker = &quot;+&quot;)
+plt.scatter(yrxsome_elemapi.query('yr_rnd == 1').some_col, lm.predict()[yrxsome_elemapi.yr_rnd.values == 1], c = &quot;r&quot;, marker = &quot;x&quot;)
+</code></pre>
+<pre><code>&lt;matplotlib.collections.PathCollection at 0x12bba390&gt;
+</code></pre>
 <p><img alt="png" src="/figures/ucla_ats_linreg_3_1_08.png"></p>
 <h3>3.7.2 Computing interactions with combinations</h3>
 <p>We can also run a model just like the model we showed above. We can include the terms yr_rnd some_col and the interaction yr_rnr*some_col.   </p>
-<div class="highlight"><pre><span></span><code><span class="n">lm</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s2">&quot;api00 ~ some_col + yr_rnd + yr_rnd * some_col &quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">yrxsome_elemapi</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="n">lm</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
-</code></pre></div>
-
+<pre><code class="language-python">lm = smf.ols(&quot;api00 ~ some_col + yr_rnd + yr_rnd * some_col &quot;, data = yrxsome_elemapi).fit()
+lm.summary()
+</code></pre>
 <table class="simpletable">
 <caption>OLS Regression Results</caption>
 <tr>
@@ -1502,18 +1441,17 @@ Warnings:
 <p>The prior examples showed how to do regressions with a continuous variable and a categorical variable that has two levels.  These examples will extend this further by using a categorical variable with three levels, mealcat.   </p>
 <h3>3.8.1 Manually creating dummy variables</h3>
 <p>We can use a data step to create all the dummy variables needed for the interaction of mealcat and some_col just as we did before for mealcat. With the dummy variables, we can use regression for the regression analysis. We'll use mealcat1 as the reference group.</p>
-<div class="highlight"><pre><span></span><code><span class="n">mxcol_elemapi</span> <span class="o">=</span> <span class="n">elemapi2</span>
-<span class="n">mxcol_elemapi</span><span class="p">[</span><span class="s2">&quot;mealcat1&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mxcol_elemapi</span><span class="o">.</span><span class="n">mealcat</span> <span class="o">==</span> <span class="mi">1</span>
-<span class="n">mxcol_elemapi</span><span class="p">[</span><span class="s2">&quot;mealcat2&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mxcol_elemapi</span><span class="o">.</span><span class="n">mealcat</span> <span class="o">==</span> <span class="mi">2</span>
-<span class="n">mxcol_elemapi</span><span class="p">[</span><span class="s2">&quot;mealcat3&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mxcol_elemapi</span><span class="o">.</span><span class="n">mealcat</span> <span class="o">==</span> <span class="mi">3</span>
-<span class="n">mxcol_elemapi</span><span class="p">[</span><span class="s2">&quot;mxcol1&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mxcol_elemapi</span><span class="o">.</span><span class="n">mealcat1</span> <span class="o">*</span> <span class="n">mxcol_elemapi</span><span class="o">.</span><span class="n">some_col</span>
-<span class="n">mxcol_elemapi</span><span class="p">[</span><span class="s2">&quot;mxcol2&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mxcol_elemapi</span><span class="o">.</span><span class="n">mealcat2</span> <span class="o">*</span> <span class="n">mxcol_elemapi</span><span class="o">.</span><span class="n">some_col</span>
-<span class="n">mxcol_elemapi</span><span class="p">[</span><span class="s2">&quot;mxcol3&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mxcol_elemapi</span><span class="o">.</span><span class="n">mealcat3</span> <span class="o">*</span> <span class="n">mxcol_elemapi</span><span class="o">.</span><span class="n">some_col</span>
+<pre><code class="language-python">mxcol_elemapi = elemapi2
+mxcol_elemapi[&quot;mealcat1&quot;] = mxcol_elemapi.mealcat == 1
+mxcol_elemapi[&quot;mealcat2&quot;] = mxcol_elemapi.mealcat == 2
+mxcol_elemapi[&quot;mealcat3&quot;] = mxcol_elemapi.mealcat == 3
+mxcol_elemapi[&quot;mxcol1&quot;] = mxcol_elemapi.mealcat1 * mxcol_elemapi.some_col
+mxcol_elemapi[&quot;mxcol2&quot;] = mxcol_elemapi.mealcat2 * mxcol_elemapi.some_col
+mxcol_elemapi[&quot;mxcol3&quot;] = mxcol_elemapi.mealcat3 * mxcol_elemapi.some_col
 
-<span class="n">lm</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s2">&quot;api00 ~ some_col + mealcat2 + mealcat3 +  mxcol2 + mxcol3&quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">mxcol_elemapi</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="n">lm</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
-</code></pre></div>
-
+lm = smf.ols(&quot;api00 ~ some_col + mealcat2 + mealcat3 +  mxcol2 + mxcol3&quot;, data = mxcol_elemapi).fit()
+lm.summary()
+</code></pre>
 <table class="simpletable">
 <caption>OLS Regression Results</caption>
 <tr>
@@ -1583,27 +1521,23 @@ Warnings:
 </table>
 
 <p>The interaction now has two terms (mxcol2 and mxcol3). These results indicate that the overall interaction is indeed significant.  This means that the regression lines from the three groups differ significantly. As we have done before, let's compute the predicted values and make a graph of the predicted values so we can see how the regression lines differ.</p>
-<div class="highlight"><pre><span></span><code><span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">mxcol_elemapi</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;mealcat == 1&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">some_col</span><span class="p">,</span> <span class="n">lm</span><span class="o">.</span><span class="n">predict</span><span class="p">()[</span><span class="n">mxcol_elemapi</span><span class="o">.</span><span class="n">mealcat</span><span class="o">.</span><span class="n">values</span> <span class="o">==</span> <span class="mi">1</span><span class="p">],</span> <span class="n">c</span> <span class="o">=</span> <span class="s2">&quot;black&quot;</span><span class="p">,</span> <span class="n">marker</span> <span class="o">=</span> <span class="s2">&quot;+&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">mxcol_elemapi</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;mealcat == 2&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">some_col</span><span class="p">,</span> <span class="n">lm</span><span class="o">.</span><span class="n">predict</span><span class="p">()[</span><span class="n">mxcol_elemapi</span><span class="o">.</span><span class="n">mealcat</span><span class="o">.</span><span class="n">values</span> <span class="o">==</span> <span class="mi">2</span><span class="p">],</span> <span class="n">c</span> <span class="o">=</span> <span class="s2">&quot;red&quot;</span><span class="p">,</span> <span class="n">marker</span> <span class="o">=</span> <span class="s2">&quot;+&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">mxcol_elemapi</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;mealcat == 3&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">some_col</span><span class="p">,</span> <span class="n">lm</span><span class="o">.</span><span class="n">predict</span><span class="p">()[</span><span class="n">mxcol_elemapi</span><span class="o">.</span><span class="n">mealcat</span><span class="o">.</span><span class="n">values</span> <span class="o">==</span> <span class="mi">3</span><span class="p">],</span> <span class="n">c</span> <span class="o">=</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="n">marker</span> <span class="o">=</span> <span class="s2">&quot;+&quot;</span><span class="p">)</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>&lt;matplotlib.collections.PathCollection at 0x144a4240&gt;
-</code></pre></div>
-
+<pre><code class="language-python">plt.scatter(mxcol_elemapi.query('mealcat == 1').some_col, lm.predict()[mxcol_elemapi.mealcat.values == 1], c = &quot;black&quot;, marker = &quot;+&quot;)
+plt.scatter(mxcol_elemapi.query('mealcat == 2').some_col, lm.predict()[mxcol_elemapi.mealcat.values == 2], c = &quot;red&quot;, marker = &quot;+&quot;)
+plt.scatter(mxcol_elemapi.query('mealcat == 3').some_col, lm.predict()[mxcol_elemapi.mealcat.values == 3], c = &quot;b&quot;, marker = &quot;+&quot;)
+</code></pre>
+<pre><code>&lt;matplotlib.collections.PathCollection at 0x144a4240&gt;
+</code></pre>
 <p><img alt="png" src="/figures/ucla_ats_linreg_3_1_09.png"></p>
 <p><strong>Group 1 was the omitted group, therefore the slope of the line for group 1 is the coefficient for some_col which is -.94</strong>.  Indeed, this line has a downward slope.  <strong>If we add the coefficient for some_col to the coefficient for mxcol2 we get the coefficient for group 2, i.e., 3.14 + (-.94) yields 2.2, the slope for group 2</strong>. Indeed, group 2 shows an upward slope. Likewise,  <strong>if we add the coefficient for some_col to the coefficient for mxcol3 we get the coefficient for group 3, i.e., 2.6 + (-.94) yields 1.66, the slope for group 3</strong>,.  So, the slopes for the 3 groups are</p>
-<div class="highlight"><pre><span></span><code>group 1: -0.94
+<pre><code>group 1: -0.94
 group 2:  2.2
 group 3:  1.66
-</code></pre></div>
-
+</code></pre>
 <p>The test of the coefficient in the parameter estimates for mxcol2 tested whether the coefficient for group 2 differed from group 1, and indeed this was significant.  Likewise, the test of the coefficient for mxcol3 tested whether the coefficient for group 3 differed from group 1, and indeed this was significant.  What did the test of the coefficient some_col test?  This coefficient represents the coefficient for group 1, so this tested whether the coefficient for group 1 (-0.94) was significantly different from 0.  This is probably a non-interesting test.</p>
 <p>The comparisons in the above analyses don't seem to be as interesting as comparing group 1 versus 2 and then comparing group 2 versus 3.  These successive comparisons seem much more interesting. We can do this by making group 2 the omitted group, and then each group would be compared to group 2.  </p>
-<div class="highlight"><pre><span></span><code><span class="n">lm</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s2">&quot;api00 ~ some_col + mealcat1 + mealcat3 +  mxcol1 + mxcol3&quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">mxcol_elemapi</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="n">lm</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
-</code></pre></div>
-
+<pre><code class="language-python">lm = smf.ols(&quot;api00 ~ some_col + mealcat1 + mealcat3 +  mxcol1 + mxcol3&quot;, data = mxcol_elemapi).fit()
+lm.summary()
+</code></pre>
 <table class="simpletable">
 <caption>OLS Regression Results</caption>
 <tr>
@@ -1675,10 +1609,9 @@ group 3:  1.66
 <p>Now, the test of mxcol1 tests whether the coefficient for group 1 differs from group 2, and it does.  Then, the test of mxcol3 tests whether the coefficient for group 3 significantly differs from group 2, and it does not. This makes sense given the graph and given the estimates of the coefficients that we have, that -.94 is significantly different from 2.2 but 2.2 is not significantly different from 1.66.</p>
 <h2>3.8.2 Using the combinations</h2>
 <p>We can perform the same analysis using the <code>C</code> and combinations directly as shown below.  This allows us to avoid dummy coding for either the categorical variable mealcat and for the interaction term of mealcat and some_col. The tricky part  is to control the reference group.</p>
-<div class="highlight"><pre><span></span><code><span class="n">lm</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s2">&quot;api00 ~ some_col + C(mealcat) + some_col * C(mealcat)&quot;</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">mxcol_elemapi</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-<span class="n">lm</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
-</code></pre></div>
-
+<pre><code class="language-python">lm = smf.ols(&quot;api00 ~ some_col + C(mealcat) + some_col * C(mealcat)&quot;, data = mxcol_elemapi).fit()
+lm.summary()
+</code></pre>
 <table class="simpletable">
 <caption>OLS Regression Results</caption>
 <tr>
@@ -1763,8 +1696,8 @@ group 3:  1.66
 <ol>
 <li><a href="http://www.ats.ucla.edu/stat/sas/webbooks/reg/chapter3/sasreg3.htm">Chapter 3 - Regression with Categorical Predictors</a></li>
 </ol>
-<div class="highlight"><pre><span></span><code>
-</code></pre></div></div>
+<pre><code class="language-python">
+</code></pre></div>
     <footer>
 <p class="meta">
   <span class="byline author vcard">
@@ -1793,13 +1726,13 @@ group 3:  1.66
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -1817,7 +1750,7 @@ group 3:  1.66
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

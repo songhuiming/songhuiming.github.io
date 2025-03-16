@@ -97,129 +97,123 @@ window.addEventListener('load', () => {
   <div class="entry-content"><h1>Table of Contents<span class="tocSkip"></span></h1>
 <div class="toc"><ul class="toc-item"><li><span><a href="#0.-Data-Preparation" data-toc-modified-id="0.-Data-Preparation-1">0. Data Preparation</a></span></li><li><span><a href="#Modeling-Part-3:-Ensembing(Stacking)-Models" data-toc-modified-id="Modeling-Part-3:-Ensembing(Stacking)-Models-2">Modeling Part 3: Ensembing(Stacking) Models</a></span></li><li><span><a href="#1.-More-models-with-GridSearchCV-to-Select-Hyperparameters" data-toc-modified-id="1.-More-models-with-GridSearchCV-to-Select-Hyperparameters-3">1. More models with GridSearchCV to Select Hyperparameters</a></span><ul class="toc-item"><li><span><a href="#1.1.-Prepare-base-models" data-toc-modified-id="1.1.-Prepare-base-models-3.1">1.1. Prepare base models</a></span></li><li><span><a href="#1.2.-GridSearch-to-find-the-best-hyperparameters" data-toc-modified-id="1.2.-GridSearch-to-find-the-best-hyperparameters-3.2">1.2. GridSearch to find the best hyperparameters</a></span></li><li><span><a href="#1.3.-Base-models-performance" data-toc-modified-id="1.3.-Base-models-performance-3.3">1.3. Base models performance</a></span></li><li><span><a href="#1.4.-Stacking" data-toc-modified-id="1.4.-Stacking-3.4">1.4. Stacking</a></span></li><li><span><a href="#1.5.-Single-base-model-parameters-and-results" data-toc-modified-id="1.5.-Single-base-model-parameters-and-results-3.5">1.5. Single base model parameters and results</a></span></li></ul></li></ul></div>
 
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<pre><code class="language-python">import pandas as pd
+import numpy as np
 
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-<span class="kn">from</span> <span class="nn">sklearn.preprocessing</span> <span class="kn">import</span> <span class="n">StandardScaler</span><span class="p">,</span> <span class="n">Normalizer</span><span class="p">,</span> <span class="n">scale</span>
-<span class="kn">from</span> <span class="nn">sklearn.ensemble</span> <span class="kn">import</span> <span class="n">RandomForestClassifier</span><span class="p">,</span> <span class="n">AdaBoostClassifier</span><span class="p">,</span> <span class="n">GradientBoostingClassifier</span><span class="p">,</span> <span class="n">ExtraTreesClassifier</span>
-<span class="kn">from</span> <span class="nn">sklearn.svm</span> <span class="kn">import</span> <span class="n">SVC</span><span class="p">,</span> <span class="n">LinearSVC</span>
-<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">confusion_matrix</span><span class="p">,</span> <span class="n">log_loss</span><span class="p">,</span> <span class="n">auc</span><span class="p">,</span> <span class="n">roc_curve</span><span class="p">,</span> <span class="n">roc_auc_score</span><span class="p">,</span> <span class="n">recall_score</span><span class="p">,</span> <span class="n">precision_recall_curve</span>
-<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">make_scorer</span><span class="p">,</span> <span class="n">precision_score</span><span class="p">,</span> <span class="n">fbeta_score</span><span class="p">,</span> <span class="n">f1_score</span><span class="p">,</span> <span class="n">classification_report</span>
-<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">cross_val_score</span><span class="p">,</span> <span class="n">train_test_split</span><span class="p">,</span> <span class="n">KFold</span><span class="p">,</span> <span class="n">StratifiedShuffleSplit</span><span class="p">,</span> <span class="n">GridSearchCV</span>
-<span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">LogisticRegression</span>
+from sklearn.preprocessing import StandardScaler, Normalizer, scale
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, GradientBoostingClassifier, ExtraTreesClassifier
+from sklearn.svm import SVC, LinearSVC
+from sklearn.metrics import confusion_matrix, log_loss, auc, roc_curve, roc_auc_score, recall_score, precision_recall_curve
+from sklearn.metrics import make_scorer, precision_score, fbeta_score, f1_score, classification_report
+from sklearn.model_selection import cross_val_score, train_test_split, KFold, StratifiedShuffleSplit, GridSearchCV
+from sklearn.linear_model import LogisticRegression
 
-<span class="o">%</span><span class="n">matplotlib</span> <span class="n">inline</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;figure.figsize&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">9</span><span class="p">)</span>
+%matplotlib inline
+plt.rcParams['figure.figsize'] = (16, 9)
 
-<span class="n">seed</span> <span class="o">=</span> <span class="mi">999</span>
+seed = 999
 
-<span class="n">creditcard</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s1">&#39;creditcard.csv&#39;</span><span class="p">)</span>
-<span class="n">creditcard</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">creditcard</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
-<span class="n">creditcard</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="s1">&#39;fraud&#39;</span><span class="p">},</span> <span class="n">inplace</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
-</code></pre></div>
-
+creditcard = pd.read_csv('creditcard.csv')
+creditcard.columns = [x.lower() for x in creditcard.columns]
+creditcard.rename(columns = {'class': 'fraud'}, inplace = True)
+</code></pre>
 <h1>0. Data Preparation</h1>
 <p>Read in the data. Since the data is from <code>PCA</code>, there is no missing data issue. Then we will normalize the amount.</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># 1. Split Test Data Out</span>
-<span class="n">creditcard</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span> <span class="o">=</span> <span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="n">inplace</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<pre><code class="language-python"># 1. Split Test Data Out
+creditcard.drop(columns = 'time', inplace = True)
 
-<span class="c1"># Normalize the &#39;amount&#39; column</span>
-<span class="n">scaler</span> <span class="o">=</span> <span class="n">StandardScaler</span><span class="p">()</span>
-<span class="n">creditcard</span><span class="p">[</span><span class="s1">&#39;amount&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">creditcard</span><span class="p">[</span><span class="s1">&#39;amount&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
-<span class="c1"># creditcard.drop(columns = &#39;amount&#39;, inplace = True)</span>
+# Normalize the 'amount' column
+scaler = StandardScaler()
+creditcard['amount'] = scaler.fit_transform(creditcard['amount'].values.reshape(-1, 1))
+# creditcard.drop(columns = 'amount', inplace = True)
 
-<span class="n">X</span> <span class="o">=</span> <span class="n">creditcard</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-<span class="n">y</span> <span class="o">=</span> <span class="n">creditcard</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-<span class="n">Xtrain</span><span class="p">,</span> <span class="n">Xtest</span><span class="p">,</span> <span class="n">ytrain</span><span class="p">,</span> <span class="n">ytest</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">test_size</span> <span class="o">=</span> <span class="mf">.33</span><span class="p">,</span> <span class="n">stratify</span> <span class="o">=</span> <span class="n">y</span><span class="p">,</span> <span class="n">random_state</span> <span class="o">=</span> <span class="n">seed</span><span class="p">)</span>
-</code></pre></div>
-
+X = creditcard.iloc[:, :-1]
+y = creditcard.iloc[:, -1]
+Xtrain, Xtest, ytrain, ytest = train_test_split(X, y, test_size = .33, stratify = y, random_state = seed)
+</code></pre>
 <h1>Modeling Part 3: Ensembing(Stacking) Models</h1>
 <p>In <a href="http://songhuiming.github.io/pages/2018/05/05/credit-card-fraud-detection-imbalanced-data-modeling-part-i-logistic-regression/">Part I</a> and <a href="http://songhuiming.github.io/pages/2018/05/12/credit-card-fraud-detection-imbalanced-data-modeling-part-ii-random-forest/">Part II</a>, we have tested the Logistic Regression and Random Forest models on this imbalanced data.</p>
 <p>Here we will try the ebsembing models by combining the predictions of multiple machine learning models. The basic idea is to use multiple base models to predict the data, and then use another model to combine these base model results. Since these base models results will be used as input in the new model, the base models results will be better if they are higher in performance and less correlated. If the base models results are high correlated, then combining them will not improve too much since all the input are correlated. Ensembling / Stacking models have these advantages:</p>
-<div class="highlight"><pre><span></span><code><span class="mf">1.</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="n">lot</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">time</span><span class="p">,</span><span class="w"> </span><span class="n">it</span><span class="w"> </span><span class="n">can</span><span class="w"> </span><span class="n">beat</span><span class="w"> </span><span class="n">most</span><span class="w"> </span><span class="n">state</span><span class="o">-</span><span class="n">of</span><span class="o">-</span><span class="n">art</span><span class="w"> </span><span class="nb">sin</span><span class="n">gle</span><span class="w"> </span><span class="n">model</span>
-<span class="mf">2.</span><span class="w"> </span><span class="n">Each</span><span class="w"> </span><span class="nb">sin</span><span class="n">gle</span><span class="w"> </span><span class="n">base</span><span class="w"> </span><span class="n">model</span><span class="w"> </span><span class="n">can</span><span class="w"> </span><span class="n">be</span><span class="w"> </span><span class="n">simple</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="n">built</span><span class="w"> </span><span class="n">quickly</span>
-</code></pre></div>
-
+<pre><code>1. A lot of the time, it can beat most state-of-art single model
+2. Each single base model can be simple and built quickly
+</code></pre>
 <p>Here we will do these things:</p>
-<div class="highlight"><pre><span></span><code><span class="mf">1.</span><span class="w"> </span><span class="n">Prepare</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">series</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">base</span><span class="w"> </span><span class="n">models</span><span class="p">:</span><span class="w"> </span><span class="n">RandomForestClassifier</span><span class="p">,</span><span class="w"> </span><span class="n">ExtraTreesClassifier</span><span class="p">,</span><span class="w"> </span><span class="n">AdaBoostClassifier</span><span class="p">,</span><span class="w"> </span><span class="n">GradientBoostingClassifier</span><span class="p">,</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="n">LinearSVC</span><span class="w"> </span><span class="n">models</span><span class="mf">.</span>
-<span class="mf">2.</span><span class="w"> </span><span class="n">Use</span><span class="w"> </span><span class="n">GridSearchCV</span><span class="w"> </span><span class="kr">to</span><span class="w"> </span><span class="n">select</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">hyperparameters</span><span class="w"> </span><span class="kr">for</span><span class="w"> </span><span class="n">these</span><span class="w"> </span><span class="n">candidate</span><span class="w"> </span><span class="n">models</span>
-<span class="mf">3.</span><span class="w"> </span><span class="n">Use</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">output</span><span class="w"> </span><span class="n">from</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">base</span><span class="w"> </span><span class="n">models</span><span class="w"> </span><span class="n">as</span><span class="w"> </span><span class="kr">input</span><span class="w"> </span><span class="kr">to</span><span class="w"> </span><span class="n">build</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="kr">new</span><span class="w"> </span><span class="n">model</span>
-</code></pre></div>
-
+<pre><code>1. Prepare a series of base models: RandomForestClassifier, ExtraTreesClassifier, AdaBoostClassifier, GradientBoostingClassifier, and LinearSVC models.
+2. Use GridSearchCV to select the hyperparameters for these candidate models
+3. Use the output from the base models as input to build a new model
+</code></pre>
 <h1>1. More models with GridSearchCV to Select Hyperparameters</h1>
 <h2>1.1. Prepare base models</h2>
 <p>We will use these models: <code>RandomForestClassifier</code>, <code>ExtraTreesClassifier</code>, <code>AdaBoostClassifier</code>, <code>GradientBoostingClassifier</code>, and <code>LinearSVC</code> models.</p>
-<div class="highlight"><pre><span></span><code><span class="n">seed</span> <span class="o">=</span> <span class="mi">999</span>
+<pre><code class="language-python">seed = 999
 
-<span class="n">oversample_ratio</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">ytrain</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="o">/</span> <span class="nb">sum</span><span class="p">(</span><span class="n">ytrain</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># size to repeat y == 1</span>
-<span class="c1"># repeat the positive data for X and y</span>
-<span class="n">ytrain_pos_oversample</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">ytrain</span><span class="p">[</span><span class="n">ytrain</span><span class="o">==</span><span class="mi">1</span><span class="p">]]</span> <span class="o">*</span> <span class="n">oversample_ratio</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
-<span class="n">Xtrain_pos_oversample</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">Xtrain</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">ytrain</span><span class="o">==</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]]</span> <span class="o">*</span> <span class="n">oversample_ratio</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
-<span class="c1"># concat the repeated data with the original data together</span>
-<span class="n">ytrain_oversample</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">ytrain</span><span class="p">,</span> <span class="n">ytrain_pos_oversample</span><span class="p">],</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
-<span class="n">Xtrain_oversample</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">Xtrain</span><span class="p">,</span> <span class="n">Xtrain_pos_oversample</span><span class="p">],</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+oversample_ratio = sum(ytrain == 0) / sum(ytrain == 1)  # size to repeat y == 1
+# repeat the positive data for X and y
+ytrain_pos_oversample = pd.concat([ytrain[ytrain==1]] * oversample_ratio, axis = 0)
+Xtrain_pos_oversample = pd.concat([Xtrain.loc[ytrain==1, :]] * oversample_ratio, axis = 0)
+# concat the repeated data with the original data together
+ytrain_oversample = pd.concat([ytrain, ytrain_pos_oversample], axis = 0).reset_index(drop = True)
+Xtrain_oversample = pd.concat([Xtrain, Xtrain_pos_oversample], axis = 0).reset_index(drop = True)
 
-<span class="n">models</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s1">&#39;rf&#39;</span><span class="p">:</span> <span class="n">RandomForestClassifier</span><span class="p">(</span><span class="n">random_state</span> <span class="o">=</span> <span class="n">seed</span><span class="p">,</span> <span class="n">warm_start</span> <span class="o">=</span> <span class="kc">True</span><span class="p">),</span>  <span class="c1"># 0:17:24.925482</span>
-    <span class="s1">&#39;et&#39;</span><span class="p">:</span> <span class="n">ExtraTreesClassifier</span><span class="p">(</span><span class="n">random_state</span> <span class="o">=</span> <span class="n">seed</span><span class="p">,</span> <span class="n">warm_start</span> <span class="o">=</span> <span class="kc">True</span><span class="p">),</span>  <span class="c1"># 0:02:45.797856</span>
-    <span class="s1">&#39;ada&#39;</span><span class="p">:</span> <span class="n">AdaBoostClassifier</span><span class="p">(</span><span class="n">random_state</span> <span class="o">=</span> <span class="n">seed</span><span class="p">),</span>   <span class="c1">#0:05:17.973671</span>
-    <span class="s1">&#39;gb&#39;</span><span class="p">:</span> <span class="n">GradientBoostingClassifier</span><span class="p">(</span><span class="n">random_state</span> <span class="o">=</span> <span class="n">seed</span><span class="p">,</span> <span class="n">warm_start</span> <span class="o">=</span> <span class="kc">True</span><span class="p">),</span>   <span class="c1">#0:54:11.773175</span>
-    <span class="s1">&#39;svc&#39;</span><span class="p">:</span> <span class="n">LinearSVC</span><span class="p">(</span><span class="n">random_state</span> <span class="o">=</span> <span class="n">seed</span><span class="p">)</span> <span class="p">}</span>   <span class="c1">#0:02:01.656640</span>
+models = {
+    'rf': RandomForestClassifier(random_state = seed, warm_start = True),  # 0:17:24.925482
+    'et': ExtraTreesClassifier(random_state = seed, warm_start = True),  # 0:02:45.797856
+    'ada': AdaBoostClassifier(random_state = seed),   #0:05:17.973671
+    'gb': GradientBoostingClassifier(random_state = seed, warm_start = True),   #0:54:11.773175
+    'svc': LinearSVC(random_state = seed) }   #0:02:01.656640
 
-<span class="n">gv_parameters</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s1">&#39;rf&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;n_estimators&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">50</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">500</span><span class="p">],</span> <span class="s1">&#39;max_depth&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">100</span><span class="p">],</span> <span class="s1">&#39;min_samples_leaf&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">50</span><span class="p">]},</span>
-    <span class="s1">&#39;et&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;n_estimators&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">50</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">500</span><span class="p">],</span> <span class="s1">&#39;max_depth&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">100</span><span class="p">],</span> <span class="s1">&#39;min_samples_leaf&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">50</span><span class="p">]},</span>
-    <span class="s1">&#39;ada&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;n_estimators&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">50</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">500</span><span class="p">],</span> <span class="s1">&#39;learning_rate&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.75</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">]},</span>
-    <span class="s1">&#39;gb&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;n_estimators&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">50</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">500</span><span class="p">],</span> <span class="s1">&#39;max_depth&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">100</span><span class="p">],</span> <span class="s1">&#39;min_samples_leaf&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">50</span><span class="p">]},</span>
-    <span class="s1">&#39;svc&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;C&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="mf">5.0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">))}</span> <span class="p">}</span>
-</code></pre></div>
+gv_parameters = {
+    'rf': {'n_estimators': [50, 100, 200, 500], 'max_depth': [10, 20, 50, 100], 'min_samples_leaf': [10, 20, 50]},
+    'et': {'n_estimators': [50, 100, 200, 500], 'max_depth': [10, 20, 50, 100], 'min_samples_leaf': [10, 20, 50]},
+    'ada': {'n_estimators': [50, 100, 200, 500], 'learning_rate': [0.75, 1, 1.5]},
+    'gb': {'n_estimators': [50, 100, 200, 500], 'max_depth': [10, 20, 50, 100], 'min_samples_leaf': [10, 20, 50]},
+    'svc': {'C': np.power(5.0, np.arange(-3,3))} }
 
+</code></pre>
 <h2>1.2. GridSearch to find the best hyperparameters</h2>
 <p>For each model's hyperparameter combinations, <code>GridSearchCV</code> will loop through the combinations and find the parameters that gives the best performance metric. This will be time consuming if the data is big or if the model is slow(like <code>SVM</code>) or complicated.</p>
-<div class="highlight"><pre><span></span><code><span class="n">grid_searches</span> <span class="o">=</span> <span class="p">{}</span>
-<span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">models</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;---------------------------------Running GridSearchCV for </span><span class="si">%s</span><span class="s2">. ---------------&quot;</span> <span class="o">%</span> <span class="n">key</span><span class="p">)</span>
-    <span class="n">model</span> <span class="o">=</span> <span class="n">models</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
-    <span class="n">params</span> <span class="o">=</span> <span class="n">gv_parameters</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
-    <span class="n">gs</span> <span class="o">=</span> <span class="n">GridSearchCV</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">cv</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">n_jobs</span> <span class="o">=</span> <span class="mi">70</span><span class="p">,</span> <span class="n">verbose</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">scoring</span><span class="o">=</span><span class="n">wt_loss_score</span><span class="p">)</span>
-    <span class="n">ts</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
-    <span class="n">gs</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">Xtrain_oversample</span><span class="p">,</span> <span class="n">ytrain_oversample</span><span class="p">)</span>
-    <span class="n">te</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
-    <span class="nb">print</span> <span class="p">(</span><span class="s2">&quot;run time for &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; is: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">ts</span><span class="o">-</span><span class="n">te</span><span class="p">))</span>
-    <span class="n">grid_searches</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">gs</span>
+<pre><code class="language-python">grid_searches = {}
+for key in models.keys():
+    print(&quot;---------------------------------Running GridSearchCV for %s. ---------------&quot; % key)
+    model = models[key]
+    params = gv_parameters[key]
+    gs = GridSearchCV(model, params, cv = 3, n_jobs = 70, verbose = 3, scoring=wt_loss_score)
+    ts = datetime.datetime.now()
+    gs.fit(Xtrain_oversample, ytrain_oversample)
+    te = datetime.datetime.now()
+    print (&quot;run time for &quot; + str(key) + &quot; is: &quot; + str(ts-te))
+    grid_searches[key] = gs
 
-<span class="c1"># to get the summary information of the model results from GridSearchCV on all parameter combinations</span>
-<span class="k">def</span> <span class="nf">grid_cv_summary</span><span class="p">(</span><span class="n">grid_searches</span><span class="p">):</span>
-    <span class="n">cv_results</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">grid_searches</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-        <span class="n">model_result</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">grid_searches</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">cv_results_</span><span class="p">)</span>
-        <span class="n">model_result</span><span class="p">[</span><span class="s1">&#39;model&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">key</span>
-        <span class="n">cv_results</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">cv_results</span><span class="p">,</span> <span class="n">model_result</span><span class="p">],</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">cv_results</span>
+# to get the summary information of the model results from GridSearchCV on all parameter combinations
+def grid_cv_summary(grid_searches):
+    cv_results = pd.DataFrame()
+    for key in grid_searches.keys():
+        model_result = pd.DataFrame(grid_searches[key].cv_results_)
+        model_result['model'] = key
+        cv_results = pd.concat([cv_results, model_result], axis = 0)
+    return cv_results
 
-<span class="n">cv_sum</span> <span class="o">=</span> <span class="n">grid_cv_summary</span><span class="p">(</span><span class="n">grid_searches</span><span class="p">)</span>
-<span class="n">cv_grp</span> <span class="o">=</span> <span class="n">cv_sum</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;model&#39;</span><span class="p">)</span>
-<span class="c1"># get the best_params_ for the model with highest mean_test_score</span>
-<span class="n">best_params</span> <span class="o">=</span> <span class="n">cv_grp</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">mean_test_score</span> <span class="o">==</span> <span class="n">x</span><span class="o">.</span><span class="n">mean_test_score</span><span class="o">.</span><span class="n">max</span><span class="p">()])</span><span class="o">.</span><span class="n">params</span>
-<span class="n">best_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">best_params</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_level_values</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">best_params</span><span class="o">.</span><span class="n">values</span><span class="p">))</span>
-</code></pre></div>
-
+cv_sum = grid_cv_summary(grid_searches)
+cv_grp = cv_sum.groupby('model')
+# get the best_params_ for the model with highest mean_test_score
+best_params = cv_grp.apply(lambda x: x[x.mean_test_score == x.mean_test_score.max()]).params
+best_params = dict(zip(best_params.index.get_level_values(0), best_params.values))
+</code></pre>
 <h2>1.3. Base models performance</h2>
 <p>For each base model, we print out their recall/performance/roc_auc score and confusion matrix. If we only look at ROC, then <code>LinearSVC</code> gives the best single model, although it has lower precision score than the other models.</p>
-<div class="highlight"><pre><span></span><code><span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">grid_searches</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-    <span class="n">pred_test</span> <span class="o">=</span> <span class="n">grid_searches</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">Xtest</span><span class="p">)</span>
-    <span class="nb">print</span> <span class="p">(</span><span class="s2">&quot;</span><span class="se">\n\n\n</span><span class="s2">----------- For </span><span class="si">%s</span><span class="s2">, the metrics on TEST data is: ---------- </span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">%</span><span class="n">key</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;recall score on test data is </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span><span class="nb">str</span><span class="p">(</span><span class="n">recall_score</span><span class="p">(</span><span class="n">ytest</span><span class="p">,</span> <span class="n">pred_test</span><span class="p">)))</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;precision score on test data is </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span><span class="nb">str</span><span class="p">(</span><span class="n">precision_score</span><span class="p">(</span><span class="n">ytest</span><span class="p">,</span> <span class="n">pred_test</span><span class="p">)))</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;roc_auc score on test data is </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span><span class="nb">str</span><span class="p">(</span><span class="n">roc_auc_score</span><span class="p">(</span><span class="n">ytest</span><span class="p">,</span> <span class="n">pred_test</span><span class="p">)))</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;confusion matrix on the test data is: </span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">confusion_matrix</span><span class="p">(</span><span class="n">ytest</span><span class="p">,</span> <span class="n">pred_test</span><span class="p">))</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>----------- For et, the metrics on TEST data is: ----------
+<pre><code class="language-python">for key in grid_searches.keys():
+    pred_test = grid_searches[key].predict(Xtest)
+    print (&quot;\n\n\n----------- For %s, the metrics on TEST data is: ---------- \n&quot; %key)
+    print(&quot;recall score on test data is %s&quot; %str(recall_score(ytest, pred_test)))
+    print(&quot;precision score on test data is %s&quot; %str(precision_score(ytest, pred_test)))
+    print(&quot;roc_auc score on test data is %s&quot; %str(roc_auc_score(ytest, pred_test)))
+    print(&quot;confusion matrix on the test data is: \n&quot;)
+    print(confusion_matrix(ytest, pred_test))
+</code></pre>
+<pre><code>----------- For et, the metrics on TEST data is: ----------
 
 recall score on test data is 0.845679012345679
 precision score on test data is 0.7696629213483146
@@ -272,56 +266,52 @@ confusion matrix on the test data is:
 
 [[93802    23]
  [   28   134]]
-</code></pre></div>
-
+</code></pre>
 <h2>1.4. Stacking</h2>
 <p>We will collect the output from the base models and put them as input into the new model. Here the base model outputs are correlated since there are too many 0. So the outpur from stacking did not improve too much compared to the single model. We can try GridSearch again to see if it can be improved. </p>
-<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">multiple_pred</span><span class="p">(</span><span class="n">grid_searches</span><span class="p">,</span> <span class="n">Xtrain</span><span class="p">,</span> <span class="n">Xtest</span><span class="p">,</span> <span class="n">ytrain</span><span class="p">,</span> <span class="n">ytest</span><span class="p">):</span>
-    <span class="n">train_pred</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="n">test_pred</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">grid_searches</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-        <span class="n">train_pred</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">grid_searches</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">Xtrain</span><span class="p">)</span>
-        <span class="n">test_pred</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">grid_searches</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">Xtest</span><span class="p">)</span>
-    <span class="k">return</span> <span class="p">((</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">train_pred</span><span class="p">),</span> <span class="n">ytrain</span><span class="p">),</span> <span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">test_pred</span><span class="p">),</span> <span class="n">ytest</span><span class="p">))</span>
+<pre><code class="language-python">def multiple_pred(grid_searches, Xtrain, Xtest, ytrain, ytest):
+    train_pred = {}
+    test_pred = {}
+    for key in grid_searches.keys():
+        train_pred[key] = grid_searches[key].predict(Xtrain)
+        test_pred[key] = grid_searches[key].predict(Xtest)
+    return ((pd.DataFrame(train_pred), ytrain), (pd.DataFrame(test_pred), ytest))
 
-<span class="n">ensemble_data</span> <span class="o">=</span> <span class="n">multiple_pred</span><span class="p">(</span><span class="n">grid_searches</span><span class="p">,</span> <span class="n">Xtrain</span><span class="p">,</span> <span class="n">Xtest</span><span class="p">,</span> <span class="n">ytrain</span><span class="p">,</span> <span class="n">ytest</span><span class="p">)</span>
+ensemble_data = multiple_pred(grid_searches, Xtrain, Xtest, ytrain, ytest)
 
-<span class="c1"># ensembling model, change to xgb later</span>
-<span class="n">gbc</span> <span class="o">=</span> <span class="n">GradientBoostingClassifier</span><span class="p">()</span>
-<span class="n">gbc</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">ensemble_data</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">ensemble_data</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+# ensembling model, change to xgb later
+gbc = GradientBoostingClassifier()
+gbc.fit(ensemble_data[0][0], ensemble_data[0][1])
 
-<span class="n">pred</span> <span class="o">=</span> <span class="n">gbc</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">ensemble_data</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
-<span class="nb">print</span> <span class="n">recall_score</span><span class="p">(</span><span class="n">ensemble_data</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="n">pred</span><span class="p">)</span>
-<span class="nb">print</span> <span class="n">confusion_matrix</span><span class="p">(</span><span class="n">ensemble_data</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="n">pred</span><span class="p">)</span>
-<span class="nb">print</span> <span class="n">classification_report</span><span class="p">(</span><span class="n">ensemble_data</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="n">pred</span><span class="p">)</span>
-</code></pre></div>
+pred = gbc.predict(ensemble_data[1][0])
+print recall_score(ensemble_data[1][1], pred)
+print confusion_matrix(ensemble_data[1][1], pred)
+print classification_report(ensemble_data[1][1], pred)
+</code></pre>
+<pre><code>0.827160493827
 
-<div class="highlight"><pre><span></span><code><span class="mf">0.827160493827</span>
+[[93802    23]
+ [   28   134]]
 
-<span class="err">[[</span><span class="mf">93802</span><span class="w">    </span><span class="mf">23</span><span class="err">]</span>
-<span class="w"> </span><span class="err">[</span><span class="w">   </span><span class="mf">28</span><span class="w">   </span><span class="mf">134</span><span class="err">]]</span>
+             precision    recall  f1-score   support
 
-<span class="w">             </span><span class="n">precision</span><span class="w">    </span><span class="n">recall</span><span class="w">  </span><span class="n">f1</span><span class="o">-</span><span class="n">score</span><span class="w">   </span><span class="n">support</span>
+          0       1.00      1.00      1.00     93825
+          1       0.85      0.83      0.84       162
 
-<span class="w">          </span><span class="mf">0</span><span class="w">       </span><span class="mf">1.00</span><span class="w">      </span><span class="mf">1.00</span><span class="w">      </span><span class="mf">1.00</span><span class="w">     </span><span class="mf">93825</span>
-<span class="w">          </span><span class="mf">1</span><span class="w">       </span><span class="mf">0.85</span><span class="w">      </span><span class="mf">0.83</span><span class="w">      </span><span class="mf">0.84</span><span class="w">       </span><span class="mf">162</span>
-
-<span class="n">avg</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="kr">to</span><span class="n">tal</span><span class="w">       </span><span class="mf">1.00</span><span class="w">      </span><span class="mf">1.00</span><span class="w">      </span><span class="mf">1.00</span><span class="w">     </span><span class="mf">93987</span>
-</code></pre></div>
-
+avg / total       1.00      1.00      1.00     93987
+</code></pre>
 <h2>1.5. Single base model parameters and results</h2>
-<div class="highlight"><pre><span></span><code><span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">grid_searches</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">grid_searches</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">best_params_</span><span class="p">)</span>
-    <span class="n">pred_grid</span> <span class="o">=</span> <span class="n">grid_searches</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">Xtest</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">roc_auc_score</span><span class="p">(</span><span class="n">ytest</span><span class="p">,</span> <span class="n">pred_grid</span><span class="p">))</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">recall_score</span><span class="p">(</span><span class="n">ytest</span><span class="p">,</span> <span class="n">pred_grid</span><span class="p">))</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">confusion_matrix</span><span class="p">(</span><span class="n">ytest</span><span class="p">,</span> <span class="n">pred_grid</span><span class="p">))</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>et
-{&#39;n_estimators&#39;: 500, &#39;max_depth&#39;: 50, &#39;min_samples_leaf&#39;: 10}
+<pre><code class="language-python">for key in grid_searches.keys():
+    print(key)
+    print(grid_searches[key].best_params_)
+    pred_grid = grid_searches[key].predict(Xtest)
+    print(roc_auc_score(ytest, pred_grid))
+    print(recall_score(ytest, pred_grid))
+    print(confusion_matrix(ytest, pred_grid))
+    print('\n')
+</code></pre>
+<pre><code>et
+{'n_estimators': 500, 'max_depth': 50, 'min_samples_leaf': 10}
 0.9226210143
 0.845679012346
 [[93784    41]
@@ -329,7 +319,7 @@ confusion matrix on the test data is:
 
 
 rf
-{&#39;n_estimators&#39;: 200, &#39;max_depth&#39;: 50, &#39;min_samples_leaf&#39;: 10}
+{'n_estimators': 200, 'max_depth': 50, 'min_samples_leaf': 10}
 0.913452349232
 0.827160493827
 [[93801    24]
@@ -337,7 +327,7 @@ rf
 
 
 ada
-{&#39;n_estimators&#39;: 500, &#39;learning_rate&#39;: 1.5}
+{'n_estimators': 500, 'learning_rate': 1.5}
 0.92263700151
 0.845679012346
 [[93787    38]
@@ -345,7 +335,7 @@ ada
 
 
 svc
-{&#39;C&#39;: 1.0}
+{'C': 1.0}
 0.954330757616
 0.932098765432
 [[91626  2199]
@@ -353,12 +343,12 @@ svc
 
 
 gb
-{&#39;n_estimators&#39;: 200, &#39;max_depth&#39;: 50, &#39;min_samples_leaf&#39;: 20}
+{'n_estimators': 200, 'max_depth': 50, 'min_samples_leaf': 20}
 0.913457678302
 0.827160493827
 [[93802    23]
  [   28   134]]
-</code></pre></div></div>
+</code></pre></div>
     <footer>
 <p class="meta">
   <span class="byline author vcard">
@@ -387,13 +377,13 @@ gb
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -411,7 +401,7 @@ gb
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

@@ -108,49 +108,44 @@ data and pd/lgd/data are imported in main.py and are passed into calc_engine for
 <ul>
 <li>write a class rather than a function in calc_engine.py and let the data to be used as the parameter in the class. </li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">calc_engine</span>
-<span class="n">mycalc</span> <span class="o">=</span> <span class="n">module1</span><span class="o">.</span><span class="n">ClacEngine</span><span class="p">(</span><span class="n">pd</span> <span class="o">=</span> <span class="n">pd_data</span><span class="p">,</span> <span class="n">lgd</span> <span class="o">=</span> <span class="n">lgd_data</span><span class="p">)</span>
-<span class="n">mycalc</span><span class="o">.</span><span class="n">calc_function</span><span class="p">()</span>
-</code></pre></div>
-
+<pre><code class="language-python">import calc_engine
+mycalc = module1.ClacEngine(pd = pd_data, lgd = lgd_data)
+mycalc.calc_function()
+</code></pre>
 <ul>
 <li>If you really do want a global, but it's just there to be used by module1, set it in that module.</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">calc_engine</span>
-<span class="n">calc_engine</span><span class="o">.</span><span class="n">pd</span> <span class="o">=</span> <span class="n">pd_data</span>
-<span class="n">calc_engine</span><span class="o">.</span><span class="n">snapshot_data</span> <span class="o">=</span> <span class="n">snapshot_data</span>
+<pre><code class="language-python">import calc_engine
+calc_engine.pd = pd_data
+calc_engine.snapshot_data = snapshot_data
 
-<span class="nb">map</span><span class="p">(</span><span class="n">calc_engine</span><span class="o">.</span><span class="n">calc_function</span><span class="p">,</span> <span class="n">snapshot_data</span><span class="p">)</span>
-</code></pre></div>
-
+map(calc_engine.calc_function, snapshot_data)
+</code></pre>
 <ul>
 <li>On the other hand, if it is shared by a whole lot of modules, put it somewhere else, and have everyone import it:</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">shared_stuff</span>
-<span class="kn">import</span> <span class="nn">calc_engine</span>
+<pre><code class="language-python">import shared_stuff
+import calc_engine
 
-<span class="n">shared_stuff</span><span class="o">.</span><span class="n">pd</span> <span class="o">=</span> <span class="n">pd_data</span>
-<span class="n">shared_stuff</span><span class="o">.</span><span class="n">snapshot_data</span> <span class="o">=</span> <span class="n">snapshot_data</span>
+shared_stuff.pd = pd_data
+shared_stuff.snapshot_data = snapshot_data
 
-<span class="nb">map</span><span class="p">(</span><span class="n">calc_engine</span><span class="o">.</span><span class="n">calc_function</span><span class="p">,</span> <span class="n">snapshot_data</span><span class="p">)</span>
-</code></pre></div>
-
+map(calc_engine.calc_function, snapshot_data)
+</code></pre>
 <p>and, in calc_engine.py:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">shared_stuff</span>
-<span class="k">def</span> <span class="nf">fcalc_function</span><span class="p">():</span>
-    <span class="n">f</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-</code></pre></div>
-
+<pre><code class="language-python">import shared_stuff
+def fcalc_function():
+    f(data)
+</code></pre>
 <ul>
 <li>Finall, Or, in the rare case that you really do need it to be truly global everywhere, like a builtin, add it to the builtin module. The exact details differ between Python 2.x and 3.x. In 3.x, it works like this:</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">builtins</span>
-<span class="kn">import</span> <span class="nn">calc_engine</span>
-<span class="n">builtins</span><span class="o">.</span><span class="n">snapshot_data</span> <span class="o">=</span> <span class="n">snapshot_data</span>
+<pre><code class="language-python">import builtins
+import calc_engine
+builtins.snapshot_data = snapshot_data
 
-<span class="nb">map</span><span class="p">(</span><span class="n">calc_engine</span><span class="o">.</span><span class="n">calc_function</span><span class="p">,</span> <span class="n">snapshot_data</span><span class="p">)</span>
-</code></pre></div>
-
+map(calc_engine.calc_function, snapshot_data)
+</code></pre>
 <h4>Reference</h4>
 <ol>
 <li>
@@ -188,13 +183,13 @@ data and pd/lgd/data are imported in main.py and are passed into calc_engine for
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -212,7 +207,7 @@ data and pd/lgd/data are imported in main.py and are passed into calc_engine for
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

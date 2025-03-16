@@ -99,32 +99,30 @@ window.addEventListener('load', () => {
 <p>But if we not know the value of <span class="math">\(\mu_1, \mu_2, \mu_3\)</span>, what shall we do?</p>
 <h2>Exploration only</h2>
 <p>Since we don't know which ad will higher ctr, so we may just randomly select an ad to display. In this case, ad1, ad2 and ad3 will be displayed 100 times each. This is called exploration only which means doing it randomly. But it is not good since there is better way: after some random trials (let's say 50 times), we may calcuate the average ctr for each ad, and we may find ad1 has higher ctr than the rest. Then we should display ad1 in the rest 250 times.</p>
-<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Ad</span><span class="p">():</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">mu</span> <span class="o">=</span> <span class="n">mu</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">sigma</span> <span class="o">=</span> <span class="n">sigma</span>
+<pre><code class="language-python">class Ad():
+    def __init__(self, mu, sigma):
+        self.mu = mu
+        self.sigma = sigma
 
-    <span class="k">def</span> <span class="nf">ctr_sample</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mu</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma</span><span class="p">)</span>
+    def ctr_sample(self):
+        return np.random.normal(self.mu, self.sigma)
 
 
-<span class="k">def</span> <span class="nf">explore</span><span class="p">(</span><span class="n">ads</span><span class="p">,</span> <span class="n">ntotal</span><span class="o">=</span><span class="mi">300</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    ads is a list of random variables</span>
-<span class="sd">        each represents the distribution of the corresponding ad</span>
-<span class="sd">    ntotal: is the total number of trials we can test</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">rewards</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ntotal</span><span class="p">):</span>
-        <span class="n">rewards</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">ads</span><span class="p">)</span><span class="o">.</span><span class="n">ctr_sample</span><span class="p">())</span>
-    <span class="k">return</span> <span class="n">rewards</span>
+def explore(ads, ntotal=300):
+    &quot;&quot;&quot;
+    ads is a list of random variables
+        each represents the distribution of the corresponding ad
+    ntotal: is the total number of trials we can test
+    &quot;&quot;&quot;
+    rewards = []
+    for _ in range(ntotal):
+        rewards.append(random.choice(ads).ctr_sample())
+    return rewards
 
-<span class="n">ad1</span><span class="p">,</span> <span class="n">ad2</span><span class="p">,</span> <span class="n">ad3</span> <span class="o">=</span> <span class="n">Ads</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.03</span><span class="p">),</span> <span class="n">Ads</span><span class="p">(</span><span class="mf">0.09</span><span class="p">,</span> <span class="mf">0.03</span><span class="p">),</span> <span class="n">Ads</span><span class="p">(</span><span class="mf">0.08</span><span class="p">,</span> <span class="mf">0.03</span><span class="p">)</span> 
-</code></pre></div>
+ad1, ad2, ad3 = Ads(0.1, 0.03), Ads(0.09, 0.03), Ads(0.08, 0.03) 
 
-<div class="highlight"><pre><span></span><code>
-</code></pre></div>
-
+</code></pre>
+<pre><code class="language-python"></code></pre>
 <h2>Epsilon-greedy bandit</h2>
 <p>Rather than choosing the ads randomly, we will try some random choice to explore. After we collect some information, we will exploit to the most highly returned ad. </p>
 <ol>
@@ -135,80 +133,79 @@ window.addEventListener('load', () => {
 </ol>
 <p>The key parameter we decide upon for an epsilon-greedy bandit is <span class="math">\(\epsilon\)</span>. <span class="math">\(\epsilon\)</span> manages the exploration / exploitation trade-off by determining what proportion of ads we assign to exploration <span class="math">\(\epsilon\)</span>, and exploitation, <span class="math">\(1 - \epsilon\)</span>. For example, if <span class="math">\(\epsilon = 0.1\)</span>, means 10% of the 300 total trials will be used for exploration (30 times).</p>
 <p>Let's denote <span class="math">\(P_t(i)\)</span> as the probability to choose ad <span class="math">\(i\)</span> in the <span class="math">\(t_{th}\)</span> trial, <span class="math">\(K\)</span> as the number of ads, and <span class="math">\(N_t(i)\)</span> is the number of trials for ad <span class="math">\(i\)</span> in the <span class="math">\(t\)</span> trials. </p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
-<span class="kn">import</span> <span class="nn">random</span>
+<pre><code class="language-python">import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import random
 
-<span class="k">class</span> <span class="nc">EpsilonGreedyBandit</span><span class="p">():</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">true_ctr</span><span class="p">,</span> <span class="n">epsilon</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">epsilon</span> <span class="o">=</span> <span class="n">epsilon</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">num_ads</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">true_ctr</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">ad_ids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_ads</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_ads</span><span class="p">,</span> <span class="mi">1</span><span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_ads</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">clicks</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_ads</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">trials</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_ads</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">true_ctr</span> <span class="o">=</span> <span class="n">true_ctr</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">empirical_ctr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_ads</span><span class="p">)</span>
+class EpsilonGreedyBandit():
+    def __init__(self, true_ctr, epsilon = 0.1):
+        self.epsilon = epsilon
+        self.num_ads = len(true_ctr)
+        self.ad_ids = np.arange(self.num_ads)
+        self.weights = np.full(self.num_ads, 1/ self.num_ads)
+        self.clicks = np.zeros(self.num_ads)
+        self.trials = np.zeros(self.num_ads)
+        self.true_ctr = true_ctr
+        self.empirical_ctr = np.zeros(self.num_ads)
 
-    <span class="k">def</span> <span class="nf">choose_ad</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Choose ad to display based on the updated weights</span>
-<span class="sd">        1. Choose the current best ad with prob 1-epislon</span>
-<span class="sd">        2. Or randomly explore with prob epislon/(num_ads - 1)</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">ad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ad_ids</span><span class="p">,</span> <span class="n">size</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">ad</span>
+    def choose_ad(self):
+        &quot;&quot;&quot;
+        Choose ad to display based on the updated weights
+        1. Choose the current best ad with prob 1-epislon
+        2. Or randomly explore with prob epislon/(num_ads - 1)
+        &quot;&quot;&quot;
+        ad = np.random.choice(self.ad_ids, size = 1, p = self.weights)[0]
+        return ad
 
-    <span class="k">def</span> <span class="nf">click</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ad</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Customer click with prob = true_ctr</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">click</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">binomial</span><span class="p">(</span><span class="n">size</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">true_ctr</span><span class="p">[</span><span class="n">ad</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">click</span>
-
-
-    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ad</span><span class="p">,</span> <span class="n">click</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        For given ad, update the values</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">clicks</span><span class="p">[</span><span class="n">ad</span><span class="p">]</span> <span class="o">+=</span> <span class="n">click</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">trials</span><span class="p">[</span><span class="n">ad</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">empirical_ctr</span><span class="p">[</span><span class="n">ad</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">clicks</span><span class="p">[</span><span class="n">ad</span><span class="p">]</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">trials</span><span class="p">[</span><span class="n">ad</span><span class="p">]</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">clicks</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">[:]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">epsilon</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_ads</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
-            <span class="n">best_ad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">empirical_ctr</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">[</span><span class="n">best_ad</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">epsilon</span>
-
-    <span class="k">def</span> <span class="nf">run_trial</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">ad</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">choose_ad</span><span class="p">()</span>
-        <span class="n">click</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="n">ad</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">ad</span><span class="p">,</span> <span class="n">click</span><span class="p">)</span>
+    def click(self, ad):
+        &quot;&quot;&quot;
+        Customer click with prob = true_ctr
+        &quot;&quot;&quot;
+        click = np.random.binomial(size = 1, n = 1, p=self.true_ctr[ad])[0]
+        return click
 
 
-<span class="c1"># Run an example</span>
+    def update(self, ad, click):
+        &quot;&quot;&quot;
+        For given ad, update the values
+        &quot;&quot;&quot;
+        self.clicks[ad] += click
+        self.trials[ad] += 1
+        self.empirical_ctr[ad] = self.clicks[ad] / self.trials[ad]
+        if self.clicks.any():
+            self.weights[:] = self.epsilon / (self.num_ads - 1)
+            best_ad = np.argmax(self.empirical_ctr)
+            self.weights[best_ad] = 1 - self.epsilon
 
-<span class="n">emp_ctr</span> <span class="o">=</span> <span class="p">[]</span>
-<span class="n">ctr</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.09</span><span class="p">,</span> <span class="mf">0.08</span><span class="p">]</span>
+    def run_trial(self):
+        ad = self.choose_ad()
+        click = self.click(ad)
+        self.update(ad, click)
 
-<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">6</span><span class="p">):</span>
-    <span class="n">egb</span> <span class="o">=</span> <span class="n">EpsilonGreedyBandit</span><span class="p">(</span><span class="n">ctr</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="o">**</span><span class="n">i</span><span class="p">):</span>
-        <span class="n">egb</span><span class="o">.</span><span class="n">run_trial</span><span class="p">()</span>
 
-    <span class="n">emp_ctr</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">egb</span><span class="o">.</span><span class="n">empirical_ctr</span><span class="p">)</span>
+# Run an example
 
-<span class="n">emp_ctr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">emp_ctr</span><span class="p">)</span>
+emp_ctr = []
+ctr = [0.1, 0.09, 0.08]
 
-<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
+for i in range(6):
+    egb = EpsilonGreedyBandit(ctr)
+    for j in range(10**i):
+        egb.run_trial()
 
-<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ctr</span><span class="p">)):</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">emp_ctr</span><span class="p">[:,</span> <span class="n">i</span><span class="p">],</span> <span class="n">label</span> <span class="o">=</span> <span class="s2">&quot;CTR for ad&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Epsilon Greedy Bandit CTR Simulation&#39;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-</code></pre></div>
+    emp_ctr.append(egb.empirical_ctr)
 
+emp_ctr = np.array(emp_ctr)
+
+fig, ax = plt.subplots(figsize=(16, 8))
+
+for i in range(len(ctr)):
+    plt.plot(emp_ctr[:, i], label = &quot;CTR for ad&quot; + str(i))
+plt.legend()
+plt.title('Epsilon Greedy Bandit CTR Simulation')
+plt.show()
+</code></pre>
 <p><img alt="multi armd bandit 01" src="/figures/20211106_multi_armd_bandit_01.png">
 As we can see, the empirical CTR will concerge to the true CTR and the best ad will be chosen.</p>
 <h2>Upper confidence bound (UCB)</h2>
@@ -224,72 +221,72 @@ As we can see, the empirical CTR will concerge to the true CTR and the best ad w
 <li>Choose the ad with the highest drawn CTR.</li>
 <li>If a click is observed increment <span class="math">\(a\)</span> by 1, otherwise increment <span class="math">\(b\)</span> by 1. (<span class="math">\(\alpha\)</span> and <span class="math">\(\beta\)</span> in the Beta distribution.)</li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ThompsonSamplingBandit</span><span class="p">():</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">true_ctr</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">num_ads</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">true_ctr</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">ad_ids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_ads</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">clicks</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_ads</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">alphas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_ads</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">betas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_ads</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">trials</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_ads</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">true_ctr</span> <span class="o">=</span> <span class="n">true_ctr</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">empirical_ctr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_ads</span><span class="p">)</span>
+<pre><code class="language-python">class ThompsonSamplingBandit():
+    def __init__(self, true_ctr):
+        self.num_ads = len(true_ctr)
+        self.ad_ids = np.arange(self.num_ads)
+        self.clicks = np.zeros(self.num_ads)
+        self.alphas = np.ones(self.num_ads)
+        self.betas = np.ones(self.num_ads)
+        self.trials = np.zeros(self.num_ads)
+        self.true_ctr = true_ctr
+        self.empirical_ctr = np.zeros(self.num_ads)
 
-    <span class="k">def</span> <span class="nf">choose_ad</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">beta_draws</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_ads</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">ad</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ad_ids</span><span class="p">:</span>
-            <span class="n">draw</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">beta</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alphas</span><span class="p">[</span><span class="n">ad</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">betas</span><span class="p">[</span><span class="n">ad</span><span class="p">],</span> <span class="n">size</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-            <span class="n">beta_draws</span><span class="p">[</span><span class="n">ad</span><span class="p">]</span> <span class="o">=</span> <span class="n">draw</span>
-        <span class="n">best_ad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">beta_draws</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">best_ad</span>
+    def choose_ad(self):
+        beta_draws = np.zeros(self.num_ads)
+        for ad in self.ad_ids:
+            draw = np.random.beta(self.alphas[ad], self.betas[ad], size = 1)[0]
+            beta_draws[ad] = draw
+        best_ad = np.argmax(beta_draws)
+        return best_ad
 
-    <span class="k">def</span> <span class="nf">click</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ad</span><span class="p">):</span>
-        <span class="n">click</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">binomial</span><span class="p">(</span><span class="n">size</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">true_ctr</span><span class="p">[</span><span class="n">ad</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">click</span>
+    def click(self, ad):
+        click = np.random.binomial(size = 1, n = 1, p = self.true_ctr[ad])[0]
+        return click
 
-    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ad</span><span class="p">,</span> <span class="n">click</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">trials</span><span class="p">[</span><span class="n">ad</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">clicks</span><span class="p">[</span><span class="n">ad</span><span class="p">]</span> <span class="o">+=</span> <span class="n">click</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">empirical_ctr</span><span class="p">[</span><span class="n">ad</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">clicks</span><span class="p">[</span><span class="n">ad</span><span class="p">]</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">trials</span><span class="p">[</span><span class="n">ad</span><span class="p">]</span>
-        <span class="k">if</span> <span class="n">click</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">alphas</span><span class="p">[</span><span class="n">ad</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">betas</span><span class="p">[</span><span class="n">ad</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+    def update(self, ad, click):
+        self.trials[ad] += 1
+        self.clicks[ad] += click
+        self.empirical_ctr[ad] = self.clicks[ad] / self.trials[ad]
+        if click:
+            self.alphas[ad] += 1
+        else:
+            self.betas[ad] += 1
 
-    <span class="k">def</span> <span class="nf">run_trial</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">ad</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">choose_ad</span><span class="p">()</span>
-        <span class="n">click</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="n">ad</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">ad</span><span class="p">,</span> <span class="n">click</span><span class="p">)</span>
+    def run_trial(self):
+        ad = self.choose_ad()
+        click = self.click(ad)
+        self.update(ad, click)
 
-<span class="n">tsb</span> <span class="o">=</span> <span class="n">ThompsonSamplingBandit</span><span class="p">(</span><span class="n">true_ctr</span> <span class="o">=</span> <span class="p">[</span><span class="mf">.2</span><span class="p">,</span> <span class="mf">.15</span><span class="p">,</span> <span class="mf">.1</span><span class="p">])</span>
-<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">200000</span><span class="p">):</span>
-    <span class="n">tsb</span><span class="o">.</span><span class="n">run_trial</span><span class="p">()</span>
+tsb = ThompsonSamplingBandit(true_ctr = [.2, .15, .1])
+for _ in range(200000):
+    tsb.run_trial()
 
-<span class="nb">print</span><span class="p">(</span><span class="n">tsb</span><span class="o">.</span><span class="n">empirical_ctr</span><span class="p">)</span>
+print(tsb.empirical_ctr)
 
-<span class="c1"># array([0.20028314, 0.14479638, 0.09352518])</span>
+# array([0.20028314, 0.14479638, 0.09352518])
 
-<span class="n">emp_ctr</span> <span class="o">=</span> <span class="p">[]</span>
-<span class="n">ctr</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.15</span><span class="p">,</span> <span class="mf">0.08</span><span class="p">]</span>
+emp_ctr = []
+ctr = [0.2, 0.15, 0.08]
 
-<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">6</span><span class="p">):</span>
-    <span class="n">egb</span> <span class="o">=</span> <span class="n">ThompsonSamplingBandit</span><span class="p">(</span><span class="n">ctr</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="o">**</span><span class="n">i</span><span class="p">):</span>
-        <span class="n">egb</span><span class="o">.</span><span class="n">run_trial</span><span class="p">()</span>
+for i in range(6):
+    egb = ThompsonSamplingBandit(ctr)
+    for j in range(10**i):
+        egb.run_trial()
 
-    <span class="n">emp_ctr</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">egb</span><span class="o">.</span><span class="n">empirical_ctr</span><span class="p">)</span>
+    emp_ctr.append(egb.empirical_ctr)
 
-<span class="n">emp_ctr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">emp_ctr</span><span class="p">)</span>
+emp_ctr = np.array(emp_ctr)
 
-<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
+fig, ax = plt.subplots(figsize=(16, 8))
 
-<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ctr</span><span class="p">)):</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">emp_ctr</span><span class="p">[:,</span> <span class="n">i</span><span class="p">],</span> <span class="n">label</span> <span class="o">=</span> <span class="s2">&quot;CTR for ad&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Thompson Sampling Bandit CTR simulation&#39;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-</code></pre></div>
+for i in range(len(ctr)):
+    plt.plot(emp_ctr[:, i], label = &quot;CTR for ad&quot; + str(i))
+plt.legend()
+plt.title('Thompson Sampling Bandit CTR simulation')
+plt.show()
 
+</code></pre>
 <p><img alt="multi armd bandit 01" src="/figures/20211106_multi_armd_bandit_02.png"></p>
 <p>However, in reality, <span class="math">\(p\)</span> is not simply a random value, itself maybe a function of different variables / setups. Let’s assume we use logistic regression f to model <span class="math">\(p\)</span>. That is, <span class="math">\(p = f(variables, weights)\)</span> and we denote weights as <span class="math">\(w\)</span> which is a vector with <span class="math">\(dim=d\)</span>. Now we need to find <span class="math">\(w\)</span> to optimize CTR. The conjugate prior for <span class="math">\(w\)</span> is normal distribution. And the corresponding posterior of <span class="math">\(w\)</span> is also normal distribution. After we observed (x, y), w and the posterior will be updated.</p>
 <p>In a more general case, the number of variables and <span class="math">\(w\)</span> of logistic regression may also be random. In this case, we cannot use fixed number of <span class="math">\(dim=d\)</span> priors of normal distribution. We need to extend it to Gaussian processes. </p>
@@ -401,13 +398,13 @@ As we can see, the empirical CTR will concerge to the true CTR and the best ad w
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -425,7 +422,7 @@ As we can see, the empirical CTR will concerge to the true CTR and the best ad w
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

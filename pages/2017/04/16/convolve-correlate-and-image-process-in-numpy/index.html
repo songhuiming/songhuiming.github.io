@@ -94,162 +94,138 @@ window.addEventListener('load', () => {
 <time datetime="2017-04-16T22:03:00-05:00" pubdate>Sun 16 April 2017</time>    </p>
 </header>
 
-  <div class="entry-content"><div class="highlight"><pre><span></span><code><span class="o">%</span><span class="n">matplotlib</span> <span class="n">inline</span>
-<span class="kn">import</span> <span class="nn">math</span><span class="o">,</span><span class="nn">sys</span><span class="o">,</span><span class="nn">os</span><span class="o">,</span><span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span><span class="o">,</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">from</span> <span class="nn">numpy.linalg</span> <span class="kn">import</span> <span class="n">norm</span>
-<span class="kn">from</span> <span class="nn">PIL</span> <span class="kn">import</span> <span class="n">Image</span>
-<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span><span class="p">,</span> <span class="n">rcParams</span><span class="p">,</span> <span class="n">rc</span>
-<span class="kn">from</span> <span class="nn">scipy.ndimage</span> <span class="kn">import</span> <span class="n">imread</span>
-<span class="kn">from</span> <span class="nn">skimage.measure</span> <span class="kn">import</span> <span class="n">block_reduce</span>
-<span class="kn">import</span> <span class="nn">cPickle</span> <span class="k">as</span> <span class="nn">pickle</span>
-<span class="kn">from</span> <span class="nn">scipy.ndimage.filters</span> <span class="kn">import</span> <span class="n">correlate</span><span class="p">,</span> <span class="n">convolve</span>
-<span class="kn">from</span> <span class="nn">ipywidgets</span> <span class="kn">import</span> <span class="n">interact</span><span class="p">,</span> <span class="n">interactive</span><span class="p">,</span> <span class="n">fixed</span>
-<span class="kn">from</span> <span class="nn">ipywidgets.widgets</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="n">rc</span><span class="p">(</span><span class="s1">&#39;animation&#39;</span><span class="p">,</span> <span class="n">html</span><span class="o">=</span><span class="s1">&#39;html5&#39;</span><span class="p">)</span>
-<span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;figure.figsize&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">6</span>
-<span class="o">%</span><span class="n">precision</span> <span class="mi">4</span>
-<span class="n">np</span><span class="o">.</span><span class="n">set_printoptions</span><span class="p">(</span><span class="n">precision</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
-</code></pre></div>
-
+  <div class="entry-content"><pre><code class="language-python">%matplotlib inline
+import math,sys,os,numpy as np, pandas as pd
+from numpy.linalg import norm
+from PIL import Image
+from matplotlib import pyplot as plt, rcParams, rc
+from scipy.ndimage import imread
+from skimage.measure import block_reduce
+import cPickle as pickle
+from scipy.ndimage.filters import correlate, convolve
+from ipywidgets import interact, interactive, fixed
+from ipywidgets.widgets import *
+rc('animation', html='html5')
+rcParams['figure.figsize'] = 3, 6
+%precision 4
+np.set_printoptions(precision=4, linewidth=100)
+</code></pre>
 <h2>1. convolve and correlate in numpy</h2>
 <h3>1.1. convolve of two vectors</h3>
 <p>The convolution of two vectors, u and v, represents the area of overlap under the points as v slides across u. Algebraically, convolution is the same operation as multiplying polynomials whose coefficients are the elements of u and v.</p>
 <p>Let m = length(u) and n = length(v) . Then w is the vector of length m+n-1 whose kth element is
 <span class="math">\(w(k)=\sum_j u(j)v(k−j+1)\)</span>.</p>
 <p>The sum is over all the values of j that lead to legal subscripts for u(j) and v(k-j+1), specifically j = max(1,k+1-n):1:min(k,m). When m = n, this gives</p>
-<div class="highlight"><pre><span></span><code>w(1) = u(1)*v(1)
+<pre><code>w(1) = u(1)*v(1)
 w(2) = u(1)*v(2)+u(2)*v(1)
 w(3) = u(1)*v(3)+u(2)*v(2)+u(3)*v(1)
 ...
 w(n) = u(1)*v(n)+u(2)*v(n-1)+ ... +u(n)*v(1)
 ...
 w(2*n-1) = u(n)*v(n)
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="n">np</span><span class="o">.</span><span class="n">convolve</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">])</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>array([ 3, 10, 13, 10])
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="mf">3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mf">3</span>
-<span class="mf">10</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mf">4</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mf">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mf">3</span>
-<span class="mf">13</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mf">5</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mf">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mf">4</span>
-<span class="mf">10</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mf">5</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="n">convolve</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">])</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>array([15, 19])
-</code></pre></div>
-
+</code></pre>
+<pre><code class="language-python">np.convolve([1,2], [3,4,5])
+</code></pre>
+<pre><code>array([ 3, 10, 13, 10])
+</code></pre>
+<pre><code>3 = 1 * 3
+10 = 1 * 4 + 2 * 3
+13 = 1 * 5 + 2 * 4
+10 = 2 * 5
+</code></pre>
+<pre><code class="language-python">convolve([1,2], [3,4,5])
+</code></pre>
+<pre><code>array([15, 19])
+</code></pre>
 <h3>1.2. correlate of two vectors</h3>
-<div class="highlight"><pre><span></span><code><span class="n">c_</span><span class="err">{</span><span class="n">av</span><span class="err">}</span><span class="o">[</span><span class="n">k</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sum_n</span><span class="w"> </span><span class="n">a</span><span class="o">[</span><span class="n">n+k</span><span class="o">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">conj</span><span class="p">(</span><span class="n">v</span><span class="o">[</span><span class="n">n</span><span class="o">]</span><span class="p">)</span>
+<pre><code>c_{av}[k] = sum_n a[n+k] * conj(v[n])
 
-<span class="n">The</span><span class="w"> </span><span class="n">definition</span><span class="w"> </span><span class="k">of</span><span class="w"> </span><span class="n">correlation</span><span class="w"> </span><span class="n">above</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="ow">not</span><span class="w"> </span><span class="k">unique</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="n">sometimes</span><span class="w"> </span><span class="n">correlation</span><span class="w"> </span><span class="n">may</span><span class="w"> </span><span class="n">be</span><span class="w"> </span><span class="n">defined</span><span class="w"> </span><span class="n">differently</span><span class="p">.</span><span class="w"> </span><span class="n">Another</span><span class="w"> </span><span class="n">common</span><span class="w"> </span><span class="n">definition</span><span class="w"> </span><span class="k">is</span><span class="err">:</span>
+The definition of correlation above is not unique and sometimes correlation may be defined differently. Another common definition is:
 
-<span class="n">c</span><span class="s1">&#39;_{av}[k] = sum_n a[n] conj(v[n+k])</span>
-<span class="s1">which is related to c_{av}[k] by c&#39;</span><span class="n">_</span><span class="err">{</span><span class="n">av</span><span class="err">}</span><span class="o">[</span><span class="n">k</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c_</span><span class="err">{</span><span class="n">av</span><span class="err">}</span><span class="o">[</span><span class="n">-k</span><span class="o">]</span><span class="p">.</span>
-</code></pre></div>
+c'_{av}[k] = sum_n a[n] conj(v[n+k])
+which is related to c_{av}[k] by c'_{av}[k] = c_{av}[-k].
 
+</code></pre>
 <p><code>numpy.correlate(a, v, mode='valid', old_behavior=False)[source]</code></p>
 <p>Cross-correlation of two 1-dimensional sequences.</p>
 <p>This function computes the correlation as generally defined in signal processing texts:
      <code>z[k] = sum_n a[n] * conj(v[n+k])</code>
   with a and v sequences being zero-padded where necessary and conj being the conjugate.</p>
-<div class="highlight"><pre><span></span><code><span class="n">np</span><span class="o">.</span><span class="n">correlate</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">],</span> <span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;full&#39;</span><span class="p">)</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>array([ 6, 17, 32, 23, 12])
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code> 0 lag: 32 = 1 <span class="gs">* 4 + 2 *</span> 5 + 3 <span class="gs">* 6</span>
-<span class="gs"> 1 lag: 23 = 2 *</span> 4 + 3 <span class="gs">* 5</span>
-<span class="gs"> 2 lag: 12 = 3 *</span> 4
--1 lag: 17 = 1 <span class="gs">* 5 + 2 *</span> 6
+<pre><code class="language-python">np.correlate([1,2,3], [4,5,6], mode = 'full')
+</code></pre>
+<pre><code>array([ 6, 17, 32, 23, 12])
+</code></pre>
+<pre><code> 0 lag: 32 = 1 * 4 + 2 * 5 + 3 * 6
+ 1 lag: 23 = 2 * 4 + 3 * 5
+ 2 lag: 12 = 3 * 4
+-1 lag: 17 = 1 * 5 + 2 * 6
 -2 lag: 6 = 1 * 6
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="n">correlate</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">])</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>array([21, 32, 41])
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="n">np</span><span class="o">.</span><span class="n">correlate</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">],</span> <span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;full&#39;</span><span class="p">)</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>array([ 5, 14, 11,  6])
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code> 0 lag: not same length, not available
- 1 lag: 11 = 1 <span class="gs">*3 + 2 *</span> 4
- 2 lag:  6 = 2 <span class="gs">* 3</span>
-<span class="gs">-1 lag: 14 = 1 *</span> 4 + 2 <span class="gs">* 5</span>
-<span class="gs">-2 lag:  5 = 1 *</span> 5
-</code></pre></div>
-
+</code></pre>
+<pre><code class="language-python">correlate([1,2,3], [4,5,6])
+</code></pre>
+<pre><code>array([21, 32, 41])
+</code></pre>
+<pre><code class="language-python">np.correlate([1,2], [3,4,5], mode = 'full')
+</code></pre>
+<pre><code>array([ 5, 14, 11,  6])
+</code></pre>
+<pre><code> 0 lag: not same length, not available
+ 1 lag: 11 = 1 *3 + 2 * 4
+ 2 lag:  6 = 2 * 3
+-1 lag: 14 = 1 * 4 + 2 * 5
+-2 lag:  5 = 1 * 5
+</code></pre>
 <h2>2. read and plot image in matplotlib</h2>
 <h3>2.1. Color image</h3>
 <p><a href="https://en.wikipedia.org/wiki/Channel_(digital_image)">An image from a standard digital camera will have a red, green and blue channel(RGB)</a>. A <a href="https://en.wikipedia.org/wiki/Grayscale">grayscale</a> image has just one channel.</p>
 <p>So if a color image is read in, the data will have three dimensions: width, height and chanels. And number of chanels(the 3rd dimension) all the time is three. For a grayscale image, the number of chanels will be one.</p>
 <p>For example, the following Cherry blossom will have dimension of (, , ) and the third dimension is 3.</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># read in an image and show the image inline</span>
-<span class="n">im</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">imread</span><span class="p">(</span><span class="s2">&quot;heben.jpg&quot;</span><span class="p">)</span><span class="c1">#r&quot;Vd-Orig.png&quot;) </span>
-<span class="nb">print</span> <span class="n">im</span><span class="o">.</span><span class="n">shape</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">im</span><span class="p">)</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>(213L, 237L, 3L)
+<pre><code class="language-python"># read in an image and show the image inline
+im = plt.imread(&quot;heben.jpg&quot;)#r&quot;Vd-Orig.png&quot;) 
+print im.shape
+plt.imshow(im)
+</code></pre>
+<pre><code>(213L, 237L, 3L)
 
 
 
 
 
 &lt;matplotlib.image.AxesImage at 0x13775860&gt;
-</code></pre></div>
-
+</code></pre>
 <p><img alt="png" src="/figures/output_12_2.png"></p>
-<div class="highlight"><pre><span></span><code><span class="n">im</span><span class="p">[:</span><span class="mi">10</span><span class="p">,</span> <span class="p">:</span><span class="mi">10</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="nx">array</span><span class="p">([[</span><span class="mi">247</span><span class="p">,</span><span class="w"> </span><span class="mi">247</span><span class="p">,</span><span class="w"> </span><span class="mi">247</span><span class="p">,</span><span class="w"> </span><span class="mi">247</span><span class="p">,</span><span class="w"> </span><span class="mi">247</span><span class="p">,</span><span class="w"> </span><span class="mi">247</span><span class="p">,</span><span class="w"> </span><span class="mi">247</span><span class="p">,</span><span class="w"> </span><span class="mi">247</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">],</span>
-<span class="w">       </span><span class="p">[</span><span class="mi">247</span><span class="p">,</span><span class="w"> </span><span class="mi">247</span><span class="p">,</span><span class="w"> </span><span class="mi">247</span><span class="p">,</span><span class="w"> </span><span class="mi">247</span><span class="p">,</span><span class="w"> </span><span class="mi">247</span><span class="p">,</span><span class="w"> </span><span class="mi">247</span><span class="p">,</span><span class="w"> </span><span class="mi">247</span><span class="p">,</span><span class="w"> </span><span class="mi">247</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">],</span>
-<span class="w">       </span><span class="p">[</span><span class="mi">248</span><span class="p">,</span><span class="w"> </span><span class="mi">248</span><span class="p">,</span><span class="w"> </span><span class="mi">248</span><span class="p">,</span><span class="w"> </span><span class="mi">248</span><span class="p">,</span><span class="w"> </span><span class="mi">248</span><span class="p">,</span><span class="w"> </span><span class="mi">248</span><span class="p">,</span><span class="w"> </span><span class="mi">248</span><span class="p">,</span><span class="w"> </span><span class="mi">248</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">],</span>
-<span class="w">       </span><span class="p">[</span><span class="mi">248</span><span class="p">,</span><span class="w"> </span><span class="mi">248</span><span class="p">,</span><span class="w"> </span><span class="mi">248</span><span class="p">,</span><span class="w"> </span><span class="mi">248</span><span class="p">,</span><span class="w"> </span><span class="mi">248</span><span class="p">,</span><span class="w"> </span><span class="mi">248</span><span class="p">,</span><span class="w"> </span><span class="mi">248</span><span class="p">,</span><span class="w"> </span><span class="mi">248</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">],</span>
-<span class="w">       </span><span class="p">[</span><span class="mi">249</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">],</span>
-<span class="w">       </span><span class="p">[</span><span class="mi">249</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">],</span>
-<span class="w">       </span><span class="p">[</span><span class="mi">249</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">],</span>
-<span class="w">       </span><span class="p">[</span><span class="mi">250</span><span class="p">,</span><span class="w"> </span><span class="mi">250</span><span class="p">,</span><span class="w"> </span><span class="mi">250</span><span class="p">,</span><span class="w"> </span><span class="mi">250</span><span class="p">,</span><span class="w"> </span><span class="mi">250</span><span class="p">,</span><span class="w"> </span><span class="mi">250</span><span class="p">,</span><span class="w"> </span><span class="mi">250</span><span class="p">,</span><span class="w"> </span><span class="mi">250</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">,</span><span class="w"> </span><span class="mi">249</span><span class="p">],</span>
-<span class="w">       </span><span class="p">[</span><span class="mi">248</span><span class="p">,</span><span class="w"> </span><span class="mi">248</span><span class="p">,</span><span class="w"> </span><span class="mi">248</span><span class="p">,</span><span class="w"> </span><span class="mi">248</span><span class="p">,</span><span class="w"> </span><span class="mi">248</span><span class="p">,</span><span class="w"> </span><span class="mi">248</span><span class="p">,</span><span class="w"> </span><span class="mi">248</span><span class="p">,</span><span class="w"> </span><span class="mi">248</span><span class="p">,</span><span class="w"> </span><span class="mi">248</span><span class="p">,</span><span class="w"> </span><span class="mi">248</span><span class="p">],</span>
-<span class="w">       </span><span class="p">[</span><span class="mi">248</span><span class="p">,</span><span class="w"> </span><span class="mi">248</span><span class="p">,</span><span class="w"> </span><span class="mi">248</span><span class="p">,</span><span class="w"> </span><span class="mi">248</span><span class="p">,</span><span class="w"> </span><span class="mi">248</span><span class="p">,</span><span class="w"> </span><span class="mi">248</span><span class="p">,</span><span class="w"> </span><span class="mi">248</span><span class="p">,</span><span class="w"> </span><span class="mi">248</span><span class="p">,</span><span class="w"> </span><span class="mi">248</span><span class="p">,</span><span class="w"> </span><span class="mi">248</span><span class="p">]],</span><span class="w"> </span><span class="nx">dtype</span><span class="p">=</span><span class="nx">uint8</span><span class="p">)</span>
-</code></pre></div>
-
+<pre><code class="language-python">im[:10, :10, 1]
+</code></pre>
+<pre><code>array([[247, 247, 247, 247, 247, 247, 247, 247, 249, 249],
+       [247, 247, 247, 247, 247, 247, 247, 247, 249, 249],
+       [248, 248, 248, 248, 248, 248, 248, 248, 249, 249],
+       [248, 248, 248, 248, 248, 248, 248, 248, 249, 249],
+       [249, 249, 249, 249, 249, 249, 249, 249, 249, 249],
+       [249, 249, 249, 249, 249, 249, 249, 249, 249, 249],
+       [249, 249, 249, 249, 249, 249, 249, 249, 249, 249],
+       [250, 250, 250, 250, 250, 250, 250, 250, 249, 249],
+       [248, 248, 248, 248, 248, 248, 248, 248, 248, 248],
+       [248, 248, 248, 248, 248, 248, 248, 248, 248, 248]], dtype=uint8)
+</code></pre>
 <p>We can also only show one chanel of the image. For example, the following is only the 3rd chanel of the image.</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># only show the third chanel (index 2)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">im</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;uint8&quot;</span><span class="p">))</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>&lt;matplotlib.image.AxesImage at 0x1971e898&gt;
-</code></pre></div>
-
+<pre><code class="language-python"># only show the third chanel (index 2)
+plt.imshow(im[:, :, [0,0,0]].astype(dtype=&quot;uint8&quot;))
+</code></pre>
+<pre><code>&lt;matplotlib.image.AxesImage at 0x1971e898&gt;
+</code></pre>
 <p><img alt="png" src="/figures/output_15_1.png"></p>
-<div class="highlight"><pre><span></span><code><span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">im</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;uint8&quot;</span><span class="p">))</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>&lt;matplotlib.image.AxesImage at 0x163bca58&gt;
-</code></pre></div>
-
+<pre><code class="language-python">plt.imshow(im[:, :, 2].astype(dtype=&quot;uint8&quot;))
+</code></pre>
+<pre><code>&lt;matplotlib.image.AxesImage at 0x163bca58&gt;
+</code></pre>
 <p><img alt="png" src="/figures/output_16_1.png"></p>
 <p>Another useful method is to plot the red(or green, blue) chanel only in the graph. To do that, we will keep only that chanel data, and set the rest of the chanel as 0.</p>
-<div class="highlight"><pre><span></span><code><span class="n">tmp_im</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-<span class="n">tmp_im</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">im</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">tmp_im</span><span class="p">)</span>
-<span class="n">tmp_im</span><span class="p">[:</span><span class="mi">3</span><span class="p">,</span> <span class="p">:</span><span class="mi">3</span><span class="p">,</span> <span class="p">:]</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>array([[[ 247.,    0.,    0.],
+<pre><code class="language-python">tmp_im = np.zeros(im.shape)
+tmp_im[:, :, 0] = im[:, :, 0]
+plt.imshow(tmp_im)
+tmp_im[:3, :3, :]
+</code></pre>
+<pre><code>array([[[ 247.,    0.,    0.],
         [ 247.,    0.,    0.],
         [ 247.,    0.,    0.]],
 
@@ -260,195 +236,175 @@ w(2*n-1) = u(n)*v(n)
        [[ 248.,    0.,    0.],
         [ 248.,    0.,    0.],
         [ 248.,    0.,    0.]]])
-</code></pre></div>
-
+</code></pre>
 <p><img alt="png" src="/figures/output_18_1.png"></p>
-<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">plti</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span> <span class="c1"># turn off axis</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>  
+<pre><code class="language-python">def plti(im, **kwargs):
+    plt.imshow(im, interpolation=&quot;none&quot;, **kwargs)
+    plt.axis('off') # turn off axis
+    plt.show()  
 
-<span class="n">im</span> <span class="o">=</span> <span class="n">im</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:]</span>  <span class="c1"># slice</span>
-<span class="n">plti</span><span class="p">(</span><span class="n">im</span><span class="p">)</span>
-</code></pre></div>
-
+im = im[:, :, :]  # slice
+plti(im)
+</code></pre>
 <p><img alt="png" src="/figures/output_19_0.png"></p>
-<div class="highlight"><pre><span></span><code><span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">nrows</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">ncols</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span> 
+<pre><code class="language-python">fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(15,5)) 
 
-<span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">zi</span><span class="o">//</span><span class="n">figures</span><span class="o">/</span><span class="p">[</span><span class="n">png</span><span class="p">](</span><span class="o">/</span><span class="n">figures</span><span class="o">/</span><span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span> <span class="n">axs</span><span class="p">):</span>  
-    <span class="n">tmp_im</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> 
-    <span class="n">tmp_im</span><span class="p">[:,:,</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="n">im</span><span class="p">[:,:,</span><span class="n">c</span><span class="p">]</span> 
-    <span class="n">one_channel</span> <span class="o">=</span> <span class="n">im</span><span class="p">[:,:,</span><span class="n">c</span><span class="p">]</span><span class="o">.</span><span class="n">flatte</span><span class="o">//</span><span class="n">figures</span><span class="o">/</span><span class="p">[</span><span class="n">png</span><span class="p">](</span><span class="o">/</span><span class="n">figures</span><span class="o">/</span><span class="p">)</span> 
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;channel&quot;</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="s2">&quot; max = &quot;</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">one_channel</span><span class="p">),</span> <span class="s2">&quot;min = &quot;</span><span class="p">,</span> <span class="n">mi</span><span class="o">//</span><span class="n">figures</span><span class="o">/</span><span class="p">[</span><span class="n">png</span><span class="p">](</span><span class="o">/</span><span class="n">figures</span><span class="o">/</span><span class="n">one_channel</span><span class="p">))</span>  
-    <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">tmp_im</span><span class="p">)</span>  
-    <span class="n">ax</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span> 
-<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-</code></pre></div>
+for c, ax in zi//figures/[png](/figures/range(3), axs):  
+    tmp_im = np.zeros(im.shape) 
+    tmp_im[:,:,c] = im[:,:,c] 
+    one_channel = im[:,:,c].flatte//figures/[png](/figures/) 
+    print(&quot;channel&quot;, c, &quot; max = &quot;, max(one_channel), &quot;min = &quot;, mi//figures/[png](/figures/one_channel))  
+    ax.imshow(tmp_im)  
+    ax.set_axis_off() 
+plt.show()
 
-<div class="highlight"><pre><span></span><code>(&#39;channel&#39;, 0, &#39; max = &#39;, 255, &#39;min = &#39;, 15)
-(&#39;channel&#39;, 1, &#39; max = &#39;, 255, &#39;min = &#39;, 1)
-(&#39;channel&#39;, 2, &#39; max = &#39;, 255, &#39;min = &#39;, 0)
-</code></pre></div>
-
+</code></pre>
+<pre><code>('channel', 0, ' max = ', 255, 'min = ', 15)
+('channel', 1, ' max = ', 255, 'min = ', 1)
+('channel', 2, ' max = ', 255, 'min = ', 0)
+</code></pre>
 <p><img alt="png" src="/figures/output_20_1.png"></p>
 <h3>2.2. Grayscale image</h3>
 <p>To convert a color image to grayscale, the 3 chanels data of RGB will be weighted sumed to one dimension. The weights is the average of the 3 chanels data by <code>np.mea//figures/[png](/figures/im, axis = (0, 1))</code>. </p>
-<div class="highlight"><pre><span></span><code><span class="n">im_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mea</span><span class="o">//</span><span class="n">figures</span><span class="o">/</span><span class="p">[</span><span class="n">png</span><span class="p">](</span><span class="o">/</span><span class="n">figures</span><span class="o">/</span><span class="n">im</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
-<span class="nb">print</span> <span class="n">im_mean</span> <span class="o">/</span> <span class="nb">sum</span><span class="p">(</span><span class="n">im_mean</span><span class="p">)</span>
+<pre><code class="language-python">im_mean = np.mea//figures/[png](/figures/im, axis = (0, 1))
+print im_mean / sum(im_mean)
 
-<span class="k">def</span> <span class="nf">to_grayscale</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">c_</span><span class="p">[</span><span class="mf">0.3445</span><span class="p">,</span> <span class="mf">0.3081</span><span class="p">,</span> <span class="mf">0.3474</span><span class="p">]):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Transforms a colour image to a greyscale image by</span>
-<span class="sd">    taking the mean of the RGB values, weighted</span>
-<span class="sd">    by the matrix weights</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">tile</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span> <span class="n">reps</span><span class="o">=</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">im</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">1</span><span class="p">))</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">tile</span> <span class="o">*</span> <span class="n">im</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+def to_grayscale(im, weights = np.c_[0.3445, 0.3081, 0.3474]):
+    &quot;&quot;&quot;
+    Transforms a colour image to a greyscale image by
+    taking the mean of the RGB values, weighted
+    by the matrix weights
+    &quot;&quot;&quot;
+    tile = np.tile(weights, reps=(im.shape[0], im.shape[1], 1))
+    return np.sum(tile * im, axis=2)
 
-<span class="n">img</span> <span class="o">=</span> <span class="n">to_grayscale</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">c_</span><span class="p">[</span><span class="mf">0.3957</span><span class="p">,</span> <span class="mf">0.325</span><span class="p">,</span> <span class="mf">0.2793</span><span class="p">])</span>
+img = to_grayscale(im, np.c_[0.3957, 0.325, 0.2793])
 
-<span class="n">plti</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;Greys&#39;</span><span class="p">)</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>[ 0.4002  0.3167  0.2831]
-</code></pre></div>
-
+plti(img, cmap='Greys')
+</code></pre>
+<pre><code>[ 0.4002  0.3167  0.2831]
+</code></pre>
 <p><img alt="png" src="/figures/output_22_1.png"></p>
 <h2>3. Convolve over image</h2>
 <p>In image processing, <a href="https://en.wikipedia.org/wiki/Kernel_(image_processing)">convolution matrix</a> is a matrix that each element will be multiplied by the part of the matrix that is been convolved. </p>
 <p>For example, matrix A is of dimension 10*10,  matrix B which is the conversion matrix of dimension 3 * 3. The convolution of B over A means for each 3 * 3 subset in A(or maybe zero padding of A), do the elementwise multiply between the subset and B, then the sum of the multiply will be the corresponding element in the output matrix. More details will be introduced later.</p>
 <p>There will be some corresponding question when we do the above calculation: 1. how to pick the dimension of B? 2. How many stride shall we skip when selecting the subset? 3. what kind of zero-padding shall be used? These questions will be answered later.</p>
 <p>The following is an example of convolution matrix called window with shape 5 * 5, with all elements equal and the sum is 1.Since its weights are all the same, this will mask the image.  </p>
-<div class="highlight"><pre><span></span><code><span class="c1">### convolve to mask the image</span>
+<pre><code class="language-python">### convolve to mask the image
 
-<span class="kn">from</span> <span class="nn">scipy.signal</span> <span class="kn">import</span> <span class="n">convolve2d</span>
-<span class="kn">from</span> <span class="nn">scipy.ndimage.interpolation</span> <span class="kn">import</span> <span class="n">zoom</span>
+from scipy.signal import convolve2d
+from scipy.ndimage.interpolation import zoom
 
-<span class="n">im_small</span> <span class="o">=</span> <span class="n">zoom</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+im_small = zoom(im, (0.1, 0.1, 1))
 
-<span class="k">def</span> <span class="nf">convolve_all_colours</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">window</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Convolves im with window, over all three colour channels</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">ims</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
-        <span class="n">im_conv_d</span> <span class="o">=</span> <span class="n">convolve2d</span><span class="p">(</span><span class="n">im</span><span class="p">[:,:,</span><span class="n">d</span><span class="p">],</span> <span class="n">window</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;same&quot;</span><span class="p">,</span> <span class="n">boundary</span><span class="o">=</span><span class="s2">&quot;symm&quot;</span><span class="p">)</span>
-        <span class="n">ims</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">im_conv_d</span><span class="p">)</span>
+def convolve_all_colours(im, window):
+    &quot;&quot;&quot;
+    Convolves im with window, over all three colour channels
+    &quot;&quot;&quot;
+    ims = []
+    for d in range(3):
+        im_conv_d = convolve2d(im[:,:,d], window, mode=&quot;same&quot;, boundary=&quot;symm&quot;)
+        ims.append(im_conv_d)
 
-    <span class="n">im_conv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">ims</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;uint8&quot;</span><span class="p">)</span>
+    im_conv = np.stack(ims, axis=2).astype(&quot;uint8&quot;)
 
-    <span class="k">return</span> <span class="n">im_conv</span>
+    return im_conv
 
-<span class="n">n</span> <span class="o">=</span> <span class="mi">5</span>
-<span class="n">window</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">n</span><span class="p">,</span><span class="n">n</span><span class="p">))</span>
-<span class="n">window</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">window</span><span class="p">)</span>
-<span class="n">plti</span><span class="p">(</span><span class="n">convolve_all_colours</span><span class="p">(</span><span class="n">im_small</span><span class="p">,</span> <span class="n">window</span><span class="p">))</span>
-</code></pre></div>
-
+n = 5
+window = np.ones((n,n))
+window /= np.sum(window)
+plti(convolve_all_colours(im_small, window))
+</code></pre>
 <p><img alt="png" src="/figures/output_24_0.png"></p>
 <p>Some more interesting convolution matrix: edge detection</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">import</span> <span class="nn">scipy</span>
-<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">misc</span><span class="p">,</span> <span class="n">ndimage</span>
+<pre><code class="language-python">from numpy import *
+import scipy
+from scipy import misc, ndimage
 
-<span class="k">def</span> <span class="nf">detect_edges</span><span class="p">(</span><span class="n">image</span><span class="p">,</span><span class="n">masks</span><span class="p">):</span>
-    <span class="n">edges</span><span class="o">=</span><span class="n">zeros</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">mask</span> <span class="ow">in</span> <span class="n">masks</span><span class="p">:</span>
-        <span class="n">edges</span><span class="o">=</span><span class="n">maximum</span><span class="p">(</span><span class="n">scipy</span><span class="o">.</span><span class="n">ndimage</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">mask</span><span class="p">),</span> <span class="n">edges</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">edges</span>
+def detect_edges(image,masks):
+    edges=zeros(image.shape)
+    for mask in masks:
+        edges=maximum(scipy.ndimage.convolve(image, mask), edges)
+    return edges
 
-<span class="n">image</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">imread</span><span class="p">(</span><span class="s2">&quot;lenna.png&quot;</span><span class="p">)</span>
+image=plt.imread(&quot;lenna.png&quot;)
 
-<span class="n">Faler</span><span class="o">=</span><span class="p">[</span> <span class="p">[[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]],</span> 
-        <span class="p">[[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span>
-    <span class="p">[[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">],[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">],[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span>
-    <span class="p">[[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]]</span> <span class="p">]</span>
+Faler=[ [[-1,0,1],[-1,0,1],[-1,0,1]], 
+        [[1,1,1],[0,0,0],[-1,-1,-1]],
+    [[-1,-1,-1],[-1,8,-1],[-1,-1,-1]],
+    [[0,1,0],[-1,0,1],[0,-1,0]] ]
 
-<span class="n">edges</span><span class="o">=</span><span class="n">detect_edges</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">Faler</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">edges</span><span class="p">)</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>&lt;matplotlib.image.AxesImage at 0x1be16f28&gt;
-</code></pre></div>
-
+edges=detect_edges(image, Faler)
+plt.imshow(edges)
+</code></pre>
+<pre><code>&lt;matplotlib.image.AxesImage at 0x1be16f28&gt;
+</code></pre>
 <p><img alt="png" src="/figures/output_26_1.png"></p>
-<div class="highlight"><pre><span></span><code><span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">correlate</span><span class="p">(</span><span class="n">im</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]]))</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>&lt;matplotlib.image.AxesImage at 0x1b7a9908&gt;
-</code></pre></div>
-
+<pre><code class="language-python">plt.imshow(correlate(im[:, :, 0], [[1, 0, -1], [0,0,0], [-1,0,1]]))
+</code></pre>
+<pre><code>&lt;matplotlib.image.AxesImage at 0x1b7a9908&gt;
+</code></pre>
 <p><img alt="png" src="/figures/output_27_1.png"></p>
-<div class="highlight"><pre><span></span><code><span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">correlate</span><span class="p">(</span><span class="n">im</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]]))</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>&lt;matplotlib.image.AxesImage at 0x132a69e8&gt;
-</code></pre></div>
-
+<pre><code class="language-python">plt.imshow(correlate(im[:, :, 0], [[-1, -1, -1], [1,1,1], [0,0,0]]))
+</code></pre>
+<pre><code>&lt;matplotlib.image.AxesImage at 0x132a69e8&gt;
+</code></pre>
 <p><img alt="png" src="/figures/output_28_1.png"></p>
-<div class="highlight"><pre><span></span><code><span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">correlate</span><span class="p">(</span><span class="n">im</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">]]))</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>&lt;matplotlib.image.AxesImage at 0x1233a320&gt;
-</code></pre></div>
-
+<pre><code class="language-python">plt.imshow(correlate(im[:, :, 0], [[-1, -1, -1], [-1,8,-1], [-1,-1,-1]]))
+</code></pre>
+<pre><code>&lt;matplotlib.image.AxesImage at 0x1233a320&gt;
+</code></pre>
 <p><img alt="png" src="/figures/output_29_1.png"></p>
-<div class="highlight"><pre><span></span><code><span class="n">im1</span> <span class="o">=</span> <span class="n">correlate</span><span class="p">(</span><span class="n">im</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
-<span class="n">im2</span> <span class="o">=</span> <span class="n">convolve</span><span class="p">(</span><span class="n">im</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">2</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">rot90</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]],</span><span class="mi">2</span><span class="p">))</span>
+<pre><code class="language-python">im1 = correlate(im[:, :, 2], [[1, 1, 0], [1,0,1], [0, -1, -1]])
+im2 = convolve(im[:, :, 2], np.rot90([[1, 1, 0], [1,0,1], [0, -1, -1]],2))
 
-<span class="nb">print</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">im1</span><span class="p">,</span> <span class="n">im2</span><span class="p">)</span>
+print np.allclose(im1, im2)
 
-<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">im1</span><span class="p">)</span> 
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>True
+plt.imshow(im1) 
+</code></pre>
+<pre><code>True
 
 
 
 
 
 &lt;matplotlib.image.AxesImage at 0xf6fa860&gt;
-</code></pre></div>
-
+</code></pre>
 <p><img alt="png" src="/figures/output_30_2.png"></p>
-<div class="highlight"><pre><span></span><code><span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">im2</span><span class="p">)</span>   
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>&lt;matplotlib.image.AxesImage at 0x10505470&gt;
-</code></pre></div>
-
+<pre><code class="language-python">plt.imshow(im2)   
+</code></pre>
+<pre><code>&lt;matplotlib.image.AxesImage at 0x10505470&gt;
+</code></pre>
 <p><img alt="png" src="/figures/output_31_1.png"></p>
 <h3>Reference</h3>
 <ol>
 <li><a href="http://www.degeneratestate.org/posts/2016/Oct/23/image-processing-with-numpy/">image processing with numpy</a></li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">signal</span>
-<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">misc</span>
-<span class="nb">print</span> <span class="n">ascent</span><span class="o">.</span><span class="n">shape</span>
-<span class="n">scharr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span> <span class="o">-</span><span class="mi">3</span><span class="o">-</span><span class="mi">3</span><span class="n">j</span><span class="p">,</span> <span class="mi">0</span><span class="o">-</span><span class="mi">10</span><span class="n">j</span><span class="p">,</span>  <span class="o">+</span><span class="mi">3</span> <span class="o">-</span><span class="mi">3</span><span class="n">j</span><span class="p">],</span>
-                   <span class="p">[</span><span class="o">-</span><span class="mi">10</span><span class="o">+</span><span class="mi">0</span><span class="n">j</span><span class="p">,</span> <span class="mi">0</span><span class="o">+</span> <span class="mi">0</span><span class="n">j</span><span class="p">,</span> <span class="o">+</span><span class="mi">10</span> <span class="o">+</span><span class="mi">0</span><span class="n">j</span><span class="p">],</span>
-                   <span class="p">[</span> <span class="o">-</span><span class="mi">3</span><span class="o">+</span><span class="mi">3</span><span class="n">j</span><span class="p">,</span> <span class="mi">0</span><span class="o">+</span><span class="mi">10</span><span class="n">j</span><span class="p">,</span>  <span class="o">+</span><span class="mi">3</span> <span class="o">+</span><span class="mi">3</span><span class="n">j</span><span class="p">]])</span> <span class="c1"># Gx + j*Gy</span>
-<span class="n">grad</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">convolve2d</span><span class="p">(</span><span class="n">ascent</span><span class="p">,</span> <span class="n">scharr</span><span class="p">,</span> <span class="n">boundary</span><span class="o">=</span><span class="s1">&#39;symm&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;same&#39;</span><span class="p">)</span>
+<pre><code class="language-python">from scipy import signal
+from scipy import misc
+print ascent.shape
+scharr = np.array([[ -3-3j, 0-10j,  +3 -3j],
+                   [-10+0j, 0+ 0j, +10 +0j],
+                   [ -3+3j, 0+10j,  +3 +3j]]) # Gx + j*Gy
+grad = signal.convolve2d(ascent, scharr, boundary='symm', mode='same')
 
 
 
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax_orig</span><span class="p">,</span> <span class="n">ax_mag</span><span class="p">,</span> <span class="n">ax_ang</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">15</span><span class="p">))</span>
-<span class="n">ax_orig</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">ascent</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">)</span>
-<span class="n">ax_orig</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Original&#39;</span><span class="p">)</span>
-<span class="n">ax_orig</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
-<span class="n">ax_mag</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">grad</span><span class="p">),</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">)</span>
-<span class="n">ax_mag</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Gradient magnitude&#39;</span><span class="p">)</span>
-<span class="n">ax_mag</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
-<span class="n">ax_ang</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">angle</span><span class="p">(</span><span class="n">grad</span><span class="p">),</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;hsv&#39;</span><span class="p">)</span> <span class="c1"># hsv is cyclic, like angles</span>
-<span class="n">ax_ang</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Gradient orientation&#39;</span><span class="p">)</span>
-<span class="n">ax_ang</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
-<span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>(512L, 512L)
-</code></pre></div>
-
+import matplotlib.pyplot as plt
+fig, (ax_orig, ax_mag, ax_ang) = plt.subplots(3, 1, figsize=(6, 15))
+ax_orig.imshow(ascent, cmap='gray')
+ax_orig.set_title('Original')
+ax_orig.set_axis_off()
+ax_mag.imshow(np.absolute(grad), cmap='gray')
+ax_mag.set_title('Gradient magnitude')
+ax_mag.set_axis_off()
+ax_ang.imshow(np.angle(grad), cmap='hsv') # hsv is cyclic, like angles
+ax_ang.set_title('Gradient orientation')
+ax_ang.set_axis_off()
+fig.show()
+</code></pre>
+<pre><code>(512L, 512L)
+</code></pre>
 <p><img alt="png" src="/figures/output_33_1.png"></p>
 <script type="text/javascript">if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
     var align = "center",
@@ -540,13 +496,13 @@ w(2*n-1) = u(n)*v(n)
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -564,7 +520,7 @@ w(2*n-1) = u(n)*v(n)
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

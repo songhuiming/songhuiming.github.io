@@ -104,44 +104,40 @@ it fails with error message that <code>MySQLdb</code> cannot be found. The steps
 <p>Then import it again, it works.</p>
 <p>All these will be very easy if you are familiar with linux commands. It will be very convenitent and helpful in job if you master some linux functions. This blog is to list the useful function and its usage</p>
 <h2>1. <code>find</code> function and its usage</h2>
-<div class="highlight"><pre><span></span><code><span class="c1"># search multiple dirs</span>
-find<span class="w"> </span>/opt<span class="w"> </span>/usr<span class="w"> </span>/var<span class="w"> </span>-name<span class="w"> </span>foo.scala<span class="w"> </span>-type<span class="w"> </span>f<span class="w">     </span>
+<pre><code class="language-bash"># search multiple dirs
+find /opt /usr /var -name foo.scala -type f     
 
-<span class="c1"># fina all cache, xml and html files</span>
-find<span class="w"> </span>.<span class="w"> </span>-type<span class="w"> </span>f<span class="w"> </span><span class="se">\(</span><span class="w"> </span>-name<span class="w"> </span><span class="s2">&quot;*cache&quot;</span><span class="w"> </span>-o<span class="w"> </span>-name<span class="w"> </span><span class="s2">&quot;*xml&quot;</span><span class="w"> </span>-o<span class="w"> </span>-name<span class="w"> </span><span class="s2">&quot;*html&quot;</span><span class="w"> </span><span class="se">\)</span><span class="w">   </span>
+# fina all cache, xml and html files
+find . -type f \( -name &quot;*cache&quot; -o -name &quot;*xml&quot; -o -name &quot;*html&quot; \)   
 
-<span class="c1"># find and search, ignore case with -i option</span>
-find<span class="w"> </span>.<span class="w"> </span>-type<span class="w"> </span>f<span class="w"> </span>-name<span class="w"> </span><span class="s2">&quot;*.java&quot;</span><span class="w"> </span>-exec<span class="w"> </span>grep<span class="w"> </span>-il<span class="w"> </span>string<span class="w"> </span><span class="o">{}</span><span class="w"> </span><span class="se">\;</span>
+# find and search, ignore case with -i option
+find . -type f -name &quot;*.java&quot; -exec grep -il string {} \;
 
-<span class="c1"># find and copy, cp *.mp3 files to /tmp/MusicFiles</span>
-find<span class="w"> </span>.<span class="w"> </span>-type<span class="w"> </span>f<span class="w"> </span>-name<span class="w"> </span><span class="s2">&quot;*.mp3&quot;</span><span class="w"> </span>-exec<span class="w"> </span>cp<span class="w"> </span><span class="o">{}</span><span class="w"> </span>/tmp/MusicFiles<span class="w"> </span><span class="se">\;</span><span class="w">     </span>
+# find and copy, cp *.mp3 files to /tmp/MusicFiles
+find . -type f -name &quot;*.mp3&quot; -exec cp {} /tmp/MusicFiles \;     
 
-<span class="c1"># list user and corresponding disk usage</span>
-find<span class="w"> </span>/data01/saswork<span class="w"> </span>-printf<span class="w"> </span><span class="s2">&quot;%u  %s\n&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>awk<span class="w"> </span><span class="s1">&#39;{user[$1]+=$2}; END{ for( i in user) print i &quot; &quot; user[i]}&#39;</span><span class="w">   </span>
+# list user and corresponding disk usage
+find /data01/saswork -printf &quot;%u  %s\n&quot; | awk '{user[$1]+=$2}; END{ for( i in user) print i &quot; &quot; user[i]}'   
 
-<span class="c1"># how to list all my files, and size &gt; than a limit, in the given directory</span>
-<span class="k">for</span><span class="w"> </span>r<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">$(</span>find<span class="w"> </span>/data01/<span class="w"> </span>-type<span class="w"> </span>f<span class="w"> </span>-user<span class="w"> </span>hsong<span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;^\/data01&quot;</span><span class="k">)</span><span class="p">;</span><span class="w"> </span><span class="k">do</span><span class="w"> </span>ls<span class="w"> </span>-la<span class="w"> </span><span class="nv">$r</span><span class="p">;</span><span class="k">done</span><span class="p">|</span>cut<span class="w"> </span>-d<span class="w"> </span><span class="s2">&quot; &quot;</span><span class="w"> </span>-f<span class="w"> </span><span class="m">3</span>,5,10
-<span class="k">for</span><span class="w"> </span>r<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">$(</span>find<span class="w"> </span>/data02/temp/temp_sasprod/<span class="w"> </span>-type<span class="w"> </span>f<span class="w"> </span>-user<span class="w"> </span>hsong<span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;^\/data02&quot;</span><span class="k">)</span><span class="p">;</span><span class="w"> </span><span class="k">do</span><span class="w"> </span>ls<span class="w"> </span>-la<span class="w"> </span><span class="nv">$r</span><span class="p">;</span><span class="k">done</span><span class="p">|</span>cut<span class="w"> </span>-d<span class="w"> </span><span class="s2">&quot; &quot;</span><span class="w"> </span>-f<span class="w"> </span><span class="m">3</span>,5,10
-<span class="k">for</span><span class="w"> </span>r<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">$(</span>find<span class="w"> </span>/data02/temp/temp_sasprod/<span class="w"> </span>-type<span class="w"> </span>f<span class="w"> </span>-size<span class="w"> </span>+500k<span class="w"> </span>-user<span class="w"> </span>hsong<span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;^\/data02&quot;</span><span class="k">)</span><span class="p">;</span><span class="w"> </span><span class="k">do</span><span class="w"> </span>ls<span class="w"> </span>-lSR<span class="w"> </span><span class="nv">$r</span><span class="p">;</span><span class="k">done</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>less
-</code></pre></div>
-
+# how to list all my files, and size &gt; than a limit, in the given directory
+for r in $(find /data01/ -type f -user hsong| grep &quot;^\/data01&quot;); do ls -la $r;done|cut -d &quot; &quot; -f 3,5,10
+for r in $(find /data02/temp/temp_sasprod/ -type f -user hsong| grep &quot;^\/data02&quot;); do ls -la $r;done|cut -d &quot; &quot; -f 3,5,10
+for r in $(find /data02/temp/temp_sasprod/ -type f -size +500k -user hsong| grep &quot;^\/data02&quot;); do ls -lSR $r;done | less
+</code></pre>
 <h2>2. <code>locate</code> to find where the function is</h2>
-<div class="highlight"><pre><span></span><code>locate<span class="w"> </span>python
-</code></pre></div>
-
+<pre><code class="language-bash">locate python
+</code></pre>
 <h2>3. <code>dpkg</code> to check packages installed or not, and the path</h2>
 <ul>
 <li><code>dpkg -L PackageName</code> to find where the package is</li>
 </ul>
-<div class="highlight"><pre><span></span><code>dpkg –L MySQLdb
-</code></pre></div>
-
+<pre><code>dpkg –L MySQLdb
+</code></pre>
 <ul>
 <li>check if the package is installed or not</li>
 </ul>
-<div class="highlight"><pre><span></span><code>dpkg --get-selections | grep mysql
-</code></pre></div>
-
+<pre><code>dpkg --get-selections | grep mysql
+</code></pre>
 <h3>Reference</h3>
 <ol>
 <li><a href="http://alvinalexander.com/unix/edu/examples/find.shtml">A collection of Unix/Linux find command examples</a></li>
@@ -174,13 +170,13 @@ find<span class="w"> </span>/data01/saswork<span class="w"> </span>-printf<span 
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -198,7 +194,7 @@ find<span class="w"> </span>/data01/saswork<span class="w"> </span>-printf<span 
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

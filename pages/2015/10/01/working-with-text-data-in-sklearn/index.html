@@ -102,33 +102,32 @@ window.addEventListener('load', () => {
 <li>Pipeline，自动化 (以后扩展为不同的列用不同的变换)</li>
 <li>网格搜索来选择最优参数 (GridSearch)</li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">scipy.sparse</span> <span class="kn">import</span> <span class="n">hstack</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">re</span>
-<span class="kn">from</span> <span class="nn">sklearn.base</span> <span class="kn">import</span> <span class="n">BaseEstimator</span>
-<span class="kn">from</span> <span class="nn">sklearn.feature_extraction.text</span> <span class="kn">import</span> <span class="n">CountVectorizer</span>
-<span class="kn">from</span> <span class="nn">sklearn.feature_extraction.text</span> <span class="kn">import</span> <span class="n">TfidfVectorizer</span>
-<span class="kn">from</span> <span class="nn">sklearn.pipeline</span> <span class="kn">import</span> <span class="n">Pipeline</span>
-<span class="kn">from</span> <span class="nn">sklearn.naive_bayes</span> <span class="kn">import</span> <span class="n">MultinomialNB</span>
-<span class="kn">from</span> <span class="nn">sklearn.ensemble</span> <span class="kn">import</span> <span class="n">RandomForestClassifier</span>
-<span class="kn">from</span> <span class="nn">sklearn.svm</span> <span class="kn">import</span> <span class="n">SVC</span>
-<span class="kn">from</span> <span class="nn">sklearn.grid_search</span> <span class="kn">import</span> <span class="n">GridSearchCV</span>
+<pre><code class="language-python">import numpy as np
+from scipy.sparse import hstack
+import pandas as pd
+import re
+from sklearn.base import BaseEstimator
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.pipeline import Pipeline
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
+from sklearn.grid_search import GridSearchCV
 
-<span class="c1"># Load the training and test file</span>
-<span class="n">train</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;H:</span><span class="se">\\</span><span class="s2">python</span><span class="se">\\</span><span class="s2">kaggle</span><span class="se">\\</span><span class="s2">CrowdFlower</span><span class="se">\\</span><span class="s2">train.csv&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
-<span class="n">test</span>  <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;H:</span><span class="se">\\</span><span class="s2">python</span><span class="se">\\</span><span class="s2">kaggle</span><span class="se">\\</span><span class="s2">CrowdFlower</span><span class="se">\\</span><span class="s2">test.csv&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+# Load the training and test file
+train = pd.read_csv(&quot;H:\\python\\kaggle\\CrowdFlower\\train.csv&quot;).fillna(&quot;&quot;)
+test  = pd.read_csv(&quot;H:\\python\\kaggle\\CrowdFlower\\test.csv&quot;).fillna(&quot;&quot;)
 
-<span class="c1"># Drop the ID columns</span>
-<span class="n">idx</span> <span class="o">=</span> <span class="n">test</span><span class="o">.</span><span class="n">id</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
-<span class="n">train</span><span class="p">,</span> <span class="n">test</span> <span class="o">=</span> <span class="n">train</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">test</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+# Drop the ID columns
+idx = test.id.values.astype(int)
+train, test = train.drop('id', axis=1), test.drop('id', axis=1)
 
-<span class="c1"># create labels and drop variance</span>
-<span class="n">y</span> <span class="o">=</span> <span class="n">train</span><span class="o">.</span><span class="n">median_relevance</span><span class="o">.</span><span class="n">values</span>
-<span class="n">train</span> <span class="o">=</span> <span class="n">train</span><span class="o">.</span><span class="n">drop</span><span class="p">([</span><span class="s1">&#39;median_relevance&#39;</span><span class="p">,</span> <span class="s1">&#39;relevance_variance&#39;</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-<span class="n">train</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
-</code></pre></div>
-
+# create labels and drop variance
+y = train.median_relevance.values
+train = train.drop(['median_relevance', 'relevance_variance'], axis=1)
+train.head(5)
+</code></pre>
 <div style="max-height:1000px;max-width:1500px;overflow:auto;">
 <table border="1" class="dataframe">
   <thead>
@@ -174,79 +173,70 @@ window.addEventListener('load', () => {
 </table>
 </div>
 
-<div class="highlight"><pre><span></span><code><span class="c1"># 计算query和title或者description的相交的长度</span>
-<span class="n">token_pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">u</span><span class="s1">&#39;(?u)</span><span class="se">\\</span><span class="s1">b</span><span class="se">\\</span><span class="s1">w</span><span class="se">\\</span><span class="s1">w+</span><span class="se">\\</span><span class="s1">b&#39;</span><span class="p">)</span>
+<pre><code class="language-python"># 计算query和title或者description的相交的长度
+token_pattern = re.compile(u'(?u)\\b\\w\\w+\\b')
 
-<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">train</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
-    <span class="n">query</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">token_pattern</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;query&quot;</span><span class="p">]))</span>
-    <span class="n">title</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">token_pattern</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;product_title&quot;</span><span class="p">]))</span>
-    <span class="n">description</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">token_pattern</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;product_description&quot;</span><span class="p">]))</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">title</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="n">train</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="s2">&quot;query_in_title&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">query</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">title</span><span class="p">))</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">title</span><span class="p">)))</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">description</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="n">train</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="s2">&quot;query_in_description&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">query</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">description</span><span class="p">))</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">description</span><span class="p">)))</span>
-</code></pre></div>
-
+for i, row in train.iterrows():
+    query = set(x.lower() for x in token_pattern.findall(row[&quot;query&quot;]))
+    title = set(x.lower() for x in token_pattern.findall(row[&quot;product_title&quot;]))
+    description = set(x.lower() for x in token_pattern.findall(row[&quot;product_description&quot;]))
+    if len(title) &gt; 0:
+        train.set_value(i, &quot;query_in_title&quot;, len(query.intersection(title)) / float(len(title)))
+    if len(description) &gt; 0:
+        train.set_value(i, &quot;query_in_description&quot;, len(query.intersection(description)) / float(len(description)))
+</code></pre>
 <h6>1. 计算query里面各个单词出现的次数(occurance count)，</h6>
 <p>比如'ecco'在query里面总共出现了29次，python里面  <code>[x for x in train["query"] if 'ecco' in x.lower()]</code> 可以查看所有包含'ecco'的行</p>
 <p>1.1. 对query统计词频，然后查看ecco出现的频率</p>
-<div class="highlight"><pre><span></span><code><span class="n">cnt</span> <span class="o">=</span> <span class="n">CountVectorizer</span><span class="p">(</span><span class="n">token_pattern</span> <span class="o">=</span> <span class="sa">u</span><span class="s1">&#39;(?u)</span><span class="se">\\</span><span class="s1">b</span><span class="se">\\</span><span class="s1">w</span><span class="se">\\</span><span class="s1">w+</span><span class="se">\\</span><span class="s1">b&#39;</span><span class="p">)</span>      <span class="c1">#调用函数</span>
-<span class="n">cntn</span> <span class="o">=</span> <span class="n">cnt</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">train</span><span class="p">[</span><span class="s2">&quot;query&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span>               <span class="c1">#fit data</span>
-<span class="nb">print</span> <span class="n">cntn</span><span class="o">.</span><span class="n">shape</span>                                                 <span class="c1"># (10158L, 487L)</span>
-<span class="nb">print</span> <span class="n">cnt</span><span class="o">.</span><span class="n">vocabulary_</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ecco&#39;</span><span class="p">)</span>                                <span class="c1">#’ecco&#39;在query所有单词的次序中排第142位(从0开始是141)</span>
-<span class="nb">sum</span><span class="p">(</span><span class="n">cntn</span><span class="p">[:,</span> <span class="n">cnt</span><span class="o">.</span><span class="n">vocabulary_</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ecco&#39;</span><span class="p">)])</span>                        <span class="c1">#找出ecco出现的频率，为29</span>
-</code></pre></div>
-
+<pre><code class="language-python">cnt = CountVectorizer(token_pattern = u'(?u)\\b\\w\\w+\\b')      #调用函数
+cntn = cnt.fit_transform(train[&quot;query&quot;]).toarray()               #fit data
+print cntn.shape                                                 # (10158L, 487L)
+print cnt.vocabulary_.get('ecco')                                #’ecco'在query所有单词的次序中排第142位(从0开始是141)
+sum(cntn[:, cnt.vocabulary_.get('ecco')])                        #找出ecco出现的频率，为29
+</code></pre>
 <p>1.2. 同样可以对product_title， product_description做相似的统计</p>
-<div class="highlight"><pre><span></span><code><span class="n">cnt</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">train</span><span class="p">[</span><span class="s2">&quot;product_title&quot;</span><span class="p">])</span>
+<pre><code class="language-python">cnt.fit_transform(train[&quot;product_title&quot;])
 
-<span class="n">cnt</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">train</span><span class="p">[</span><span class="s1">&#39;product_description&#39;</span><span class="p">])</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="p">&lt;</span><span class="mi">10158</span><span class="nx">x26155</span><span class="w"> </span><span class="nx">sparse</span><span class="w"> </span><span class="nx">matrix</span><span class="w"> </span><span class="nx">of</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="err">&#39;</span><span class="p">&lt;</span><span class="k">type</span><span class="w"> </span><span class="err">&#39;</span><span class="nx">numpy</span><span class="p">.</span><span class="nx">int64</span><span class="sc">&#39;&gt;&#39;</span>
-<span class="w">    </span><span class="nx">with</span><span class="w"> </span><span class="mi">432648</span><span class="w"> </span><span class="nx">stored</span><span class="w"> </span><span class="nx">elements</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="nx">Compressed</span><span class="w"> </span><span class="nx">Sparse</span><span class="w"> </span><span class="nx">Row</span><span class="w"> </span><span class="nx">format</span><span class="p">&gt;</span>
-</code></pre></div>
-
+cnt.fit_transform(train['product_description'])
+</code></pre>
+<pre><code>    &lt;10158x26155 sparse matrix of type '&lt;type 'numpy.int64'&gt;'
+    with 432648 stored elements in Compressed Sparse Row format&gt;
+</code></pre>
 <p>很明显的是product_description里面单词太多了，导致产生的矩阵(sparse matrix)的维数为 <code>10158x26155</code>。我们可以只取出现频率最高的200个单词 (<code>max_features=200</code>) 作为我们的feature。也可以设置最小出现的频率为20 (<code>min_df = 10</code>) 。</p>
-<div class="highlight"><pre><span></span><code><span class="n">cnt</span> <span class="o">=</span> <span class="n">CountVectorizer</span><span class="p">(</span><span class="n">token_pattern</span> <span class="o">=</span> <span class="sa">u</span><span class="s1">&#39;(?u)</span><span class="se">\\</span><span class="s1">b</span><span class="se">\\</span><span class="s1">w</span><span class="se">\\</span><span class="s1">w+</span><span class="se">\\</span><span class="s1">b&#39;</span><span class="p">,</span> <span class="n">max_features</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">min_df</span> <span class="o">=</span> <span class="mi">20</span><span class="p">)</span>      <span class="c1">#调用函数</span>
-<span class="n">cnt</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">train</span><span class="p">[</span><span class="s1">&#39;product_description&#39;</span><span class="p">])</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="p">&lt;</span><span class="mi">10158</span><span class="nx">x200</span><span class="w"> </span><span class="nx">sparse</span><span class="w"> </span><span class="nx">matrix</span><span class="w"> </span><span class="nx">of</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="err">&#39;</span><span class="p">&lt;</span><span class="k">type</span><span class="w"> </span><span class="err">&#39;</span><span class="nx">numpy</span><span class="p">.</span><span class="nx">int64</span><span class="sc">&#39;&gt;&#39;</span>
-<span class="w">    </span><span class="nx">with</span><span class="w"> </span><span class="mi">158472</span><span class="w"> </span><span class="nx">stored</span><span class="w"> </span><span class="nx">elements</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="nx">Compressed</span><span class="w"> </span><span class="nx">Sparse</span><span class="w"> </span><span class="nx">Row</span><span class="w"> </span><span class="nx">format</span><span class="p">&gt;</span>
-</code></pre></div>
-
+<pre><code class="language-python">cnt = CountVectorizer(token_pattern = u'(?u)\\b\\w\\w+\\b', max_features=200, min_df = 20)      #调用函数
+cnt.fit_transform(train['product_description'])
+</code></pre>
+<pre><code>&lt;10158x200 sparse matrix of type '&lt;type 'numpy.int64'&gt;'
+    with 158472 stored elements in Compressed Sparse Row format&gt;
+</code></pre>
 <h6>2. TfidfVeftorizer()计算 <a href="https://en.wikipedia.org/wiki/Tf%E2%80%93idf">TF-IDF feature</a></h6>
 <p>仅仅计算occurance count有一个问题：越长的文档通常会有越高的词频。为避免这个潜在的问题，可以用 <code>tf</code> (term frequency)来解决：<code>tf</code>会把上面的词频除以文档中所有的单词数（to divide the number of occurrences of each word in a document by the total number of words in the document: these new features are called tf for Term Frequencies）。</p>
 <p><code>tf</code>的另一个改进是减小了那些在很多文档中都出现的单词的权重。sklearn中把这个过程叫 <code>tf–idf</code>: “Term Frequency times Inverse Document Frequency”.</p>
 <p>下面给出的例子是计算 <code>train['product_title']</code> 在 <code>train['query']</code> 里面的TF-IDF</p>
-<div class="highlight"><pre><span></span><code><span class="n">tfv</span> <span class="o">=</span> <span class="n">TfidfVectorizer</span><span class="p">(</span><span class="n">token_pattern</span> <span class="o">=</span> <span class="sa">u</span><span class="s1">&#39;(?u)</span><span class="se">\\</span><span class="s1">b</span><span class="se">\\</span><span class="s1">w</span><span class="se">\\</span><span class="s1">w+</span><span class="se">\\</span><span class="s1">b&#39;</span><span class="p">,</span> <span class="n">max_features</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">min_df</span> <span class="o">=</span> <span class="mi">20</span><span class="p">)</span>      <span class="c1">#调用TfvifVectorizer函数</span>
-<span class="n">tfv</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">[</span><span class="s1">&#39;query&#39;</span><span class="p">])</span>
-<span class="n">tfvm</span> <span class="o">=</span> <span class="n">tfv</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">train</span><span class="p">[</span><span class="s1">&#39;product_title&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span>
-<span class="n">tfv</span><span class="o">.</span><span class="n">vocabulary_</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;zippo&#39;</span><span class="p">)</span>
-<span class="nb">sum</span><span class="p">(</span><span class="n">tfvm</span><span class="p">[:,</span> <span class="n">tfv</span><span class="o">.</span><span class="n">vocabulary_</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;zippo&#39;</span><span class="p">)])</span>                      <span class="c1"># 47.881802215754419</span>
-</code></pre></div>
-
+<pre><code class="language-python">tfv = TfidfVectorizer(token_pattern = u'(?u)\\b\\w\\w+\\b', max_features=200, min_df = 20)      #调用TfvifVectorizer函数
+tfv.fit(train['query'])
+tfvm = tfv.transform(train['product_title']).toarray()
+tfv.vocabulary_.get('zippo')
+sum(tfvm[:, tfv.vocabulary_.get('zippo')])                      # 47.881802215754419
+</code></pre>
 <h6>3. Build estimator to fit data</h6>
 <p>3.1. 下面以 randomForest 为例来建立模型. n_jobs = -1 表示并行运算</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># RandomForest()</span>
+<pre><code class="language-python"># RandomForest()
 
-<span class="n">tfv</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">[</span><span class="s1">&#39;query&#39;</span><span class="p">])</span>
-<span class="n">tfvm_train</span> <span class="o">=</span> <span class="n">tfv</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">train</span><span class="p">[</span><span class="s1">&#39;product_title&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span>
-<span class="n">tfvm_test</span> <span class="o">=</span> <span class="n">tfv</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">test</span><span class="p">[</span><span class="s1">&#39;product_title&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span>
+tfv.fit(train['query'])
+tfvm_train = tfv.transform(train['product_title']).toarray()
+tfvm_test = tfv.transform(test['product_title']).toarray()
 
-<span class="n">clf</span> <span class="o">=</span> <span class="n">RandomForestClassifier</span><span class="p">(</span><span class="n">n_estimators</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">n_jobs</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">min_samples_split</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">random_state</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
-<span class="n">clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">tfvm_train</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
-<span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">clf</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">tfvm_test</span><span class="p">))</span><span class="o">.</span><span class="n">value_counts</span><span class="p">(</span><span class="n">dropna</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">sort_index</span><span class="p">()</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="mf">1</span><span class="w">      </span><span class="mf">372</span>
-<span class="mf">2</span><span class="w">     </span><span class="mf">1265</span>
-<span class="mf">3</span><span class="w">     </span><span class="mf">1344</span>
-<span class="mf">4</span><span class="w">    </span><span class="mf">19532</span>
-<span class="n">dtype</span><span class="p">:</span><span class="w"> </span><span class="nb">int</span><span class="mf">64</span>
-</code></pre></div>
-
+clf = RandomForestClassifier(n_estimators=200, n_jobs = -1, min_samples_split = 2, random_state = 1)
+clf.fit(tfvm_train, y)
+pd.Series(clf.predict(tfvm_test)).value_counts(dropna = False).sort_index()
+</code></pre>
+<pre><code>1      372
+2     1265
+3     1344
+4    19532
+dtype: int64
+</code></pre>
 <p>3.2. SVM  通常有三个参数供我们选择：</p>
 <p>参见 sklearn 自带的<a href="http://scikit-learn.org/stable/auto_examples/svm/plot_rbf_parameters.html">文档</a></p>
 <p><code>C</code> 是error term的惩罚参数，用来折衷training data的模型复杂度和估计精度的。<code>C</code>越小模型越光滑，<code>C</code>越大越会overfitting。<code>C</code>越大越多的样本点会被选为supporting vector.</p>
@@ -256,30 +246,27 @@ window.addEventListener('load', () => {
 <p><img alt="alt text" src="http://scikit-learn.org/stable/_images/plot_rbf_parameters_001.png"></p>
 <p>以及此图：</p>
 <p><img alt="alt text" src="http://scikit-learn.org/stable/_images/plot_rbf_parameters_002.png"></p>
-<div class="highlight"><pre><span></span><code><span class="n">clf</span> <span class="o">=</span> <span class="n">SVC</span><span class="p">(</span><span class="n">C</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">gamma</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">)</span>
-<span class="n">clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">tfvm_train</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
-<span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">clf</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">tfvm_test</span><span class="p">))</span><span class="o">.</span><span class="n">value_counts</span><span class="p">(</span><span class="n">dropna</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">sort_index</span><span class="p">()</span>
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="mf">2</span><span class="w">      </span><span class="mf">106</span>
-<span class="mf">3</span><span class="w">      </span><span class="mf">127</span>
-<span class="mf">4</span><span class="w">    </span><span class="mf">22280</span>
-<span class="n">dtype</span><span class="p">:</span><span class="w"> </span><span class="nb">int</span><span class="mf">64</span>
-</code></pre></div>
-
+<pre><code class="language-python">clf = SVC(C = 10, gamma = 0.01)
+clf.fit(tfvm_train, y)
+pd.Series(clf.predict(tfvm_test)).value_counts(dropna = False).sort_index()
+</code></pre>
+<pre><code>2      106
+3      127
+4    22280
+dtype: int64
+</code></pre>
 <p>3.3. 怎么选择C 和 gamma (GridSearchCV)</p>
-<div class="highlight"><pre><span></span><code><span class="n">grid_params</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;C&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">10e-2</span><span class="p">,</span> <span class="mf">10e-1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">100</span><span class="p">],</span> <span class="s1">&#39;gamma&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">10e-2</span><span class="p">,</span> <span class="mf">10e-1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">100</span><span class="p">]}</span>
-<span class="n">clf</span> <span class="o">=</span> <span class="n">SVC</span><span class="p">()</span>
-<span class="n">gs_clf</span> <span class="o">=</span> <span class="n">GridSearchCV</span><span class="p">(</span><span class="n">clf</span><span class="p">,</span> <span class="n">grid_params</span><span class="p">)</span>
-<span class="n">gs_clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">tfvm_train</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+<pre><code class="language-python">grid_params = {'C': [10e-2, 10e-1, 1, 10, 100], 'gamma': [10e-2, 10e-1, 1, 10, 100]}
+clf = SVC()
+gs_clf = GridSearchCV(clf, grid_params)
+gs_clf.fit(tfvm_train, y)
 
 
-<span class="c1"># get the best estimator information,</span>
-<span class="n">best_parameters</span><span class="p">,</span> <span class="n">score</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">gs_clf</span><span class="o">.</span><span class="n">grid_scores_</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-<span class="k">for</span> <span class="n">param_name</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">grid_params</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
-    <span class="nb">print</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">: </span><span class="si">%r</span><span class="s2">&quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">param_name</span><span class="p">,</span> <span class="n">best_parameters</span><span class="p">[</span><span class="n">param_name</span><span class="p">])</span>
-</code></pre></div>
-
+# get the best estimator information,
+best_parameters, score, _ = max(gs_clf.grid_scores_, key=lambda x: x[1])
+for param_name in sorted(grid_params.keys()):
+    print &quot;%s: %r&quot; %(param_name, best_parameters[param_name])
+</code></pre>
 <h6>参考文献  <a href="http://scikit-learn.org/stable/tutorial/text_analytics/working_with_text_data.html">Working with Text Data</a></h6></div>
     <footer>
 <p class="meta">
@@ -309,13 +296,13 @@ window.addEventListener('load', () => {
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -333,7 +320,7 @@ window.addEventListener('load', () => {
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

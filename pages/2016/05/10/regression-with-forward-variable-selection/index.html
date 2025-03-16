@@ -100,49 +100,50 @@ window.addEventListener('load', () => {
 <li>for each var in the rest vars without the selected var, together with the selected var in step 1, run linear regression. and select the var with highest F-value</li>
 <li>for the rest repeat as step 2, until reach the stop number or loop through all the variables.</li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">import</span> <span class="nn">statsmodels.formula.api</span> <span class="k">as</span> <span class="nn">smf</span>
+<pre><code class="language-python">import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import statsmodels.formula.api as smf
 
 
-<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_pickle</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;C:\Users\shm\Downloads\foreward_var_selection&#39;</span><span class="p">)</span>
-<span class="n">indata</span> <span class="o">=</span> <span class="n">df</span>
-<span class="n">xvar</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">tolist</span><span class="p">()[</span><span class="mi">12</span><span class="p">:]</span>
-<span class="n">yvar</span> <span class="o">=</span> <span class="s1">&#39;cum_pd_num&#39;</span>
-<span class="n">stopn</span> <span class="o">=</span> <span class="mi">5</span>
+df = pd.read_pickle(r'C:\Users\shm\Downloads\foreward_var_selection')
+indata = df
+xvar = df.columns.tolist()[12:]
+yvar = 'cum_pd_num'
+stopn = 5
 
-<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">indata: is the data for analysis, in pd.DataFrame format</span>
-<span class="sd">yvar: dependant variable name, it is string</span>
-<span class="sd">xvar: list of independent variables name</span>
-<span class="sd">stopn: number of variables to stop</span>
-<span class="sd">&#39;&#39;&#39;</span>
+'''
+indata: is the data for analysis, in pd.DataFrame format
+yvar: dependant variable name, it is string
+xvar: list of independent variables name
+stopn: number of variables to stop
+'''
 
 
-<span class="k">def</span> <span class="nf">importance_foreward</span><span class="p">(</span><span class="n">indata</span> <span class="o">=</span> <span class="n">df</span><span class="p">,</span> <span class="n">yVar</span> <span class="o">=</span> <span class="n">yvar</span><span class="p">,</span> <span class="n">xVar</span> <span class="o">=</span> <span class="n">xvar</span><span class="p">,</span> <span class="n">stopn</span> <span class="o">=</span> <span class="n">stopn</span><span class="p">):</span>
+def importance_foreward(indata = df, yVar = yvar, xVar = xvar, stopn = stopn):
 
-    <span class="n">scores</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="n">flist</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="n">nx</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">xVar</span><span class="p">),</span> <span class="n">stopn</span><span class="p">)</span>
+    scores = {}
+    flist = []
+    nx = min(len(xVar), stopn)
 
-    <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">flist</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">nx</span><span class="p">:</span>
-        <span class="n">best_score</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span>
-        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xVar</span><span class="p">:</span>
-            <span class="n">newflist</span> <span class="o">=</span> <span class="n">flist</span> <span class="o">+</span> <span class="p">[</span><span class="n">i</span><span class="p">]</span>
-            <span class="n">f</span> <span class="o">=</span> <span class="s1">&#39;cum_pd_num ~ &#39;</span> <span class="o">+</span> <span class="s1">&#39;+&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">newflist</span><span class="p">)</span>
-            <span class="n">reg</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="n">formula</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">f</span><span class="p">),</span> <span class="n">data</span> <span class="o">=</span> <span class="n">indata</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-            <span class="n">score</span> <span class="o">=</span> <span class="n">reg</span><span class="o">.</span><span class="n">fvalue</span>
-            <span class="k">if</span> <span class="n">score</span> <span class="o">&gt;</span> <span class="n">best_score</span><span class="p">:</span>
-                <span class="n">best_score</span><span class="p">,</span> <span class="n">record_i</span><span class="p">,</span> <span class="n">record_newflist</span> <span class="o">=</span> <span class="n">score</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">newflist</span>
-        <span class="n">flist</span> <span class="o">=</span> <span class="n">record_newflist</span>
-        <span class="nb">print</span> <span class="n">flist</span>
-        <span class="n">xVar</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">record_i</span><span class="p">)</span>
-        <span class="nb">print</span> <span class="nb">len</span><span class="p">(</span><span class="n">xVar</span><span class="p">)</span>
+    while len(flist) &lt; nx:
+        best_score = -np.inf
+        for i in xVar:
+            newflist = flist + [i]
+            f = 'cum_pd_num ~ ' + '+'.join(newflist)
+            reg = smf.ols(formula = str(f), data = indata).fit()
+            score = reg.fvalue
+            if score &gt; best_score:
+                best_score, record_i, record_newflist = score, i, newflist
+        flist = record_newflist
+        print flist
+        xVar.remove(record_i)
+        print len(xVar)
 
-    <span class="k">return</span> <span class="n">flist</span>
-</code></pre></div>
+    return flist
 
+
+</code></pre>
 <p>the output is like</p>
 <p><img alt="Where's the pic!?" src="/figures/20160510_reg_forward_var_selection.PNG" title="output"></p>
 <p>which is the same as what SAS did.</p></div>
@@ -174,13 +175,13 @@ window.addEventListener('load', () => {
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -198,7 +199,7 @@ window.addEventListener('load', () => {
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

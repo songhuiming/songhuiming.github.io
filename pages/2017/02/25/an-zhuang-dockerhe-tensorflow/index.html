@@ -137,52 +137,43 @@ window.addEventListener('load', () => {
 <h2>第一种办法</h2>
 <h3>1. 设置repository</h3>
 <p>1.1. 安装package让apt可以使用HTTPS的repository</p>
-<div class="highlight"><pre><span></span><code>sudo apt-get install -y --no-install-recommends \
+<pre><code>sudo apt-get install -y --no-install-recommends \
 apt-transport-https \
 ca-certificates \
 curl \
 software-properties-common
-</code></pre></div>
-
+</code></pre>
 <p>1.2. 添加docker的官网GPG key</p>
 <p>docker官网给的办法是 <code>curl -fsSL https://apt.dockerproject.org/gpg | sudo apt-key add -</code>. 但是我每次都报错，找到另一个办法</p>
-<div class="highlight"><pre><span></span><code>wget https://yum.dockerproject.org/gpg2
+<pre><code>wget https://yum.dockerproject.org/gpg2
 sudo apt-key add gpg
-</code></pre></div>
-
+</code></pre>
 <p>验证添加的key id：</p>
-<div class="highlight"><pre><span></span><code>apt-key fingerprint 58118E89F3A912897C070ADBF76221572C52609D
-</code></pre></div>
-
+<pre><code>apt-key fingerprint 58118E89F3A912897C070ADBF76221572C52609D
+</code></pre>
 <p>1.3. 设置稳定版本的repository</p>
-<div class="highlight"><pre><span></span><code>sudo add-apt-repository \
+<pre><code>sudo add-apt-repository \
    &quot;deb https://apt.dockerproject.org/repo/ \
    ubuntu-$(lsb_release -cs) \
    main&quot;
-</code></pre></div>
-
+</code></pre>
 <h3>2. 安装docker</h3>
 <p>2.1. 更新apt的索引</p>
-<div class="highlight"><pre><span></span><code>sudo apt-get update
-</code></pre></div>
-
+<pre><code>sudo apt-get update
+</code></pre>
 <p>2.2. 安装最新版本docker</p>
-<div class="highlight"><pre><span></span><code>sudo apt-get -y install docker-engine
-</code></pre></div>
-
+<pre><code>sudo apt-get -y install docker-engine
+</code></pre>
 <p>2.3. (可选)如果要安装指定版本docker</p>
 <p>首先要知道需要的版本的版本信息</p>
-<div class="highlight"><pre><span></span><code>apt-cache madison docker-engine
-</code></pre></div>
-
+<pre><code>apt-cache madison docker-engine
+</code></pre>
 <p>然后再安装</p>
-<div class="highlight"><pre><span></span><code>sudo apt-get -y install docker-engine=&lt;VERSION_STRING&gt;
-</code></pre></div>
-
+<pre><code>sudo apt-get -y install docker-engine=&lt;VERSION_STRING&gt;
+</code></pre>
 <p>2.4. 确认安装成功--执行hello-world镜像</p>
-<div class="highlight"><pre><span></span><code>sudo docker run hello-world
-</code></pre></div>
-
+<pre><code>sudo docker run hello-world
+</code></pre>
 <h2>第二种办法，下载安装</h2>
 <ol>
 <li>
@@ -192,42 +183,36 @@ sudo apt-key add gpg
 <p>安装, 把路径替换成下载deb文件的路径</p>
 </li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="nx">sudo</span><span class="w"> </span><span class="nx">dpkg</span><span class="w"> </span><span class="o">-</span><span class="nx">i</span><span class="w"> </span><span class="o">/</span><span class="nx">path</span><span class="o">/</span><span class="nx">to</span><span class="o">/</span><span class="kn">package</span><span class="p">.</span><span class="nx">deb</span>
-</code></pre></div>
-
+<pre><code>sudo dpkg -i /path/to/package.deb
+</code></pre>
 <ol>
 <li>确认安装成功</li>
 </ol>
-<div class="highlight"><pre><span></span><code>sudo docker run hello-world
-</code></pre></div>
-
+<pre><code>sudo docker run hello-world
+</code></pre>
 <h2>卸载docker</h2>
 <ol>
 <li>卸载docker包</li>
 </ol>
-<div class="highlight"><pre><span></span><code>sudo apt-get purge docker-engine
-</code></pre></div>
-
+<pre><code>sudo apt-get purge docker-engine
+</code></pre>
 <ol>
 <li>删除所有镜像，容器等等</li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="n">sudo</span><span class="w"> </span><span class="n">rm</span><span class="w"> </span><span class="o">-</span><span class="n">rf</span><span class="w"> </span><span class="o">/</span><span class="k">var</span><span class="o">/</span><span class="n">lib</span><span class="o">/</span><span class="n">docker</span>
-</code></pre></div>
-
+<pre><code>sudo rm -rf /var/lib/docker
+</code></pre>
 <h2>添加docker group</h2>
 <p>docker需要root权限.为了避免每次都需要sudo,可以建立一个docker group并且把用户添加进去. -- 要注意的是,用户会有root权限</p>
 <ol>
 <li>建立docker group</li>
 </ol>
-<div class="highlight"><pre><span></span><code>sudo groupadd docker
-</code></pre></div>
-
+<pre><code>sudo groupadd docker
+</code></pre>
 <ol>
 <li>添加用户到group</li>
 </ol>
-<div class="highlight"><pre><span></span><code>sudo usermod -aG docker $USER
-</code></pre></div>
-
+<pre><code>sudo usermod -aG docker $USER
+</code></pre>
 <ol>
 <li>
 <p>log out and log in</p>
@@ -236,126 +221,106 @@ sudo apt-key add gpg
 <p>确认成功</p>
 </li>
 </ol>
-<div class="highlight"><pre><span></span><code>docker run hello-world
-</code></pre></div>
-
+<pre><code>docker run hello-world
+</code></pre>
 <h2>3. 获取镜像</h2>
 <p><a href="https://hub.docker.com/explore/">Docker Hub</a> 上有大量的高质量的镜像可以用,下面说明怎么获取这些镜像并运行.</p>
 <p>从 Docker Registry 获取镜像的命令是 docker pull。其命令格式为：</p>
-<div class="highlight"><pre><span></span><code><span class="n">docker</span><span class="w"> </span><span class="n">pull</span><span class="w"> </span><span class="p">[</span><span class="n">选项</span><span class="p">]</span><span class="w"> </span><span class="p">[</span><span class="n">Docker</span><span class="w"> </span><span class="n">Registry地址</span><span class="p">]</span><span class="o">&lt;</span><span class="n">仓库名</span><span class="o">&gt;:&lt;</span><span class="n">标签</span><span class="o">&gt;</span>
-</code></pre></div>
-
+<pre><code>docker pull [选项] [Docker Registry地址]&lt;仓库名&gt;:&lt;标签&gt;
+</code></pre>
 <h2>4. 镜像管理</h2>
 <p>4.0. 下载镜像</p>
-<div class="highlight"><pre><span></span><code>docker pull image-name
-</code></pre></div>
-
+<pre><code>docker pull image-name
+</code></pre>
 <p>4.1. 查看本地镜像</p>
-<div class="highlight"><pre><span></span><code>docker images
-</code></pre></div>
-
+<pre><code>docker images
+</code></pre>
 <p>4.2. 查看运行的容器</p>
-<div class="highlight"><pre><span></span><code>查看active镜像：  docker ps
+<pre><code>查看active镜像：  docker ps
 查看所有镜像：    docker ps -a
 查看最近的镜像：   docker ps -l
-</code></pre></div>
-
+</code></pre>
 <p>4.3. 删除镜像 删除容器  </p>
-<div class="highlight"><pre><span></span><code>docker rmi image-name
+<pre><code>docker rmi image-name
 
 docker rm &lt;container id&gt;
-</code></pre></div>
-
+</code></pre>
 <p>4.4. 在repo里搜索镜像</p>
-<div class="highlight"><pre><span></span><code>docker search [image-name]
-</code></pre></div>
-
+<pre><code>docker search [image-name]
+</code></pre>
 <p>4.5. 停止镜像</p>
-<div class="highlight"><pre><span></span><code>docker stop container-id
-</code></pre></div>
-
+<pre><code>docker stop container-id
+</code></pre>
 <p>4.6. 停止并删除所有容器</p>
-<div class="highlight"><pre><span></span><code>docker stop $(docker ps -a -q)
+<pre><code>docker stop $(docker ps -a -q)
 docker rm $(docker ps -a -q)
-</code></pre></div>
-
+</code></pre>
 <h2>5. 生成新镜像(pull一个干净ubuntu镜像，安装anaconda，提交保存)</h2>
 <p>5.0. pull一个ubuntu镜像</p>
-<div class="highlight"><pre><span></span><code>docker pull ubuntu
-</code></pre></div>
-
+<pre><code>docker pull ubuntu
+</code></pre>
 <p>5.1. 启动镜像(ubuntu 镜像)，进入bash</p>
-<div class="highlight"><pre><span></span><code>docker run -it ubuntu /bin/bash
-</code></pre></div>
-
+<pre><code>docker run -it ubuntu /bin/bash
+</code></pre>
 <p>5.3. 更新ubuntu，安装vim, 安装wget</p>
-<div class="highlight"><pre><span></span><code>apt-get update
+<pre><code>apt-get update
 apt-get install vim
 apt-get install wget
-</code></pre></div>
-
+</code></pre>
 <p>5.4. 退出</p>
-<div class="highlight"><pre><span></span><code><span class="k">exit</span>
-</code></pre></div>
-
+<pre><code>exit
+</code></pre>
 <p>To restart the exited container:</p>
-<div class="highlight"><pre><span></span><code>docker start -a -i `docker ps -q -l`
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>docker start start a container (requires name or ID)
+<pre><code>docker start -a -i `docker ps -q -l`
+</code></pre>
+<pre><code>docker start start a container (requires name or ID)
 -a attach to container
 -i interactive mode
 docker ps List containers
 -q list only container IDs
 -l list only last created container
-</code></pre></div>
-
+</code></pre>
 <p>5.5. How do I install new libraries in Docker?</p>
 <p>Therre are two ways to do this:</p>
 <p>First methodd: Modify the <code>Dockerfile</code> directly to install new or update your existing libraries. You will need to do a <code>docker build</code> after you do this. If you just want to update to a newer version of the DL framework(s), you can pass them as <code>CLI parameter</code> using the <code>--build-arg tag</code> (<a href="-v /sharedfolder:/root/sharedfolder">see</a> for details). The framework versions are defined at the top of the <code>Dockerfile</code>. For example, <code>docker build -t shmhub/dl-docker:cpu -f Dockerfile.cpu --build-arg TENSORFLOW_VERSION=1.2.0 .</code></p>
 <p>Second mthodd: you can install or upgrade in the container. After it is done, exit the cocntainer and do a <code>commit</code> as introducte below.</p>
 <p>5.5. 向docker image提交container change</p>
-<div class="highlight"><pre><span></span><code>docker commit -m &quot;install vim wget on ubuntu&quot; -a &quot;author: shm&quot; 7de2c97f7a85 shm/ubuntu_custom
-</code></pre></div>
-
+<pre><code>docker commit -m &quot;install vim wget on ubuntu&quot; -a &quot;author: shm&quot; 7de2c97f7a85 shm/ubuntu_custom
+</code></pre>
 <p>这里7de2c97f7a85是image id.也就是在bash下面看到的root@后面的id: <code>root@7de2c97f7a85</code>. 这时候比较前后的镜像，就会发现commit以后多了一个镜像 </p>
-<div class="highlight"><pre><span></span><code><span class="n">shm</span><span class="nv">@ubuntu</span><span class="err">:</span><span class="o">~</span><span class="err">$</span><span class="w"> </span><span class="n">docker</span><span class="w"> </span><span class="n">images</span>
-<span class="n">REPOSITORY</span><span class="w">              </span><span class="n">TAG</span><span class="w">                 </span><span class="nc">IMAGE</span><span class="w"> </span><span class="n">ID</span><span class="w">            </span><span class="n">CREATED</span><span class="w">             </span><span class="k">SIZE</span>
-<span class="n">tensorflow</span><span class="o">/</span><span class="n">tensorflow</span><span class="w">   </span><span class="n">latest</span><span class="w">              </span><span class="n">ea40dcc45724</span><span class="w">        </span><span class="mi">2</span><span class="w"> </span><span class="n">weeks</span><span class="w"> </span><span class="n">ago</span><span class="w">         </span><span class="mf">1.03</span><span class="w"> </span><span class="n">GB</span>
-<span class="n">ubuntu</span><span class="w">                  </span><span class="n">latest</span><span class="w">              </span><span class="n">f49eec89601e</span><span class="w">        </span><span class="mi">5</span><span class="w"> </span><span class="n">weeks</span><span class="w"> </span><span class="n">ago</span><span class="w">         </span><span class="mi">129</span><span class="w"> </span><span class="n">MB</span>
+<pre><code>shm@ubuntu:~$ docker images
+REPOSITORY              TAG                 IMAGE ID            CREATED             SIZE
+tensorflow/tensorflow   latest              ea40dcc45724        2 weeks ago         1.03 GB
+ubuntu                  latest              f49eec89601e        5 weeks ago         129 MB
 
-<span class="n">shm</span><span class="nv">@ubuntu</span><span class="err">:</span><span class="o">~</span><span class="err">$</span><span class="w"> </span><span class="n">docker</span><span class="w"> </span><span class="k">commit</span><span class="w"> </span><span class="o">-</span><span class="n">m</span><span class="w"> </span><span class="ss">&quot;install vim wget on ubuntu&quot;</span><span class="w"> </span><span class="o">-</span><span class="n">a</span><span class="w"> </span><span class="ss">&quot;author: shm&quot;</span><span class="w"> </span><span class="mi">7</span><span class="n">de2c97f7a85</span><span class="w"> </span><span class="n">shm</span><span class="o">/</span><span class="n">ubuntu_custom</span>
-<span class="nl">sha256</span><span class="p">:</span><span class="mi">5</span><span class="n">ed742f690e11c65db83936847c7c5659c5834f6b2c93b52d110455936e6a224</span>
+shm@ubuntu:~$ docker commit -m &quot;install vim wget on ubuntu&quot; -a &quot;author: shm&quot; 7de2c97f7a85 shm/ubuntu_custom
+sha256:5ed742f690e11c65db83936847c7c5659c5834f6b2c93b52d110455936e6a224
 
-<span class="n">shm</span><span class="nv">@ubuntu</span><span class="err">:</span><span class="o">~</span><span class="err">$</span><span class="w"> </span><span class="n">docker</span><span class="w"> </span><span class="n">images</span>
-<span class="n">REPOSITORY</span><span class="w">              </span><span class="n">TAG</span><span class="w">                 </span><span class="nc">IMAGE</span><span class="w"> </span><span class="n">ID</span><span class="w">            </span><span class="n">CREATED</span><span class="w">             </span><span class="k">SIZE</span>
-<span class="n">shm</span><span class="o">/</span><span class="n">ubuntu_custom</span><span class="w">       </span><span class="n">latest</span><span class="w">              </span><span class="mi">5</span><span class="n">ed742f690e1</span><span class="w">        </span><span class="mi">12</span><span class="w"> </span><span class="n">seconds</span><span class="w"> </span><span class="n">ago</span><span class="w">      </span><span class="mi">647</span><span class="w"> </span><span class="n">MB</span>
-<span class="n">tensorflow</span><span class="o">/</span><span class="n">tensorflow</span><span class="w">   </span><span class="n">latest</span><span class="w">              </span><span class="n">ea40dcc45724</span><span class="w">        </span><span class="mi">2</span><span class="w"> </span><span class="n">weeks</span><span class="w"> </span><span class="n">ago</span><span class="w">         </span><span class="mf">1.03</span><span class="w"> </span><span class="n">GB</span>
-<span class="n">ubuntu</span><span class="w">                  </span><span class="n">latest</span><span class="w">              </span><span class="n">f49eec89601e</span><span class="w">        </span><span class="mi">5</span><span class="w"> </span><span class="n">weeks</span><span class="w"> </span><span class="n">ago</span><span class="w">         </span><span class="mi">129</span><span class="w"> </span><span class="n">MB</span>
-</code></pre></div>
+shm@ubuntu:~$ docker images
+REPOSITORY              TAG                 IMAGE ID            CREATED             SIZE
+shm/ubuntu_custom       latest              5ed742f690e1        12 seconds ago      647 MB
+tensorflow/tensorflow   latest              ea40dcc45724        2 weeks ago         1.03 GB
+ubuntu                  latest              f49eec89601e        5 weeks ago         129 MB
 
+</code></pre>
 <p>5.6. 向仓库提交镜像</p>
 <p>首先登陆</p>
-<div class="highlight"><pre><span></span><code>docker login -u docker-username
-</code></pre></div>
-
+<pre><code>docker login -u docker-username
+</code></pre>
 <p>然后push</p>
 <p>5.6.1. list the image and get the tag id</p>
-<div class="highlight"><pre><span></span><code><span class="n">shm</span><span class="nv">@shm</span><span class="o">-</span><span class="nl">xps9550</span><span class="p">:</span><span class="o">~/</span><span class="n">projects</span><span class="o">/</span><span class="n">dl_lessons</span><span class="o">/</span><span class="n">courses</span><span class="o">-</span><span class="n">master</span><span class="o">/</span><span class="n">deeplearning1</span><span class="o">/</span><span class="n">nbs</span><span class="err">$</span><span class="w"> </span><span class="err">`</span><span class="n">docker</span><span class="w"> </span><span class="n">images</span><span class="err">`</span>
-<span class="n">REPOSITORY</span><span class="w">          </span><span class="n">TAG</span><span class="w">                 </span><span class="nc">IMAGE</span><span class="w"> </span><span class="n">ID</span><span class="w">            </span><span class="n">CREATED</span><span class="w">             </span><span class="k">SIZE</span>
-<span class="n">shmhub</span><span class="o">/</span><span class="n">dl</span><span class="o">-</span><span class="n">docker</span><span class="w">    </span><span class="n">cpu</span><span class="w">                 </span><span class="mi">0</span><span class="n">f1e40d1bed8</span><span class="w">        </span><span class="mi">12</span><span class="w"> </span><span class="n">days</span><span class="w"> </span><span class="n">ago</span><span class="w">         </span><span class="mf">9.13</span><span class="w"> </span><span class="n">GB</span>
-<span class="n">ubuntu</span><span class="w">              </span><span class="mf">16.04</span><span class="w">               </span><span class="mi">6</span><span class="n">a2f32de169d</span><span class="w">        </span><span class="mi">13</span><span class="w"> </span><span class="n">days</span><span class="w"> </span><span class="n">ago</span><span class="w">         </span><span class="mi">117</span><span class="w"> </span><span class="n">MB</span>
-</code></pre></div>
-
+<pre><code>shm@shm-xps9550:~/projects/dl_lessons/courses-master/deeplearning1/nbs$ `docker images`
+REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
+shmhub/dl-docker    cpu                 0f1e40d1bed8        12 days ago         9.13 GB
+ubuntu              16.04               6a2f32de169d        13 days ago         117 MB
+</code></pre>
 <p>5.6.2. tag the giage with the <code>registoryhost</code></p>
-<div class="highlight"><pre><span></span><code>docker tag 0f1e40d1bed8 pinseng/dl-docker
-</code></pre></div>
-
+<pre><code>docker tag 0f1e40d1bed8 pinseng/dl-docker
+</code></pre>
 <p>5.6.3. push the image to the repo</p>
-<div class="highlight"><pre><span></span><code>docker push docker-username/docker-image-name
+<pre><code>docker push docker-username/docker-image-name
 docker push pinseng/dl-docker
-</code></pre></div>
-
+</code></pre>
 <h2>一个例子，安装tensorflow</h2>
 <p>tensorflow提供了好几种安装办法，其中一种是提供的docker镜像.非常简单可以拉下来<code>docker pull tensorflow/tensorflow</code></p>
 <p>运行cpu版本的tensorflow, <code>docker run -it -p 8888:8888 tensorflow/tensorflow</code></p>
@@ -363,21 +328,17 @@ docker push pinseng/dl-docker
 <p><img alt="png" src="/figures/20170225_install_docker_01.PNG"></p>
 <h3>安装其他软件(非Dockerfile安装，不推荐)</h3>
 <p>首先进入bash</p>
-<div class="highlight"><pre><span></span><code>docker run -it tensorflow/tensorflow /bin/bash
-</code></pre></div>
-
+<pre><code>docker run -it tensorflow/tensorflow /bin/bash
+</code></pre>
 <p>其次输入命令安装</p>
-<div class="highlight"><pre><span></span><code>apt-get install python-pandas
-</code></pre></div>
-
+<pre><code>apt-get install python-pandas
+</code></pre>
 <p>然后退出</p>
-<div class="highlight"><pre><span></span><code><span class="k">exit</span>
-</code></pre></div>
-
+<pre><code>exit
+</code></pre>
 <p>退出docker容器，再给docker commit传递一个json来提交新的镜像</p>
-<div class="highlight"><pre><span></span><code>docker commit -m &quot;test&quot; -a&quot;autho name&quot; ea40dcc45724 tensorflow-pandas
-</code></pre></div>
-
+<pre><code>docker commit -m &quot;test&quot; -a&quot;autho name&quot; ea40dcc45724 tensorflow-pandas
+</code></pre>
 <p>好方便！</p>
 <h2>后续的问题</h2>
 <h4>1. docker跟主机共享文件(-v)</h4>
@@ -422,13 +383,13 @@ docker push pinseng/dl-docker
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -446,7 +407,7 @@ docker push pinseng/dl-docker
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

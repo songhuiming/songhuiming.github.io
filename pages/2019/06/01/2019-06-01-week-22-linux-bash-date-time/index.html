@@ -98,40 +98,40 @@ window.addEventListener('load', () => {
 <ol>
 <li>Linux bash date time</li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">day</span><span class="o">=</span><span class="m">2019</span>-06-02
-<span class="c1">#day=$(date +%Y-%m-%d)</span>
-<span class="nv">sunday_1</span><span class="o">=</span><span class="k">$(</span>date<span class="w"> </span>-d<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$day</span><span class="s2"> -</span><span class="k">$(</span>date<span class="w"> </span>-d<span class="w"> </span><span class="nv">$day</span><span class="w"> </span>+%w<span class="k">)</span><span class="s2"> days&quot;</span><span class="w"> </span>+%Y-%m-%d<span class="k">)</span><span class="w">  </span><span class="c1"># last sunday include current date</span>
-<span class="nv">sunday_2</span><span class="o">=</span><span class="k">$(</span>date<span class="w"> </span>-d<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$day</span><span class="s2"> -</span><span class="k">$(</span>date<span class="w"> </span>-d<span class="w"> </span><span class="nv">$day</span><span class="w"> </span>+%u<span class="k">)</span><span class="s2"> days&quot;</span><span class="w"> </span>+%Y-%m-%d<span class="k">)</span><span class="w">  </span><span class="c1"># last sunday not include current date</span>
+<pre><code class="language-bash">export day=2019-06-02
+#day=$(date +%Y-%m-%d)
+sunday_1=$(date -d &quot;$day -$(date -d $day +%w) days&quot; +%Y-%m-%d)  # last sunday include current date
+sunday_2=$(date -d &quot;$day -$(date -d $day +%u) days&quot; +%Y-%m-%d)  # last sunday not include current date
 
-<span class="nb">echo</span><span class="w"> </span><span class="nv">$sunday_1</span><span class="w">      </span><span class="c1">#2019-06-02    </span>
-<span class="nb">echo</span><span class="w"> </span><span class="nv">$sunday_2</span><span class="w">      </span><span class="c1">#2019-05-26</span>
+echo $sunday_1      #2019-06-02    
+echo $sunday_2      #2019-05-26
 
-<span class="nv">last_sat</span><span class="o">=</span><span class="k">$(</span>date<span class="w"> </span>-d<span class="w"> </span><span class="s2">&quot;last saturday&quot;</span><span class="w"> </span>+%Y-%m-%d<span class="k">)</span><span class="w">       </span><span class="c1"># Last Saturday</span>
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;last saturday is &quot;</span><span class="w"> </span><span class="nv">$last_sat</span><span class="w">                  </span><span class="c1"># last saturday is  2019-06-01</span>
-<span class="nb">echo</span><span class="w"> </span><span class="k">$(</span>date<span class="w"> </span>-d<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$last_sat</span><span class="s2"> +1 day&quot;</span><span class="w"> </span>+%Y-%m-%d<span class="k">)</span><span class="w">        </span><span class="c1"># 2019-06-02</span>
+last_sat=$(date -d &quot;last saturday&quot; +%Y-%m-%d)       # Last Saturday
+echo &quot;last saturday is &quot; $last_sat                  # last saturday is  2019-06-01
+echo $(date -d &quot;$last_sat +1 day&quot; +%Y-%m-%d)        # 2019-06-02
 
-<span class="c1"># The Sunday before last Saturday</span>
-<span class="nv">sun_before_last_sat</span><span class="o">=</span><span class="k">$(</span>date<span class="w"> </span>-d<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$last_sat</span><span class="s2"> -</span><span class="k">$(</span>date<span class="w"> </span>-d<span class="w"> </span><span class="nv">$last_sat</span><span class="w"> </span>+%w<span class="k">)</span><span class="s2"> days&quot;</span><span class="w"> </span>+%Y-%m-%d<span class="k">)</span>
-<span class="nb">echo</span><span class="w"> </span><span class="nv">$sun_before_last_sat</span><span class="w">       </span><span class="c1"># 2019-05-26</span>
+# The Sunday before last Saturday
+sun_before_last_sat=$(date -d &quot;$last_sat -$(date -d $last_sat +%w) days&quot; +%Y-%m-%d)
+echo $sun_before_last_sat       # 2019-05-26
 
-<span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;-----------------------&#39;</span>
+echo '-----------------------'
 
-<span class="c1"># Loop through from the Sunday before last Saturday to last Saturday</span>
-<span class="nv">d</span><span class="o">=</span><span class="nv">$sun_before_last_sat</span>
-<span class="k">while</span><span class="w"> </span><span class="o">[</span><span class="w"> </span><span class="nv">$d</span><span class="w"> </span>!<span class="o">=</span><span class="w"> </span><span class="k">$(</span>date<span class="w"> </span>-d<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$last_sat</span><span class="s2"> +1 day&quot;</span><span class="w"> </span>+%Y-%m-%d<span class="k">)</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="k">do</span>
-<span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="nv">$d</span>
-<span class="w"> </span><span class="nv">d</span><span class="o">=</span><span class="k">$(</span>date<span class="w"> </span>-I<span class="w"> </span>-d<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$d</span><span class="s2"> + 1 day&quot;</span><span class="k">)</span>
-<span class="k">done</span>
+# Loop through from the Sunday before last Saturday to last Saturday
+d=$sun_before_last_sat
+while [ $d != $(date -d &quot;$last_sat +1 day&quot; +%Y-%m-%d) ];do
+ echo $d
+ d=$(date -I -d &quot;$d + 1 day&quot;)
+done
 
-<span class="m">2019</span>-05-26
-<span class="m">2019</span>-05-27
-<span class="m">2019</span>-05-28
-<span class="m">2019</span>-05-29
-<span class="m">2019</span>-05-30
-<span class="m">2019</span>-05-31
-<span class="m">2019</span>-06-01
-</code></pre></div>
+2019-05-26
+2019-05-27
+2019-05-28
+2019-05-29
+2019-05-30
+2019-05-31
+2019-06-01
 
+</code></pre>
 <h2>Reference</h2>
 <ol>
 <li><a href="https://stackoverflow.com/a/28226339/1876887">Bash: Looping through dates</a></li>
@@ -166,13 +166,13 @@ window.addEventListener('load', () => {
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -190,7 +190,7 @@ window.addEventListener('load', () => {
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

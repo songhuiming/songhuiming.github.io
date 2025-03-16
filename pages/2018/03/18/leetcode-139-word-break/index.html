@@ -101,65 +101,62 @@ window.addEventListener('load', () => {
 <p>假如前<span class="math">\(i\)</span>个字符串(左半部分)可以被字典里的单词分解，从<span class="math">\(i\)</span>字符串后面的字符串(右半部分)也在字典里，那么这个字符串就有解。
 <img src="/figures/leetcode_139_word_break_01.svg"></p>
 <p>如果string没有padding，因为f有padding，那么f[j]对应的应该是s[j-1]的位置.所以新的string应该从j位置开始。</p>
-<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">wordBreak</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">wordDict</span><span class="p">):</span>
-    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
-    <span class="c1"># padding</span>
-    <span class="n">f</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
-    <span class="n">f</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
-        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
-            <span class="k">if</span> <span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">):</span>
-                <span class="n">new_s</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="n">j</span><span class="p">:</span><span class="n">i</span><span class="p">]</span>  <span class="c1">#s[j, ..., i-1]</span>
-                <span class="c1"># python slice diff from c++</span>
-                <span class="k">if</span> <span class="n">new_s</span> <span class="ow">in</span> <span class="n">wordDict</span><span class="p">:</span>
-                    <span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-                    <span class="k">break</span>
-    <span class="k">return</span> <span class="n">f</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
-</code></pre></div>
-
+<pre><code class="language-python">def wordBreak(self, s, wordDict):
+    n = len(s)
+    # padding
+    f = [0 for _ in range(n + 1)]
+    f[0] = 1
+    for i in range(1, n + 1):
+        for j in range(0, i):
+            if (f[j] == 1):
+                new_s = s[j:i]  #s[j, ..., i-1]
+                # python slice diff from c++
+                if new_s in wordDict:
+                    f[i] = 1
+                    break
+    return f[n]
+</code></pre>
 <p>如果string前面有 space padding，那么f和s都是从同样的位置开始。要注意的是python的slices[j:i]的话i是不包含的。如果要包含i，那么要用slices[j:i+1]</p>
-<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">wordBreak</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">wordDict</span><span class="p">):</span>
-    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
-    <span class="n">s</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span> <span class="o">+</span> <span class="n">s</span>
-    <span class="c1"># padding</span>
-    <span class="n">f</span> <span class="o">=</span> <span class="p">[</span><span class="kc">False</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
-    <span class="n">f</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
-        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
-            <span class="k">if</span> <span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="kc">True</span><span class="p">):</span>
-                <span class="n">new_s</span> <span class="o">=</span> <span class="n">s</span><span class="p">[(</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">):(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span>  <span class="c1">#s[j+1, ..., i]</span>
-                <span class="k">if</span> <span class="n">new_s</span> <span class="ow">in</span> <span class="n">wordDict</span><span class="p">:</span>
-                    <span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
-                    <span class="k">break</span>
-    <span class="k">return</span> <span class="n">f</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
-</code></pre></div>
-
+<pre><code class="language-python">def wordBreak(self, s, wordDict):
+    n = len(s)
+    s = ' ' + s
+    # padding
+    f = [False for _ in range(n + 1)]
+    f[0] = True
+    for i in range(1, n + 1):
+        for j in range(0, i):
+            if (f[j] == True):
+                new_s = s[(j+1):(i+1)]  #s[j+1, ..., i]
+                if new_s in wordDict:
+                    f[i] = True
+                    break
+    return f[n]
+</code></pre>
 <h2>revisit</h2>
 <p>记忆化递归，把前面的结果存在mem_里面
 <img src="/figures/leetcode_139_word_break_02.svg"></p>
-<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">wordBreak</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">wordDict</span><span class="p">):</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">mem_</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="k">def</span> <span class="nf">dfs</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">wordDict</span><span class="p">):</span>
-        <span class="c1"># recursion termination conditions</span>
-        <span class="c1"># 1. if s already calculated in mem_, dont need to recalculate</span>
-        <span class="k">if</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mem_</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mem_</span><span class="p">[</span><span class="n">s</span><span class="p">]</span>
-        <span class="c1"># 2. if s is in wordDict, then it is true</span>
-        <span class="k">if</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">wordDict</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">mem_</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
-            <span class="k">return</span> <span class="kc">True</span>
-        <span class="c1"># try every break porint, break to left and right</span>
-        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)):</span>
-            <span class="n">left</span> <span class="o">=</span> <span class="n">s</span><span class="p">[:</span><span class="n">j</span><span class="p">]</span>
-            <span class="n">right</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="n">j</span><span class="p">:]</span>
-            <span class="k">if</span> <span class="n">right</span> <span class="ow">in</span> <span class="n">wordDict</span> <span class="ow">and</span> <span class="n">dfs</span><span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">wordDict</span><span class="p">):</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">mem_</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
-                <span class="k">return</span> <span class="kc">True</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">mem_</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="k">return</span> <span class="kc">False</span>
-    <span class="k">return</span> <span class="n">dfs</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">wordDict</span><span class="p">)</span>
-</code></pre></div>
-
+<pre><code class="language-python">def wordBreak(self, s, wordDict):
+    self.mem_ = {}
+    def dfs(s, wordDict):
+        # recursion termination conditions
+        # 1. if s already calculated in mem_, dont need to recalculate
+        if s in self.mem_:
+            return self.mem_[s]
+        # 2. if s is in wordDict, then it is true
+        if s in wordDict:
+            self.mem_[s] = True
+            return True
+        # try every break porint, break to left and right
+        for j in range(1, len(s)):
+            left = s[:j]
+            right = s[j:]
+            if right in wordDict and dfs(left, wordDict):
+                self.mem_[s] = True
+                return True
+        self.mem_[s] = False
+        return False
+    return dfs(s, wordDict)
+</code></pre>
 <script type="text/javascript">if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
     var align = "center",
         indent = "0em",
@@ -250,13 +247,13 @@ window.addEventListener('load', () => {
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -274,7 +271,7 @@ window.addEventListener('load', () => {
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

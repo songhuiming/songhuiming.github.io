@@ -98,134 +98,134 @@ window.addEventListener('load', () => {
 <p>A <code>QFileDialog</code> will be poped up to let the user select the csv file to read in. After read the csv file, update the <code>QComboBox</code> of the rating and year_quarter.</p>
 <p>For any <code>currentText</code> in the <code>QComboBox</code>, select the subset data and plot it.</p>
 <p>tip: 读入csv data以后，把它assign给self.df，这样就在class里面变成全局变量，对应的self.rating_list和self.yq_list也是这意思。</p>
-<div class="highlight"><pre><span></span><code><span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">20160516: in v3, try to read in the csv file through menu rather than do this in the code, but v3 does not work</span>
+<pre><code class="language-python">'''
+20160516: in v3, try to read in the csv file through menu rather than do this in the code, but v3 does not work
 
-<span class="sd">20160516: in v2, try to use dropdown menu to select data</span>
+20160516: in v2, try to use dropdown menu to select data
 
-<span class="sd">20160515 in this v1, we can input the rating and year_quarter in the first and second cell of the table and then plot the result.</span>
-<span class="sd">&#39;&#39;&#39;</span>
+20160515 in this v1, we can input the rating and year_quarter in the first and second cell of the table and then plot the result.
+'''
 
-<span class="kn">from</span> <span class="nn">PyQt4</span> <span class="kn">import</span> <span class="n">QtGui</span>
-<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">style</span>
-<span class="kn">from</span> <span class="nn">matplotlib.backends.backend_qt4agg</span> <span class="kn">import</span> <span class="n">FigureCanvasQTAgg</span> <span class="k">as</span> <span class="n">FigureCanvas</span>
+from PyQt4 import QtGui
+import os, sys
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from matplotlib import style
+from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 
-<span class="n">style</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s1">&#39;ggplot&#39;</span><span class="p">)</span>
-
-
-<span class="k">class</span> <span class="nc">PrettyWidget</span><span class="p">(</span><span class="n">QtGui</span><span class="o">.</span><span class="n">QWidget</span><span class="p">):</span>
+style.use('ggplot')
 
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">PrettyWidget</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">initUI</span><span class="p">()</span>
-
-    <span class="k">def</span> <span class="nf">initUI</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">setGeometry</span><span class="p">(</span><span class="mi">600</span><span class="p">,</span><span class="mi">300</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="mi">600</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">center</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">setWindowTitle</span><span class="p">(</span><span class="s1">&#39;Revision on Plots, Tables and File Browser&#39;</span><span class="p">)</span>     
-
-        <span class="c1">#Grid Layout</span>
-        <span class="n">grid</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QGridLayout</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">setLayout</span><span class="p">(</span><span class="n">grid</span><span class="p">)</span>
-
-        <span class="c1">#Canvas and Toolbar</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">figure</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span>    
-        <span class="bp">self</span><span class="o">.</span><span class="n">canvas</span> <span class="o">=</span> <span class="n">FigureCanvas</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">figure</span><span class="p">)</span>     
-        <span class="n">grid</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">canvas</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+class PrettyWidget(QtGui.QWidget):
 
 
-        <span class="c1">#Import CSV Button</span>
-        <span class="n">btn1</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QPushButton</span><span class="p">(</span><span class="s1">&#39;Import CSV&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
-        <span class="n">btn1</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">btn1</span><span class="o">.</span><span class="n">sizeHint</span><span class="p">())</span>
-        <span class="n">btn1</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">getCSV</span><span class="p">)</span>
-        <span class="n">grid</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">btn1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    def __init__(self):
+        super(PrettyWidget, self).__init__()
+        self.initUI()
 
-        <span class="c1">#DropDown mean / comboBox</span>
+    def initUI(self):
+        self.setGeometry(600,300, 1000, 600)
+        self.center()
+        self.setWindowTitle('Revision on Plots, Tables and File Browser')     
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">rating_list</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">yq_list</span> <span class="o">=</span> <span class="p">[]</span>
+        #Grid Layout
+        grid = QtGui.QGridLayout()
+        self.setLayout(grid)
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">comboBox</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QComboBox</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">comboBox</span><span class="o">.</span><span class="n">addItems</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rating_list</span><span class="p">)</span>
-        <span class="n">grid</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">comboBox</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">comboBox2</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QComboBox</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">comboBox2</span><span class="o">.</span><span class="n">addItems</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">yq_list</span><span class="p">)</span>
-        <span class="n">grid</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">comboBox2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-
-        <span class="c1">#Plot Button</span>
-        <span class="n">btn2</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QPushButton</span><span class="p">(</span><span class="s1">&#39;Plot&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
-        <span class="n">btn2</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">btn2</span><span class="o">.</span><span class="n">sizeHint</span><span class="p">())</span>    
-        <span class="n">btn2</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="p">)</span>
-        <span class="n">grid</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">btn2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        #Canvas and Toolbar
+        self.figure = plt.figure(figsize=(15,5))    
+        self.canvas = FigureCanvas(self.figure)     
+        grid.addWidget(self.canvas, 2,0,1,2)
 
 
-    <span class="k">def</span> <span class="nf">getCSV</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">filePath</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QFileDialog</span><span class="o">.</span><span class="n">getOpenFileName</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                                                    <span class="s1">&#39;CSV File&#39;</span><span class="p">,</span>
-                                                    <span class="s1">&#39;~/Desktop/PyQt4&#39;</span><span class="p">,</span>
-                                                    <span class="s1">&#39;*.csv&#39;</span><span class="p">)</span>
-        <span class="nb">print</span> <span class="n">filePath</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">filePath</span><span class="p">))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">rating_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">rating</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">yq_list</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">yq</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">()]</span>       
-        <span class="bp">self</span><span class="o">.</span><span class="n">comboBox</span><span class="o">.</span><span class="n">addItems</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rating_list</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">comboBox2</span><span class="o">.</span><span class="n">addItems</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">yq_list</span><span class="p">)</span>
-        <span class="nb">print</span> <span class="bp">self</span><span class="o">.</span><span class="n">rating_list</span>
+        #Import CSV Button
+        btn1 = QtGui.QPushButton('Import CSV', self)
+        btn1.resize(btn1.sizeHint())
+        btn1.clicked.connect(self.getCSV)
+        grid.addWidget(btn1, 1, 0)
+
+        #DropDown mean / comboBox
+
+        self.df = pd.DataFrame()
+        self.rating_list = []
+        self.yq_list = []
+
+        self.comboBox = QtGui.QComboBox(self)
+        self.comboBox.addItems(self.rating_list)
+        grid.addWidget(self.comboBox, 0, 0)
+
+        self.comboBox2 = QtGui.QComboBox(self)
+        self.comboBox2.addItems(self.yq_list)
+        grid.addWidget(self.comboBox2, 0, 1)
+
+        #Plot Button
+        btn2 = QtGui.QPushButton('Plot', self)
+        btn2.resize(btn2.sizeHint())    
+        btn2.clicked.connect(self.plot)
+        grid.addWidget(btn2, 1, 1)
+
+        self.show()
 
 
-    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">y</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">y</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">item</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">())</span>
-            <span class="k">except</span><span class="p">:</span>
-                <span class="n">y</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
-
-        <span class="n">p1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">ix</span><span class="p">[(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">rating</span> <span class="o">==</span>  <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">comboBox</span><span class="o">.</span><span class="n">currentText</span><span class="p">()))</span> <span class="o">&amp;</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">yq</span> <span class="o">==</span>  <span class="nb">int</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">comboBox2</span><span class="o">.</span><span class="n">currentText</span><span class="p">()))),</span> <span class="p">:]</span>
-        <span class="nb">print</span> <span class="n">p1</span>
-
-        <span class="n">plt</span><span class="o">.</span><span class="n">cla</span><span class="p">()</span>
-
-
-        <span class="n">ax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">p1</span><span class="o">.</span><span class="n">ix</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="s1">&#39;g&#39;</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s2">&quot;Pred on data with Model&quot;</span><span class="p">)</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">p1</span><span class="o">.</span><span class="n">ix</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">label</span> <span class="o">=</span> <span class="s2">&quot;adj Pred to non-decreasing&quot;</span><span class="p">)</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">p1</span><span class="o">.</span><span class="n">ix</span><span class="p">[:,</span> <span class="mi">3</span><span class="p">],</span> <span class="n">label</span> <span class="o">=</span> <span class="s2">&quot;Fitting value in Model&quot;</span><span class="p">)</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">p1</span><span class="o">.</span><span class="n">ix</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">],</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s2">&quot;Actual PD&quot;</span><span class="p">)</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">p1</span><span class="o">.</span><span class="n">ix</span><span class="p">[:,</span> <span class="mi">4</span><span class="p">],</span> <span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s2">&quot;Long Run Avg&quot;</span><span class="p">)</span>
-
-        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Canada C&amp;I PD Plot&#39;</span><span class="p">)</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+    def getCSV(self):
+        filePath = QtGui.QFileDialog.getOpenFileName(self,
+                                                    'CSV File',
+                                                    '~/Desktop/PyQt4',
+                                                    '*.csv')
+        print filePath
+        self.df = pd.read_csv(str(filePath))
+        self.rating_list = self.df.rating.unique().tolist()
+        self.yq_list = [str(x) for x in self.df.yq.unique().tolist()]       
+        self.comboBox.addItems(self.rating_list)
+        self.comboBox2.addItems(self.yq_list)
+        print self.rating_list
 
 
-    <span class="k">def</span> <span class="nf">center</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">qr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">frameGeometry</span><span class="p">()</span>
-        <span class="n">cp</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QDesktopWidget</span><span class="p">()</span><span class="o">.</span><span class="n">availableGeometry</span><span class="p">()</span><span class="o">.</span><span class="n">center</span><span class="p">()</span>
-        <span class="n">qr</span><span class="o">.</span><span class="n">moveCenter</span><span class="p">(</span><span class="n">cp</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">qr</span><span class="o">.</span><span class="n">topLeft</span><span class="p">())</span>
+    def plot(self):
+        y = []
+        for n in range(3):
+            try:
+                y.append(self.table.item(0, n).text())
+            except:
+                y.append(np.nan)
+
+        p1 = self.df.ix[(self.df.rating ==  str(self.comboBox.currentText())) &amp; (self.df.yq ==  int(str(self.comboBox2.currentText()))), :]
+        print p1
+
+        plt.cla()
+
+
+        ax = self.figure.add_subplot(111)
+        ax.plot(p1.ix[:, 0], 'g', label = &quot;Pred on data with Model&quot;)
+        ax.plot(p1.ix[:, 1], label = &quot;adj Pred to non-decreasing&quot;)
+        ax.plot(p1.ix[:, 3], label = &quot;Fitting value in Model&quot;)
+        ax.plot(p1.ix[:, 2], 'r', label = &quot;Actual PD&quot;)
+        ax.plot(p1.ix[:, 4], 'y', label = &quot;Long Run Avg&quot;)
+
+        ax.set_title('Canada C&amp;I PD Plot')
+        ax.legend(loc = 0)
+        self.canvas.draw()
+
+
+    def center(self):
+        qr = self.frameGeometry()
+        cp = QtGui.QDesktopWidget().availableGeometry().center()
+        qr.moveCenter(cp)
+        self.move(qr.topLeft())
 
 
 
-<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
-    <span class="n">app</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QApplication</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span>
-    <span class="n">w</span> <span class="o">=</span> <span class="n">PrettyWidget</span><span class="p">()</span>
-    <span class="n">app</span><span class="o">.</span><span class="n">exec_</span><span class="p">()</span>
+def main():
+    app = QtGui.QApplication(sys.argv)
+    w = PrettyWidget()
+    app.exec_()
 
 
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
-    <span class="n">main</span><span class="p">()</span>
-</code></pre></div>
+if __name__ == '__main__':
+    main()
 
+</code></pre>
 <p>Figure 1. ready to read in csv
 <img alt="png" src="/figures/20160531_pyqt_plot_ifrs9_pd_01.PNG"></p>
 <p>Figure 2. read in csv
@@ -260,13 +260,13 @@ window.addEventListener('load', () => {
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -284,7 +284,7 @@ window.addEventListener('load', () => {
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

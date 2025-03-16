@@ -99,24 +99,24 @@ window.addEventListener('load', () => {
 <p>What I want: for each borrower, I want to get the rating at the first date.</p>
 <p>How: </p>
 <p>1: for each borrower, add a column called row_number(like order) by their date [<strong>row_number() over (partition by borrower_uen order by fac_auth_eff_dt) rn</strong>] </p>
-<div class="highlight"><pre><span></span><code><span class="err">!</span><span class="o">[</span><span class="n">png</span><span class="o">]</span><span class="p">(</span><span class="o">/</span><span class="n">figures</span><span class="o">/</span><span class="n">sql_first_row_by_group_1</span><span class="p">.</span><span class="n">png</span><span class="p">)</span>
-</code></pre></div>
-
+<pre><code>![png](/figures/sql_first_row_by_group_1.png)
+</code></pre>
 <p>2: now for each borrower, row_number = 1, means the earliest fac_auth_eff_dt, row_number = 1 means the second earliest fac_auth_eff_dt and so on.</p>
 <p>3: finally pick the data with row_number = 1 to get the first one</p>
-<div class="highlight"><pre><span></span><code><span class="err">!</span><span class="o">[</span><span class="n">png</span><span class="o">]</span><span class="p">(</span><span class="o">/</span><span class="n">figures</span><span class="o">/</span><span class="n">sql_first_row_by_group_2</span><span class="p">.</span><span class="n">png</span><span class="p">)</span>
-</code></pre></div>
+<pre><code>![png](/figures/sql_first_row_by_group_2.png)
+</code></pre>
+<pre><code class="language-SQL">
+with testtable as(
+select borrower_uen, fac_auth_eff_dt, row_number() over (partition by borrower_uen order by fac_auth_eff_dt) rn, risk_rating as origination_risk_rating
+from bslh.bcs_lending_airb_m 
+where fac_commitment_amt &gt; 1000 and borrower_rrs = 'CM1' and fac_auth_eff_dt is not null
+order by borrower_uen
+) 
+select * 
+from testtable
+where rn = 1
 
-<div class="highlight"><pre><span></span><code><span class="k">with</span><span class="w"> </span><span class="n">testtable</span><span class="w"> </span><span class="k">as</span><span class="p">(</span>
-<span class="k">select</span><span class="w"> </span><span class="n">borrower_uen</span><span class="p">,</span><span class="w"> </span><span class="n">fac_auth_eff_dt</span><span class="p">,</span><span class="w"> </span><span class="n">row_number</span><span class="p">()</span><span class="w"> </span><span class="n">over</span><span class="w"> </span><span class="p">(</span><span class="n">partition</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="n">borrower_uen</span><span class="w"> </span><span class="k">order</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="n">fac_auth_eff_dt</span><span class="p">)</span><span class="w"> </span><span class="n">rn</span><span class="p">,</span><span class="w"> </span><span class="n">risk_rating</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">origination_risk_rating</span>
-<span class="k">from</span><span class="w"> </span><span class="n">bslh</span><span class="p">.</span><span class="n">bcs_lending_airb_m</span><span class="w"> </span>
-<span class="k">where</span><span class="w"> </span><span class="n">fac_commitment_amt</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1000</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="n">borrower_rrs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;CM1&#39;</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="n">fac_auth_eff_dt</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="k">not</span><span class="w"> </span><span class="k">null</span>
-<span class="k">order</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="n">borrower_uen</span>
-<span class="p">)</span><span class="w"> </span>
-<span class="k">select</span><span class="w"> </span><span class="o">*</span><span class="w"> </span>
-<span class="k">from</span><span class="w"> </span><span class="n">testtable</span>
-<span class="k">where</span><span class="w"> </span><span class="n">rn</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
-</code></pre></div></div>
+</code></pre></div>
     <footer>
 <p class="meta">
   <span class="byline author vcard">
@@ -145,13 +145,13 @@ window.addEventListener('load', () => {
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -169,7 +169,7 @@ window.addEventListener('load', () => {
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>

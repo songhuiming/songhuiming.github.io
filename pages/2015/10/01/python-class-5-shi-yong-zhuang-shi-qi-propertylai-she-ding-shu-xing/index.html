@@ -96,76 +96,75 @@ window.addEventListener('load', () => {
 
   <div class="entry-content"><p>python中有时候需要对定义的属性/方法添加一些限制，或者进行一些运算。比如定义一个圆，给定半径，那么直径和面积都会随之而定。</p>
 <p>下面这个例子是在SF python meetup上Simeon Franklin给的一个小作业</p>
-<div class="highlight"><pre><span></span><code><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">Properties let us intercept attribute access, sneaking in a function</span>
-<span class="sd">call where it looks like we merely lookup or set an attribute on an</span>
-<span class="sd">object.</span>
+<pre><code>&quot;&quot;&quot;
+Properties let us intercept attribute access, sneaking in a function
+call where it looks like we merely lookup or set an attribute on an
+object.
 
-<span class="sd">The Circle class below is broken: its constructor takes a radius</span>
-<span class="sd">argument</span>
+The Circle class below is broken: its constructor takes a radius
+argument
 
-<span class="sd">&gt;&gt;&gt; c = Circle(10)</span>
+&gt;&gt;&gt; c = Circle(10)
 
-<span class="sd">and calculates the diameter</span>
+and calculates the diameter
 
-<span class="sd">&gt;&gt;&gt; c.diameter</span>
-<span class="sd">20</span>
+&gt;&gt;&gt; c.diameter
+20
 
-<span class="sd">But what if you changed the radius? Now the diameter would be incorrect!</span>
+But what if you changed the radius? Now the diameter would be incorrect!
 
-<span class="sd">Fix the class so that the diameter and radius are kept in sync.</span>
+Fix the class so that the diameter and radius are kept in sync.
 
-<span class="sd">&gt;&gt;&gt; c.radius = 5</span>
-<span class="sd">&gt;&gt;&gt; c.diameter</span>
-<span class="sd">10</span>
-<span class="sd">&gt;&gt;&gt; c.diameter = 12</span>
-<span class="sd">&gt;&gt;&gt; c.radius</span>
-<span class="sd">6</span>
+&gt;&gt;&gt; c.radius = 5
+&gt;&gt;&gt; c.diameter
+10
+&gt;&gt;&gt; c.diameter = 12
+&gt;&gt;&gt; c.radius
+6
 
-<span class="sd">&quot;&quot;&quot;</span>
+&quot;&quot;&quot;
+</code></pre>
+<pre><code class="language-python">import math
+
+class Circle(object):
+    def __init__(self, radius):
+        self._radius = radius
+        self._diameter = 2 * radius
+        self._area = math.pi * radius ** 2
+
+    #定义radius的属性，由radius怎么来求出diameter和area
+    @property
+    def radius(self):
+        return self._radius
+    #让这个属性可写，如果没有下面的@.setter，那么radius就是一个只读属性
+    @radius.setter
+    def radius(self, radius):
+        self._radius = radius
+        self._diameter = 2 * radius
+        self._area = math.pi * radius ** 2
+
+    #同样，定义一个diameter属性，以及怎么由此求出半径和面积
+    @property
+    def diameter(self):
+        return self._diameter
+    @diameter.setter
+    def diameter(self, diameter):
+        self._diameter = diameter
+        self._radius = diameter / 2
+        self._area = math.pi * (diameter / 2) ** 2
+
+    #给定面积求出相应的半径和直径
+    @property
+    def area(self):
+        return self._area
+    @area.setter
+    def area(self, area):
+        self._area = area
+        self._radius = math.sqrt( area / math.pi)
+        self._diameter = 2 * math.sqrt( area / math.pi)
+
+#如果只有@property而没有对应的@.setter属性，那就是定义了一个只读的属性 
 </code></pre></div>
-
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">math</span>
-
-<span class="k">class</span> <span class="nc">Circle</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">radius</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_radius</span> <span class="o">=</span> <span class="n">radius</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_diameter</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">radius</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_area</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">radius</span> <span class="o">**</span> <span class="mi">2</span>
-
-    <span class="c1">#定义radius的属性，由radius怎么来求出diameter和area</span>
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">radius</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_radius</span>
-    <span class="c1">#让这个属性可写，如果没有下面的@.setter，那么radius就是一个只读属性</span>
-    <span class="nd">@radius</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">radius</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">radius</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_radius</span> <span class="o">=</span> <span class="n">radius</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_diameter</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">radius</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_area</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">radius</span> <span class="o">**</span> <span class="mi">2</span>
-
-    <span class="c1">#同样，定义一个diameter属性，以及怎么由此求出半径和面积</span>
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">diameter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_diameter</span>
-    <span class="nd">@diameter</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">diameter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">diameter</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_diameter</span> <span class="o">=</span> <span class="n">diameter</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_radius</span> <span class="o">=</span> <span class="n">diameter</span> <span class="o">/</span> <span class="mi">2</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_area</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="p">(</span><span class="n">diameter</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
-
-    <span class="c1">#给定面积求出相应的半径和直径</span>
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">area</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_area</span>
-    <span class="nd">@area</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">area</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">area</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_area</span> <span class="o">=</span> <span class="n">area</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_radius</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="n">area</span> <span class="o">/</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_diameter</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="n">area</span> <span class="o">/</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
-
-<span class="c1">#如果只有@property而没有对应的@.setter属性，那就是定义了一个只读的属性 </span>
-</code></pre></div></div>
     <footer>
 <p class="meta">
   <span class="byline author vcard">
@@ -194,13 +193,13 @@ window.addEventListener('load', () => {
           <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
       </li>
       <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+      <li class="post">
           <a href="/pages/2023/10/01/image-generation-2-latent-diffusion-model-stable-diffusion/">Image Generation 2: Latent Diffusion model / Stable Diffusion</a>
       </li>
       <li class="post">
           <a href="/pages/2023/07/04/image-generation-1-diffusion-model/">Image Generation 1: Diffusion model</a>
-      </li>
-      <li class="post">
-          <a href="/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/">GPT-1, GPT-2, GPT-3, InstructGPT / ChatGPT and GPT-4 summary</a>
       </li>
     </ul>
   </section>
@@ -218,7 +217,7 @@ window.addEventListener('load', () => {
 
   <section>
   <h1>Tags</h1>
-    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
 
 
     <section>
