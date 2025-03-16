@@ -421,7 +421,7 @@ $$&lt;/div&gt;
 &lt;p&gt;GPT是decoder only的模型，根据前面的token来预测下一个token。比如有一个句子 "it is sunny today."，现在有初始输入 …&lt;/p&gt;</summary><content type="html">&lt;h2&gt;&lt;span style="color:blue"&gt;1. Prediciton in Decoder&lt;/span&gt;&lt;/h2&gt;
 &lt;p&gt;在前面&lt;a href="https://songhuiming.github.io/pages/2023/05/28/gpt-1-gpt-2-gpt-3-instructgpt-chatgpt-and-gpt-4-summary/"&gt;GPT summary&lt;/a&gt;里面对GPT的模型有一个综合的介绍，这里用一个fake example来解释一步步GPT是怎么做的，self attention是怎么计算的，KV cache是怎么回事。&lt;/p&gt;
 &lt;p&gt;GPT是decoder only的模型，根据前面的token来预测下一个token。比如有一个句子 "it is sunny today."，现在有初始输入 prompt “it is”，下面看怎么预测 “sunny” 和 “today”。假设单词表 &lt;code&gt;vocabulary = {"it", "is", "sunny", "today", "&amp;lt;EOS&amp;gt;"}&lt;/code&gt;. 输入的prompt “it is”，对应的token id 是 &lt;code&gt;[0,1]&lt;/code&gt;,&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;&lt;span style="color:blue"&gt;1. Predict 1st token&lt;/span&gt;&lt;/strong&gt;. prompt &lt;code&gt;[“it", "is”]&lt;/code&gt;，token id 是 &lt;code&gt;[0,1]&lt;/code&gt;。 为了简化问题，假设embedding+position encoding为 "it" (pos 1): &lt;code&gt;[0.1, 0.3, 0.3, 0.5]&lt;/code&gt;，"is" (pos 2): &lt;code&gt;[0.6, 0.6, 0.8, 0.8]&lt;/code&gt;。为了简化计算且不失一般性，假设 &lt;span class="math"&gt;\(W\)&lt;/span&gt;为单位阵 &lt;span class="math"&gt;\(I\)&lt;/span&gt;，也就是 &lt;span class="math"&gt;\(W_K = W_Q = W_V = I_4\)&lt;/span&gt;
+&lt;p&gt;&lt;strong&gt;&lt;span style="color:blue"&gt;1.1. Predict 1st token&lt;/span&gt;&lt;/strong&gt;. prompt &lt;code&gt;[“it", "is”]&lt;/code&gt;，token id 是 &lt;code&gt;[0,1]&lt;/code&gt;。 为了简化问题，假设embedding+position encoding为 "it" (pos 1): &lt;code&gt;[0.1, 0.3, 0.3, 0.5]&lt;/code&gt;，"is" (pos 2): &lt;code&gt;[0.6, 0.6, 0.8, 0.8]&lt;/code&gt;。为了简化计算且不失一般性，假设 &lt;span class="math"&gt;\(W\)&lt;/span&gt;为单位阵 &lt;span class="math"&gt;\(I\)&lt;/span&gt;，也就是 &lt;span class="math"&gt;\(W_K = W_Q = W_V = I_4\)&lt;/span&gt;
     - 现有序列&lt;code&gt;["it", "is"]&lt;/code&gt;，对应的输入矩阵为 
         &lt;/p&gt;
 &lt;div class="math"&gt;$$X =
@@ -491,7 +491,7 @@ $$&lt;/div&gt;
         $$&lt;/div&gt;
 &lt;p&gt;
 得到attention以后的V的weighted average以后，position 2的值&lt;code&gt;[0.447, 0.529, 0.653, 0.706]&lt;/code&gt;再经过FFN（这里简化成一个 MLP）最有投影到 vocabulary 空间上得到logits。然后softmax over logits得到概率，比如 &lt;code&gt;"sunny" = 0.7&lt;/code&gt;, &lt;code&gt;"today" = 0.2&lt;/code&gt;, etc.). 最后根据position 2 的 Logits 得到 Sample &lt;code&gt;"sunny"&lt;/code&gt;.&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;&lt;span style="color:blue"&gt;1. Predict 2nd token&lt;/span&gt;&lt;/strong&gt;. 有了 &lt;code&gt;["it", "is", "sunny"]&lt;/code&gt;以后，继续预测下一个单词。sunny 对应的 embedding为 &lt;code&gt;[1.1, 0.9, 1.3, 1.1]&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;&lt;span style="color:blue"&gt;1.2. Predict 2nd token&lt;/span&gt;&lt;/strong&gt;. 有了 &lt;code&gt;["it", "is", "sunny"]&lt;/code&gt;以后，继续预测下一个单词。sunny 对应的 embedding为 &lt;code&gt;[1.1, 0.9, 1.3, 1.1]&lt;/code&gt;.&lt;/p&gt;
 &lt;p&gt;现在的输入矩阵相应的有3行，
         &lt;/p&gt;
 &lt;div class="math"&gt;$$X =
