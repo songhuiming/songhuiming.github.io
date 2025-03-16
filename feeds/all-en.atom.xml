@@ -538,8 +538,6 @@ $$&lt;/div&gt;
         \end{bmatrix}$$&lt;/div&gt;
 &lt;p&gt;
 根据最后一个输入的hidden status，&lt;code&gt;[0.847, 0.779, 1.041, 0.961]&lt;/code&gt;，同样经过FFN，最后再把它投影到vocabulary 空间上得到logits。然后根据softmax选择概率最大的单词 &lt;code&gt;today&lt;/code&gt;.&lt;/p&gt;
-&lt;p&gt;&lt;img alt="kv-cache" src="/figures/20240421_pv_cache_01.png"&gt;
-&lt;em&gt;Fig 1. KV-cache explanation. Image from internet&lt;/em&gt;&lt;/p&gt;
 &lt;h2&gt;&lt;span style="color:blue"&gt;2. KV cache in decoder models&lt;/span&gt;&lt;/h2&gt;
 &lt;p&gt;从上面的计算可以看出，在预测第一个单词的时候，&lt;span class="math"&gt;\(K = Q = X\)&lt;/span&gt;, 
             &lt;/p&gt;
@@ -550,6 +548,8 @@ $$&lt;/div&gt;
             \end{bmatrix}$$&lt;/div&gt;
 &lt;p&gt;
 当预测第二个单词的时候，新的&lt;span class="math"&gt;\(K，V\)&lt;/span&gt;第第一行，第二行（对应的"it", "is"）仍然还是原来的值，这个时候如果从新计算的话，会额外的占用GPU资源（从embedding开始，跟&lt;span class="math"&gt;\(W\)&lt;/span&gt;做矩阵相乘）。其实只要在每一步计算的时候，把前面的已经计算的值cache下来，这样就节省了计算资源。KV cache就是这个思路。&lt;/p&gt;
+&lt;p&gt;&lt;img alt="kv-cache" src="/figures/20240421_pv_cache_01.png"&gt;
+&lt;em&gt;Fig 1. KV-cache explanation. Image from internet&lt;/em&gt;&lt;/p&gt;
 &lt;p&gt;从新梳理一下，在计算第一个token的时候，cache下 &lt;span class="math"&gt;\(K_{cache} =V_{cache}\)&lt;/span&gt; 
             &lt;/p&gt;
 &lt;div class="math"&gt;$$\begin{bmatrix}
