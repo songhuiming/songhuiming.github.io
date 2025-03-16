@@ -430,7 +430,7 @@ $$&lt;/div&gt;
             0.6 &amp;amp; 0.6 &amp;amp; 0.8 &amp;amp; 0.8
             \end{bmatrix}$$&lt;/div&gt;
 &lt;p&gt;
-    - 计算 self-attention. 因为&lt;span class="math"&gt;\(W=I\)&lt;/span&gt;, 所以 &lt;span class="math"&gt;\(𝑄 = 𝐾 = 𝑉 = 𝑋\)&lt;/span&gt;. self attention = &lt;span class="math"&gt;\(\frac{QK^T}{\sqrt{d_k}}\)&lt;/span&gt;, &lt;span class="math"&gt;\(d_k = 4\)&lt;/span&gt;, 
+计算 self-attention. 因为&lt;span class="math"&gt;\(W=I\)&lt;/span&gt;, 所以 &lt;span class="math"&gt;\(𝑄 = 𝐾 = 𝑉 = 𝑋\)&lt;/span&gt;. self attention = &lt;span class="math"&gt;\(\frac{QK^T}{\sqrt{d_k}}\)&lt;/span&gt;, &lt;span class="math"&gt;\(d_k = 4\)&lt;/span&gt;, 
         &lt;/p&gt;
 &lt;div class="math"&gt;$$
             QK^T = \begin{bmatrix}
@@ -449,7 +449,7 @@ $$&lt;/div&gt;
                 \end{bmatrix}
         $$&lt;/div&gt;
 &lt;p&gt;
-        除以&lt;span class="math"&gt;\(\sqrt{d_k}\)&lt;/span&gt;以后得到 
+除以&lt;span class="math"&gt;\(\sqrt{d_k}\)&lt;/span&gt;以后得到 
         &lt;/p&gt;
 &lt;div class="math"&gt;$$\frac{QK^T}{\sqrt{d_k}} = 
                 \begin{bmatrix}
@@ -457,7 +457,7 @@ $$&lt;/div&gt;
                 0.52 &amp;amp; 1.18
                 \end{bmatrix}$$&lt;/div&gt;
 &lt;p&gt;
-    - 因为GPT是从前面的token来预测当前token，后面的token是看不到的。所以需要mask，表现在self attention矩阵上就是跟未来的token的权重为0. 更直白一点，self attention weights矩阵是下三角阵。
+因为GPT是从前面的token来预测当前token，后面的token是看不到的。所以需要mask，表现在self attention矩阵上就是跟未来的token的权重为0. 更直白一点，self attention weights矩阵是下三角阵。
         &lt;/p&gt;
 &lt;div class="math"&gt;$$
             \frac{QK^T}{\sqrt{d_k}} \text{ with mask } = \begin{bmatrix}
@@ -466,7 +466,7 @@ $$&lt;/div&gt;
                 \end{bmatrix}
         $$&lt;/div&gt;
 &lt;p&gt;
-        进行softmax以后得到
+进行softmax以后得到
         &lt;/p&gt;
 &lt;div class="math"&gt;$$
             \text{Attention weights} = \begin{bmatrix}
@@ -475,7 +475,7 @@ $$&lt;/div&gt;
                 \end{bmatrix}
         $$&lt;/div&gt;
 &lt;p&gt;
-    - 再计算 weights 矩阵 和 &lt;span class="math"&gt;\(V\)&lt;/span&gt;的乘积, &lt;span class="math"&gt;\(\text{weights} \cdot V\)&lt;/span&gt;:
+再计算 weights 矩阵 和 &lt;span class="math"&gt;\(V\)&lt;/span&gt;的乘积, &lt;span class="math"&gt;\(\text{weights} \cdot V\)&lt;/span&gt;:
         &lt;/p&gt;
 &lt;div class="math"&gt;$$
             \text{Attention} =
@@ -490,9 +490,9 @@ $$&lt;/div&gt;
                 \end{bmatrix}
         $$&lt;/div&gt;
 &lt;p&gt;
-    - 得到attention以后的V的weighted average以后，position 2的值&lt;code&gt;[0.447, 0.529, 0.653, 0.706]&lt;/code&gt;再经过FFN（这里简化成一个 MLP）最有投影到 vocabulary 空间上得到logits。然后softmax over logits得到概率，比如 &lt;code&gt;"sunny" = 0.7&lt;/code&gt;, &lt;code&gt;"today" = 0.2&lt;/code&gt;, etc.). 最后根据position 2 的 Logits 得到 Sample &lt;code&gt;"sunny"&lt;/code&gt;.&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;&lt;span style="color:blue"&gt;1. Predict 2nd token&lt;/span&gt;&lt;/strong&gt;. 有了 &lt;code&gt;["it", "is", "sunny"]&lt;/code&gt;以后，继续预测下一个单词。sunny 对应的 embedding为 &lt;code&gt;[1.1, 0.9, 1.3, 1.1]&lt;/code&gt;.
-    - 现在的输入矩阵相应的有3行，
+得到attention以后的V的weighted average以后，position 2的值&lt;code&gt;[0.447, 0.529, 0.653, 0.706]&lt;/code&gt;再经过FFN（这里简化成一个 MLP）最有投影到 vocabulary 空间上得到logits。然后softmax over logits得到概率，比如 &lt;code&gt;"sunny" = 0.7&lt;/code&gt;, &lt;code&gt;"today" = 0.2&lt;/code&gt;, etc.). 最后根据position 2 的 Logits 得到 Sample &lt;code&gt;"sunny"&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;&lt;span style="color:blue"&gt;1. Predict 2nd token&lt;/span&gt;&lt;/strong&gt;. 有了 &lt;code&gt;["it", "is", "sunny"]&lt;/code&gt;以后，继续预测下一个单词。sunny 对应的 embedding为 &lt;code&gt;[1.1, 0.9, 1.3, 1.1]&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;现在的输入矩阵相应的有3行，
         &lt;/p&gt;
 &lt;div class="math"&gt;$$X =
         \begin{bmatrix}
@@ -501,7 +501,7 @@ $$&lt;/div&gt;
         1.1 &amp;amp; 0.9 &amp;amp; 1.3 &amp;amp; 1.1 \\
         \end{bmatrix}$$&lt;/div&gt;
 &lt;p&gt;
-    - 因为&lt;span class="math"&gt;\(W = I\)&lt;/span&gt;, 所以仍然&lt;span class="math"&gt;\(𝑄 = 𝐾 = 𝑉 = X\)&lt;/span&gt;，计算新的 attention 矩阵
+因为&lt;span class="math"&gt;\(W = I\)&lt;/span&gt;, 所以仍然&lt;span class="math"&gt;\(𝑄 = 𝐾 = 𝑉 = X\)&lt;/span&gt;，计算新的 attention 矩阵
         &lt;/p&gt;
 &lt;div class="math"&gt;$$
         \frac{QK^\top}{\sqrt{d_k}} =
@@ -511,7 +511,7 @@ $$&lt;/div&gt;
         0.74 &amp;amp; 1.66 &amp;amp; 2.34
         \end{bmatrix}$$&lt;/div&gt;
 &lt;p&gt;
-        同样，GPT decoder下，因为每个token只能跟它和它之前的token做attention，它之后的token都没有attention。
+同样，GPT decoder下，因为每个token只能跟它和它之前的token做attention，它之后的token都没有attention。
         &lt;/p&gt;
 &lt;div class="math"&gt;$$
         \text{Causal Mask} =
@@ -521,24 +521,24 @@ $$&lt;/div&gt;
         0.74 &amp;amp; 1.66 &amp;amp; 2.34
         \end{bmatrix}$$&lt;/div&gt;
 &lt;p&gt;
-        把这个矩阵做softmax归一化，沿着dimension 1 做normalization，得到
+把这个矩阵做softmax归一化，沿着dimension 1 做normalization，得到
             &lt;/p&gt;
-&lt;div class="math"&gt;$$\begin{bmatrix}
+&lt;div class="math"&gt;$$\text{Attention weights} = \begin{bmatrix}
             1.0 &amp;amp; 0.0 &amp;amp; 0.0 \\
             0.341 &amp;amp; 0.659 &amp;amp; 0.0 \\
             0.136 &amp;amp; 0.309 &amp;amp; 0.555
             \end{bmatrix}$$&lt;/div&gt;
 &lt;p&gt;
-    - 把这个矩阵再跟&lt;span class="math"&gt;\(V\)&lt;/span&gt;相乘，最后得到
+把这个矩阵再跟&lt;span class="math"&gt;\(V\)&lt;/span&gt;相乘，最后得到
         &lt;/p&gt;
-&lt;div class="math"&gt;$$\begin{bmatrix}
+&lt;div class="math"&gt;$$\text{Attention}  \begin{bmatrix}
         0.1 &amp;amp; 0.3 &amp;amp; 0.3 &amp;amp; 0.5 \\
         0.447 &amp;amp; 0.529 &amp;amp; 0.653 &amp;amp; 0.706 \\
         0.847 &amp;amp; 0.779 &amp;amp; 1.041 &amp;amp; 0.961
         \end{bmatrix}$$&lt;/div&gt;
 &lt;p&gt;
-    - 根据最后一个输入的hidden status，&lt;code&gt;[0.847, 0.779, 1.041, 0.961]&lt;/code&gt;，同样经过FFN，最后再把它投影到vocabulary 空间上得到logits。然后根据softmax选择概率最大的单词 &lt;code&gt;today&lt;/code&gt;.&lt;/p&gt;
-&lt;h2&gt;&lt;span class="math"&gt;\(\color{blue}{\text{2. PV cache in decoder models}}\)&lt;/span&gt;&lt;/h2&gt;
+根据最后一个输入的hidden status，&lt;code&gt;[0.847, 0.779, 1.041, 0.961]&lt;/code&gt;，同样经过FFN，最后再把它投影到vocabulary 空间上得到logits。然后根据softmax选择概率最大的单词 &lt;code&gt;today&lt;/code&gt;.&lt;/p&gt;
+&lt;h2&gt;&lt;span style="color:blue"&gt;2. PV cache in decoder models&lt;/span&gt;&lt;/h2&gt;
 &lt;p&gt;从上面的计算可以看出，在预测第一个单词的时候，&lt;span class="math"&gt;\(K = Q = X\)&lt;/span&gt;, 
             &lt;/p&gt;
 &lt;div class="math"&gt;$$X =
@@ -547,7 +547,7 @@ $$&lt;/div&gt;
             0.6 &amp;amp; 0.6 &amp;amp; 0.8 &amp;amp; 0.8
             \end{bmatrix}$$&lt;/div&gt;
 &lt;p&gt;
-            当预测第二个单词的时候，新的&lt;span class="math"&gt;\(K，V\)&lt;/span&gt;第第一行，第二行（对应的"it", "is"）仍然还是原来的值，这个时候如果从新计算的话，会额外的占用GPU资源（从embedding开始，跟&lt;span class="math"&gt;\(W\)&lt;/span&gt;做矩阵相乘）。其实只要在每一步计算的时候，把前面的已经计算的值cache下来，这样就节省了计算资源。KV cache就是这个思路。&lt;/p&gt;
+当预测第二个单词的时候，新的&lt;span class="math"&gt;\(K，V\)&lt;/span&gt;第第一行，第二行（对应的"it", "is"）仍然还是原来的值，这个时候如果从新计算的话，会额外的占用GPU资源（从embedding开始，跟&lt;span class="math"&gt;\(W\)&lt;/span&gt;做矩阵相乘）。其实只要在每一步计算的时候，把前面的已经计算的值cache下来，这样就节省了计算资源。KV cache就是这个思路。&lt;/p&gt;
 &lt;p&gt;从新梳理一下，在计算第一个token的时候，cache下 &lt;span class="math"&gt;\(K_{cache} =V_{cache}\)&lt;/span&gt; 
             &lt;/p&gt;
 &lt;div class="math"&gt;$$\begin{bmatrix}
@@ -555,7 +555,7 @@ $$&lt;/div&gt;
             0.6 &amp;amp; 0.6 &amp;amp; 0.8 &amp;amp; 0.8
             \end{bmatrix}$$&lt;/div&gt;
 &lt;p&gt; 
-    然后当预测第二个token的时候，计算新predict的token的&lt;span class="math"&gt;\(K\)&lt;/span&gt;和&lt;span class="math"&gt;\(Q\)&lt;/span&gt;, &lt;span class="math"&gt;\(Q_{new} = [1.1,0.9,1.3,1.1]\)&lt;/span&gt;， &lt;span class="math"&gt;\(K_{new} = V_{new} = [1.1,0.9,1.3,1.1]\)&lt;/span&gt;。这样就得到新的 &lt;span class="math"&gt;\(K_{cache}\)&lt;/span&gt;, 
+然后当预测第二个token的时候，计算新predict的token的&lt;span class="math"&gt;\(K\)&lt;/span&gt;和&lt;span class="math"&gt;\(Q\)&lt;/span&gt;, &lt;span class="math"&gt;\(Q_{new} = [1.1,0.9,1.3,1.1]\)&lt;/span&gt;， &lt;span class="math"&gt;\(K_{new} = V_{new} = [1.1,0.9,1.3,1.1]\)&lt;/span&gt;。这样就得到新的 &lt;span class="math"&gt;\(K_{cache}\)&lt;/span&gt;, 
             &lt;/p&gt;
 &lt;div class="math"&gt;$$\begin{bmatrix}
                 0.1 &amp;amp; 0.3 &amp;amp; 0.3 &amp;amp; 0.5 \\
@@ -563,7 +563,7 @@ $$&lt;/div&gt;
                 1.1 &amp;amp; 0.9 &amp;amp; 1.3 &amp;amp; 1.1 \\
                 \end{bmatrix}$$&lt;/div&gt;
 &lt;p&gt;
-    同样，因为我们的&lt;span class="math"&gt;\(W\)&lt;/span&gt;设置，&lt;span class="math"&gt;\(V_{cache}\)&lt;/span&gt; 也是这个矩阵。这样就可以算出新的attention weight为 &lt;span class="math"&gt;\(Q_{new} \cdot K_{cache}^T / \sqrt{4} =  [0.74, 1.66, 2.34]\)&lt;/span&gt;&lt;/p&gt;
+同样，因为我们的&lt;span class="math"&gt;\(W\)&lt;/span&gt;设置，&lt;span class="math"&gt;\(V_{cache}\)&lt;/span&gt; 也是这个矩阵。这样就可以算出新的attention weight为 &lt;span class="math"&gt;\(Q_{new} \cdot K_{cache}^T / \sqrt{4} =  [0.74, 1.66, 2.34]\)&lt;/span&gt;&lt;/p&gt;
 &lt;pre&gt;&lt;code class="language-python"&gt;import torch
 
 # Setup

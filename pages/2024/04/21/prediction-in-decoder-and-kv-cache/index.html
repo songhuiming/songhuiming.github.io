@@ -106,7 +106,7 @@ window.addEventListener('load', () => {
             0.6 &amp; 0.6 &amp; 0.8 &amp; 0.8
             \end{bmatrix}$$</div>
 <p>
-    - 计算 self-attention. 因为<span class="math">\(W=I\)</span>, 所以 <span class="math">\(𝑄 = 𝐾 = 𝑉 = 𝑋\)</span>. self attention = <span class="math">\(\frac{QK^T}{\sqrt{d_k}}\)</span>, <span class="math">\(d_k = 4\)</span>, 
+计算 self-attention. 因为<span class="math">\(W=I\)</span>, 所以 <span class="math">\(𝑄 = 𝐾 = 𝑉 = 𝑋\)</span>. self attention = <span class="math">\(\frac{QK^T}{\sqrt{d_k}}\)</span>, <span class="math">\(d_k = 4\)</span>, 
         </p>
 <div class="math">$$
             QK^T = \begin{bmatrix}
@@ -125,7 +125,7 @@ window.addEventListener('load', () => {
                 \end{bmatrix}
         $$</div>
 <p>
-        除以<span class="math">\(\sqrt{d_k}\)</span>以后得到 
+除以<span class="math">\(\sqrt{d_k}\)</span>以后得到 
         </p>
 <div class="math">$$\frac{QK^T}{\sqrt{d_k}} = 
                 \begin{bmatrix}
@@ -133,7 +133,7 @@ window.addEventListener('load', () => {
                 0.52 &amp; 1.18
                 \end{bmatrix}$$</div>
 <p>
-    - 因为GPT是从前面的token来预测当前token，后面的token是看不到的。所以需要mask，表现在self attention矩阵上就是跟未来的token的权重为0. 更直白一点，self attention weights矩阵是下三角阵。
+因为GPT是从前面的token来预测当前token，后面的token是看不到的。所以需要mask，表现在self attention矩阵上就是跟未来的token的权重为0. 更直白一点，self attention weights矩阵是下三角阵。
         </p>
 <div class="math">$$
             \frac{QK^T}{\sqrt{d_k}} \text{ with mask } = \begin{bmatrix}
@@ -142,7 +142,7 @@ window.addEventListener('load', () => {
                 \end{bmatrix}
         $$</div>
 <p>
-        进行softmax以后得到
+进行softmax以后得到
         </p>
 <div class="math">$$
             \text{Attention weights} = \begin{bmatrix}
@@ -151,7 +151,7 @@ window.addEventListener('load', () => {
                 \end{bmatrix}
         $$</div>
 <p>
-    - 再计算 weights 矩阵 和 <span class="math">\(V\)</span>的乘积, <span class="math">\(\text{weights} \cdot V\)</span>:
+再计算 weights 矩阵 和 <span class="math">\(V\)</span>的乘积, <span class="math">\(\text{weights} \cdot V\)</span>:
         </p>
 <div class="math">$$
             \text{Attention} =
@@ -166,9 +166,9 @@ window.addEventListener('load', () => {
                 \end{bmatrix}
         $$</div>
 <p>
-    - 得到attention以后的V的weighted average以后，position 2的值<code>[0.447, 0.529, 0.653, 0.706]</code>再经过FFN（这里简化成一个 MLP）最有投影到 vocabulary 空间上得到logits。然后softmax over logits得到概率，比如 <code>"sunny" = 0.7</code>, <code>"today" = 0.2</code>, etc.). 最后根据position 2 的 Logits 得到 Sample <code>"sunny"</code>.</p>
-<p><strong><span style="color:blue">1. Predict 2nd token</span></strong>. 有了 <code>["it", "is", "sunny"]</code>以后，继续预测下一个单词。sunny 对应的 embedding为 <code>[1.1, 0.9, 1.3, 1.1]</code>.
-    - 现在的输入矩阵相应的有3行，
+得到attention以后的V的weighted average以后，position 2的值<code>[0.447, 0.529, 0.653, 0.706]</code>再经过FFN（这里简化成一个 MLP）最有投影到 vocabulary 空间上得到logits。然后softmax over logits得到概率，比如 <code>"sunny" = 0.7</code>, <code>"today" = 0.2</code>, etc.). 最后根据position 2 的 Logits 得到 Sample <code>"sunny"</code>.</p>
+<p><strong><span style="color:blue">1. Predict 2nd token</span></strong>. 有了 <code>["it", "is", "sunny"]</code>以后，继续预测下一个单词。sunny 对应的 embedding为 <code>[1.1, 0.9, 1.3, 1.1]</code>.</p>
+<p>现在的输入矩阵相应的有3行，
         </p>
 <div class="math">$$X =
         \begin{bmatrix}
@@ -177,7 +177,7 @@ window.addEventListener('load', () => {
         1.1 &amp; 0.9 &amp; 1.3 &amp; 1.1 \\
         \end{bmatrix}$$</div>
 <p>
-    - 因为<span class="math">\(W = I\)</span>, 所以仍然<span class="math">\(𝑄 = 𝐾 = 𝑉 = X\)</span>，计算新的 attention 矩阵
+因为<span class="math">\(W = I\)</span>, 所以仍然<span class="math">\(𝑄 = 𝐾 = 𝑉 = X\)</span>，计算新的 attention 矩阵
         </p>
 <div class="math">$$
         \frac{QK^\top}{\sqrt{d_k}} =
@@ -187,7 +187,7 @@ window.addEventListener('load', () => {
         0.74 &amp; 1.66 &amp; 2.34
         \end{bmatrix}$$</div>
 <p>
-        同样，GPT decoder下，因为每个token只能跟它和它之前的token做attention，它之后的token都没有attention。
+同样，GPT decoder下，因为每个token只能跟它和它之前的token做attention，它之后的token都没有attention。
         </p>
 <div class="math">$$
         \text{Causal Mask} =
@@ -197,24 +197,24 @@ window.addEventListener('load', () => {
         0.74 &amp; 1.66 &amp; 2.34
         \end{bmatrix}$$</div>
 <p>
-        把这个矩阵做softmax归一化，沿着dimension 1 做normalization，得到
+把这个矩阵做softmax归一化，沿着dimension 1 做normalization，得到
             </p>
-<div class="math">$$\begin{bmatrix}
+<div class="math">$$\text{Attention weights} = \begin{bmatrix}
             1.0 &amp; 0.0 &amp; 0.0 \\
             0.341 &amp; 0.659 &amp; 0.0 \\
             0.136 &amp; 0.309 &amp; 0.555
             \end{bmatrix}$$</div>
 <p>
-    - 把这个矩阵再跟<span class="math">\(V\)</span>相乘，最后得到
+把这个矩阵再跟<span class="math">\(V\)</span>相乘，最后得到
         </p>
-<div class="math">$$\begin{bmatrix}
+<div class="math">$$\text{Attention}  \begin{bmatrix}
         0.1 &amp; 0.3 &amp; 0.3 &amp; 0.5 \\
         0.447 &amp; 0.529 &amp; 0.653 &amp; 0.706 \\
         0.847 &amp; 0.779 &amp; 1.041 &amp; 0.961
         \end{bmatrix}$$</div>
 <p>
-    - 根据最后一个输入的hidden status，<code>[0.847, 0.779, 1.041, 0.961]</code>，同样经过FFN，最后再把它投影到vocabulary 空间上得到logits。然后根据softmax选择概率最大的单词 <code>today</code>.</p>
-<h2><span class="math">\(\color{blue}{\text{2. PV cache in decoder models}}\)</span></h2>
+根据最后一个输入的hidden status，<code>[0.847, 0.779, 1.041, 0.961]</code>，同样经过FFN，最后再把它投影到vocabulary 空间上得到logits。然后根据softmax选择概率最大的单词 <code>today</code>.</p>
+<h2><span style="color:blue">2. PV cache in decoder models</span></h2>
 <p>从上面的计算可以看出，在预测第一个单词的时候，<span class="math">\(K = Q = X\)</span>, 
             </p>
 <div class="math">$$X =
@@ -223,7 +223,7 @@ window.addEventListener('load', () => {
             0.6 &amp; 0.6 &amp; 0.8 &amp; 0.8
             \end{bmatrix}$$</div>
 <p>
-            当预测第二个单词的时候，新的<span class="math">\(K，V\)</span>第第一行，第二行（对应的"it", "is"）仍然还是原来的值，这个时候如果从新计算的话，会额外的占用GPU资源（从embedding开始，跟<span class="math">\(W\)</span>做矩阵相乘）。其实只要在每一步计算的时候，把前面的已经计算的值cache下来，这样就节省了计算资源。KV cache就是这个思路。</p>
+当预测第二个单词的时候，新的<span class="math">\(K，V\)</span>第第一行，第二行（对应的"it", "is"）仍然还是原来的值，这个时候如果从新计算的话，会额外的占用GPU资源（从embedding开始，跟<span class="math">\(W\)</span>做矩阵相乘）。其实只要在每一步计算的时候，把前面的已经计算的值cache下来，这样就节省了计算资源。KV cache就是这个思路。</p>
 <p>从新梳理一下，在计算第一个token的时候，cache下 <span class="math">\(K_{cache} =V_{cache}\)</span> 
             </p>
 <div class="math">$$\begin{bmatrix}
@@ -231,7 +231,7 @@ window.addEventListener('load', () => {
             0.6 &amp; 0.6 &amp; 0.8 &amp; 0.8
             \end{bmatrix}$$</div>
 <p> 
-    然后当预测第二个token的时候，计算新predict的token的<span class="math">\(K\)</span>和<span class="math">\(Q\)</span>, <span class="math">\(Q_{new} = [1.1,0.9,1.3,1.1]\)</span>， <span class="math">\(K_{new} = V_{new} = [1.1,0.9,1.3,1.1]\)</span>。这样就得到新的 <span class="math">\(K_{cache}\)</span>, 
+然后当预测第二个token的时候，计算新predict的token的<span class="math">\(K\)</span>和<span class="math">\(Q\)</span>, <span class="math">\(Q_{new} = [1.1,0.9,1.3,1.1]\)</span>， <span class="math">\(K_{new} = V_{new} = [1.1,0.9,1.3,1.1]\)</span>。这样就得到新的 <span class="math">\(K_{cache}\)</span>, 
             </p>
 <div class="math">$$\begin{bmatrix}
                 0.1 &amp; 0.3 &amp; 0.3 &amp; 0.5 \\
@@ -239,7 +239,7 @@ window.addEventListener('load', () => {
                 1.1 &amp; 0.9 &amp; 1.3 &amp; 1.1 \\
                 \end{bmatrix}$$</div>
 <p>
-    同样，因为我们的<span class="math">\(W\)</span>设置，<span class="math">\(V_{cache}\)</span> 也是这个矩阵。这样就可以算出新的attention weight为 <span class="math">\(Q_{new} \cdot K_{cache}^T / \sqrt{4} =  [0.74, 1.66, 2.34]\)</span></p>
+同样，因为我们的<span class="math">\(W\)</span>设置，<span class="math">\(V_{cache}\)</span> 也是这个矩阵。这样就可以算出新的attention weight为 <span class="math">\(Q_{new} \cdot K_{cache}^T / \sqrt{4} =  [0.74, 1.66, 2.34]\)</span></p>
 <pre><code class="language-python">import torch
 
 # Setup
