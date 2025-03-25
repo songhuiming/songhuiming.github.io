@@ -112,6 +112,69 @@ fatal: could not parse HEAD
 <li>把<code>songhuiming.github.io</code>里面的<code>.git</code>文件夹复制到<code>output</code>下面, <code>cp -rf songhuiming.github.io/.git .</code></li>
 <li>删掉文件夹<code>songhuiming.github.io</code></li>
 <li>重新到<code>blog</code>文件夹下面<code>make html</code>然后就可以正常<code>git commit</code>和<code>git push</code>了</li>
+</ol>
+<h2><code>pip install -e .</code> to install a package</h2>
+<p><code>mypackage</code> folder has the following tree structure:</p>
+<pre><code>.
+├── Config
+├── __init__.py
+├── README.md
+├── setup.py
+├── .gitignore
+└── src
+    ├── basecode
+    │   ├── aws
+    │   │   └── aws.py
+    │   ├── dataprocess
+    │   │   └── dataprocess.py
+    │   └── utils_old
+    │       ├── old.py
+    │       ├── temp.py
+    │       └── utils.py
+    └── mypackage.egg-info
+        ├── dependency_links.txt
+        └── top_level.txt
+</code></pre>
+<p><code>setup.py</code></p>
+<pre><code class="language-python">from setuptools import setup, find_packages
+
+ setup(
+     name='mypackage',
+     version='0.1',
+     packages=find_packages(where=&quot;src&quot;, exclude=(&quot;test&quot;,)),
+     package_dir={&quot;&quot;: &quot;src&quot;},
+     entry_points={
+         'console_scripts': [
+             'pwd=basecode.sys.sysos:print',
+         ],
+     },
+ )
+</code></pre>
+<p><code>.gitignore</code></p>
+<pre><code> .gitignore
+ src/basecode/utils_old
+ mypackage.egg-info
+</code></pre>
+<h2><code>git</code></h2>
+<p>四个区域： <code>硬盘 /(git add →) 暂存区 / (git commit → ) local / (git push →) remote</code></p>
+<ol>
+<li><code>git clone xxx</code></li>
+<li><code>git checkout -b mybranch</code>  # create my own branch</li>
+<li>code change, bala bala</li>
+<li><code>git diff</code>                  # check what I changed</li>
+<li><code>git add .</code>                # add code to stage 暂存区</li>
+<li>`git commit -m "xx"``       # commit to local. </li>
+<li><code>git push origin mybranch</code>  # push to remove mybranch</li>
+<li>但是在push的时候，可能remote的master已经有人更改代码了。这个时候要把remote最新的变化跟我的代码变化merge起来</li>
+<li><code>git checkout master</code>       # 切换到master branch</li>
+<li><code>git pull origin master</code>   # pull remote的代码到 local 和 本地硬盘</li>
+<li><code>git rebase master</code>        # 把我的修改放一边，把remote的代码拿过来，然后再尝试把我的修改的代码弄进去到master（注意，不是merge，尽管最后结果是把两个code merge成最终版本）。这个时候可能有rebase conflict，需要手动解决; reapply the commits from your current branch on top of the master branch. It effectively changes the base of your branch to the latest commit in master.</li>
+<li><code>git push -f origin mybranch</code>    # 需要 -f 来强制push</li>
+<li><code>pull request</code>, remote code owner will do <code>squash and merge</code></li>
+<li><code>git remote -v</code>            # check remote </li>
+<li><code>git remote add share $(git config remote.origin.url)/share/shmtest</code>     # create remote share/shmtest</li>
+<li><code>git push share shmtest</code>   # push to the remote share</li>
+<li><code>git push share HEAD</code>      # if I don't have permission so I cannot push my changes there; another to push current branch (shmtest) to remote share</li>
 </ol></div>
     <footer>
 <p class="meta">
