@@ -1,5 +1,366 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata: Huiming's learning notes - Huiming Song</title><link href="/" rel="alternate"></link><link href="/feeds/huiming-song.atom.xml" rel="self"></link><id>/</id><updated>2025-02-23T00:00:00-06:00</updated><subtitle>Keep Looking, Don't Settle</subtitle><entry><title>DeepSeek V3 learning notes</title><link href="/pages/2025/02/23/deepseek-v3-learning-notes/" rel="alternate"></link><published>2025-02-23T00:00:00-06:00</published><updated>2025-02-23T00:00:00-06:00</updated><author><name>Huiming Song</name></author><id>tag:None,2025-02-23:/pages/2025/02/23/deepseek-v3-learning-notes/</id><summary type="html">&lt;h2&gt;1. What the problem to solve?&lt;/h2&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata: Huiming's learning notes - Huiming Song</title><link href="/" rel="alternate"></link><link href="/feeds/huiming-song.atom.xml" rel="self"></link><id>/</id><updated>2025-04-20T00:00:00-05:00</updated><subtitle>Keep Looking, Don't Settle</subtitle><entry><title>DeepSeek Expert Parallelism Load Balancer (EPLB) Code Reading</title><link href="/pages/2025/04/20/deepseek-expert-parallelism-load-balancer-eplb-code-reading/" rel="alternate"></link><published>2025-04-20T00:00:00-05:00</published><updated>2025-04-20T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2025-04-20:/pages/2025/04/20/deepseek-expert-parallelism-load-balancer-eplb-code-reading/</id><summary type="html">&lt;h2&gt;Introduction&lt;/h2&gt;
+&lt;p&gt;In the previous &lt;a href="https://songhuiming.github.io/pages/2025/02/16/deepseek-v3/"&gt;Introduction to DeepSeek-V3&lt;/a&gt;, a crucial component highlighted was the use of DeepSeekMoE. When employing Expert Parallelism, different Experts are assigned to different GPUs. Since the load on different Experts may vary depending on the current workload, maintaining load balance across GPUs is critical. DeepSeek-MoE addresses this …&lt;/p&gt;</summary><content type="html">&lt;h2&gt;Introduction&lt;/h2&gt;
+&lt;p&gt;In the previous &lt;a href="https://songhuiming.github.io/pages/2025/02/16/deepseek-v3/"&gt;Introduction to DeepSeek-V3&lt;/a&gt;, a crucial component highlighted was the use of DeepSeekMoE. When employing Expert Parallelism, different Experts are assigned to different GPUs. Since the load on different Experts may vary depending on the current workload, maintaining load balance across GPUs is critical. DeepSeek-MoE addresses this by replicating high-load Experts and optimizing load distribution to ensure that the load across GPUs/nodes is as balanced as possible. Replicated Experts are packed into GPUs to ensure load balancing between them. Additionally, as DeepSeek-V3 uses Node-limited routing, Experts from the same group are deployed on the same node whenever possible to minimize inter-node data traffic.&lt;/p&gt;
+&lt;p&gt;DeepSeek has open-sourced its Expert Parallelism load-balancing algorithm for Expert replication and deployment in &lt;a href="https://github.com/deepseek-ai/EPLB/blob/main/eplb.py"&gt;eplb.py&lt;/a&gt;. This article provides a detailed study of this open-source code.&lt;/p&gt;
+&lt;h2&gt;Algorithm&lt;/h2&gt;
+&lt;p&gt;The load-balancing algorithm includes two strategies tailored to different scenarios.&lt;/p&gt;
+&lt;h3&gt;Hierarchical Load Balancing&lt;/h3&gt;
+&lt;p&gt;When the number of server nodes is divisible by the number of Expert groups, a hierarchical load-balancing strategy is used to control the routing of Expert groups. First, Expert groups are evenly packed into nodes to ensure load balance across nodes. Then, Experts are replicated within each node. Finally, the replicated Experts are packed into GPUs to ensure load balance across GPUs. This strategy is suitable for the prefill stage, where the Expert parallelism scale is smaller.&lt;/p&gt;
+&lt;h3&gt;Global Load Balancing&lt;/h3&gt;
+&lt;p&gt;In other cases, a global load-balancing strategy is used, where Experts are replicated globally regardless of their group and packed into GPUs. This strategy is suitable for the decoding stage, where the Expert parallelism scale is larger.&lt;/p&gt;
+&lt;h3&gt;Terminology&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Logical Expert&lt;/strong&gt;: Experts designed in the model. The number of Experts is predefined in the model. In the example above, each layer has 12 logical Experts.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Physical Expert&lt;/strong&gt;: Experts created in GPUs for actual computation. If certain logical Experts have heavy loads, they are replicated. Thus, the number of physical Experts is generally greater than or equal to the number of logical Experts. In the example, each layer has 16 physical Experts involved in computation.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Expert Group&lt;/strong&gt;: A logical grouping of multiple Experts in the model. The purpose of Expert groups is to facilitate coarse-grained load management when allocating Experts to nodes. Load balancing is first achieved at the group level, then within each group.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;num_groups&lt;/strong&gt;: The number of Expert groups. Each node has the same number of groups, and each group has the same number of Experts. The goal is to place logical Experts into groups to balance tokens per group as much as possible. &lt;code&gt;group_size = num_logical_experts // num_groups&lt;/code&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;Function Explanations&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;balanced_packing&lt;/strong&gt;: This function allocates Expert groups to different "packs" (e.g., nodes/clusters), ensuring each pack receives approximately the same number of Expert groups with relatively balanced total load. Grouping Experts enables coarse-grained load balancing at the group level before finer allocation within groups.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;replicate_experts&lt;/strong&gt;: This function dynamically replicates logical Experts with high loads, increasing parallel processing capacity and distributing high loads across multiple physical devices to achieve load balancing.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;rebalance_experts_hierarchical&lt;/strong&gt;: The &lt;code&gt;num_groups&lt;/code&gt; parameter represents the number of Expert groups. The code first divides logical Experts into groups (&lt;code&gt;weight.unflatten(-1, (num_groups, group_size))&lt;/code&gt;) and performs preliminary load balancing by allocating groups to nodes using &lt;code&gt;balanced_packing(tokens_per_group, num_nodes)&lt;/code&gt;. Within each node, &lt;code&gt;replicate_experts&lt;/code&gt; creates replicas for the logical Experts assigned to that node, utilizing available physical Expert slots. This step addresses local load hotspots by replicating overloaded Experts. After replication, the effective load per physical Expert slot (original load divided by the number of replicas) is calculated, and &lt;code&gt;balanced_packing&lt;/code&gt; is used again to allocate these physical Expert slots to GPUs within the node, aiming to balance the effective load across GPUs in the same node.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3&gt;Example&lt;/h3&gt;
+&lt;p&gt;Consider a load matrix: &lt;code&gt;[[90, 132, 40, 61, 104, 165, 39, 4, 73, 56, 183, 86], [20, 107, 104, 64, 19, 197, 187, 157, 172, 86, 16, 27]]&lt;/code&gt;. There are two nodes, each with 4 GPUs. How should these loads be allocated to balance the GPU loads as much as possible? The code replicates 4 Experts per layer, resulting in 16 Experts per layer, placed across 2 nodes, each with 4 GPUs.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Model&lt;/strong&gt;: The model has two layers, each with 12 Experts, each with different token loads.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Hardware&lt;/strong&gt;: There are two nodes, each with 4 GPUs, totaling 8 GPUs.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Task&lt;/strong&gt;: Allocate Experts to GPUs to balance loads as much as possible. For example, one layer's load is &lt;code&gt;[90, 132, 40, 61, 104, 165, 39, 4, 73, 56, 183, 86]&lt;/code&gt;. Experts 10, 5, 1, and 4 have higher loads, so replicating these Experts can help distribute their computational pressure. Replication should:&lt;ol&gt;
+&lt;li&gt;Balance the computational load across GPUs.&lt;/li&gt;
+&lt;li&gt;Minimize communication between nodes.&lt;/li&gt;
+&lt;li&gt;Keep physical Experts from the same logical Expert in the same node/group to reduce communication overhead.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4&gt;Step 1: Initial Allocation&lt;/h4&gt;
+&lt;p&gt;Pack the load into groups to obtain group loads: &lt;code&gt;[[262., 330., 116., 325.], [231., 280., 516., 129.]]&lt;/code&gt;. Then, use &lt;code&gt;balanced_packing&lt;/code&gt; to allocate these grouped loads to packs (nodes) to balance the load across packs as much as possible.&lt;/p&gt;
+&lt;h4&gt;Step 2: Replicate Physical Experts&lt;/h4&gt;
+&lt;p&gt;Within each node, replicate logical Experts with high loads to reduce GPU computational pressure. In each iteration, the function evaluates the average load per logical Expert (&lt;code&gt;weight / logcnt&lt;/code&gt;), replicates the Expert with the highest average load (&lt;code&gt;redundant_indices = (weight / logcnt).max(dim=-1).indices&lt;/code&gt;), and updates the physical-to-logical Expert mapping (&lt;code&gt;phy2log&lt;/code&gt;). This dynamic replication increases parallel processing and distributes high loads across multiple physical devices.&lt;/p&gt;
+&lt;h4&gt;Step 3: Pack Physical Experts to GPUs&lt;/h4&gt;
+&lt;p&gt;Calculate the load per physical Expert (&lt;code&gt;tokens_per_phy&lt;/code&gt;). If a logical Expert is replicated into two physical Experts, each physical Expert's load is half the original. Then, use &lt;code&gt;balanced_packing&lt;/code&gt; to allocate the physical Experts' loads to GPUs, ensuring balanced allocation per pack.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Verification Code&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code class="language-python"&gt;# Verify that the total load of physical Experts allocated to each GPU is as balanced as possible
+
+tokens_per_phy = \
+torch.tensor([[61.0, 52.0, 82.5, 39.0, 4.0, 73.0, 82.5, 52.0],
+              [56.0, 91.5, 86.0, 90.0, 66.0, 40.0, 91.5, 66.0],
+              [93.5, 157.0, 86.0, 86.0, 16.0, 27.0, 93.5, 86.0],
+              [64.0, 19.0, 98.5, 20.0, 53.5, 104.0, 98.5, 53.5]])
+
+pphy2phy = \
+torch.tensor([[2, 3, 6, 4, 5, 7, 0, 1],
+              [1, 0, 6, 5, 3, 7, 2, 4],
+              [1, 4, 0, 7, 6, 5, 2, 3],
+              [5, 1, 2, 7, 6, 3, 0, 4]])
+
+# Reorder tokens_per_phy according to pphy2phy to get the load of each physical Expert.
+
+# After reordering, obtain x. Reshape x by the number of layers (2 in this case), then sum the allocations per GPU to get each GPU's load. The loads of the 8 GPUs should be relatively balanced. Each layer has 16 physical Experts, and with 8 GPUs, the load of every 2 physical Experts is summed, then aggregated across all layers to obtain the final load per GPU.
+
+x = tokens_per_phy.gather(-1, pphy2phy)  # Reorder tokens_per_phy by pphy2phy, 4x8
+x_by_layer = x.view(weight.shape[0], -1)  # Reshape x by number of layers (2), 2x16
+x_by_layer_by_2 = x_by_layer.view(x_by_layer.shape[0], -1, 2)  # Reshape to sum every 2 physical Experts
+sum_of_each_2 = x_by_layer_by_2.sum(dim=2)  # Sum the load of every 2 physical Experts
+result = sum_of_each_2.sum(dim=0)  # Final load per GPU
+print(result)
+
+# tensor([294.5000, 266.0000, 245.5000, 285.0000, 270.5000, 283.5000, 274.5000, 269.5000])
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;In this example, the loads of the 8 GPUs are &lt;code&gt;[294.5, 266.0, 245.5, 285.0, 270.5, 283.5, 274.5, 269.5]&lt;/code&gt;. The loads are relatively balanced, with no GPUs experiencing significantly high or low loads.&lt;/p&gt;
+&lt;pre&gt;&lt;code class="language-python"&gt;from typing import Tuple
+
+import torch
+tensor = torch.tensor
+
+def balanced_packing(weight: torch.Tensor, num_packs: int) -&amp;gt; Tuple[torch.Tensor, torch.Tensor]:
+    &amp;quot;&amp;quot;&amp;quot;
+    Pack n weighted objects to m packs, such that each bin contains exactly n/m objects and the weights of all packs are as balanced as possible.
+
+    Parameters:
+        weight: [X, n], the weight of each item
+        num_packs: number of packs
+
+    Returns: 
+        pack_index: [X, n], the pack index of each item
+        rank_in_pack: [X, n], the rank of the item in the pack
+    &amp;quot;&amp;quot;&amp;quot;
+
+    num_layers, num_groups = weight.shape    # 2x4
+    assert num_groups % num_packs == 0
+    groups_per_pack = num_groups // num_packs  # 2, 每个node有几个group
+    # 两层，每层12个log expert，分成4grp，每个grp应该3个expert。
+    # 4个grp分到两个node，每个groups_per_pack为2
+
+
+    if groups_per_pack == 1:
+        pack_index = torch.arange(weight.size(-1), dtype=torch.int64, device=weight.device).expand(weight.shape)
+        rank_in_pack = torch.zeros_like(weight, dtype=torch.int64)
+        return pack_index, rank_in_pack
+
+    indices = weight.float().sort(-1, descending=True).indices.cpu()  # 把weight按行sort，sort得到的index
+    pack_index = torch.full_like(weight, fill_value=-1, dtype=torch.int64, device='cpu')
+    rank_in_pack = torch.full_like(pack_index, fill_value=-1)
+
+    pack_weights_array = torch.zeros(weight.shape)
+    for i in range(num_layers):  # num_layers = 2
+        pack_weights = [0] * num_packs
+        pack_items = [0] * num_packs
+        for group in indices[i]:  # indices是weight排序的index
+            pack = min((i for i in range(num_packs) if pack_items[i] &amp;lt; groups_per_pack), 
+                       key=pack_weights.__getitem__)  
+            &amp;quot;&amp;quot;&amp;quot;
+            这段代码的含义可以分解如下：​
+            (i for i in range(num_packs) if pack_items[i] &amp;lt; groups_per_pack) 是一个generator表达式，​它遍历所有包的索引 i，​并选出那些尚未达到最大组数限制（即 pack_items[i] &amp;lt; groups_per_pack）的包。​
+            min(..., key=pack_weights.__getitem__) 函数从上述生成器表达式生成的index中，​选择一个使得 pack_weights[i] 最小的索引 i，​即选择当前重量最轻的包。​
+            这段代码的整体作用：​在所有尚未满载的包中，选择当前重量最轻的那个包的index，以便将一个新的组分配给它。​
+            &amp;quot;&amp;quot;&amp;quot;
+            print(f&amp;quot;num_packs = {num_packs} &amp;quot;)
+            print(f&amp;quot;for layer {i}, for weight index {group}, {pack_items[i]}, {groups_per_pack} \n&amp;quot;)
+            assert pack_items[pack] &amp;lt; groups_per_pack
+
+            pack_index[i, group] = pack
+            print(f&amp;quot;for layer {i}, for weight index {group}, the pack_index is {pack_index} \n&amp;quot;)
+            rank_in_pack[i, group] = pack_items[pack]
+            print(f&amp;quot;for layer {i}, for weight index {group}, the rank_in_pack is {rank_in_pack} \n&amp;quot;)
+            pack_weights[pack] += weight[i, group]
+            print(f&amp;quot;for layer {i}, for weight index {group}, pack_weights for pack {pack} is {weight[i, group]} \n&amp;quot;)
+            pack_items[pack] += 1
+            pack_weights_array[i, group] = pack_weights[pack]
+    return pack_index, rank_in_pack
+
+
+def replicate_experts(weight: torch.Tensor, num_phy: int) -&amp;gt; Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+
+    &amp;quot;&amp;quot;&amp;quot;
+    当逻辑Expert的数量小于给定的物理Expert数量的时候，复制load最大的expert，根据复制的数量，调整expert的load，然后继续复制直到物理Expert的数量达到给定值。
+
+    Replicate `num_log` experts to `num_phy` replicas, such that the maximum load of all replicas is minimized.
+
+    Parameters:
+        weight: [X, num_log]
+        num_phy: total number of experts after replication
+
+    Returns:
+        phy2log: [X, num_phy], logical expert id of each physical expert
+        rank: [X, num_phy], the replica rank
+        logcnt: [X, num_log], number of replicas for each logical expert
+    &amp;quot;&amp;quot;&amp;quot;
+    n, num_log = weight.shape
+    num_redundant = num_phy - num_log
+    assert num_redundant &amp;gt;= 0
+    device = weight.device
+    phy2log = torch.arange(num_phy, dtype=torch.int64, device=device).repeat(n, 1)
+    rank = torch.zeros(n, num_phy, dtype=torch.int64, device=device)
+    logcnt = torch.ones(n, num_log, dtype=torch.int64, device=device)
+    arangen = torch.arange(n, dtype=torch.int64, device=device)
+    for i in range(num_log, num_phy):
+        redundant_indices = (weight / logcnt).max(dim=-1).indices
+        phy2log[:, i] = redundant_indices
+        rank[:, i] = logcnt[arangen, redundant_indices]
+        logcnt[arangen, redundant_indices] += 1
+    return phy2log, rank, logcnt
+
+
+def rebalance_experts_hierarchical(weight: torch.Tensor, num_physical_experts: int, 
+                      num_groups: int, num_nodes: int, num_gpus: int):
+    &amp;quot;&amp;quot;&amp;quot;
+    shm: num_physical_experts = num_replicas, from the code below to call this function
+    Parameters:
+        weight: [num_moe_layers, num_logical_experts]
+        num_physical_experts: number of physical experts after replication
+        num_groups: number of expert groups
+        num_nodes: number of server nodes, where the intra-node network (e.g, NVLink) is faster
+        num_gpus: number of GPUs, must be a multiple of `num_nodes`
+
+    Returns: 
+        physical_to_logical_map: [num_moe_layers, num_physical_experts]
+        logical_to_physical_map: [num_moe_layers, num_logical_experts, X]
+        logical_count: [num_moe_layers, num_logical_experts]
+    &amp;quot;&amp;quot;&amp;quot;
+
+    num_layers, num_logical_experts = weight.shape   # 2, 12
+    # expert数量必须能被expert group整除，也就是每个group有相同数量的expert
+    assert num_logical_experts % num_groups == 0  
+    group_size = num_logical_experts // num_groups   # 12 // 4 = 3, 每个group有3个逻辑Expert
+    # group数必须能被nodes整除，也就是每个node能放一样多的group. 这里groups_per_node=2
+    assert num_groups % num_nodes == 0               #  4 // 2 = 2，每个node有两个group
+    groups_per_node = num_groups // num_nodes
+    # gpu的数量能被nodes数整除，也就是每个node有一样多的gpu
+    assert num_gpus % num_nodes == 0              
+    # 物理expert数量能被gpu数量整除，每个gpu有同样多的physical expert
+    assert num_physical_experts % num_gpus == 0   
+    phy_experts_per_gpu = num_physical_experts // num_gpus
+
+    def inverse(perm: torch.Tensor) -&amp;gt; torch.Tensor:
+        inv = torch.empty_like(perm)
+        inv.scatter_(1, perm, torch.arange(perm.size(1), dtype=torch.int64, device=perm.device).expand(perm.shape))
+        return inv
+
+    # Step 1: pack groups to nodes
+    # tokens_per_group: 把load（weight）按group打包，计算每个group的load
+    # 把 weight 矩阵每一行reshape成(num_groups, group_size)，然后按行求和
+    tokens_per_group = weight.unflatten(-1, (num_groups, group_size)).sum(-1)  # 计算每个group总token/load个数
+    # 把已经分组好的load分配到每个pack（node）上面去，使每个pack的load尽可能均衡
+    # group_rank_in_pack: tokens_per_group按照group_rank_in_pack相加，就得到 pack_weights_array
+    # group_pack_index: tokens_per_group 分给哪个node的index
+    # group_rank_in_pack： tokens_per_group 对应的优先级
+    # pack_weights_array: 追踪每个node按顺序处理其分配的weight时，所累积的总load是多少。
+    group_pack_index, group_rank_in_pack = balanced_packing(tokens_per_group, num_nodes) 
+    # log2mlog： 经过分组打包负载均衡以后的逻辑Expert的index. 
+    log2mlog = (((group_pack_index * groups_per_node + group_rank_in_pack) * group_size).unsqueeze(-1) + 
+                torch.arange(group_size, dtype=torch.int64, device=group_pack_index.device)).flatten(-2)
+    # mlog2log： inverse index，weight/load按照这个index排序以后，在各个group会尽可能均衡
+    mlog2log = inverse(log2mlog)
+
+    # Step 2: construct redundant experts within nodes 第二部，构造冗余Expert来分解计算压力
+    # [num_layers * num_nodes, num_logical_experts // num_nodes]
+    # weight.gather(-1, mlog2log): 把weight的元素按照mlog2log作为index从新摆放
+    tokens_per_mlog = weight.gather(-1, mlog2log).view(-1, num_logical_experts // num_nodes)
+    # replicate Expert，返回Expert的index，哪些Expert会被replicate的indicator，以及会被复制成几个
+    phy2mlog, phyrank, mlogcnt = replicate_experts(tokens_per_mlog, num_physical_experts // num_nodes) 
+
+    # Step 3: pack physical_experts to GPUs
+    # [num_layers * num_nodes, num_physical_experts // num_nodes]
+    # 计算每个physical Expert的Load。如果一个逻辑Expert被复制成两个物理Expert，这里认为每个物理Export的load是原来的一半
+    tokens_per_phy = (tokens_per_mlog / mlogcnt).gather(-1, phy2mlog)
+    # pack_index是把物理Expert的Load打包分配得到的index，每个pack尽可能分配均衡
+    pack_index, rank_in_pack = balanced_packing(tokens_per_phy, num_gpus // num_nodes)
+    # 计算物理Expert的index
+    phy2pphy = pack_index * phy_experts_per_gpu + rank_in_pack
+    # tokens_per_phy按照pphy2phy分配以后，每个gpu上面分配的物理expert的load总和尽可能的均衡，见例4
+    pphy2phy = inverse(phy2pphy)
+
+    # 物理Expert和逻辑Expert的mapping
+    # 原来的comment可能不对，应该是 [num_layers * num_nodes, num_phy_experts//num_nodes]
+    pphy2mlog = phy2mlog.gather(-1, pphy2phy) # [num_layers * num_nodes, num_log_per_nodes??]
+    pphy2mlog = (pphy2mlog.view(num_layers, num_nodes, -1) + 
+                 torch.arange(0, num_logical_experts, num_logical_experts // num_nodes).view(1, -1, 1)).flatten(-2)        # [num_layers, num_phy_experts]
+    pphy2log = mlog2log.gather(-1, pphy2mlog)
+    pphyrank = phyrank.gather(-1, pphy2phy).view(num_layers, -1)
+    logcnt = mlogcnt.view(num_layers, -1).gather(-1, log2mlog)
+    return pphy2log, pphyrank, logcnt
+
+
+def rebalance_experts(weight: torch.Tensor, num_replicas: int, num_groups: int,
+                      num_nodes: int, num_gpus: int) -&amp;gt; Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    &amp;quot;&amp;quot;&amp;quot;
+    Entry point for expert-parallelism load balancer.
+
+    Parameters:
+        weight: [layers, num_logical_experts], the load statistics for all logical experts
+        num_replicas: number of physical experts, must be a multiple of `num_gpus`
+        num_groups: number of expert groups
+        num_nodes: number of server nodes, where the intra-node network (e.g, NVLink) is faster
+        num_gpus: number of GPUs, must be a multiple of `num_nodes`
+
+    Returns: 
+        physical_to_logical_map: [layers, num_replicas], the expert index of each replica
+        logical_to_physical_map: [layers, num_logical_experts, X], the replica indices for each expert
+        expert_count: [layers, num_logical_experts], number of physical replicas for each logical expert
+    &amp;quot;&amp;quot;&amp;quot;
+    num_layers, num_logical_experts = weight.shape
+    weight = weight.float().cpu()
+    if num_groups % num_nodes == 0:
+        # use hierarchical load-balance policy
+        phy2log, phyrank, logcnt = rebalance_experts_hierarchical(weight, num_replicas, 
+                                                                  num_groups, num_nodes, num_gpus)
+    else:
+        # use global load-balance policy
+        phy2log, phyrank, logcnt = replicate_experts(weight, num_replicas)
+    maxlogcnt = logcnt.max().item()
+    log2phy: torch.Tensor = torch.full((num_layers, num_logical_experts, maxlogcnt), 
+                                       -1, dtype=torch.int64, device=logcnt.device)
+    log2phy.view(num_layers, -1).scatter_(-1, phy2log * maxlogcnt + phyrank, 
+            torch.arange(num_replicas, dtype=torch.int64, device=log2phy.device).expand(num_layers, -1))
+    return phy2log, log2phy, logcnt
+&lt;/code&gt;&lt;/pre&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;中文&lt;/strong&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2&gt;简介&lt;/h2&gt;
+&lt;p&gt;在前面的&lt;a href="https://songhuiming.github.io/pages/2025/02/16/deepseek-v3/"&gt;DeepSeek-V3的介绍&lt;/a&gt;当中，一个很重要的部分就是使用了DeepSeekMoE。使用 Expert Parallel 时，不同的 Expert 会被分配到不同的 GPU。由于不同 Expert 的负载可能因当前工作负载而异，因此保持不同 GPU 的负载均衡至关重要。DeepSeek-MoE的做法是复制高负荷的Expert，然后进行load 优化，使得各个GPU/node的负载尽可能俊很。将重复的 Expert 打包到 GPU 中，以确保不同 GPU 之间的负载均衡。此外，由于 DeepSeek-V3 中使用了Node-limited routing，尽可能将同一组的 Expert 部署到同一节点，以减少节点间的数据流量。&lt;/p&gt;
+&lt;p&gt;DeepSeek在 &lt;a href="https://github.com/deepseek-ai/EPLB/blob/main/eplb.py"&gt;eplb.py&lt;/a&gt; 中开源了 Expert Parallelism 负载均衡算法来进行 Expert 复制和部署。本文是对这个开源代码的更详细的学习记录。&lt;/p&gt;
+&lt;h2&gt;算法&lt;/h2&gt;
+&lt;p&gt;负载均衡算法包含两种用于不同情况的策略。&lt;/p&gt;
+&lt;h3&gt;分层负载均衡&lt;/h3&gt;
+&lt;p&gt;当服务器节点数量除以 Expert 组数量时，使用分层负载均衡策略来控制 Expert 组受限的路由。首先将 Expert 组均匀地打包到Node，确保不同Node的负载均衡。然后在每个Node内复制 Expert。最后，将复制的 Expert 打包到各个 GPU，以确保不同 GPU 之间的负载均衡。分层负载均衡策略可用于预填充阶段，此时 Expert 并行规模较小。&lt;/p&gt;
+&lt;h3&gt;全局负载均衡&lt;/h3&gt;
+&lt;p&gt;在其他情况下，使用全局负载均衡策略，无论 Expert 组如何，都会全局复制 Expert，并将复制的 Expert 打包到各个 GPU。此策略可用于解码阶段，此时 Expert 并行规模较大。&lt;/p&gt;
+&lt;h3&gt;名词解释&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;逻辑 Expert&lt;/strong&gt;：模型设计的Expert。Expert的数量在Model里面已经设计好了。在上面的例子里面，就是每层12个logic Experts&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;物理 Expert&lt;/strong&gt;：实际参与计算的在GPU内创建的Exerpt。如果某些logical Expert的Load比较重，他们会被复制。所以物理Expert的数量一般大于等于逻辑Expert的数量。在上面的例子里面，每层有16个物理Expert参加计算。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Expert group&lt;/strong&gt;：通常指的是将模型中的多个“Expert”进行逻辑上的分组。构建Expert group的目的是为了在分配Expert到不同的Node时，更容易进行粗粒度的负载管理。先在group上面尽可能负载均衡，然后再在每个group内去均衡负载。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;num_groups&lt;/strong&gt;: expert groups的数量。每个 Node 有相同数量的group，每个group有相同数量的Expert，它的目的是把logical Experts放到同一个group里面，使得 tokens per group 尽可能的均衡。group_size = 逻辑Expert的数量//expert groups的数量 = num_logical_experts // num_groups &lt;/p&gt;
+&lt;h3&gt;function解释&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;balanced_packing函数将 Expert 组分配到不同的“packs”（可以理解nodes/clusters），确保每个pack分配到大致相同数量的 Expert 组，并且这些组的总负载也相对均衡。通过将 Expert 分组，可以先进行粗粒度的组级别负载均衡，然后再在组内进行更细致的分配。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;replicate_experts通过动态地复制当前负载较高的逻辑 Expert ，增加了系统的并行处理能力，并且通过副本的分配，潜在地将高负载分散到多个物理设备上，从而实现负载均衡。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;rebalance_experts_hierarchical 函数中，num_groups 参数就代表了 Expert 组的数量。代码中首先将逻辑 Expert 划分为若干组 (weight.unflatten(-1, (num_groups, group_size)))，然后以 Expert 组为单位进行初步的负载均衡和分配到不同的节点 (balanced_packing(tokens_per_group, num_nodes)）。在每个节点内，使用 replicate_experts 为分配到该节点的逻辑 Expert 创建副本，利用该节点上可用的物理 Expert 槽位。此步骤专门针对并缓解每个节点内的负载热点，通过复制本地过载的 Expert 。复制后，计算每个节点内每个物理 Expert 槽位的有效负载（原始负载除以副本数量）,然后再次使用 balanced_packing，这次在每个节点内，将这些物理 Expert 槽位分配到该节点内的特定 GPU 上。目标是在同一节点内的 GPU 之间平衡有效负载。&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3&gt;例子&lt;/h3&gt;
+&lt;p&gt;有一个load矩阵如下&lt;code&gt;[[ 90, 132,  40,  61, 104, 165,  39,   4,  73,  56, 183,  86], [ 20, 107, 104,  64,  19, 197, 187, 157, 172,  86,  16,  27]]&lt;/code&gt;, 现在有两个Node，每个Node有4个GPU。需要把这些Load怎么分配，使得GPU尽可能均衡负载？Code在每层replicate 4个 Expert，这样每层总共有 16 个Expert放置在 2 个Node上，每个Node包含 4 个 GPU。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;模型&lt;/strong&gt;：模型有两个layer，每个layer有&lt;code&gt;12&lt;/code&gt;个Expert，每个Expert有不同的 Tokens Load。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;硬件&lt;/strong&gt;：硬件有两个node，每个node有&lt;code&gt;4个GPU&lt;/code&gt;。所以总共有8个GPU&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;任务&lt;/strong&gt;：把这些Expert allocate到这些GPU上，使得GPU的Load尽可能均衡。比如有一个layer的load如下,&lt;code&gt;[ 90, 132,  40,  61, 104, 165,  39,   4,  73,  56, 183,  86]&lt;/code&gt;。 可以看到，第10，5， 1， 4个expert的load比较大. 所以最好能够复制这些Expert用来分散他们的计算压力。复制的时候，尽可能的保证:&lt;ol&gt;
+&lt;li&gt;使得每个GPU的计算量尽可能的均衡&lt;/li&gt;
+&lt;li&gt;使得每个 Node 之间的通信尽可能的少&lt;/li&gt;
+&lt;li&gt;同一个逻辑Expert经过复制以后的物理Expert尽可能的在同一个Node/Group上，这样可以减少communication的开销&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4&gt;步骤1: 初步分配，把load weight打包分发给Node，使得Node的负载尽量均衡&lt;/h4&gt;
+&lt;p&gt;先把 load 根据group打包, 得到group load &lt;code&gt;[[262., 330., 116., 325.], [231., 280., 516., 129.]]&lt;/code&gt;； 然后把已经分组好的load分配到每个pack（node）上面去，使每个pack的load尽可能均衡。具体的是通过&lt;code&gt;balanced_packing&lt;/code&gt;将一组 Load 打包到指定数量的“packs”（可以理解为计算节点或一组设备），使得每个 pack 包含大致相同数量的对象，并且各个 pack 的总权重尽可能接近。&lt;/p&gt;
+&lt;h4&gt;步骤2: 在每个Node上构造redundent 物理expert来分解GPU计算压力&lt;/h4&gt;
+&lt;p&gt;在每次迭代中，它会评估当前每个逻辑 Expert 的平均负载 (&lt;code&gt;weight / logcnt&lt;/code&gt;)，然后对当前平均负载最高的逻辑 Expert 进行复制 (&lt;code&gt;redundant_indices = (weight / logcnt).max(dim=-1).indices&lt;/code&gt;)，然后更新物理 Expert 到逻辑 Expert 的映射 (&lt;code&gt;phy2log&lt;/code&gt;)。通过动态地复制当前负载较高的逻辑 Expert ，增加了系统的并行处理能力，将高负载分散到多个物理设备上，从而实现负载均衡。&lt;/p&gt;
+&lt;h4&gt;步骤3: 将物理 Experts pack到GPU上去&lt;/h4&gt;
+&lt;p&gt;计算每个physical Expert的Load &lt;code&gt;tokens_per_phy&lt;/code&gt;。如果一个逻辑 Expert 被复制成两个物理 Expert，这里认为每个物理 Expert 的load是原来的一半。然后再通过&lt;code&gt;balanced_packing&lt;/code&gt;把物理 Expert 的 Load 打包分配，每个pack尽可能分配均衡。具体的数字参见下面的验证code。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;验证code&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code class="language-python"&gt;# 验证每个gpu上面分配的物理expert的load总和是不是尽可能的均衡
+
+tokens_per_phy = \
+torch.tensor([[ 61.0,  52.0,  82.5,  39.0,   4.0,  73.0,  82.5, 52.0],
+              [ 56.0,  91.5,  86.0,  90.0,  66.0,  40.0,  91.5, 66.0],
+              [ 93.5, 157.0,  86.0,  86.0,  16.0,  27.0,  93.5, 86.0],
+              [ 64.0,  19.0,  98.5,  20.0,  53.5, 104.0,  98.5, 53.5]])
+
+
+pphy2phy = \
+torch.tensor([[2, 3, 6, 4, 5, 7, 0, 1],
+            [1, 0, 6, 5, 3, 7, 2, 4],
+            [1, 4, 0, 7, 6, 5, 2, 3],
+            [5, 1, 2, 7, 6, 3, 0, 4]])
+
+# tokens_per_phy按照pphy2phy从新排序，得到每个物理Expert的load。
+
+# tokens_per_phy按照pphy2phy从新排序以后，得到下面的x。把x按Layer的个数（此例中=2）展开，然后按照每个GPU上面的allocation相加，就得到每个gpu的负载。8个gpu的负载应该比较均衡。每个layer有16个物理Expert，总共8个gpu，所以每2个物理Expert的负载加在一起，然后再对所有的layer相加，就得到每个gpu的最终负载
+
+x = tokens_per_phy.gather(-1, pphy2phy)     # tokens_per_phy按照pphy2phy从新排序以后 4x8
+x_by_layer = x.view(weight.shape[0], -1)    # 把x按Layer的个数（此例中=2）展开， 2x16
+x_by_layer_by_2 = x_by_layer.view(x_by_layer.shape[0], -1, 2)   # reshape，准备每2个物理Expert的负载加在一起
+sum_of_each_2 = x_by_layer_by_2.sum(dim = 2)                    # 每2个物理Expert的负载加在一起
+result = sum_of_each_2.sum(dim=0)           # 每个gpu的最后负载
+print(result)
+
+# tensor([294.5000, 266.0000, 245.5000, 285.0000, 270.5000, 283.5000, 274.5000, 269.5000])
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;在这个例子上，8个GPU的load分别是&lt;code&gt;[294.5, 266.0, 245.5, 285.0, 270.5, 283.5, 274.5, 269.5]&lt;/code&gt;，每个GPU的负载都差不多，没有出现某些GPU负载很高或者很低的情形。&lt;/p&gt;
+&lt;h2&gt;Reference&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;a href="https://github.com/deepseek-ai/EPLB/blob/main/README.md"&gt;Expert Parallelism Load Balancer (EPLB)&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://arxiv.org/pdf/2401.06066"&gt;DeepSeekMoE Architecture&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://github.com/songhuiming/draft-blogs/blob/main/20250302.deepseek.eplb.md"&gt;原始笔记&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://github.com/songhuiming/draft-blogs/blob/main/20250108.deepseek.%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB2.md"&gt;draft notes of deepseek-r1&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://github.com/deepseek-ai/DeepEP"&gt;DeepEP communication library&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;</content><category term="python"></category><category term="python"></category><category term="AI"></category><category term="LLM"></category><category term="AGI"></category></entry><entry><title>DeepSeek V3 learning notes</title><link href="/pages/2025/02/23/deepseek-v3-learning-notes/" rel="alternate"></link><published>2025-02-23T00:00:00-06:00</published><updated>2025-02-23T00:00:00-06:00</updated><author><name>Huiming Song</name></author><id>tag:None,2025-02-23:/pages/2025/02/23/deepseek-v3-learning-notes/</id><summary type="html">&lt;h2&gt;1. What the problem to solve?&lt;/h2&gt;
 &lt;p&gt;When I went back for the Spring Festival, DeepSeek released a new model. For a while, all kinds of media discussed it a lot, almost rising to the height of national destiny. The most important points discussed should be two: the first is the …&lt;/p&gt;</summary><content type="html">&lt;h2&gt;1. What the problem to solve?&lt;/h2&gt;
 &lt;p&gt;When I went back for the Spring Festival, DeepSeek released a new model. For a while, all kinds of media discussed it a lot, almost rising to the height of national destiny. The most important points discussed should be two: the first is the benchmark score comparable to other mainstream models; the second is that the training speed is much faster and uses much less GPU time. However, most of the discussions are prosperous discussions and exciting news, but there is no specific reason why DS is good and how it is good. The first weekend after I came back, I spent the weekend reading the DS V3 paper. The reason why I chose V3 is that R1 is RL and SFT to enhance the reasoning ability of the model. The basic model is still V3, and the DS V3 paper is more detailed. The second part of the article describes what improvements DS has made in the model architecture (science), and the third part describes what improvements have been made in the model training (engineering). Then the two parts talk about pretraining, posttraining and evaluation related things.&lt;/p&gt;
 &lt;h2&gt;2. How to solve?&lt;/h2&gt;
@@ -14342,109 +14703,4 @@ sess.run(train_step, feed_dict=feed)
 &lt;h3&gt;Reference&lt;/h3&gt;
 &lt;ol&gt;
 &lt;li&gt;&lt;a href="https://medium.com/all-of-us-are-belong-to-machines/gentlest-introduction-to-tensorflow-part-2-ed2a0a7a624f#.9cxp5xvf0"&gt;Gentlest Introduction to Tensorflow #2&lt;/a&gt;&lt;/li&gt;
-&lt;/ol&gt;</content><category term="Python"></category><category term="python"></category><category term="tensorflow"></category><category term="deep learning"></category></entry><entry><title>tensorflow简介--01</title><link href="/pages/2017/02/26/tensorflowjian-jie-01/" rel="alternate"></link><published>2017-02-26T11:35:00-06:00</published><updated>2017-02-26T11:36:00-06:00</updated><author><name>Huiming Song</name></author><id>tag:None,2017-02-26:/pages/2017/02/26/tensorflowjian-jie-01/</id><summary type="html">&lt;p&gt;python的群里有人询问深度学习的基本概念，正好最近看到一篇非常简洁明了的介绍TF的基本概念的文章，尝试把它翻译成中文。以下为原文翻译：Tensorflow(TF)是google开源的深度学习框架。它有&lt;a href="https://www.tensorflow.org/get_started/mnist/beginners"&gt;初级&lt;/a&gt;和&lt;a href="https://www.tensorflow.org/get_started/mnist/pros"&gt;高级&lt;/a&gt;两个教程实例。然后那两个例子把ML和TF放在一起解决一个多feature的问题--图像识别。本文尝试从最简单的线性模型来介绍一个单feature的问题，然后从这儿开始扩展下去。&lt;/p&gt;</summary><content type="html">&lt;h2&gt;介绍&lt;/h2&gt;
-&lt;p&gt;我们将会用一个非常简单非实际的问题来帮助理解机器学习和tensorflow(TF)。我们使用一个feature(变量)房屋面积来预测房屋价格。这样将避免讨论高维数据，让我们可以集中理解TF中定义模型，应用模型和训练模型。&lt;/p&gt;
-&lt;p&gt;(原文中都写的是machine learning，机器学习。尽管现在大家都管TF为深度学习框架，我仍然翻译成机器学习。)&lt;/p&gt;
-&lt;h2&gt;机器学习简介&lt;/h2&gt;
-&lt;p&gt;我们从下面收集的一组数据开始。下图每一个点表示两个值--一个&lt;strong&gt;outcome&lt;/strong&gt;（房屋价格）和一个影响&lt;strong&gt;feature&lt;/strong&gt;(房屋面积)。
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_01.png"&gt;&lt;/p&gt;
-&lt;p&gt;然而，我们不知道那些不在图上的features点对应的价格。
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_02.png"&gt;&lt;/p&gt;
-&lt;p&gt;我们可以使用机器学习来发现两个之间的关系，这样的话给定一个feature点，我们可以精确的预测出结果。
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_03.png"&gt;&lt;/p&gt;
-&lt;h2&gt;第一步，选择模型&lt;/h2&gt;
-&lt;h3&gt;模型类型&lt;/h3&gt;
-&lt;p&gt;要进行预测，我们需要选择一个模拟可以最好的拟合我们上面收集的数据。&lt;/p&gt;
-&lt;p&gt;我们可以选择一个线性模型，然后通过调整斜率和截距来拟合那些点。
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_04.png"&gt;&lt;/p&gt;
-&lt;p&gt;我们也可以选择一个指数模型，然后通过调整曲率和位置来拟合那些点。
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_05.png"&gt;&lt;/p&gt;
-&lt;h3&gt;损失函数&lt;/h3&gt;
-&lt;p&gt;要比较哪个模型拟合更好，我们定义最佳拟合为损失函数，我们要最小化这个损失函数。一个损失函数的例子是真实值和预测值的差的绝对值的和（数学上也叫L1）。也就是下图中那些蓝色线的和就是。
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_06.png"&gt;&lt;/p&gt;
-&lt;p&gt;注意：更通常的损失函数是距离的平方和，也就是最小二乘。&lt;/p&gt;
-&lt;h3&gt;线性模型简介&lt;/h3&gt;
-&lt;p&gt;为了简单化问题，我们用线性模型来拟合数据。一个线性模型何以数学的表达为&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;y = W.x + b
-Where:
-x: house size, in sqm
-y: predicted house price, in $
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;要调整参数来拟合数据，我们可以&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;
-&lt;p&gt;调整&lt;code&gt;W&lt;/code&gt;来改变线性模型的梯度
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_07.png"&gt;&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;调整&lt;code&gt;b&lt;/code&gt;来改变位置
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_08.png"&gt;&lt;/p&gt;
-&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;通过选择不同的&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;，我们可以最终选者一个最合适的模型来最小化损失函数。除了随机的选择&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;，我们有没有更好的办法来尝试&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;？&lt;/p&gt;
-&lt;h3&gt;梯度下降&lt;/h3&gt;
-&lt;p&gt;如果你在山上的一个平台上，当你想下降到最低点的时候，你的视野是这样的
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_09.png"&gt;&lt;/p&gt;
-&lt;p&gt;下降的方向是不明了的！这样最好的办法就是梯度下降(gradient descent)：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;在当前位置找到最陡峭的方向最为梯度方向&lt;/li&gt;
-&lt;li&gt;沿着选择的方向走一步，步长为&lt;code&gt;X&lt;/code&gt;&lt;/li&gt;
-&lt;li&gt;重复上面的办法，这就是&lt;strong&gt;training&lt;/strong&gt;&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;最小化损失函数也相似。下图中，损失函数就像那个山一样起伏，我们的目的是找到最低点。通过梯度下降，我们可以做到这一点。
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_10.png"&gt;&lt;/p&gt;
-&lt;p&gt;有了线性模型，损失函数，和梯度下降这些概念，我们可以进一步学习TF了。&lt;/p&gt;
-&lt;h2&gt;第二步：TF中建模&lt;/h2&gt;
-&lt;h3&gt;TF中线性模型&lt;/h3&gt;
-&lt;p&gt;TF的两个基本概念是：&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;1. placeholder&lt;/strong&gt;: 表示进行梯度下降算法的时候，输入模型中的实际值。在上面的例子中，也就是房屋面积(x)和房屋价格(y_)。&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_11.png"&gt;&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;2. variable&lt;/strong&gt;：表示损失函数中我们要寻找最佳值的那些变量，也就是上例中的&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;。
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_12.png"&gt;&lt;/p&gt;
-&lt;p&gt;在TF中线性模型&lt;code&gt;y = W.x + b&lt;/code&gt;表示为
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_13.png"&gt;&lt;/p&gt;
-&lt;h3&gt;TF中的损失函数&lt;/h3&gt;
-&lt;p&gt;类似于把真实房屋价格输入到模型中，我们建立一个placeholder:
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_14.png"&gt;&lt;/p&gt;
-&lt;p&gt;我们的最小二乘损失函数可以表示为
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_15.png"&gt;&lt;/p&gt;
-&lt;h3&gt;数据&lt;/h3&gt;
-&lt;p&gt;因为我们没有实际的房屋价格(y_)和房屋面积(x)，我们模拟出它们的值
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_16.png"&gt;&lt;/p&gt;
-&lt;p&gt;模拟的时候，我们假设房屋价格是房屋面积的2倍。&lt;/p&gt;
-&lt;h3&gt;梯度下降&lt;/h3&gt;
-&lt;p&gt;有了线性模型，损失函数，数据，我们就可以用梯度下降来最小化损失函数，寻找到最优的W和b。&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_17.png"&gt;&lt;/p&gt;
-&lt;p&gt;&lt;code&gt;0.00001&lt;/code&gt;就是梯度下降中的沿着最陡峭方向的步长，也叫&lt;strong&gt;learning rate&lt;/strong&gt;。&lt;/p&gt;
-&lt;h2&gt;第三步：训练模型&lt;/h2&gt;
-&lt;p&gt;训练模型包括按照预先设置的迭代次数进行梯度下降，或者直到损失函数小于一个预先给定的值。&lt;/p&gt;
-&lt;h3&gt;TF Quirks&lt;/h3&gt;
-&lt;p&gt;所有的variable都要给定初始值，否则的话他们可能保持上次迭代的值
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_18.png"&gt;&lt;/p&gt;
-&lt;h3&gt;TF Session&lt;/h3&gt;
-&lt;p&gt;尽管TF是一个python库，python是一个解释型的语言，但是因为性能原因，TF默认却不能执行解释运算。所以上面的&lt;code&gt;init&lt;/code&gt;并没有执行。TF在&lt;strong&gt;session&lt;/strong&gt;里面执行，建立一个session(sess)然后执行的话使用&lt;code&gt;sess.run()&lt;/code&gt;
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_19.png"&gt;&lt;/p&gt;
-&lt;p&gt;类似的，我们通过调用&lt;code&gt;sess.run()&lt;/code&gt;里的循环来执行&lt;em&gt;train_step&lt;/em&gt;.
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_20.png"&gt;&lt;/p&gt;
-&lt;p&gt;你需要把实际值输入到x，y_组成的&lt;em&gt;feed&lt;/em&gt;里面去，这是因为TF把解出来的&lt;em&gt;train_step&lt;/em&gt;放入他的dependencies里：
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_21.png"&gt;&lt;/p&gt;
-&lt;p&gt;dependencies的底部就是x, y_的placeholders.我们已经知道，&lt;strong&gt;tf.placeholders&lt;/strong&gt;是用来输入实际的房屋价格(y_)和房屋面积(x)的。&lt;/p&gt;
-&lt;h3&gt;结果&lt;/h3&gt;
-&lt;p&gt;我们打印出循环里的值来显示TF怎么找到最佳的&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;的。
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_22.png"&gt;&lt;/p&gt;
-&lt;h2&gt;总结&lt;/h2&gt;
-&lt;p&gt;我们学习了机器学习的最简单的模型，用一个feature来预测结果。为了简化问题，我们使用了线性模型来拟合数据。然后定义一个损失函数来找到最佳拟合。最后通过梯度下降来找到variable&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;的最佳估计。&lt;/p&gt;
-&lt;h3&gt;下一步&lt;/h3&gt;
-&lt;p&gt;在下一篇文章，我们将会&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;
-&lt;p&gt;设置Tensor Board来可视化TF的执行，这样可以检测到我们模型，损失函数和梯度下降的问题&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;分批(batches)输入数据来训练模型(而不是每次输入一个数据点)，并且展示这样会怎么影响结果&lt;/p&gt;
-&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h3&gt;Reference&lt;/h3&gt;
-&lt;ol&gt;
-&lt;li&gt;&lt;a href="https://medium.com/all-of-us-are-belong-to-machines/the-gentlest-introduction-to-tensorflow-248dc871a224#.7ptf8ybid"&gt;Gentlest Introduction to Tensorflow #1&lt;/a&gt;&lt;/li&gt;
 &lt;/ol&gt;</content><category term="Python"></category><category term="python"></category><category term="tensorflow"></category><category term="deep learning"></category></entry></feed>
