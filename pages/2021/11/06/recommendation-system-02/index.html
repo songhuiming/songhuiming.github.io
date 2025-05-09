@@ -119,7 +119,56 @@ window.addEventListener('load', () => {
 <li>AAAI'21, Tencent | U-BERT: Pre-training User Representations for Improved Recommendation</li>
 <li>IJCAI'18, Microsoft | Sequential Recommender System based on Hierarchical Attention Network</li>
 </ol>
-<p>To be continued.</p></div>
+<pre><code class="language-python"># Example
+
+import torch
+import torch.nn as nn
+
+class DNNRecommender(nn.Module):
+    def __init__(self, num_users, num_items, embed_dim=32, hidden_dims=[64, 32]):
+        super(DNNRecommender, self).__init__()
+        # User and Item Embedding
+        self.user_embedding = nn.Embedding(num_users, embed_dim)
+        self.item_embedding = nn.Embedding(num_items, embed_dim)
+        # DNN层
+        layers = []
+        input_dim = embed_dim * 2  # Uer embedding + Item embedding
+        for hidden_dim in hidden_dims:
+            layers.append(nn.Linear(input_dim, hidden_dim))
+            layers.append(nn.ReLU())
+            input_dim = hidden_dim
+        layers.append(nn.Linear(input_dim, 1))  # output
+        self.dnn = nn.Sequential(*layers)
+
+    def forward(self, user_ids, item_ids):
+        # get embedding for given user id and item id
+        user_embed = self.user_embedding(user_ids)  # [batch_size, embed_dim]
+        item_embed = self.item_embedding(item_ids)  # [batch_size, embed_dim]
+        # concat the embedding
+        features = torch.cat([user_embed, item_embed], dim=1)  # [batch_size, embed_dim*2]
+        # DNN prediction
+        output = self.dnn(features)  # [batch_size, 1]
+        return output.squeeze()  # [batch_size]
+
+
+num_users, num_items = 1000, 500
+model = DNNRecommender(num_users, num_items, embed_dim=32)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+criterion = nn.MSELoss()
+
+for epoch in range(10):
+    for user_ids, item_ids, ratings in dataloader:   
+        optimizer.zero_grad()
+        predictions = model(user_ids, item_ids)
+        loss = criterion(predictions, ratings)
+        loss.backward()
+        optimizer.step()
+</code></pre>
+<p>To be continued.</p>
+<h2>Reference</h2>
+<ol>
+<li><a href="https://github.com/songhuiming/draft-blogs/blob/main/archive/20200708_%E6%8E%A8%E8%8D%90%E7%B3%BB%E7%BB%9F.md">archived draft</a></li>
+</ol></div>
     <footer>
 <p class="meta">
   <span class="byline author vcard">

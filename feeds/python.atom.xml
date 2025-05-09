@@ -357,7 +357,7 @@ print(result)
 &lt;ol&gt;
 &lt;li&gt;&lt;a href="https://github.com/deepseek-ai/EPLB/blob/main/README.md"&gt;Expert Parallelism Load Balancer (EPLB)&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href="https://arxiv.org/pdf/2401.06066"&gt;DeepSeekMoE Architecture&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href="https://github.com/songhuiming/draft-blogs/blob/main/20250302.deepseek.eplb.md"&gt;原始笔记&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://github.com/songhuiming/draft-blogs/blob/main/archive/20250302.deepseek.eplb.md"&gt;原始笔记&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href="https://github.com/songhuiming/draft-blogs/blob/main/20250108.deepseek.%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB2.md"&gt;draft notes of deepseek-r1&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href="https://github.com/deepseek-ai/DeepEP"&gt;DeepEP communication library&lt;/a&gt;&lt;/li&gt;
 &lt;/ol&gt;</content><category term="python"></category><category term="python"></category><category term="AI"></category><category term="LLM"></category><category term="AGI"></category></entry><entry><title>DeepSeek V3 learning notes</title><link href="/pages/2025/02/23/deepseek-v3-learning-notes/" rel="alternate"></link><published>2025-02-23T00:00:00-06:00</published><updated>2025-02-23T00:00:00-06:00</updated><author><name>Huiming Song</name></author><id>tag:None,2025-02-23:/pages/2025/02/23/deepseek-v3-learning-notes/</id><summary type="html">&lt;h2&gt;1. What the problem to solve?&lt;/h2&gt;
@@ -2392,7 +2392,56 @@ plt.show()
 &lt;li&gt;AAAI'21, Tencent | U-BERT: Pre-training User Representations for Improved Recommendation&lt;/li&gt;
 &lt;li&gt;IJCAI'18, Microsoft | Sequential Recommender System based on Hierarchical Attention Network&lt;/li&gt;
 &lt;/ol&gt;
-&lt;p&gt;To be continued.&lt;/p&gt;</content><category term="python"></category><category term="python"></category></entry><entry><title>Recommendation System 01</title><link href="/pages/2021/10/30/recommendation-system-01/" rel="alternate"></link><published>2021-10-30T00:00:00-05:00</published><updated>2021-10-30T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2021-10-30:/pages/2021/10/30/recommendation-system-01/</id><summary type="html">&lt;p&gt;Recommendation system introduction - collaborative filtering, DNN for query and item embedding&lt;/p&gt;</summary><content type="html">&lt;p&gt;The purpose of recommendation system is to recommend the related products (item) to the users based on the user's query.&lt;/p&gt;
+&lt;pre&gt;&lt;code class="language-python"&gt;# Example
+
+import torch
+import torch.nn as nn
+
+class DNNRecommender(nn.Module):
+    def __init__(self, num_users, num_items, embed_dim=32, hidden_dims=[64, 32]):
+        super(DNNRecommender, self).__init__()
+        # User and Item Embedding
+        self.user_embedding = nn.Embedding(num_users, embed_dim)
+        self.item_embedding = nn.Embedding(num_items, embed_dim)
+        # DNN层
+        layers = []
+        input_dim = embed_dim * 2  # Uer embedding + Item embedding
+        for hidden_dim in hidden_dims:
+            layers.append(nn.Linear(input_dim, hidden_dim))
+            layers.append(nn.ReLU())
+            input_dim = hidden_dim
+        layers.append(nn.Linear(input_dim, 1))  # output
+        self.dnn = nn.Sequential(*layers)
+
+    def forward(self, user_ids, item_ids):
+        # get embedding for given user id and item id
+        user_embed = self.user_embedding(user_ids)  # [batch_size, embed_dim]
+        item_embed = self.item_embedding(item_ids)  # [batch_size, embed_dim]
+        # concat the embedding
+        features = torch.cat([user_embed, item_embed], dim=1)  # [batch_size, embed_dim*2]
+        # DNN prediction
+        output = self.dnn(features)  # [batch_size, 1]
+        return output.squeeze()  # [batch_size]
+
+
+num_users, num_items = 1000, 500
+model = DNNRecommender(num_users, num_items, embed_dim=32)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+criterion = nn.MSELoss()
+
+for epoch in range(10):
+    for user_ids, item_ids, ratings in dataloader:   
+        optimizer.zero_grad()
+        predictions = model(user_ids, item_ids)
+        loss = criterion(predictions, ratings)
+        loss.backward()
+        optimizer.step()
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;To be continued.&lt;/p&gt;
+&lt;h2&gt;Reference&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;a href="https://github.com/songhuiming/draft-blogs/blob/main/archive/20200708_%E6%8E%A8%E8%8D%90%E7%B3%BB%E7%BB%9F.md"&gt;archived draft&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;</content><category term="python"></category><category term="python"></category></entry><entry><title>Recommendation System 01</title><link href="/pages/2021/10/30/recommendation-system-01/" rel="alternate"></link><published>2021-10-30T00:00:00-05:00</published><updated>2021-10-30T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2021-10-30:/pages/2021/10/30/recommendation-system-01/</id><summary type="html">&lt;p&gt;Recommendation system introduction - collaborative filtering, DNN for query and item embedding&lt;/p&gt;</summary><content type="html">&lt;p&gt;The purpose of recommendation system is to recommend the related products (item) to the users based on the user's query.&lt;/p&gt;
 &lt;h1&gt;1. Terminology&lt;/h1&gt;
 &lt;h2&gt;1.1. Items (also known as documents)&lt;/h2&gt;
 &lt;p&gt;The entities a system recommends. For the Google Play store, the items are apps to install. For YouTube, the items are videos.&lt;/p&gt;
