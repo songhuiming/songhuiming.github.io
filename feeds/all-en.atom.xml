@@ -360,7 +360,405 @@ print(result)
 &lt;li&gt;&lt;a href="https://github.com/songhuiming/draft-blogs/blob/main/archive/20250302.deepseek.eplb.md"&gt;原始笔记&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href="https://github.com/songhuiming/draft-blogs/blob/main/20250108.deepseek.%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB2.md"&gt;draft notes of deepseek-r1&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href="https://github.com/deepseek-ai/DeepEP"&gt;DeepEP communication library&lt;/a&gt;&lt;/li&gt;
-&lt;/ol&gt;</content><category term="python"></category><category term="python"></category><category term="AI"></category><category term="LLM"></category><category term="AGI"></category></entry><entry><title>DeepSeek V3 learning notes</title><link href="/pages/2025/02/23/deepseek-v3-learning-notes/" rel="alternate"></link><published>2025-02-23T00:00:00-06:00</published><updated>2025-02-23T00:00:00-06:00</updated><author><name>Huiming Song</name></author><id>tag:None,2025-02-23:/pages/2025/02/23/deepseek-v3-learning-notes/</id><summary type="html">&lt;h2&gt;1. What the problem to solve?&lt;/h2&gt;
+&lt;/ol&gt;</content><category term="python"></category><category term="python"></category><category term="AI"></category><category term="LLM"></category><category term="AGI"></category></entry><entry><title>DeepSeek V3 Multi-head Latent Attention (MLA)</title><link href="/pages/2025/03/20/deepseek-v3-multi-head-latent-attention-mla/" rel="alternate"></link><published>2025-03-20T00:00:00-05:00</published><updated>2025-03-20T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2025-03-20:/pages/2025/03/20/deepseek-v3-multi-head-latent-attention-mla/</id><summary type="html">&lt;p&gt;&lt;img alt="MLA plot" src="/figures/20250320_deepseek_V3_MLA.svg"&gt;&lt;/p&gt;
+&lt;p&gt;在上一篇&lt;a href="https://songhuiming.github.io/pages/2025/02/23/deepseek-v3-learning-notes/"&gt;blog&lt;/a&gt;中，我们讨论了DeepSeek-V3 采用了 &lt;strong&gt;MLA (Multi-Head Latent Attention)&lt;/strong&gt; 架构，其核心目的是通过&lt;strong&gt;低秩联合压缩&lt;/strong&gt; Key 和 Value 来减少 KV 缓存。特别是在推理 …&lt;/p&gt;</summary><content type="html">&lt;p&gt;&lt;img alt="MLA plot" src="/figures/20250320_deepseek_V3_MLA.svg"&gt;&lt;/p&gt;
+&lt;p&gt;在上一篇&lt;a href="https://songhuiming.github.io/pages/2025/02/23/deepseek-v3-learning-notes/"&gt;blog&lt;/a&gt;中，我们讨论了DeepSeek-V3 采用了 &lt;strong&gt;MLA (Multi-Head Latent Attention)&lt;/strong&gt; 架构，其核心目的是通过&lt;strong&gt;低秩联合压缩&lt;/strong&gt; Key 和 Value 来减少 KV 缓存。特别是在推理的时候，通过低秩压缩，从而在generation（inference）的时候KV catch可以减少内存使用，增加速度。其架构设计的核心目标是用推理时的 KV 缓存节省，来换取训练和推理时投影矩阵（降维/升维）带来的额外计算。&lt;/p&gt;
+&lt;p&gt;虽然在配置文件中查询头 (Query Heads, num_attention_heads) 键值头 (Key/Value Heads, num_key_value_heads) &lt;span class="math"&gt;\(n_h = 128\)&lt;/span&gt; 且 &lt;span class="math"&gt;\(n_{kv} = 128\)&lt;/span&gt;（参数上是 MHA），但在其DeepSeek MLA 的内部实现中，它采用了 MQA 的思想，即&lt;strong&gt;每个 Key/Value 的latent vector &lt;span class="math"&gt;\(\mathbf{c}_t^{KV}\)&lt;/span&gt; 会在内核级别共享给所有查询头&lt;/strong&gt;，从而实现 KV 缓存的显著减少。&lt;/p&gt;
+&lt;p&gt;因此，虽然从配置文件参数上看 &lt;span class="math"&gt;\(n_h = n_{kv}=128\)&lt;/span&gt;，但从&lt;strong&gt;实际的内存优化策略&lt;/strong&gt;上看，该模型采用了类似 MQA/GQA 的思想来处理 Key/Value 缓存。&lt;/p&gt;
+&lt;p&gt;下面我们根据原始的paper，仔细分解MLA的结构。首先，我们引入一些向量维度的记号：&lt;/p&gt;
+&lt;p&gt;记号
+&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\begin{aligned}
+&amp;amp; d = \text{embedding的长度 = 7168} \\
+&amp;amp; n_h = \text{计算attention的head的个数 = num_attention_heads = 128} \text{，也就是 num of Q 的个数} \\
+&amp;amp; n_{kv} = \text{计算attention的 K,V 的head的个数 = num_kv_heads = 128} \\[1ex]
+&amp;amp; d_c = \text{压缩向量} \mathbf{c}_t^{KV} \text{的长度 = kv_lora_rank = 512} \\ 
+&amp;amp; d_c^{\prime} = \text{压缩向量} \mathbf{c}_t^{Q} \text{的长度 = q_lora_rank = 1536} \\[1ex]
+&amp;amp; d_h = \text{计算attention的head的NoPE的长度 = qk_nope_head_dim = 128} \\
+&amp;amp; d_h^R = \text{计算attention的head的RoPE的长度 = qk_rope_head_dim} = 64
+\end{aligned}
+$$&lt;/div&gt;
+&lt;h2&gt;1. 低秩压缩&lt;/h2&gt;
+&lt;p&gt;MLA 引入了低秩压缩并且缓存这个KV 压缩来减少额外的投影矩阵带来的运算。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;将 Key/Value 通过投影矩阵 &lt;span class="math"&gt;\(\mathbf{W}^{DKV}\)&lt;/span&gt; 投影到一个低维latent vector space &lt;span class="math"&gt;\(\mathbf{C}_t^{KV} \in \mathbb{R}^{d_c}\)&lt;/span&gt;,  &lt;span class="math"&gt;\((d_c = 512 \ll d_h \cdot n_h = 128  \cdot 128)\)&lt;/span&gt;，并缓存它们。&lt;span class="math"&gt;\(d_c = \text{kv_lora_rank} = 512\)&lt;/span&gt;; &lt;/li&gt;
+&lt;li&gt;在Forward的时候，通过上投影矩阵恢复 &lt;span class="math"&gt;\(\mathbf{k}_t^C\)&lt;/span&gt; 和 &lt;span class="math"&gt;\(\mathbf{v}_t^C\)&lt;/span&gt;。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;压缩&lt;/strong&gt;
+&lt;/p&gt;
+&lt;div class="math"&gt;$$ 
+\mathbf{c}_t^{KV} = \mathbf{W}^{DKV} h_t,
+\qquad 
+\mathbf{c}_t^Q = \mathbf{W}^{DQ} h_t 
+$$&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;解压&lt;/strong&gt;
+&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\begin{aligned}
+&amp;amp; [\mathbf{k}_{t,1}^{C}, \mathbf{k}_{t,2}^{C}, ..., \mathbf{k}_{t,n_h}^{C}] = \mathbf{k}_t^C = \mathbf{W}^{UK} c_t^{KV}, \\[1ex]
+&amp;amp; [\mathbf{v}_{t,1}^{C}, \mathbf{v}_{t,2}^{C}, ..., \mathbf{v}_{t,n_h}^{C}] = \mathbf{v}_t^C = \mathbf{W}^{UV} c_t^{KV}, \\[1ex]
+&amp;amp; [\mathbf{q}_{t,1}^{C}, \mathbf{q}_{t,2}^{C}, ..., \mathbf{q}_{t,n_h}^{C}] = \mathbf{q}_t^C = \mathbf{W}^{UQ} c_t^Q 
+\end{aligned}
+$$&lt;/div&gt;
+&lt;p&gt;其中&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(\mathbf{W}^{DKV} \in \mathbb{R}^{d_c \times d} = \mathbb{R}^{512 \times 7168}\)&lt;/span&gt;  是降维投影矩阵。&lt;/li&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(\mathbf{W}^{DQ} \in \mathbb{R}^{d_c^{\prime} \times d} = \mathbb{R}^{ 1536  \times 7168}\)&lt;/span&gt; 是降维投影矩阵。&lt;/li&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(\mathbf{W}^{UK} \in \mathbb{R}^{d_{h_k} \cdot n_h \times d_c}\)&lt;/span&gt;&lt;ul&gt;
+&lt;li&gt;Paper中的设置，&lt;span class="math"&gt;\(d_{h_k} = d_{h} = 128\)&lt;/span&gt;&lt;/li&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(\mathbf{W}^{UK}\)&lt;/span&gt; 是 K 的 NoPE 部分的上投影，它的作用是将 &lt;span class="math"&gt;\(d_c\)&lt;/span&gt; 维度的向量投影到 K 的 NoPE 部分 (&lt;span class="math"&gt;\(d_{h}\)&lt;/span&gt;维度乘以 &lt;span class="math"&gt;\(n_h\)&lt;/span&gt;个head)。 &lt;/li&gt;
+&lt;li&gt;对 K（这里只有NoPE部分），&lt;span class="math"&gt;\(d_{h_k}\)&lt;/span&gt; = &lt;span class="math"&gt;\(\text{qk_nope_head_dim}\)&lt;/span&gt; = &lt;span class="math"&gt;\(128\)&lt;/span&gt; (每头维度)&lt;/li&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(\mathbf{W}^{UK}  \in \mathbb{R}^{d_{h_k} \cdot n_h \times d_c} =  \mathbb{R}^{128 \cdot 128 \times 512}\)&lt;/span&gt;是每个head的 K 的升维矩阵。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(\mathbf{W}^{UV} \in \mathbb{R}^{d_{h_v} \cdot n_h \times d_c}\)&lt;/span&gt;&lt;ul&gt;
+&lt;li&gt;Paper中的设置，&lt;span class="math"&gt;\(d_{h_v} = d_{h} = 128\)&lt;/span&gt;&lt;/li&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(\mathbf{W}^{UV}\)&lt;/span&gt; 是 V 的 NoPE 部分上投影。同样是从 &lt;span class="math"&gt;\(d_c\)&lt;/span&gt; 维度的向量投影到 V 的 NoPE 部分 (&lt;span class="math"&gt;\(d_{h}\)&lt;/span&gt;维度乘以 &lt;span class="math"&gt;\(n_h\)&lt;/span&gt;个head)。 &lt;/li&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(\mathbf{W}^{UV} \in \mathbb{R}^{d_{h_v} \cdot n_h \times d_c} = \mathbb{R}^{128 \cdot 128 \times 512}\)&lt;/span&gt;是每个head的 V 的升维矩阵。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;如果总的加起来的话，&lt;span class="math"&gt;\(\mathbf{W}^{UVK} \text{ 的维度是 } = [(128+128)*128, 512] = (32768, 512)\)&lt;/span&gt;&lt;/li&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(\mathbf{W}^{UQ} \in \mathbb{R}^{d_{h_q} \cdot n_h \times d_c^{\prime}}\)&lt;/span&gt;&lt;ul&gt;
+&lt;li&gt;Paper中的设置，&lt;span class="math"&gt;\(d_{h_q} = d_{h} = 128\)&lt;/span&gt;&lt;/li&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(\mathbf{W}^{UQ}\)&lt;/span&gt; 是 Q 的上投影，每个 Q NoPE Head 维度 &lt;span class="math"&gt;\(d_{h_q}\)&lt;/span&gt; = &lt;span class="math"&gt;\(\text{qk_nope_head_dim}\)&lt;/span&gt; = &lt;span class="math"&gt;\(128\)&lt;/span&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(\mathbf{W}^{UQ} \in \mathbb{R}^{d_{h_q} \cdot n_h \times d_c^{\prime}} = \mathbb{R}^{128 \cdot 128 \times 1536}\)&lt;/span&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Notes：因为KQ要做内积，所以&lt;span class="math"&gt;\(d_{h_k} == d_{h_q}\)&lt;/span&gt;，但是不一定非要等于 &lt;span class="math"&gt;\(d_{h_v}\)&lt;/span&gt;。尽管在本文中它们都相等，在好多paper里面它们也都相等。但理论上他们可以不等。&lt;/p&gt;
+&lt;p&gt;从这儿可以看到，与标准的multihead attention（MHA）直接用kqv计算相比，这里面增加了降维和升维的过程，也就是增加了额外的运算。&lt;/p&gt;
+&lt;h2&gt;2. Training时的计算过程&lt;/h2&gt;
+&lt;p&gt;DeepSeek-V3 的 KV 压缩机制 &lt;span class="math"&gt;\(\left(\mathbf{h} \text{ to } \mathbf{c}^{KV} \text{ to } \mathbf{k}, \mathbf{v} \right)\)&lt;/span&gt; 在training的时候总 FLOPs 其实是增加了（多了两个投影 &lt;span class="math"&gt;\(\mathbf{W}^{DKV}\)&lt;/span&gt; 和 &lt;span class="math"&gt;\(\mathbf{W}^{UK}, \mathbf{W}^{UV}\)&lt;/span&gt;），但它在 推理时 大幅减少了内存带宽需求和 KV 缓存大小，从而实现了更快的生成速度和更长的上下文窗口。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;恢复 K V&lt;/strong&gt;:&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{k}_t^{C} = \mathbf{W}^{UK} \mathbf{c}_t^{KV}, 
+\qquad 
+\mathbf{v}_t^{C} = \mathbf{W}^{UV} \mathbf{c}_t^{KV}
+$$&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;恢复 Q&lt;/strong&gt;:&lt;/p&gt;
+&lt;div class="math"&gt;$$ \mathbf{q}_t^{C} = \mathbf{W}^{UQ} \mathbf{c}_t^{Q} $$&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;Attention&lt;/strong&gt;&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{o}_t = [\mathbf{o}_{t,1};\ \mathbf{o}_{t,2};\ \ldots;\ \mathbf{o}_{t,n_h}]
+$$&lt;/div&gt;
+&lt;p&gt;
+对每个head，
+&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{o}_{t,i} = \sum_{j=1}^{t}
+\mathrm{Softmax} \left(
+    \frac{\left(\mathbf{q}_{t,i}^{C} \right)^\top \mathbf{k}_{j,i}^{C}}{\sqrt{d_h}}
+\right)
+\mathbf{v}_{j,i}^{C}
+$$&lt;/div&gt;
+&lt;p&gt;
+得到经过 K Q weighted average 过的 V 的值。&lt;/p&gt;
+&lt;p&gt;其中&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\begin{aligned}
+&amp;amp; \mathbf{q}_{t,i}^C = \mathbf{W}_i^{UQ} \mathbf{c}_{t,i}^Q \in \mathbb{R}^{d_h} = \mathbb{R}^{128},
+\qquad
+\mathbf{W}_i^{UQ} \in \mathbb{R}^{d_h \times d_c^{\prime}} = \mathbb{R}^{128 \times 1536} \\[1ex]
+&amp;amp; \mathbf{k}_{t,i}^C = \mathbf{W}_i^{UK} \mathbf{c}_{t,i}^{KV} \in \mathbb{R}^{d_h} = \mathbb{R}^{128} ,
+\qquad
+\mathbf{W}_i^{UK} \in \mathbb{R}^{{d}_h \times {d}_c} = \mathbb{R}^{128 \times 512} \\[1ex]
+&amp;amp; \mathbf{v}_{t,i}^C = \mathbf{W}_i^{UV} \mathbf{c}_{t,i}^{KV} \in \mathbb{R}^{d_h} = \mathbb{R}^{128},
+\qquad
+\mathbf{W}_i^{UV} \in \mathbb{R}^{{d}_h \times {d}_c} = \mathbb{R}^{128 \times 512} \\[1ex]
+&amp;amp; \mathbf{c}_{t,i}^{KV} = \mathbf{W}_i^{DKV} \mathbf{h}_{t,i} \in \mathbb{R}^{{d}_c} = \mathbb{R}^{512},
+\qquad
+\mathbf{c}_{t,i}^{Q}    = \mathbf{W}_i^{DQ} \mathbf{h}_{t,i} \in \mathbb{R}^{{d}_c^{\prime}} = \mathbb{R}^{1536} \\[1ex]
+&amp;amp; \mathbf{W}_i^{DKV} \in \mathbb{R}^{d_c \times d} =  \mathbb{R}^{512 \times 7168},
+\qquad 
+\mathbf{W}_i^{DQ}  \in \mathbb{R}^{d_c^{\prime} \times d} = \mathbb{R}^{ 1536  \times 7168}
+\end{aligned}
+$$&lt;/div&gt;
+&lt;h2&gt;3. Inference时的计算过程&lt;/h2&gt;
+&lt;p&gt;在推理阶段（自回归生成），有前面&lt;span class="math"&gt;\(n\)&lt;/span&gt;个token生成第&lt;span class="math"&gt;\(n+1\)&lt;/span&gt;个token，每次只处理一个新 token，但是在计算Attention的时候，需要与前面所有的token做内积，这个时候如果每次都从前面token的embedding来计算，会增加很多的计算量。实际当中为了减少计算和内存的消耗，是使用的之前的所有 token 的 KV cache。KV catch的简单原理参见&lt;a href="https://songhuiming.github.io/pages/2024/04/21/prediction-in-decoder-and-kv-cache/"&gt;KV catch&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;压缩&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;对 token &lt;span class="math"&gt;\(t\)&lt;/span&gt;，计算：
+&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{c}_t^{KV} = \mathbf{W}^{DKV} \mathbf{h}_t
+$$&lt;/div&gt;
+&lt;p&gt;把 &lt;span class="math"&gt;\(\mathbf{c}_t^{KV}\)&lt;/span&gt; &lt;strong&gt;存入缓存&lt;/strong&gt;。这里面会极大的节省内存：
+1. &lt;span class="math"&gt;\(\mathbf{c}_t^{KV}\)&lt;/span&gt; 被所有的 head（在deepseek-v3 是128个head）共享。所以对token &lt;span class="math"&gt;\(t\)&lt;/span&gt;，只要cache一个512维的向量就可以了
+2. &lt;span class="math"&gt;\(\mathbf{c}_t^{KV}\)&lt;/span&gt; 是&lt;span class="math"&gt;\(d_c=512\)&lt;/span&gt;维度，而如果向原始的MHA那样保存 key &lt;span class="math"&gt;\(\mathbf{k_t}\)&lt;/span&gt; 和value &lt;span class="math"&gt;\(\mathbf{v_t}\)&lt;/span&gt;， 假如它们都和hidden vector或者embedding vector 一样的size (i.e, &lt;span class="math"&gt;\(d_h = 7168\)&lt;/span&gt;)，那么一个head一个token就差 7168/512倍，对&lt;span class="math"&gt;\(n_h=128\)&lt;/span&gt;个head，上千个token或更多 (ds-v3 最多支持上下文的token个数 &lt;span class="math"&gt;\(\text{max_position_embeddings}\)&lt;/span&gt; = &lt;span class="math"&gt;\(163840\)&lt;/span&gt;)，节省的内存会更多. &lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;解压&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;对所有的历史 token &lt;span class="math"&gt;\(j \le t\)&lt;/span&gt; ，因为它们的压缩矩阵 &lt;span class="math"&gt;\(\mathbf{c}_j^{KV}\)&lt;/span&gt; 都被缓存了。所以，直接从缓存的 &lt;span class="math"&gt;\(\mathbf{c}_j^{KV}\)&lt;/span&gt; 恢复：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{k}_j^{C} = \mathbf{W}^{UK} \mathbf{c}_j^{KV},
+\qquad
+\mathbf{v}_j^{C} = \mathbf{W}^{UV} \mathbf{c}_j^{KV}
+$$&lt;/div&gt;
+&lt;p&gt;对当前的查询 Q，直接从 token &lt;span class="math"&gt;\(t\)&lt;/span&gt; 的embedding vector计算（降维升维）：
+&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{q}_t^{C} = \mathbf{W}^{UQ} \mathbf{c}_t^{Q} = \mathbf{W}^{UQ} \mathbf{W}^{DQ} \mathbf{h}_t
+$$&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;Attention&lt;/strong&gt;&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{o}_{t,i} =
+\sum_{j=1}^{t}
+\mathrm{Softmax}\left(
+\frac{\left(\mathbf{q}_{t,i}^{C}\right)^\top \mathbf{k}_{j,i}^{C}}{\sqrt{d_h}}
+\right)
+\mathbf{v}_{j,i}^{C}
+$$&lt;/div&gt;
+&lt;p&gt;
+得到经过 K Q weighted average 过的 V 的值。&lt;/p&gt;
+&lt;p&gt;到目前为止，所有的计算都有一个问题：打乱他们的顺序，&lt;span class="math"&gt;\(\mathbf{K^TQ}V\)&lt;/span&gt; 值不变。正如 MHA 所做的，MLA 也需要引入位置参数。&lt;/p&gt;
+&lt;h2&gt;4. RoPE&lt;/h2&gt;
+&lt;p&gt;背景知识：传统的transformer模型中，RoPE 的核心思想是将绝对位置信息编码到 Q (Query) 和 K (Key) 向量的点积中，而不需要像最初的绝对位置编码那样将位置向量直接加到词嵌入上。在 Transformer 模型中，由于自注意力机制是排列不变性的（即打乱词语顺序不影响计算结果），所以必须引入位置编码来告诉模型每个词语在序列中的相对或绝对位置。RoPE 通过将位置信息编码为旋转矩阵的形式，作用于 Query 和 Key 向量。它必须满足以下几个条件：
+1. 对于序列中的第 &lt;span class="math"&gt;\(m\)&lt;/span&gt; 个词，其对应的 Query 向量 &lt;span class="math"&gt;\(\mathbf{q}_m = \mathbf{W}_Q \mathbf{h}_m\)&lt;/span&gt; 和 第&lt;span class="math"&gt;\(n\)&lt;/span&gt;个词 Key 向量 &lt;span class="math"&gt;\(\mathbf{k}_n=\mathbf{W}_K \mathbf{h}_n\)&lt;/span&gt;，它们同维度而且同基(&lt;span class="math"&gt;\(\mathbf{h}_i\)&lt;/span&gt;)
+2. 它们会被一个旋转矩阵作用得到 &lt;span class="math"&gt;\(\mathbf{q}_m' = \mathbf{R}_m(\mathbf{q}_m)\)&lt;/span&gt; 和 &lt;span class="math"&gt;\(\mathbf{k}_n' = \mathbf{R}_n(\mathbf{k}_n)\)&lt;/span&gt; 用来做attention的计算。
+3. 注意力 Attention = &lt;span class="math"&gt;\(\left&amp;lt;\mathbf{q}_m'^{T}, \mathbf{k}_n'\right&amp;gt;\)&lt;/span&gt; = &lt;span class="math"&gt;\(\left&amp;lt; (\mathbf{R}_m(\mathbf{q}_m)^T, \mathbf{R}_n(\mathbf{k}_n) \right&amp;gt;\)&lt;/span&gt; = &lt;span class="math"&gt;\(\left&amp;lt; \mathbf{q}_m^T, \mathbf{R}_{m - n} (\mathbf{k}_n) \right&amp;gt;\)&lt;/span&gt;. 即只跟两个token的距离 &lt;span class="math"&gt;\(m-n\)&lt;/span&gt; 有关，而跟绝对位置 &lt;span class="math"&gt;\(m\)&lt;/span&gt; &lt;span class="math"&gt;\(n\)&lt;/span&gt;本身无关。&lt;/p&gt;
+&lt;h3&gt;4.1. RoPE 与 KV 压缩的冲突&lt;/h3&gt;
+&lt;p&gt;但是在MLA里面，下面几个原因导致 RoPE 不能直接作用在 K V 向量上，导致原来的RoPE性质不再成立。
+1. MLA里面，&lt;span class="math"&gt;\(\mathbf{q}\)&lt;/span&gt; 和 &lt;span class="math"&gt;\(\mathbf{k}\)&lt;/span&gt; 不是来自同样的基。它们来自不同长度的压缩矩阵&lt;span class="math"&gt;\(\mathbf{c}_t^{Q}\)&lt;/span&gt;, &lt;span class="math"&gt;\(\mathbf{c}_t^{KV}\)&lt;/span&gt;
+2. 升维不是等距嵌入。
+    &lt;span class="math"&gt;\(\left&amp;lt; \mathbf{q}_m, \mathbf{k}_n \right&amp;gt;\)&lt;/span&gt; = &lt;span class="math"&gt;\(\left&amp;lt; \mathbf{q}_m^C, \mathbf{k}_n^C\right&amp;gt;\)&lt;/span&gt; = &lt;span class="math"&gt;\(\left&amp;lt;\mathbf{W}^{UQ} \mathbf{c}_m^{Q}, \mathbf{W}^{UK} \mathbf{c}_n^{KV} \right&amp;gt;\)&lt;/span&gt;. 由于&lt;span class="math"&gt;\(\mathbf{W}^{UQ}\)&lt;/span&gt;和&lt;span class="math"&gt;\(\mathbf{W}^{UK}\)&lt;/span&gt; 不相互正交，所以前面的内积不等于&lt;span class="math"&gt;\(\left&amp;lt;\mathbf{c}_m^{Q}, \mathbf{c}_n^{KV} \right&amp;gt;\)&lt;/span&gt;, 它们也没法做内积
+3. 如果在升维以后直接强制做RoPE，
+&lt;span class="math"&gt;\(\left&amp;lt; R_m(\mathbf{q}_m), R_n(\mathbf{k}_n) \right&amp;gt;\)&lt;/span&gt; = &lt;span class="math"&gt;\(\left&amp;lt; R_m(\mathbf{W}^{UQ} \mathbf{c}_m^{Q}), R_n(\mathbf{W}^{UK} \mathbf{c}_n^{KV}) \right&amp;gt;\)&lt;/span&gt; = &lt;span class="math"&gt;\((\mathbf{c}_m^{Q})^T (\mathbf{W}^{UQ})^T R_{m-n}(\mathbf{W}^{UK} \mathbf{c}_n^{KV})\)&lt;/span&gt;, 而 &lt;span class="math"&gt;\((\mathbf{W}^{UQ})^T R_{m-n}(\mathbf{W}^{UK}) \neq R_{m-n}\)&lt;/span&gt;. &lt;/p&gt;
+&lt;p&gt;这些原因导致在降维/升维的情况下，RoPE不再可行。为了解决这个问题，MLA采用了 RoPE 和 NoPE 分离的办法。RoPE单独的有一个自己的向量，然后与NoPE向量concat在一起。&lt;/p&gt;
+&lt;h3&gt;解决办法：Decouple RoPE&lt;/h3&gt;
+&lt;h4&gt;1. Key 部分&lt;/h4&gt;
+&lt;p&gt;&lt;span class="math"&gt;\(\mathbf{k}_{t}^R\)&lt;/span&gt; (RoPE 部分，注意这一部分跟head无关，所有的 head 都用同样的 &lt;span class="math"&gt;\(\mathbf{k}_{t}^R\)&lt;/span&gt; )
+1. &lt;span class="math"&gt;\(\mathbf{k}_{t}^R = \text{RoPE}\left(\mathbf{W}^{KR} \mathbf{h}_t \right)\)&lt;/span&gt;
+2. 输入： 矩阵 &lt;span class="math"&gt;\(\mathbf{W}^{KR}\)&lt;/span&gt; 作用于 &lt;span class="math"&gt;\(\mathbf{h}_t\)&lt;/span&gt; (Input Hidden &lt;span class="math"&gt;\(\mathbf{h}_t\)&lt;/span&gt;)。
+3. 作用： &lt;span class="math"&gt;\(\mathbf{W}^{KR}\)&lt;/span&gt; 是一个独立的投影矩阵（维度 &lt;span class="math"&gt;\(64 \times 7168\)&lt;/span&gt;），专门用于将 &lt;span class="math"&gt;\(\mathbf{h}_t\)&lt;/span&gt; 投影到 &lt;span class="math"&gt;\(\mathbf{k_t}^R\)&lt;/span&gt; 的 64 维空间。&lt;/p&gt;
+&lt;p&gt;&lt;span class="math"&gt;\(\mathbf{k}_{t,i}^C\)&lt;/span&gt; (NoPE 部分，对head i) 
+1. 不应用 RoPE 的部分 &lt;span class="math"&gt;\(\mathbf{k}_{t,i}^C\)&lt;/span&gt; 才是来自低秩潜在向量 &lt;span class="math"&gt;\(\mathbf{c}_{t}^{KV}\)&lt;/span&gt; 的。
+2. 路径： &lt;span class="math"&gt;\(\mathbf{h}_t \to \mathbf{W}^{DKV} \to \mathbf{c}_{t}^{KV} \to \mathbf{W}^{UK} \to \mathbf{k}_{t,i}^C\)&lt;/span&gt;。&lt;/p&gt;
+&lt;h4&gt;2. Query 部分&lt;/h4&gt;
+&lt;p&gt;&lt;span class="math"&gt;\(\mathbf{q}_{t,i}^R\)&lt;/span&gt; (RoPE 部分)
+1. &lt;span class="math"&gt;\(\mathbf{q}_{t,i}^R = \text{RoPE}(\mathbf{W}^{QR} \mathbf{c}_{t}^Q)\)&lt;/span&gt;
+2. 输入： 矩阵 &lt;span class="math"&gt;\(\mathbf{W}^{QR}\)&lt;/span&gt; 作用于低秩压缩向量&lt;span class="math"&gt;\(\mathbf{c}_{t}^Q\)&lt;/span&gt;。
+3. 作用： &lt;span class="math"&gt;\(\mathbf{W}^{QR}\)&lt;/span&gt; 是一个独立的投影矩阵（维度 &lt;span class="math"&gt;\(64 \times 1536\)&lt;/span&gt;），用于将 &lt;span class="math"&gt;\(\mathbf{c}_{t}^Q\)&lt;/span&gt; 投影到 &lt;span class="math"&gt;\(\mathbf{q}^R\)&lt;/span&gt; 的 64 维空间。&lt;/p&gt;
+&lt;p&gt;&lt;span class="math"&gt;\(\mathbf{q}_{t,i}^C\)&lt;/span&gt; (NoPE 部分) 
+1. 不应用 RoPE 的部分 &lt;span class="math"&gt;\(\mathbf{q}_{t,i}^C\)&lt;/span&gt; 同样来自低秩潜在向量 &lt;span class="math"&gt;\(\mathbf{c}_{t}^{Q}\)&lt;/span&gt; 的。
+2. 路径： &lt;span class="math"&gt;\( \mathbf{c}_{t}^{Q} \to \mathbf{W}^{UQ} \to \mathbf{q}_{t,i}^C\)&lt;/span&gt;。&lt;/p&gt;
+&lt;h3&gt;4.2. &lt;strong&gt;MLA + RoPE 在训练时的计算&lt;/strong&gt;&lt;/h3&gt;
+&lt;h4&gt;1. 压缩&lt;/h4&gt;
+&lt;p&gt;压缩部分跟上面提到的没有 RoPE 一样，都是从embedding vector（hidden status）压缩到一个低维的空间。
+&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{c}_t^{KV} = \mathbf{W}^{DKV} \mathbf{h}_t
+$$&lt;/div&gt;
+&lt;div class="math"&gt;$$
+\mathbf{c}_t^Q = \mathbf{W}^{DQ} \mathbf{h}_t
+$$&lt;/div&gt;
+&lt;h4&gt;2. 解压&lt;/h4&gt;
+&lt;p&gt;从压缩空间 (latenct vector) 恢复 Key, Value, Query 向量:
+&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{k}_t^C = \mathbf{W}^{UK} \mathbf{c}_t^{KV}, \\[1ex]
+\mathbf{v}_t^C = \mathbf{W}^{UV} \mathbf{c}_t^{KV} , \\[1ex]
+\mathbf{q}_t^C = \mathbf{W}^{UQ} \mathbf{c}_t^Q
+$$&lt;/div&gt;
+&lt;h4&gt;3. RoPE 部分&lt;/h4&gt;
+&lt;p&gt;生成一组新的 Key Query 向量，它们不是用来和上面的向量相加做RoPE，而是做完RoPE以后跟上面的向量 concat:
+&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{k}_t^R = \text{RoPE}\left(\mathbf{W}^{KR} \mathbf{h}_t \right) \\[1ex]
+\mathbf{q}_t^R = \text{RoPE}\left(\mathbf{W}^{QR} \mathbf{c}_t^Q \right)
+$$&lt;/div&gt;
+&lt;h4&gt;4. concat&lt;/h4&gt;
+&lt;p&gt;把 K Q 的 RoPE 部分和 NoPE 拼接起来，新的向量维度为 &lt;span class="math"&gt;\(d_h + d_h^R = 128 + 64\)&lt;/span&gt;.
+&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{q}_{t, i} = \left[\mathbf{q}_{t, i}^C; \mathbf{q}_{t, i}^R\right], \quad \mathbf{k}_{t, i} = \left[\mathbf{k}_{t, i}^C; \mathbf{k}_{t}^R \right]
+$$&lt;/div&gt;
+&lt;h4&gt;5. 计算注意力&lt;/h4&gt;
+&lt;p&gt;第 &lt;span class="math"&gt;\(t\)&lt;/span&gt; 个 token 的 Q 跟所有的历史 K 做内积，对 head &lt;span class="math"&gt;\(i\)&lt;/span&gt;
+&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{o}_{t,i} = \sum_{j=1}^t \text{Softmax}\left(\frac{(\mathbf{q}_{t,i})^{\top} \mathbf{k}_{j,i}}{\sqrt{d_h^C + d_h^R}}\right) \mathbf{v}_{j,i}^C
+$$&lt;/div&gt;
+&lt;p&gt;对所有的 head&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{o}_t = [\mathbf{o}_{t,1}, \mathbf{o}_{t,2}, \dots, \mathbf{o}_{t,n_h}]
+$$&lt;/div&gt;
+&lt;h5&gt;各个向量和矩阵的维度&lt;/h5&gt;
+&lt;div class="math"&gt;$$
+\mathbf{q}_{t,i} = \left[\mathbf{W}^{UQ}_i \mathbf{c}_{t,i}^Q; \text{ RoPE}(\mathbf{W}^{QR}_i \mathbf{c}_{t,i}^Q) \right] \in \mathbb{R}^{d_h + d_h^R} = \mathbb{R}^{128 + 64},
+$$&lt;/div&gt;
+&lt;div class="math"&gt;$$
+\quad \mathbf{W}^{UQ}_i \in \mathbb{R}^{d_h \times d_c^{\prime}} = \mathbb{R}^{128 \times 1536}
+$$&lt;/div&gt;
+&lt;div class="math"&gt;$$
+\mathbf{W}^{QR}_i \in \mathbb{R}^{d_h^R \times d_c^{\prime}} = \mathbb{R}^{64 \times 1536}
+$$&lt;/div&gt;
+&lt;div class="math"&gt;$$
+\mathbf{k}_{t,i} = \left[\mathbf{W}^{UK}_i \mathbf{c}_{t,i}^{KV}; \text{RoPE}(\mathbf{W}^{KR}_i \mathbf{h}_t) \right] \in \mathbb{R}^{d_h + d_h^R} = \mathbb{R}^{128 + 64}, 
+$$&lt;/div&gt;
+&lt;div class="math"&gt;$$
+\quad \mathbf{W}^{UK}_i \in \mathbb{R}^{d_h \times d_c} = \mathbb{R}^{128 \times 512}
+$$&lt;/div&gt;
+&lt;div class="math"&gt;$$
+\mathbf{W}^{KR}_i \in \mathbb{R}^{d_h^R \times d} = \mathbb{R}^{64 \times 7168}
+$$&lt;/div&gt;
+&lt;div class="math"&gt;$$
+\mathbf{v}_{t,i}^C = \mathbf{W}^{UV}_i \mathbf{c}_{t,i}^{KV} \in \mathbb{R}^{d_h} = \mathbb{R}^{128}, \quad \mathbf{W}^{UV}_i \in \mathbb{R}^{d_h \times d_c} = \mathbb{R}^{128 \times 512}
+$$&lt;/div&gt;
+&lt;div class="math"&gt;$$
+\mathbf{c}_{t,i}^{KV} = \mathbf{W}^{DKV}_i \mathbf{h}_{t,i} \in \mathbb{R}^{d_c} = \mathbb{R}^{512}, \quad \mathbf{c}_{t,i}^Q = \mathbf{W}^{DQ}_i \mathbf{h}_{t,i} \in \mathbb{R}^{d_c^{\prime}} = \mathbb{R}^{1536}
+$$&lt;/div&gt;
+&lt;div class="math"&gt;$$
+\mathbf{W}^{DKV}_i \in \mathbb{R}^{d_c \times d} \mathbb{R}^{512 \times 7168}, \quad \mathbf{W}^{DQ}_i \in \mathbb{R}^{d_c^{\prime} \times d} \mathbb{R}^{1536 \times 7168}
+$$&lt;/div&gt;
+&lt;h3&gt;4.3. &lt;strong&gt;MLA + RoPE 在推理时的计算&lt;/strong&gt;&lt;/h3&gt;
+&lt;p&gt;在自回归推理中，模型预测出 token &lt;span class="math"&gt;\(t\)&lt;/span&gt; 得到对应的 &lt;span class="math"&gt;\(\mathbf{h}_t\)&lt;/span&gt; 以后，token &lt;span class="math"&gt;\(t\)&lt;/span&gt; 会被压缩被缓存，加上 token &lt;span class="math"&gt;\(t\)&lt;/span&gt; 之前的所有 token 的缓存，然后利用缓存的 KV 进行注意力计算，预测下一个 token &lt;span class="math"&gt;\(t+1\)&lt;/span&gt;。&lt;/p&gt;
+&lt;h4&gt;1. 压缩并缓存&lt;/h4&gt;
+&lt;p&gt;路径 &lt;span class="math"&gt;\(\text{token t} \to \mathbf{h}_t \to \mathbf{c}_t^{KV} \text{ and } \mathbf{k}_t^R\)&lt;/span&gt;. &lt;strong&gt;注意&lt;/strong&gt;：对 &lt;span class="math"&gt;\(j &amp;lt; t\)&lt;/span&gt; 的情况，所有的 &lt;span class="math"&gt;\(\mathbf{c}_j^{KV}\)&lt;/span&gt; 都已经被Cache了。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;从 token &lt;span class="math"&gt;\(t\)&lt;/span&gt; 的 embedding vector 到压缩向量:
+&lt;div class="math"&gt;$$
+\mathbf{c}_t^{KV} = \mathbf{W}^{DKV} \mathbf{h}_t
+$$&lt;/div&gt;
+&lt;/li&gt;
+&lt;li&gt;从token &lt;span class="math"&gt;\(t\)&lt;/span&gt; 的 embedding vector 到新的 RoPE K:
+&lt;div class="math"&gt;$$
+\mathbf{k}_t^R = \text{RoPE}(\mathbf{W}^{KR} \mathbf{h}_t)
+$$&lt;/div&gt;
+&lt;/li&gt;
+&lt;li&gt;Cache &lt;span class="math"&gt;\(\mathbf{c}_t^{KV}\)&lt;/span&gt; 和 &lt;span class="math"&gt;\(\mathbf{k}_t^R\)&lt;/span&gt; 。 这样的话从 &lt;span class="math"&gt;\(j\)&lt;/span&gt; 从 &lt;span class="math"&gt;\( 1 \to t\)&lt;/span&gt; 的 &lt;span class="math"&gt;\(\mathbf{c}_j^{KV}\)&lt;/span&gt; 和 &lt;span class="math"&gt;\(\mathbf{k}_j^R\)&lt;/span&gt; 都已经 Cache 了。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4&gt;2. 解压&lt;/h4&gt;
+&lt;ul&gt;
+&lt;li&gt;历史 Key/Value ( &lt;span class="math"&gt;\(j \le k\)&lt;/span&gt; ) 直接从缓存恢复:&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="math"&gt;$$
+\mathbf{k}_j^C = \mathbf{W}^{UK} \mathbf{c}_j^{KV}, \quad \mathbf{v}_j^C = \mathbf{W}^{UV} \mathbf{c}_j^{KV}, \quad \forall j \le k 
+$$&lt;/div&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;RoPE K 的向量 &lt;span class="math"&gt;\(\mathbf{k}_j^R\)&lt;/span&gt; &lt;span class="math"&gt;\((\forall j \le k)\)&lt;/span&gt; 直接从缓存读取。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;当前 &lt;span class="math"&gt;\(\text{token t}\)&lt;/span&gt; 的 Query:
+&lt;div class="math"&gt;$$
+\mathbf{q}_t^C = \mathbf{W}^{UQ} \mathbf{W}^{DQ} \mathbf{h}_t, \quad \mathbf{q}_t^R = \text{RoPE}(\mathbf{W}^{QR} \mathbf{W}^{DQ} \mathbf{h}_t)
+$$&lt;/div&gt;
+&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4&gt;3. Concat&lt;/h4&gt;
+&lt;p&gt;把 NoPE 和 RoPE 拼接起来：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{q}_{t,i} = [\mathbf{q}_{t,i}^C; \mathbf{q}_{t,i}^R], \quad \mathbf{k}_{j,i} = [\mathbf{k}_{j,i}^C; \mathbf{k}_{j,i}^R]
+$$&lt;/div&gt;
+&lt;h4&gt;4. 注意力公式:&lt;/h4&gt;
+&lt;div class="math"&gt;$$
+\mathbf{o}_{t,i} = \sum_{j=1}^t \text{Softmax}\left(\frac{\mathbf{q}_{t,i}^{\top} \mathbf{k}_{j,i}}{\sqrt{d_h + d_h^R}}\right) \mathbf{v}_{j,i}^C
+$$&lt;/div&gt;
+&lt;p&gt;在MLA Inference里面，只需要缓存 &lt;span class="math"&gt;\(\mathbf{c}_t^{KV} \in \mathbb{R}^{512}\)&lt;/span&gt; 和 &lt;span class="math"&gt;\(\mathbf{k}_t^R \in \mathbb{R}^{64}\)&lt;/span&gt;，并且他们会被所有的head共享，这样比Cache原始的&lt;span class="math"&gt;\(\mathbf{h}_t \in \mathbb{R}^{7168}\)&lt;/span&gt; 或者 cache K V 减少了很多内存。&lt;/p&gt;
+&lt;p&gt;DeepSeek-V3 的设计目标不是减少 FLOPs（浮点运算次数），而是减少&lt;strong&gt;内存带宽&lt;/strong&gt;和&lt;strong&gt;显存占用&lt;/strong&gt;，这在 LLM 的生成/推理阶段尤为关键。&lt;/p&gt;
+&lt;p&gt;最后总结一下 MLA 部分的超参：&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;组件&lt;/th&gt;
+&lt;th&gt;参数名&lt;/th&gt;
+&lt;th&gt;数值&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;注意力头数&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(n_h\)&lt;/span&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/td&gt;
+&lt;td&gt;128&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;每个头的维度&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(d_h\)&lt;/span&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/td&gt;
+&lt;td&gt;128&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;KV 压缩维度&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(d_c\)&lt;/span&gt; (kv_lora_rank)&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/td&gt;
+&lt;td&gt;512&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Query 压缩维度&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(d_{c,q}\)&lt;/span&gt; (q_lora_rank)&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/td&gt;
+&lt;td&gt;1536&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;解耦 RoPE 维度&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(d_h^R\)&lt;/span&gt; (rotary_dim)&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/td&gt;
+&lt;td&gt;64&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;KV 上采样维度&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(d_h^C\)&lt;/span&gt; (nop_dim)&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/td&gt;
+&lt;td&gt;128&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;script type="text/javascript"&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width &lt; 768) ? "left" : align;
+        indent = (screen.width &lt; 768) ? "0em" : indent;
+        linebreak = (screen.width &lt; 768) ? 'true' : linebreak;
+    }
+
+    var mathjaxscript = document.createElement('script');
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript';
+    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-AMS-MML_HTMLorMML';
+
+    var configscript = document.createElement('script');
+    configscript.type = 'text/x-mathjax-config';
+    configscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js'], equationNumbers: { autoNumber: 'none' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    messageStyle: 'normal'," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        availableFonts: ['STIX', 'TeX']," +
+        "        preferredFont: 'STIX'," +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+&lt;/script&gt;</content><category term="python"></category><category term="python"></category><category term="AI"></category><category term="LLM"></category><category term="AIG"></category></entry><entry><title>DeepSeek V3 learning notes</title><link href="/pages/2025/02/23/deepseek-v3-learning-notes/" rel="alternate"></link><published>2025-02-23T00:00:00-06:00</published><updated>2025-02-23T00:00:00-06:00</updated><author><name>Huiming Song</name></author><id>tag:None,2025-02-23:/pages/2025/02/23/deepseek-v3-learning-notes/</id><summary type="html">&lt;h2&gt;1. What the problem to solve?&lt;/h2&gt;
 &lt;p&gt;When I went back for the Spring Festival, DeepSeek released a new model. For a while, all kinds of media discussed it a lot, almost rising to the height of national destiny. The most important points discussed should be two: the first is the …&lt;/p&gt;</summary><content type="html">&lt;h2&gt;1. What the problem to solve?&lt;/h2&gt;
 &lt;p&gt;When I went back for the Spring Festival, DeepSeek released a new model. For a while, all kinds of media discussed it a lot, almost rising to the height of national destiny. The most important points discussed should be two: the first is the benchmark score comparable to other mainstream models; the second is that the training speed is much faster and uses much less GPU time. However, most of the discussions are prosperous discussions and exciting news, but there is no specific reason why DS is good and how it is good. The first weekend after I came back, I spent the weekend reading the DS V3 paper. The reason why I chose V3 is that R1 is RL and SFT to enhance the reasoning ability of the model. The basic model is still V3, and the DS V3 paper is more detailed. The second part of the article describes what improvements DS has made in the model architecture (science), and the third part describes what improvements have been made in the model training (engineering). Then the two parts talk about pretraining, posttraining and evaluation related things.&lt;/p&gt;
 &lt;h2&gt;2. How to solve?&lt;/h2&gt;
@@ -14609,147 +15007,4 @@ y = tf.matmul(x, W) + b
 &lt;h3&gt;Reference&lt;/h3&gt;
 &lt;ol&gt;
 &lt;li&gt;&lt;a href="https://medium.com/all-of-us-are-belong-to-machines/gentlest-intro-to-tensorflow-part-3-matrices-multi-feature-linear-regression-30a81ebaaa6c#.r0w6hcjn2"&gt;Gentlest Intro to TensorFlow #3: Matrices &amp;amp; Multi-feature Linear Regression&lt;/a&gt;&lt;/li&gt;
-&lt;/ol&gt;</content><category term="Python"></category><category term="python"></category><category term="tensorflow"></category><category term="deep learning"></category></entry><entry><title>tensorflow简介--02</title><link href="/pages/2017/02/26/tensorflowjian-jie-02/" rel="alternate"></link><published>2017-02-26T21:30:00-06:00</published><updated>2017-02-26T21:30:00-06:00</updated><author><name>Huiming Song</name></author><id>tag:None,2017-02-26:/pages/2017/02/26/tensorflowjian-jie-02/</id><summary type="html">&lt;p&gt;上一章讨论了怎么在TF里面训练机器学习模型，以及基本的tensorflow代码。这为接下来讨论各种训练变化比如stochastic/mini-batch/batch, 以及adaptive learning rate gradient descent预铺了道路.&lt;/p&gt;</summary><content type="html">&lt;p&gt;上一篇文章，我们使用tensorflow(TF)来建立了一个单feature的线性回归模型。给定feature的值（house size），我们可以预测出房屋价格。&lt;/p&gt;
-&lt;p&gt;我们回顾一下上一章怎么做的：&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;
-&lt;p&gt;我们有房屋面积和房屋价格的数据（图中灰色原点）&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;用线性回归来建模（红色虚线）&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;通过最小化损失函数（图中蓝线的长度的平方和）来找出最优的模型的&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;给定房屋面积，应用建立的线性模型来预测房屋价格（图中蓝色虚线对应的点）&lt;/p&gt;
-&lt;/li&gt;
-&lt;/ol&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p2_01.png"&gt;&lt;/p&gt;
-&lt;p&gt;在机器学习的论文中，我们经常会遇到‘training’这个词。我们首先来看看在TF中它的含义。&lt;/p&gt;
-&lt;h2&gt;线性回归模型&lt;/h2&gt;
-&lt;pre&gt;&lt;code&gt;Linear Model (in TF notation): y = tf.matmul(x,W) + b
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;线性回归的目的是找出&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;,对给定的feature值(x),当我们把&lt;code&gt;W&lt;/code&gt;,&lt;code&gt;b&lt;/code&gt;和&lt;code&gt;x&lt;/code&gt;带入模型，我们可以得到&lt;strong&gt;prediction&lt;/strong&gt;(y)。&lt;/p&gt;
-&lt;p&gt;要得到&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;，我们需要用给定的数据(真实的feature值x和真实的结果y_， 注意y_的下划线)来训练(&lt;strong&gt;train&lt;/strong&gt;)模型。&lt;/p&gt;
-&lt;h2&gt;Training Illustrated&lt;/h2&gt;
-&lt;p&gt;要找到最优的&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;，我们需要定义一个损失函数用来衡量对&lt;strong&gt;某一个给定的feature（x）值&lt;/strong&gt;，预测值（y）和真实值(y_)之间的差异。为了简化，我们用最小平方差的和(MSE)作为损失函数。&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;Cost function (in TF notation): tf.reduce_mean(tf.square(y_ - y))
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;通过最小化损失函数，我们可以得到好的&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;的值。&lt;/p&gt;
-&lt;p&gt;用来做训练的程序代码非常简单，我们用[A,B,C,D]来标记各个部分。下面将会用到。&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;# ... (snip) Variable/Constants declarations (snip) ...
-# [A] TF.Graph
-y = tf.matmul(x,W) + b
-cost = tf.reduce_mean(tf.square(y_-y))
-# [B] Train with fixed 'learn_rate'
-learn_rate = 0.1
-train_step =
-    tf.train.GradientDescentOptimizer(learn_rate).minimize(cost)
-for i in range(steps):
-  # [C] Prepare datapoints
-  # ... (snip) Code to prepare datapoint as xs, and ys (snip) ...
-  # [D] Feed Data at each step/epoch into 'train_step'
-  feed = { x: xs, y_: ys }
-  sess.run(train_step, feed_dict=feed)
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;A当中的线性模型和损失函数可以被表示成下面的TF流程图&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p2_02.png"&gt;&lt;/p&gt;
-&lt;p&gt;下一步，我们要选择一个C当中的数据(x, y_)，输入到D当中来得到预测值(y)和损失函数。TF流程图如下：&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p2_03.png"&gt;&lt;/p&gt;
-&lt;p&gt;要得到更好的&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;，我们在B中通过&lt;em&gt;tf.train.GradientDescentOptimizer&lt;/em&gt;做梯度下降来得到损失函数。更简易的说法是：给定当前的损失值，根据图中别的变量（&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;）所得到的损失函数的值，优化器会对&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;做一个小变化（增加/减少），从而使得对那一个数据点的预测值更好。&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p2_04.png"&gt;&lt;/p&gt;
-&lt;p&gt;最后一步就是更新调整过的&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;的值。注意这一个周期(cycle)在机器学习的文档中也叫&lt;strong&gt;epoch&lt;/strong&gt;。&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p2_05.png"&gt;&lt;/p&gt;
-&lt;p&gt;在下一个&lt;strong&gt;epoch&lt;/strong&gt;，重复以上步骤，但是用一个&lt;strong&gt;不同的数据点(x, y_)&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p2_06.png"&gt;&lt;/p&gt;
-&lt;p&gt;使用不同的数据点来建模，所得到的&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;就可以用来预测任意的feature。注意&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;
-&lt;p&gt;大部分时候，更多的数据点得到的模型会更好&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;如果你的epochs比你的数据点还多，你可以重复利用数据点，这是没有问题的。梯度下降的优化器总是使用数据点和损失函数(从相应的epoch中的&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;和数据点计算出来)来调整&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;。优化器可能已经用过这个数据点，但是因为损失函数不同，所以它仍然会得到新的信息，也会得到新的调整过的&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;。&lt;/p&gt;
-&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;你可以训练你的模型给定次数的epoch，或者直到损失函数低于某个给定的值。&lt;/p&gt;
-&lt;h2&gt;Training variation&lt;/h2&gt;
-&lt;h3&gt;stochastic，mini-batch, batch&lt;/h3&gt;
-&lt;p&gt;在上面的模型训练中，我们每次输入一个数据点。这叫做随机梯度下降(&lt;em&gt;stochastic gradient descent&lt;/em&gt;)。我们也可以在每个epoch中输入一批数据点，这叫做&lt;em&gt;mini-batch gradient descent&lt;/em&gt;。甚至我们可以在每个epoch中输入所有的数据点，这叫做&lt;em&gt;batch gradient descent&lt;/em&gt;。请看下面的比较图示。注意这三个图有两个不同&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;每个epoch中输入到TF.Graph的数据点(右上角的数据点)不同&lt;/li&gt;
-&lt;li&gt;用来调整&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;的梯度下降优化器所用到的数据点（右下角）也不相同&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p2_07.png"&gt;
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p2_08.png"&gt;
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p2_09.png"&gt;&lt;/p&gt;
-&lt;p&gt;在每个epoch中使用到的数据点有两层含义。如果每个epoch使用更多的数据点：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;计算损失函数和梯度下降的计算资源(加减乘)会减少&lt;/li&gt;
-&lt;li&gt;模型学习的速度会提高&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;使用stochastic, mini-batch, batch gradient descent 的优缺点见下图&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p2_10.png"&gt;&lt;/p&gt;
-&lt;p&gt;要在stochastic, mini-batch, batch gradient descent这三个办法中切换，我们只需要在下面的[C]当中设置不同的batch大小，然后根据batch大小把对应的batch的数据点输入到模型训练[D]中。&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;# * all_xs: All the feature values
-# * all_ys: All the outcome values
-# datapoint_size: Number of points/entries in all_xs/all_ys
-# batch_size: Configure this to:
-#             1: stochastic mode
-#             integer &amp;lt; datapoint_size: mini-batch mode
-#             datapoint_size: batch mode
-# i: Current epoch number
-if datapoint_size == batch_size:
-  # Batch mode so select all points starting from index 0
-  batch_start_idx = 0
-elif datapoint_size &amp;lt; batch_size:
-  # Not possible
-  raise ValueError(“datapoint_size: %d, must be greater than         
-                    batch_size: %d” % (datapoint_size, batch_size))
-else:
-  # stochastic/mini-batch mode: Select datapoints in batches
-  #                             from all possible datapoints
-  batch_start_idx = (i * batch_size) % (datapoint_size — batch_size)
-  batch_end_idx = batch_start_idx + batch_size
-  batch_xs = all_xs[batch_start_idx:batch_end_idx]
-  batch_ys = all_ys[batch_start_idx:batch_end_idx]
-
-
-# Get batched datapoints into xs, ys, which is fed into
-# 'train_step'
-xs = np.array(batch_xs)
-ys = np.array(batch_ys)
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;Learn Rate的变化&lt;/h3&gt;
-&lt;p&gt;学习速度(Learn Rate)指的是梯度下降来调整&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;的这时候，每次增加或者减小的大小。当learn rate比较小的时候，前进速度会很慢，但是会渐渐收敛到最小损失函数值。当learn rate比较大的时候，达到最小损失函数的速度会比较快，但是有可能会走过头，导致找不到最小值。&lt;/p&gt;
-&lt;p&gt;要克服这一点，肯多ML的实际操作是开始的时候用比较大的learn rate（假设初始的损失函数离最小值比较远），然后每个epoch渐渐减小learn rate以防止走过头。&lt;/p&gt;
-&lt;p&gt;TF提供了两个办法。这个&lt;a href="http://stackoverflow.com/questions/33919948/how-to-set-adaptive-learning-rate-for-gradientdescentoptimizer"&gt;StackOverflow thread&lt;/a&gt;讲的非常棒。总结如下:&lt;/p&gt;
-&lt;h3&gt;使用变化的learn rate的梯度下降优化器&lt;/h3&gt;
-&lt;p&gt;TF提供了不同的支持learn rate变化的梯度下降优化器，比如&lt;a href="https://www.tensorflow.org/api_guides/python/train#AdagradOptimizer"&gt;tf.train.AdagradientOptimizer&lt;/a&gt;和&lt;a href="https://www.tensorflow.org/api_guides/python/train#AdamOptimizer"&gt;tf.train.AdamOptimizer&lt;/a&gt;.&lt;/p&gt;
-&lt;h3&gt;使用tf.placeholder建Learn Rate&lt;/h3&gt;
-&lt;p&gt;如前所述，我们在&lt;em&gt;tf.train.GradientDescentOptimizer&lt;/em&gt;当中用&lt;em&gt;tf.placeholder&lt;/em&gt;来申明&lt;em&gt;Learn Rate&lt;/em&gt;的时候，我们可以在每个epoch中输入不同的值。这类似于在每个epoch中我们用&lt;em&gt;tf.placeholders&lt;/em&gt;来输入不同的数据点到x, y_。&lt;/p&gt;
-&lt;p&gt;这样做需要两个小的改动:&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;# Modify [B] to make 'learn_rate' a 'tf.placeholder'
-# and supply it to the 'learning_rate' parameter name of
-# tf.train.GradientDescentOptimizer
-learn_rate = tf.placeholder(tf.float32, shape=[])
-train_step = tf.train.GradientDescentOptimizer(
-    learning_rate=learn_rate).minimize(cost)
-# Modify [D] to include feed a 'learn_rate' value,
-# which is the 'initial_learn_rate' divided by
-# 'i' (current epoch number)
-# NOTE: Oversimplified. For example only.
-feed = { x: xs, y_: ys, learn_rate: initial_learn_rate/i }
-sess.run(train_step, feed_dict=feed)
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h2&gt;总结&lt;/h2&gt;
-&lt;p&gt;我们演示了机器学习的训练是什么意思，以及在Tensorflow中怎么定义模型和损失函数。然后通过输入数据点到梯度下降优化器，进行循环来得到&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;的值。我们还讨论了训练过程中两个常见的变化：每个epoch中使用不同的数据集的大小，以及使用不同的learn rate。&lt;/p&gt;
-&lt;h3&gt;下一章&lt;/h3&gt;
-&lt;ul&gt;
-&lt;li&gt;设置Tensor Board来可视化TF的执行，这样可以检测到我们模型，损失函数和梯度下降的问题&lt;/li&gt;
-&lt;li&gt;展示一个多特征(features)的线性回归模型&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h3&gt;Reference&lt;/h3&gt;
-&lt;ol&gt;
-&lt;li&gt;&lt;a href="https://medium.com/all-of-us-are-belong-to-machines/gentlest-introduction-to-tensorflow-part-2-ed2a0a7a624f#.9cxp5xvf0"&gt;Gentlest Introduction to Tensorflow #2&lt;/a&gt;&lt;/li&gt;
 &lt;/ol&gt;</content><category term="Python"></category><category term="python"></category><category term="tensorflow"></category><category term="deep learning"></category></entry></feed>

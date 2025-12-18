@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>DeepSeek V3 Multi-head Latent Attention (MLA) &mdash; pydata: Huiming's learning notes</title>
+  <meta name="author" content="shm">
+
+
+
+
+
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+    <link href="/favicon.png" rel="icon">
+
+  <link href="/theme/css/main.css" media="screen, projection"
+        rel="stylesheet" type="text/css">
+
+  <link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic"
+        rel="stylesheet" type="text/css">
+  <link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic"
+        rel="stylesheet" type="text/css">
+</head>
+
+<body>
+  <header role="banner"><header>
+  <h1><a href="/">pydata: Huiming's learning notes</a></h1>
+    <h2>Keep Looking, Don't Settle</h2>
+</header>
+
+<script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],  // 允许 $...$ 和 \( ... \) 作为行内公式
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],  // 允许 $$...$$ 和 \[ ... \] 作为块级公式
+    processEscapes: true,  // 允许在公式中使用转义符，如 \$ 表示美元符号
+    processEnvironments: true  // 允许解析 \begin{equation} ... \end{equation} 等数学环境
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre'],  // 跳过某些 HTML 标签，防止错误解析
+    renderActions: {
+      addMenu: []  // 移除右键菜单
+    }
+  }
+};
+
+window.addEventListener('load', () => {
+  document.querySelectorAll("mjx-container").forEach(x => {
+    x.parentElement.classList.add('has-jax');  // 使用 classList.add() 避免字符串拼接错误
+  });
+});
+</script>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script></header>
+  <nav role="navigation">
+
+<form action="https://www.google.com/search" method="get">
+    <fieldset role="search">
+       <input type="hidden" name="q" value="site:songhuiming.github.io" />
+       <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+    </fieldset>
+</form>
+
+
+<ul class="main-navigation">
+    <li><a href="/functions/archives.html">Archives</a></li>
+      <li >
+        <a href="/category/career-growth.html">Career growth</a>
+      </li>
+      <li >
+        <a href="/category/linux.html">Linux</a>
+      </li>
+      <li class="active">
+        <a href="/category/python.html">Python</a>
+      </li>
+      <li >
+        <a href="/category/rthers.html">Rthers</a>
+      </li>
+</ul></nav>
+  <div id="main">
+    <div id="content">
+<div>
+  <article class="hentry" role="article">
+<header>
+      <h1 class="entry-title">DeepSeek V3 Multi-head Latent Attention (MLA)</h1>
+    <p class="meta">
+<time datetime="2025-03-20T00:00:00-05:00" pubdate>Thu 20 March 2025</time>    </p>
+</header>
+
+  <div class="entry-content"><p><img alt="MLA plot" src="/figures/20250320_deepseek_V3_MLA.svg"></p>
+<p>在上一篇<a href="https://songhuiming.github.io/pages/2025/02/23/deepseek-v3-learning-notes/">blog</a>中，我们讨论了DeepSeek-V3 采用了 <strong>MLA (Multi-Head Latent Attention)</strong> 架构，其核心目的是通过<strong>低秩联合压缩</strong> Key 和 Value 来减少 KV 缓存。特别是在推理的时候，通过低秩压缩，从而在generation（inference）的时候KV catch可以减少内存使用，增加速度。其架构设计的核心目标是用推理时的 KV 缓存节省，来换取训练和推理时投影矩阵（降维/升维）带来的额外计算。</p>
+<p>虽然在配置文件中查询头 (Query Heads, num_attention_heads) 键值头 (Key/Value Heads, num_key_value_heads) <span class="math">\(n_h = 128\)</span> 且 <span class="math">\(n_{kv} = 128\)</span>（参数上是 MHA），但在其DeepSeek MLA 的内部实现中，它采用了 MQA 的思想，即<strong>每个 Key/Value 的latent vector <span class="math">\(\mathbf{c}_t^{KV}\)</span> 会在内核级别共享给所有查询头</strong>，从而实现 KV 缓存的显著减少。</p>
+<p>因此，虽然从配置文件参数上看 <span class="math">\(n_h = n_{kv}=128\)</span>，但从<strong>实际的内存优化策略</strong>上看，该模型采用了类似 MQA/GQA 的思想来处理 Key/Value 缓存。</p>
+<p>下面我们根据原始的paper，仔细分解MLA的结构。首先，我们引入一些向量维度的记号：</p>
+<p>记号
+</p>
+<div class="math">$$
+\begin{aligned}
+&amp; d = \text{embedding的长度 = 7168} \\
+&amp; n_h = \text{计算attention的head的个数 = num_attention_heads = 128} \text{，也就是 num of Q 的个数} \\
+&amp; n_{kv} = \text{计算attention的 K,V 的head的个数 = num_kv_heads = 128} \\[1ex]
+&amp; d_c = \text{压缩向量} \mathbf{c}_t^{KV} \text{的长度 = kv_lora_rank = 512} \\ 
+&amp; d_c^{\prime} = \text{压缩向量} \mathbf{c}_t^{Q} \text{的长度 = q_lora_rank = 1536} \\[1ex]
+&amp; d_h = \text{计算attention的head的NoPE的长度 = qk_nope_head_dim = 128} \\
+&amp; d_h^R = \text{计算attention的head的RoPE的长度 = qk_rope_head_dim} = 64
+\end{aligned}
+$$</div>
+<h2>1. 低秩压缩</h2>
+<p>MLA 引入了低秩压缩并且缓存这个KV 压缩来减少额外的投影矩阵带来的运算。</p>
+<ul>
+<li>将 Key/Value 通过投影矩阵 <span class="math">\(\mathbf{W}^{DKV}\)</span> 投影到一个低维latent vector space <span class="math">\(\mathbf{C}_t^{KV} \in \mathbb{R}^{d_c}\)</span>,  <span class="math">\((d_c = 512 \ll d_h \cdot n_h = 128  \cdot 128)\)</span>，并缓存它们。<span class="math">\(d_c = \text{kv_lora_rank} = 512\)</span>; </li>
+<li>在Forward的时候，通过上投影矩阵恢复 <span class="math">\(\mathbf{k}_t^C\)</span> 和 <span class="math">\(\mathbf{v}_t^C\)</span>。</li>
+</ul>
+<p><strong>压缩</strong>
+</p>
+<div class="math">$$ 
+\mathbf{c}_t^{KV} = \mathbf{W}^{DKV} h_t,
+\qquad 
+\mathbf{c}_t^Q = \mathbf{W}^{DQ} h_t 
+$$</div>
+<p><strong>解压</strong>
+</p>
+<div class="math">$$
+\begin{aligned}
+&amp; [\mathbf{k}_{t,1}^{C}, \mathbf{k}_{t,2}^{C}, ..., \mathbf{k}_{t,n_h}^{C}] = \mathbf{k}_t^C = \mathbf{W}^{UK} c_t^{KV}, \\[1ex]
+&amp; [\mathbf{v}_{t,1}^{C}, \mathbf{v}_{t,2}^{C}, ..., \mathbf{v}_{t,n_h}^{C}] = \mathbf{v}_t^C = \mathbf{W}^{UV} c_t^{KV}, \\[1ex]
+&amp; [\mathbf{q}_{t,1}^{C}, \mathbf{q}_{t,2}^{C}, ..., \mathbf{q}_{t,n_h}^{C}] = \mathbf{q}_t^C = \mathbf{W}^{UQ} c_t^Q 
+\end{aligned}
+$$</div>
+<p>其中</p>
+<ul>
+<li><span class="math">\(\mathbf{W}^{DKV} \in \mathbb{R}^{d_c \times d} = \mathbb{R}^{512 \times 7168}\)</span>  是降维投影矩阵。</li>
+<li><span class="math">\(\mathbf{W}^{DQ} \in \mathbb{R}^{d_c^{\prime} \times d} = \mathbb{R}^{ 1536  \times 7168}\)</span> 是降维投影矩阵。</li>
+<li><span class="math">\(\mathbf{W}^{UK} \in \mathbb{R}^{d_{h_k} \cdot n_h \times d_c}\)</span><ul>
+<li>Paper中的设置，<span class="math">\(d_{h_k} = d_{h} = 128\)</span></li>
+<li><span class="math">\(\mathbf{W}^{UK}\)</span> 是 K 的 NoPE 部分的上投影，它的作用是将 <span class="math">\(d_c\)</span> 维度的向量投影到 K 的 NoPE 部分 (<span class="math">\(d_{h}\)</span>维度乘以 <span class="math">\(n_h\)</span>个head)。 </li>
+<li>对 K（这里只有NoPE部分），<span class="math">\(d_{h_k}\)</span> = <span class="math">\(\text{qk_nope_head_dim}\)</span> = <span class="math">\(128\)</span> (每头维度)</li>
+<li><span class="math">\(\mathbf{W}^{UK}  \in \mathbb{R}^{d_{h_k} \cdot n_h \times d_c} =  \mathbb{R}^{128 \cdot 128 \times 512}\)</span>是每个head的 K 的升维矩阵。</li>
+</ul>
+</li>
+<li><span class="math">\(\mathbf{W}^{UV} \in \mathbb{R}^{d_{h_v} \cdot n_h \times d_c}\)</span><ul>
+<li>Paper中的设置，<span class="math">\(d_{h_v} = d_{h} = 128\)</span></li>
+<li><span class="math">\(\mathbf{W}^{UV}\)</span> 是 V 的 NoPE 部分上投影。同样是从 <span class="math">\(d_c\)</span> 维度的向量投影到 V 的 NoPE 部分 (<span class="math">\(d_{h}\)</span>维度乘以 <span class="math">\(n_h\)</span>个head)。 </li>
+<li><span class="math">\(\mathbf{W}^{UV} \in \mathbb{R}^{d_{h_v} \cdot n_h \times d_c} = \mathbb{R}^{128 \cdot 128 \times 512}\)</span>是每个head的 V 的升维矩阵。</li>
+</ul>
+</li>
+<li>如果总的加起来的话，<span class="math">\(\mathbf{W}^{UVK} \text{ 的维度是 } = [(128+128)*128, 512] = (32768, 512)\)</span></li>
+<li><span class="math">\(\mathbf{W}^{UQ} \in \mathbb{R}^{d_{h_q} \cdot n_h \times d_c^{\prime}}\)</span><ul>
+<li>Paper中的设置，<span class="math">\(d_{h_q} = d_{h} = 128\)</span></li>
+<li><span class="math">\(\mathbf{W}^{UQ}\)</span> 是 Q 的上投影，每个 Q NoPE Head 维度 <span class="math">\(d_{h_q}\)</span> = <span class="math">\(\text{qk_nope_head_dim}\)</span> = <span class="math">\(128\)</span>.</li>
+<li><span class="math">\(\mathbf{W}^{UQ} \in \mathbb{R}^{d_{h_q} \cdot n_h \times d_c^{\prime}} = \mathbb{R}^{128 \cdot 128 \times 1536}\)</span></li>
+</ul>
+</li>
+</ul>
+<p>Notes：因为KQ要做内积，所以<span class="math">\(d_{h_k} == d_{h_q}\)</span>，但是不一定非要等于 <span class="math">\(d_{h_v}\)</span>。尽管在本文中它们都相等，在好多paper里面它们也都相等。但理论上他们可以不等。</p>
+<p>从这儿可以看到，与标准的multihead attention（MHA）直接用kqv计算相比，这里面增加了降维和升维的过程，也就是增加了额外的运算。</p>
+<h2>2. Training时的计算过程</h2>
+<p>DeepSeek-V3 的 KV 压缩机制 <span class="math">\(\left(\mathbf{h} \text{ to } \mathbf{c}^{KV} \text{ to } \mathbf{k}, \mathbf{v} \right)\)</span> 在training的时候总 FLOPs 其实是增加了（多了两个投影 <span class="math">\(\mathbf{W}^{DKV}\)</span> 和 <span class="math">\(\mathbf{W}^{UK}, \mathbf{W}^{UV}\)</span>），但它在 推理时 大幅减少了内存带宽需求和 KV 缓存大小，从而实现了更快的生成速度和更长的上下文窗口。</p>
+<p><strong>恢复 K V</strong>:</p>
+<div class="math">$$
+\mathbf{k}_t^{C} = \mathbf{W}^{UK} \mathbf{c}_t^{KV}, 
+\qquad 
+\mathbf{v}_t^{C} = \mathbf{W}^{UV} \mathbf{c}_t^{KV}
+$$</div>
+<p><strong>恢复 Q</strong>:</p>
+<div class="math">$$ \mathbf{q}_t^{C} = \mathbf{W}^{UQ} \mathbf{c}_t^{Q} $$</div>
+<p><strong>Attention</strong></p>
+<div class="math">$$
+\mathbf{o}_t = [\mathbf{o}_{t,1};\ \mathbf{o}_{t,2};\ \ldots;\ \mathbf{o}_{t,n_h}]
+$$</div>
+<p>
+对每个head，
+</p>
+<div class="math">$$
+\mathbf{o}_{t,i} = \sum_{j=1}^{t}
+\mathrm{Softmax} \left(
+    \frac{\left(\mathbf{q}_{t,i}^{C} \right)^\top \mathbf{k}_{j,i}^{C}}{\sqrt{d_h}}
+\right)
+\mathbf{v}_{j,i}^{C}
+$$</div>
+<p>
+得到经过 K Q weighted average 过的 V 的值。</p>
+<p>其中</p>
+<div class="math">$$
+\begin{aligned}
+&amp; \mathbf{q}_{t,i}^C = \mathbf{W}_i^{UQ} \mathbf{c}_{t,i}^Q \in \mathbb{R}^{d_h} = \mathbb{R}^{128},
+\qquad
+\mathbf{W}_i^{UQ} \in \mathbb{R}^{d_h \times d_c^{\prime}} = \mathbb{R}^{128 \times 1536} \\[1ex]
+&amp; \mathbf{k}_{t,i}^C = \mathbf{W}_i^{UK} \mathbf{c}_{t,i}^{KV} \in \mathbb{R}^{d_h} = \mathbb{R}^{128} ,
+\qquad
+\mathbf{W}_i^{UK} \in \mathbb{R}^{{d}_h \times {d}_c} = \mathbb{R}^{128 \times 512} \\[1ex]
+&amp; \mathbf{v}_{t,i}^C = \mathbf{W}_i^{UV} \mathbf{c}_{t,i}^{KV} \in \mathbb{R}^{d_h} = \mathbb{R}^{128},
+\qquad
+\mathbf{W}_i^{UV} \in \mathbb{R}^{{d}_h \times {d}_c} = \mathbb{R}^{128 \times 512} \\[1ex]
+&amp; \mathbf{c}_{t,i}^{KV} = \mathbf{W}_i^{DKV} \mathbf{h}_{t,i} \in \mathbb{R}^{{d}_c} = \mathbb{R}^{512},
+\qquad
+\mathbf{c}_{t,i}^{Q}    = \mathbf{W}_i^{DQ} \mathbf{h}_{t,i} \in \mathbb{R}^{{d}_c^{\prime}} = \mathbb{R}^{1536} \\[1ex]
+&amp; \mathbf{W}_i^{DKV} \in \mathbb{R}^{d_c \times d} =  \mathbb{R}^{512 \times 7168},
+\qquad 
+\mathbf{W}_i^{DQ}  \in \mathbb{R}^{d_c^{\prime} \times d} = \mathbb{R}^{ 1536  \times 7168}
+\end{aligned}
+$$</div>
+<h2>3. Inference时的计算过程</h2>
+<p>在推理阶段（自回归生成），有前面<span class="math">\(n\)</span>个token生成第<span class="math">\(n+1\)</span>个token，每次只处理一个新 token，但是在计算Attention的时候，需要与前面所有的token做内积，这个时候如果每次都从前面token的embedding来计算，会增加很多的计算量。实际当中为了减少计算和内存的消耗，是使用的之前的所有 token 的 KV cache。KV catch的简单原理参见<a href="https://songhuiming.github.io/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">KV catch</a></p>
+<p><strong>压缩</strong></p>
+<p>对 token <span class="math">\(t\)</span>，计算：
+</p>
+<div class="math">$$
+\mathbf{c}_t^{KV} = \mathbf{W}^{DKV} \mathbf{h}_t
+$$</div>
+<p>把 <span class="math">\(\mathbf{c}_t^{KV}\)</span> <strong>存入缓存</strong>。这里面会极大的节省内存：
+1. <span class="math">\(\mathbf{c}_t^{KV}\)</span> 被所有的 head（在deepseek-v3 是128个head）共享。所以对token <span class="math">\(t\)</span>，只要cache一个512维的向量就可以了
+2. <span class="math">\(\mathbf{c}_t^{KV}\)</span> 是<span class="math">\(d_c=512\)</span>维度，而如果向原始的MHA那样保存 key <span class="math">\(\mathbf{k_t}\)</span> 和value <span class="math">\(\mathbf{v_t}\)</span>， 假如它们都和hidden vector或者embedding vector 一样的size (i.e, <span class="math">\(d_h = 7168\)</span>)，那么一个head一个token就差 7168/512倍，对<span class="math">\(n_h=128\)</span>个head，上千个token或更多 (ds-v3 最多支持上下文的token个数 <span class="math">\(\text{max_position_embeddings}\)</span> = <span class="math">\(163840\)</span>)，节省的内存会更多. </p>
+<p><strong>解压</strong></p>
+<p>对所有的历史 token <span class="math">\(j \le t\)</span> ，因为它们的压缩矩阵 <span class="math">\(\mathbf{c}_j^{KV}\)</span> 都被缓存了。所以，直接从缓存的 <span class="math">\(\mathbf{c}_j^{KV}\)</span> 恢复：</p>
+<div class="math">$$
+\mathbf{k}_j^{C} = \mathbf{W}^{UK} \mathbf{c}_j^{KV},
+\qquad
+\mathbf{v}_j^{C} = \mathbf{W}^{UV} \mathbf{c}_j^{KV}
+$$</div>
+<p>对当前的查询 Q，直接从 token <span class="math">\(t\)</span> 的embedding vector计算（降维升维）：
+</p>
+<div class="math">$$
+\mathbf{q}_t^{C} = \mathbf{W}^{UQ} \mathbf{c}_t^{Q} = \mathbf{W}^{UQ} \mathbf{W}^{DQ} \mathbf{h}_t
+$$</div>
+<p><strong>Attention</strong></p>
+<div class="math">$$
+\mathbf{o}_{t,i} =
+\sum_{j=1}^{t}
+\mathrm{Softmax}\left(
+\frac{\left(\mathbf{q}_{t,i}^{C}\right)^\top \mathbf{k}_{j,i}^{C}}{\sqrt{d_h}}
+\right)
+\mathbf{v}_{j,i}^{C}
+$$</div>
+<p>
+得到经过 K Q weighted average 过的 V 的值。</p>
+<p>到目前为止，所有的计算都有一个问题：打乱他们的顺序，<span class="math">\(\mathbf{K^TQ}V\)</span> 值不变。正如 MHA 所做的，MLA 也需要引入位置参数。</p>
+<h2>4. RoPE</h2>
+<p>背景知识：传统的transformer模型中，RoPE 的核心思想是将绝对位置信息编码到 Q (Query) 和 K (Key) 向量的点积中，而不需要像最初的绝对位置编码那样将位置向量直接加到词嵌入上。在 Transformer 模型中，由于自注意力机制是排列不变性的（即打乱词语顺序不影响计算结果），所以必须引入位置编码来告诉模型每个词语在序列中的相对或绝对位置。RoPE 通过将位置信息编码为旋转矩阵的形式，作用于 Query 和 Key 向量。它必须满足以下几个条件：
+1. 对于序列中的第 <span class="math">\(m\)</span> 个词，其对应的 Query 向量 <span class="math">\(\mathbf{q}_m = \mathbf{W}_Q \mathbf{h}_m\)</span> 和 第<span class="math">\(n\)</span>个词 Key 向量 <span class="math">\(\mathbf{k}_n=\mathbf{W}_K \mathbf{h}_n\)</span>，它们同维度而且同基(<span class="math">\(\mathbf{h}_i\)</span>)
+2. 它们会被一个旋转矩阵作用得到 <span class="math">\(\mathbf{q}_m' = \mathbf{R}_m(\mathbf{q}_m)\)</span> 和 <span class="math">\(\mathbf{k}_n' = \mathbf{R}_n(\mathbf{k}_n)\)</span> 用来做attention的计算。
+3. 注意力 Attention = <span class="math">\(\left&lt;\mathbf{q}_m'^{T}, \mathbf{k}_n'\right&gt;\)</span> = <span class="math">\(\left&lt; (\mathbf{R}_m(\mathbf{q}_m)^T, \mathbf{R}_n(\mathbf{k}_n) \right&gt;\)</span> = <span class="math">\(\left&lt; \mathbf{q}_m^T, \mathbf{R}_{m - n} (\mathbf{k}_n) \right&gt;\)</span>. 即只跟两个token的距离 <span class="math">\(m-n\)</span> 有关，而跟绝对位置 <span class="math">\(m\)</span> <span class="math">\(n\)</span>本身无关。</p>
+<h3>4.1. RoPE 与 KV 压缩的冲突</h3>
+<p>但是在MLA里面，下面几个原因导致 RoPE 不能直接作用在 K V 向量上，导致原来的RoPE性质不再成立。
+1. MLA里面，<span class="math">\(\mathbf{q}\)</span> 和 <span class="math">\(\mathbf{k}\)</span> 不是来自同样的基。它们来自不同长度的压缩矩阵<span class="math">\(\mathbf{c}_t^{Q}\)</span>, <span class="math">\(\mathbf{c}_t^{KV}\)</span>
+2. 升维不是等距嵌入。
+    <span class="math">\(\left&lt; \mathbf{q}_m, \mathbf{k}_n \right&gt;\)</span> = <span class="math">\(\left&lt; \mathbf{q}_m^C, \mathbf{k}_n^C\right&gt;\)</span> = <span class="math">\(\left&lt;\mathbf{W}^{UQ} \mathbf{c}_m^{Q}, \mathbf{W}^{UK} \mathbf{c}_n^{KV} \right&gt;\)</span>. 由于<span class="math">\(\mathbf{W}^{UQ}\)</span>和<span class="math">\(\mathbf{W}^{UK}\)</span> 不相互正交，所以前面的内积不等于<span class="math">\(\left&lt;\mathbf{c}_m^{Q}, \mathbf{c}_n^{KV} \right&gt;\)</span>, 它们也没法做内积
+3. 如果在升维以后直接强制做RoPE，
+<span class="math">\(\left&lt; R_m(\mathbf{q}_m), R_n(\mathbf{k}_n) \right&gt;\)</span> = <span class="math">\(\left&lt; R_m(\mathbf{W}^{UQ} \mathbf{c}_m^{Q}), R_n(\mathbf{W}^{UK} \mathbf{c}_n^{KV}) \right&gt;\)</span> = <span class="math">\((\mathbf{c}_m^{Q})^T (\mathbf{W}^{UQ})^T R_{m-n}(\mathbf{W}^{UK} \mathbf{c}_n^{KV})\)</span>, 而 <span class="math">\((\mathbf{W}^{UQ})^T R_{m-n}(\mathbf{W}^{UK}) \neq R_{m-n}\)</span>. </p>
+<p>这些原因导致在降维/升维的情况下，RoPE不再可行。为了解决这个问题，MLA采用了 RoPE 和 NoPE 分离的办法。RoPE单独的有一个自己的向量，然后与NoPE向量concat在一起。</p>
+<h3>解决办法：Decouple RoPE</h3>
+<h4>1. Key 部分</h4>
+<p><span class="math">\(\mathbf{k}_{t}^R\)</span> (RoPE 部分，注意这一部分跟head无关，所有的 head 都用同样的 <span class="math">\(\mathbf{k}_{t}^R\)</span> )
+1. <span class="math">\(\mathbf{k}_{t}^R = \text{RoPE}\left(\mathbf{W}^{KR} \mathbf{h}_t \right)\)</span>
+2. 输入： 矩阵 <span class="math">\(\mathbf{W}^{KR}\)</span> 作用于 <span class="math">\(\mathbf{h}_t\)</span> (Input Hidden <span class="math">\(\mathbf{h}_t\)</span>)。
+3. 作用： <span class="math">\(\mathbf{W}^{KR}\)</span> 是一个独立的投影矩阵（维度 <span class="math">\(64 \times 7168\)</span>），专门用于将 <span class="math">\(\mathbf{h}_t\)</span> 投影到 <span class="math">\(\mathbf{k_t}^R\)</span> 的 64 维空间。</p>
+<p><span class="math">\(\mathbf{k}_{t,i}^C\)</span> (NoPE 部分，对head i) 
+1. 不应用 RoPE 的部分 <span class="math">\(\mathbf{k}_{t,i}^C\)</span> 才是来自低秩潜在向量 <span class="math">\(\mathbf{c}_{t}^{KV}\)</span> 的。
+2. 路径： <span class="math">\(\mathbf{h}_t \to \mathbf{W}^{DKV} \to \mathbf{c}_{t}^{KV} \to \mathbf{W}^{UK} \to \mathbf{k}_{t,i}^C\)</span>。</p>
+<h4>2. Query 部分</h4>
+<p><span class="math">\(\mathbf{q}_{t,i}^R\)</span> (RoPE 部分)
+1. <span class="math">\(\mathbf{q}_{t,i}^R = \text{RoPE}(\mathbf{W}^{QR} \mathbf{c}_{t}^Q)\)</span>
+2. 输入： 矩阵 <span class="math">\(\mathbf{W}^{QR}\)</span> 作用于低秩压缩向量<span class="math">\(\mathbf{c}_{t}^Q\)</span>。
+3. 作用： <span class="math">\(\mathbf{W}^{QR}\)</span> 是一个独立的投影矩阵（维度 <span class="math">\(64 \times 1536\)</span>），用于将 <span class="math">\(\mathbf{c}_{t}^Q\)</span> 投影到 <span class="math">\(\mathbf{q}^R\)</span> 的 64 维空间。</p>
+<p><span class="math">\(\mathbf{q}_{t,i}^C\)</span> (NoPE 部分) 
+1. 不应用 RoPE 的部分 <span class="math">\(\mathbf{q}_{t,i}^C\)</span> 同样来自低秩潜在向量 <span class="math">\(\mathbf{c}_{t}^{Q}\)</span> 的。
+2. 路径： <span class="math">\( \mathbf{c}_{t}^{Q} \to \mathbf{W}^{UQ} \to \mathbf{q}_{t,i}^C\)</span>。</p>
+<h3>4.2. <strong>MLA + RoPE 在训练时的计算</strong></h3>
+<h4>1. 压缩</h4>
+<p>压缩部分跟上面提到的没有 RoPE 一样，都是从embedding vector（hidden status）压缩到一个低维的空间。
+</p>
+<div class="math">$$
+\mathbf{c}_t^{KV} = \mathbf{W}^{DKV} \mathbf{h}_t
+$$</div>
+<div class="math">$$
+\mathbf{c}_t^Q = \mathbf{W}^{DQ} \mathbf{h}_t
+$$</div>
+<h4>2. 解压</h4>
+<p>从压缩空间 (latenct vector) 恢复 Key, Value, Query 向量:
+</p>
+<div class="math">$$
+\mathbf{k}_t^C = \mathbf{W}^{UK} \mathbf{c}_t^{KV}, \\[1ex]
+\mathbf{v}_t^C = \mathbf{W}^{UV} \mathbf{c}_t^{KV} , \\[1ex]
+\mathbf{q}_t^C = \mathbf{W}^{UQ} \mathbf{c}_t^Q
+$$</div>
+<h4>3. RoPE 部分</h4>
+<p>生成一组新的 Key Query 向量，它们不是用来和上面的向量相加做RoPE，而是做完RoPE以后跟上面的向量 concat:
+</p>
+<div class="math">$$
+\mathbf{k}_t^R = \text{RoPE}\left(\mathbf{W}^{KR} \mathbf{h}_t \right) \\[1ex]
+\mathbf{q}_t^R = \text{RoPE}\left(\mathbf{W}^{QR} \mathbf{c}_t^Q \right)
+$$</div>
+<h4>4. concat</h4>
+<p>把 K Q 的 RoPE 部分和 NoPE 拼接起来，新的向量维度为 <span class="math">\(d_h + d_h^R = 128 + 64\)</span>.
+</p>
+<div class="math">$$
+\mathbf{q}_{t, i} = \left[\mathbf{q}_{t, i}^C; \mathbf{q}_{t, i}^R\right], \quad \mathbf{k}_{t, i} = \left[\mathbf{k}_{t, i}^C; \mathbf{k}_{t}^R \right]
+$$</div>
+<h4>5. 计算注意力</h4>
+<p>第 <span class="math">\(t\)</span> 个 token 的 Q 跟所有的历史 K 做内积，对 head <span class="math">\(i\)</span>
+</p>
+<div class="math">$$
+\mathbf{o}_{t,i} = \sum_{j=1}^t \text{Softmax}\left(\frac{(\mathbf{q}_{t,i})^{\top} \mathbf{k}_{j,i}}{\sqrt{d_h^C + d_h^R}}\right) \mathbf{v}_{j,i}^C
+$$</div>
+<p>对所有的 head</p>
+<div class="math">$$
+\mathbf{o}_t = [\mathbf{o}_{t,1}, \mathbf{o}_{t,2}, \dots, \mathbf{o}_{t,n_h}]
+$$</div>
+<h5>各个向量和矩阵的维度</h5>
+<div class="math">$$
+\mathbf{q}_{t,i} = \left[\mathbf{W}^{UQ}_i \mathbf{c}_{t,i}^Q; \text{ RoPE}(\mathbf{W}^{QR}_i \mathbf{c}_{t,i}^Q) \right] \in \mathbb{R}^{d_h + d_h^R} = \mathbb{R}^{128 + 64},
+$$</div>
+<div class="math">$$
+\quad \mathbf{W}^{UQ}_i \in \mathbb{R}^{d_h \times d_c^{\prime}} = \mathbb{R}^{128 \times 1536}
+$$</div>
+<div class="math">$$
+\mathbf{W}^{QR}_i \in \mathbb{R}^{d_h^R \times d_c^{\prime}} = \mathbb{R}^{64 \times 1536}
+$$</div>
+<div class="math">$$
+\mathbf{k}_{t,i} = \left[\mathbf{W}^{UK}_i \mathbf{c}_{t,i}^{KV}; \text{RoPE}(\mathbf{W}^{KR}_i \mathbf{h}_t) \right] \in \mathbb{R}^{d_h + d_h^R} = \mathbb{R}^{128 + 64}, 
+$$</div>
+<div class="math">$$
+\quad \mathbf{W}^{UK}_i \in \mathbb{R}^{d_h \times d_c} = \mathbb{R}^{128 \times 512}
+$$</div>
+<div class="math">$$
+\mathbf{W}^{KR}_i \in \mathbb{R}^{d_h^R \times d} = \mathbb{R}^{64 \times 7168}
+$$</div>
+<div class="math">$$
+\mathbf{v}_{t,i}^C = \mathbf{W}^{UV}_i \mathbf{c}_{t,i}^{KV} \in \mathbb{R}^{d_h} = \mathbb{R}^{128}, \quad \mathbf{W}^{UV}_i \in \mathbb{R}^{d_h \times d_c} = \mathbb{R}^{128 \times 512}
+$$</div>
+<div class="math">$$
+\mathbf{c}_{t,i}^{KV} = \mathbf{W}^{DKV}_i \mathbf{h}_{t,i} \in \mathbb{R}^{d_c} = \mathbb{R}^{512}, \quad \mathbf{c}_{t,i}^Q = \mathbf{W}^{DQ}_i \mathbf{h}_{t,i} \in \mathbb{R}^{d_c^{\prime}} = \mathbb{R}^{1536}
+$$</div>
+<div class="math">$$
+\mathbf{W}^{DKV}_i \in \mathbb{R}^{d_c \times d} \mathbb{R}^{512 \times 7168}, \quad \mathbf{W}^{DQ}_i \in \mathbb{R}^{d_c^{\prime} \times d} \mathbb{R}^{1536 \times 7168}
+$$</div>
+<h3>4.3. <strong>MLA + RoPE 在推理时的计算</strong></h3>
+<p>在自回归推理中，模型预测出 token <span class="math">\(t\)</span> 得到对应的 <span class="math">\(\mathbf{h}_t\)</span> 以后，token <span class="math">\(t\)</span> 会被压缩被缓存，加上 token <span class="math">\(t\)</span> 之前的所有 token 的缓存，然后利用缓存的 KV 进行注意力计算，预测下一个 token <span class="math">\(t+1\)</span>。</p>
+<h4>1. 压缩并缓存</h4>
+<p>路径 <span class="math">\(\text{token t} \to \mathbf{h}_t \to \mathbf{c}_t^{KV} \text{ and } \mathbf{k}_t^R\)</span>. <strong>注意</strong>：对 <span class="math">\(j &lt; t\)</span> 的情况，所有的 <span class="math">\(\mathbf{c}_j^{KV}\)</span> 都已经被Cache了。</p>
+<ul>
+<li>从 token <span class="math">\(t\)</span> 的 embedding vector 到压缩向量:
+<div class="math">$$
+\mathbf{c}_t^{KV} = \mathbf{W}^{DKV} \mathbf{h}_t
+$$</div>
+</li>
+<li>从token <span class="math">\(t\)</span> 的 embedding vector 到新的 RoPE K:
+<div class="math">$$
+\mathbf{k}_t^R = \text{RoPE}(\mathbf{W}^{KR} \mathbf{h}_t)
+$$</div>
+</li>
+<li>Cache <span class="math">\(\mathbf{c}_t^{KV}\)</span> 和 <span class="math">\(\mathbf{k}_t^R\)</span> 。 这样的话从 <span class="math">\(j\)</span> 从 <span class="math">\( 1 \to t\)</span> 的 <span class="math">\(\mathbf{c}_j^{KV}\)</span> 和 <span class="math">\(\mathbf{k}_j^R\)</span> 都已经 Cache 了。</li>
+</ul>
+<h4>2. 解压</h4>
+<ul>
+<li>历史 Key/Value ( <span class="math">\(j \le k\)</span> ) 直接从缓存恢复:</li>
+</ul>
+<div class="math">$$
+\mathbf{k}_j^C = \mathbf{W}^{UK} \mathbf{c}_j^{KV}, \quad \mathbf{v}_j^C = \mathbf{W}^{UV} \mathbf{c}_j^{KV}, \quad \forall j \le k 
+$$</div>
+<ul>
+<li>
+<p>RoPE K 的向量 <span class="math">\(\mathbf{k}_j^R\)</span> <span class="math">\((\forall j \le k)\)</span> 直接从缓存读取。</p>
+</li>
+<li>
+<p>当前 <span class="math">\(\text{token t}\)</span> 的 Query:
+<div class="math">$$
+\mathbf{q}_t^C = \mathbf{W}^{UQ} \mathbf{W}^{DQ} \mathbf{h}_t, \quad \mathbf{q}_t^R = \text{RoPE}(\mathbf{W}^{QR} \mathbf{W}^{DQ} \mathbf{h}_t)
+$$</div>
+</p>
+</li>
+</ul>
+<h4>3. Concat</h4>
+<p>把 NoPE 和 RoPE 拼接起来：</p>
+<div class="math">$$
+\mathbf{q}_{t,i} = [\mathbf{q}_{t,i}^C; \mathbf{q}_{t,i}^R], \quad \mathbf{k}_{j,i} = [\mathbf{k}_{j,i}^C; \mathbf{k}_{j,i}^R]
+$$</div>
+<h4>4. 注意力公式:</h4>
+<div class="math">$$
+\mathbf{o}_{t,i} = \sum_{j=1}^t \text{Softmax}\left(\frac{\mathbf{q}_{t,i}^{\top} \mathbf{k}_{j,i}}{\sqrt{d_h + d_h^R}}\right) \mathbf{v}_{j,i}^C
+$$</div>
+<p>在MLA Inference里面，只需要缓存 <span class="math">\(\mathbf{c}_t^{KV} \in \mathbb{R}^{512}\)</span> 和 <span class="math">\(\mathbf{k}_t^R \in \mathbb{R}^{64}\)</span>，并且他们会被所有的head共享，这样比Cache原始的<span class="math">\(\mathbf{h}_t \in \mathbb{R}^{7168}\)</span> 或者 cache K V 减少了很多内存。</p>
+<p>DeepSeek-V3 的设计目标不是减少 FLOPs（浮点运算次数），而是减少<strong>内存带宽</strong>和<strong>显存占用</strong>，这在 LLM 的生成/推理阶段尤为关键。</p>
+<p>最后总结一下 MLA 部分的超参：</p>
+<table>
+<thead>
+<tr>
+<th>组件</th>
+<th>参数名</th>
+<th>数值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>注意力头数&nbsp;&nbsp;&nbsp;</td>
+<td><span class="math">\(n_h\)</span>&nbsp;&nbsp;&nbsp;</td>
+<td>128</td>
+</tr>
+<tr>
+<td>每个头的维度&nbsp;&nbsp;&nbsp;</td>
+<td><span class="math">\(d_h\)</span>&nbsp;&nbsp;&nbsp;</td>
+<td>128</td>
+</tr>
+<tr>
+<td>KV 压缩维度&nbsp;&nbsp;&nbsp;</td>
+<td><span class="math">\(d_c\)</span> (kv_lora_rank)&nbsp;&nbsp;&nbsp;</td>
+<td>512</td>
+</tr>
+<tr>
+<td>Query 压缩维度&nbsp;&nbsp;&nbsp;</td>
+<td><span class="math">\(d_{c,q}\)</span> (q_lora_rank)&nbsp;&nbsp;&nbsp;</td>
+<td>1536</td>
+</tr>
+<tr>
+<td>解耦 RoPE 维度&nbsp;&nbsp;&nbsp;</td>
+<td><span class="math">\(d_h^R\)</span> (rotary_dim)&nbsp;&nbsp;&nbsp;</td>
+<td>64</td>
+</tr>
+<tr>
+<td>KV 上采样维度&nbsp;&nbsp;&nbsp;</td>
+<td><span class="math">\(d_h^C\)</span> (nop_dim)&nbsp;&nbsp;&nbsp;</td>
+<td>128</td>
+</tr>
+</tbody>
+</table>
+<script type="text/javascript">if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width < 768) ? "left" : align;
+        indent = (screen.width < 768) ? "0em" : indent;
+        linebreak = (screen.width < 768) ? 'true' : linebreak;
+    }
+
+    var mathjaxscript = document.createElement('script');
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript';
+    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-AMS-MML_HTMLorMML';
+
+    var configscript = document.createElement('script');
+    configscript.type = 'text/x-mathjax-config';
+    configscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js'], equationNumbers: { autoNumber: 'none' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    messageStyle: 'normal'," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        availableFonts: ['STIX', 'TeX']," +
+        "        preferredFont: 'STIX'," +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+</script></div>
+    <footer>
+<p class="meta">
+  <span class="byline author vcard">
+    Posted by <span class="fn">
+        <a href="/author/huiming-song.html">Huiming Song</a>
+    </span>
+  </span>
+<time datetime="2025-03-20T00:00:00-05:00" pubdate>Thu 20 March 2025</time>  <span class="categories">
+    <a class='category' href='/category/python.html'>python</a>
+  </span>
+  <span class="categories">
+    <a class="category" href="/tag/python.html">python</a>,    <a class="category" href="/tag/ai.html">AI</a>,    <a class="category" href="/tag/llm.html">LLM</a>,    <a class="category" href="/tag/aig.html">AIG</a>  </span>
+</p><div class="sharing">
+</div>    </footer>
+  </article>
+
+</div>
+<aside class="sidebar">
+  <section>
+    <h1>Recent Posts</h1>
+    <ul id="recent_posts">
+      <li class="post">
+          <a href="/pages/2025/04/20/deepseek-expert-parallelism-load-balancer-eplb-code-reading/">DeepSeek Expert Parallelism Load Balancer (EPLB) Code Reading</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2025/03/20/deepseek-v3-multi-head-latent-attention-mla/">DeepSeek V3 Multi-head Latent Attention (MLA)</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2025/02/23/deepseek-v3-learning-notes/">DeepSeek V3 learning notes</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2025/02/16/deepseek-v3/">DeepSeek V3</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2024/04/21/prediction-in-decoder-and-kv-cache/">Prediction in decoder and KV-Cache</a>
+      </li>
+    </ul>
+  </section>
+  <section>
+      
+    <h1>Categories</h1>
+    <ul id="recent_posts">
+        <li><a href="/category/career-growth.html">career growth</a></li>
+        <li><a href="/category/linux.html">Linux</a></li>
+        <li><a href="/category/python.html">python</a></li>
+        <li><a href="/category/rthers.html">Rthers</a></li>
+    </ul>
+  </section>
+ 
+
+  <section>
+  <h1>Tags</h1>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+
+
+    <section>
+        <h1>Social</h1>
+        <ul>
+            <li><a href="https://www.linkedin.com/pub/huiming-song/24/735/349" target="_blank">Linkedin</a></li>
+        </ul>
+    </section>
+    <section>
+        <h1>Blogroll</h1>
+        <ul>
+            <li><a href="http://easysas.blogspot.com/" target="_blank">my old SAS blog</a></li>
+        </ul>
+    </section>
+
+</aside>    </div>
+  </div>
+  <footer role="contentinfo"><p>
+    Copyright &copy;  2015&ndash;2025  shm &mdash;
+  <span class="credit">Powered by <a href="http://getpelican.com">Pelican</a></span>
+</p></footer>
+  <script src="/theme/js/modernizr-2.0.js"></script>
+  <script src="/theme/js/ender.js"></script>
+  <script src="/theme/js/octopress.js" type="text/javascript"></script>
+    <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-65938411-1']);
+    _gaq.push(['_trackPageview']);
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-65938411-1');
+    ga('send', 'pageview');
+</script>
+  <script type="text/javascript">
+    var disqus_shortname = 'songhuiming';
+    var disqus_identifier = '/pages/2025/03/20/deepseek-v3-multi-head-latent-attention-mla/';
+    var disqus_url = '/pages/2025/03/20/deepseek-v3-multi-head-latent-attention-mla/';
+    var disqus_title = 'DeepSeek V3 Multi-head Latent Attention (MLA)';
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = "//" + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+     })();
+  </script>
+</body>
+</html>
