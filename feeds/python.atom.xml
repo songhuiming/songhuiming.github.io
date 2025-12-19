@@ -360,7 +360,227 @@ print(result)
 &lt;li&gt;&lt;a href="https://github.com/songhuiming/draft-blogs/blob/main/archive/20250302.deepseek.eplb.md"&gt;原始笔记&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href="https://github.com/songhuiming/draft-blogs/blob/main/20250108.deepseek.%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB2.md"&gt;draft notes of deepseek-r1&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href="https://github.com/deepseek-ai/DeepEP"&gt;DeepEP communication library&lt;/a&gt;&lt;/li&gt;
-&lt;/ol&gt;</content><category term="python"></category><category term="python"></category><category term="AI"></category><category term="LLM"></category><category term="AGI"></category></entry><entry><title>DeepSeek V3 Multi-head Latent Attention (MLA)</title><link href="/pages/2025/03/20/deepseek-v3-multi-head-latent-attention-mla/" rel="alternate"></link><published>2025-03-20T00:00:00-05:00</published><updated>2025-03-20T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2025-03-20:/pages/2025/03/20/deepseek-v3-multi-head-latent-attention-mla/</id><summary type="html">&lt;p&gt;&lt;img alt="MLA plot" src="/figures/20250320_deepseek_V3_MLA.svg"&gt;&lt;/p&gt;
+&lt;/ol&gt;</content><category term="python"></category><category term="python"></category><category term="AI"></category><category term="LLM"></category><category term="AGI"></category></entry><entry><title>DeepSeek V3 MoE</title><link href="/pages/2025/03/20/deepseek-v3-moe/" rel="alternate"></link><published>2025-03-20T00:00:00-05:00</published><updated>2025-03-20T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2025-03-20:/pages/2025/03/20/deepseek-v3-moe/</id><summary type="html">&lt;p&gt;&lt;img alt="MLA plot" src="/figures/20250320_deepseek_V3_MoE.svg"&gt;&lt;/p&gt;
+&lt;h2&gt;1. Deepseek MoE 的结构&lt;/h2&gt;
+&lt;p&gt;DeepSeek-V3 的 MoE 架构延续并优化了其特有的 &lt;strong&gt;DeepSeekMoE&lt;/strong&gt; 设计，并引入了 &lt;strong&gt;无辅助损失的负载均衡（Auxiliary-loss-free Load Balancing&lt;/strong&gt; 策略。&lt;/p&gt;
+&lt;h3&gt;1. 整体结构公式 …&lt;/h3&gt;</summary><content type="html">&lt;p&gt;&lt;img alt="MLA plot" src="/figures/20250320_deepseek_V3_MoE.svg"&gt;&lt;/p&gt;
+&lt;h2&gt;1. Deepseek MoE 的结构&lt;/h2&gt;
+&lt;p&gt;DeepSeek-V3 的 MoE 架构延续并优化了其特有的 &lt;strong&gt;DeepSeekMoE&lt;/strong&gt; 设计，并引入了 &lt;strong&gt;无辅助损失的负载均衡（Auxiliary-loss-free Load Balancing&lt;/strong&gt; 策略。&lt;/p&gt;
+&lt;h3&gt;1. 整体结构公式&lt;/h3&gt;
+&lt;p&gt;对于 Token &lt;span class="math"&gt;\(t\)&lt;/span&gt; 层的输入向量 &lt;span class="math"&gt;\(\mathbf{u}_t\)&lt;/span&gt;（即 Attention 层的输出），MoE 层的输出 &lt;span class="math"&gt;\(\mathbf{h}_t^{\prime}\)&lt;/span&gt; 定义为：
+&lt;/p&gt;
+&lt;div class="math"&gt;$$\mathbf{h}_t^{\prime} = \mathbf{u}_t + \text{MoE}(\mathbf{u}_t)$$&lt;/div&gt;
+&lt;p&gt;其中 &lt;span class="math"&gt;\(\text{MoE}(\mathbf{u}_t)\)&lt;/span&gt; 由 &lt;strong&gt;共享专家（Shared Experts&lt;/strong&gt; 和 &lt;strong&gt;路由专家（Routed Experts&lt;/strong&gt; 两部分组成：
+&lt;/p&gt;
+&lt;div class="math"&gt;$$\text{MoE}(\mathbf{u}_t) = \sum_{i=1}^{N_s} \text{FFN}_i^{(s)}(\mathbf{u}_t) + \sum_{i=1}^{N_r} g_{i,t} \text{FFN}_{i}^{r}(\mathbf{u}_t)$$&lt;/div&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(N_s\)&lt;/span&gt;：共享专家的数量。&lt;/li&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(N_r\)&lt;/span&gt;：路由专家的数量， &lt;span class="math"&gt;\(=256\)&lt;/span&gt;。&lt;/li&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(g_{i,t}\)&lt;/span&gt;：第 &lt;span class="math"&gt;\(i\)&lt;/span&gt; 个激活专家的门控增益（Gating Value）。只有&lt;span class="math"&gt;\(K_r\)&lt;/span&gt;个激活专家。&lt;/li&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(\text{FFN}(\cdot)\)&lt;/span&gt;：标准的 Feed-Forward Network。&lt;/li&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(K_r\)&lt;/span&gt;：每个 token 激活的路由专家数量（Top-K）。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;2. 专家内部结构 (FFN)&lt;/h3&gt;
+&lt;p&gt;DeepSeek-V3 采用 &lt;strong&gt;SwiGLU&lt;/strong&gt; 作为专家内部的激活函数。对于任意专家 &lt;span class="math"&gt;\(i\)&lt;/span&gt;，其计算公式为：
+&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\text{FFN}(\mathbf{u}) =\mathbf{W}_{down} \left(\text{SiLU} \left(\mathbf{W}_{up} \mathbf{u}\right) \odot ( \mathbf{W}_{gate} \mathbf{u} ) \right) \in \mathbb{R}^{d} = \mathbb{R}^{7168}
+$$&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;维度定义：&lt;/strong&gt;
+* 输入向量 &lt;span class="math"&gt;\(\mathbf{u} \in \mathbb{R}^{d}\)&lt;/span&gt;，其中 &lt;span class="math"&gt;\(d = 7168\)&lt;/span&gt;。
+* &lt;strong&gt;&lt;span class="math"&gt;\(\mathbf{W}_{up}, \mathbf{W}_{gate} \in \mathbb{R}^{d_{inter} \times  d}\)&lt;/span&gt;&lt;/strong&gt;：升维矩阵。
+    * 对于路由专家，&lt;span class="math"&gt;\(d_{inter} = 2048\)&lt;/span&gt; which is the moe_intermediate_size。
+    * 对于共享专家，&lt;span class="math"&gt;\(d_{inter} = 2048\)&lt;/span&gt;（V3 中共享专家维度与路由专家一致，但始终激活）。
+* &lt;strong&gt;&lt;span class="math"&gt;\(\mathbf{W}_{down} \in \mathbb{R}^{d  \times  d_{inter}}\)&lt;/span&gt;&lt;/strong&gt;：降维矩阵。&lt;/p&gt;
+&lt;p&gt;这里 &lt;span class="math"&gt;\(\odot\)&lt;/span&gt; 是两个维度为2048的向量的逐个元素相乘。&lt;/p&gt;
+&lt;h3&gt;3. 路由与门控机制 (Routing &amp;amp; Gating)&lt;/h3&gt;
+&lt;p&gt;DeepSeek-V3 采用了 &lt;strong&gt;无辅助损失（Aux-loss-free&lt;/strong&gt;) 的负载均衡方案。&lt;/p&gt;
+&lt;h4&gt;(1) 计算亲和力分数 (Affinity Score)&lt;/h4&gt;
+&lt;p&gt;对于 token &lt;span class="math"&gt;\(t\)&lt;/span&gt;，计算其对第 &lt;span class="math"&gt;\(i\)&lt;/span&gt; 个路由专家的亲和力：
+&lt;/p&gt;
+&lt;div class="math"&gt;$$s_{i,t} = \text{Sigmoid}(\mathbf{u}_t^\top \mathbf{e}_i)$$&lt;/div&gt;
+&lt;p&gt;
+其中，&lt;span class="math"&gt;\(\mathbf{e}_i \in \mathbb{R}^{d}\)&lt;/span&gt; 是第 &lt;span class="math"&gt;\(i\)&lt;/span&gt; 个专家的质心向量（Centroid）。&lt;/p&gt;
+&lt;p&gt;对所有的专家，他就等价于跟一个 &lt;span class="math"&gt;\(\mathbf{u}_t\)&lt;/span&gt; 跟一个 Centroid 矩阵 &lt;span class="math"&gt;\(\mathbf{W}_{route}\)&lt;/span&gt;相乘，&lt;span class="math"&gt;\([\mathbf{s}_{1,t}; \mathbf{s}_{2,t}; \cdots ; \mathbf{s}_{N_r,t}] = \mathbf{u}_t \mathbf{W}_{route}\)&lt;/span&gt;。&lt;/p&gt;
+&lt;p&gt;这里 &lt;span class="math"&gt;\(\mathbf{W}_{route} \in \mathbb{R}^{d \times N_r} = \mathbb{R}^{7168 \times 256}\)&lt;/span&gt;.&lt;/p&gt;
+&lt;h4&gt;(2) 引入偏置项 (Load Balancing Bias)&lt;/h4&gt;
+&lt;p&gt;为了实现负载均衡而不损害性能，模型在推理和训练中维护一个动态偏置 &lt;span class="math"&gt;\(b_i\)&lt;/span&gt;：
+&lt;/p&gt;
+&lt;div class="math"&gt;$$s'_{i,t} = s_{i,t} + b_i$$&lt;/div&gt;
+&lt;p&gt;
+* 如果专家 &lt;span class="math"&gt;\(i\)&lt;/span&gt; 过载，算法会减小 &lt;span class="math"&gt;\(b_i\)&lt;/span&gt;；
+* 如果专家 &lt;span class="math"&gt;\(i\)&lt;/span&gt; 空闲，算法会增大 &lt;span class="math"&gt;\(b_i\)&lt;/span&gt;。&lt;/p&gt;
+&lt;h4&gt;(3) Top-K 选择与归一化&lt;/h4&gt;
+&lt;p&gt;选择 &lt;span class="math"&gt;\(s'_{i,t}\)&lt;/span&gt; 最高的 &lt;span class="math"&gt;\(K_r = 8\)&lt;/span&gt; 个专家。最终的门控值 &lt;span class="math"&gt;\(g_{i,t}\)&lt;/span&gt; 是通过对原始 &lt;span class="math"&gt;\(s_{i,t}\)&lt;/span&gt; 进行归一化得到的：
+&lt;/p&gt;
+&lt;div class="math"&gt;$$g_{i,t} = \frac{s_{i,t}}{\sum_{j \in \text{TopK}} s_{j,t}}$$&lt;/div&gt;
+&lt;p&gt;注意：计算 &lt;span class="math"&gt;\(g_{i,t}\)&lt;/span&gt; 时使用的是不含偏置的 &lt;span class="math"&gt;\(s_{i,t}\)&lt;/span&gt;，以保证数学上的纯净性。&lt;/p&gt;
+&lt;h3&gt;4. 关键维度与参数汇总&lt;/h3&gt;
+&lt;p&gt;根据官方参数设置，DeepSeek-V3 的 MoE 维度如下：&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th style="text-align: left;"&gt;参数项&lt;/th&gt;
+&lt;th style="text-align: left;"&gt;符号&lt;/th&gt;
+&lt;th style="text-align: left;"&gt;数值&lt;/th&gt;
+&lt;th style="text-align: left;"&gt;备注&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td style="text-align: left;"&gt;&lt;strong&gt;模型隐藏层维度&lt;/strong&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;&lt;span class="math"&gt;\(d\)&lt;/span&gt;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;&lt;strong&gt;7168&lt;/strong&gt;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;输入/输出向量维度&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style="text-align: left;"&gt;&lt;strong&gt;路由专家总数&lt;/strong&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;&lt;span class="math"&gt;\(N_r\)&lt;/span&gt;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;&lt;strong&gt;256&lt;/strong&gt;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;总共有 256 个可选专家&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style="text-align: left;"&gt;&lt;strong&gt;激活专家数&lt;/strong&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;&lt;span class="math"&gt;\(K_r\)&lt;/span&gt;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;&lt;strong&gt;8&lt;/strong&gt;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;每个 token 选 8 个专家&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style="text-align: left;"&gt;&lt;strong&gt;共享专家数&lt;/strong&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;&lt;span class="math"&gt;\(N_s\)&lt;/span&gt;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;&lt;strong&gt;1&lt;/strong&gt;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;始终激活的专家&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style="text-align: left;"&gt;&lt;strong&gt;专家中间层维度&lt;/strong&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;&lt;span class="math"&gt;\(d_{inter}\)&lt;/span&gt; &amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;&lt;strong&gt;2048&lt;/strong&gt;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;SwiGLU 升维后的维度&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style="text-align: left;"&gt;&lt;strong&gt;专家质心矩阵&lt;/strong&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;&lt;span class="math"&gt;\(\mathbf{E}\)&lt;/span&gt;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;&lt;strong&gt;&lt;span class="math"&gt;\(256 \times 7168\)&lt;/span&gt;&lt;/strong&gt; &amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;用于计算路由分数&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style="text-align: left;"&gt;&lt;strong&gt;激活参数量&lt;/strong&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;-&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;&lt;strong&gt;37B&lt;/strong&gt;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;每次推理实际调用的参数&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style="text-align: left;"&gt;&lt;strong&gt;总参数量&lt;/strong&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;-&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;&lt;strong&gt;671B&lt;/strong&gt;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;包含所有专家矩阵&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h3&gt;5. 总结：DeepSeekMoE 的精髓&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;细粒度专家（Fine-Grained Experts）：&lt;/strong&gt; 将 &lt;span class="math"&gt;\(d_{inter}\)&lt;/span&gt; 设为 2048（远小于传统 MoE 的 8192 或更高），通过增加专家数量 &lt;span class="math"&gt;\(N_r\)&lt;/span&gt; 来提高知识的覆盖面和专业化程度。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;共享专家（Shared Experts）：&lt;/strong&gt; 通过 &lt;span class="math"&gt;\(N_s\)&lt;/span&gt; 捕获公共知识，减少路由专家之间的信息冗余。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Aux-loss-free 策略：&lt;/strong&gt; 传统的辅助损失（如 Switch Transformer 的 load balance loss）会约束路由分布，导致性能下降。DeepSeek-V3 通过调节偏置 &lt;span class="math"&gt;\(b_i\)&lt;/span&gt; 来平衡流量，使得 Loss 专注于预测准确性，从而在 671B 规模下依然保持极高的性能。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2&gt;2. DeepSeek MoE 的参数数量&lt;/h2&gt;
+&lt;h3&gt;1. FFN 变换矩阵的参数量 (单层)&lt;/h3&gt;
+&lt;p&gt;对于每一个专家（无论是共享还是路由），它都包含三个主要的变换矩阵（基于 SwiGLU 结构）：
+* &lt;strong&gt;&lt;span class="math"&gt;\(\mathbf{W}_{up}\)&lt;/span&gt;&lt;/strong&gt;: &lt;span class="math"&gt;\(d_{inter} \times  d = 2048 \times 7168\)&lt;/span&gt;
+* &lt;strong&gt;&lt;span class="math"&gt;\(\mathbf{W}_{gate}\)&lt;/span&gt;&lt;/strong&gt;: &lt;span class="math"&gt;\(d_{inter} \times d = 2048 \times 7168\)&lt;/span&gt;
+* &lt;strong&gt;&lt;span class="math"&gt;\(\mathbf{W}_{down}\)&lt;/span&gt;&lt;/strong&gt;: &lt;span class="math"&gt;\(d \times d_{inter} =  7168 \times 2048\)&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;根据 DeepSeek-V3 的参数设置：
+* &lt;span class="math"&gt;\(d = 7168\)&lt;/span&gt;
+* &lt;span class="math"&gt;\(d_{inter} = 2048\)&lt;/span&gt;
+* 共享专家数 &lt;span class="math"&gt;\(N_s = 1\)&lt;/span&gt;
+* 路由专家总数 &lt;span class="math"&gt;\(N_r = 256\)&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;单个专家的 FFN 参数量为：&lt;/strong&gt;
+&lt;/p&gt;
+&lt;div class="math"&gt;$$(7168 \times 2048) + (7168 \times 2048) + (2048 \times 7168) = 3 \times (7168 \times 2048) \approx 44.04 \text{ M}$$&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;所有专家（1 个共享 + 256 个路由）的 FFN 总参数量为：&lt;/strong&gt;
+&lt;/p&gt;
+&lt;div class="math"&gt;$$3 \times (7168 \times 2048) \times (1 + 256) \approx 11.32 \text{ B (每层)}$$&lt;/div&gt;
+&lt;h3&gt;2. 路由中心（Router Centroids）(单层)&lt;/h3&gt;
+&lt;p&gt;除了 FFN 矩阵，MoE 层还有一个关键组件：&lt;strong&gt;Router&lt;/strong&gt;。
+它需要一套参数来决定每个 token 该去哪个专家。DeepSeek 使用的是向量内积来计算亲和力，因此每个路由专家都有一个对应的“质心”向量 &lt;span class="math"&gt;\(\mathbf{e}_i\)&lt;/span&gt;。对所有的256个路由专家，就是上面的 &lt;span class="math"&gt;\(\mathbf{W}_{route}\)&lt;/span&gt; &lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(\mathbf{W}_{route}\)&lt;/span&gt;： &lt;strong&gt;路由参数量&lt;/strong&gt; = 专家数 &lt;span class="math"&gt;\(\times\)&lt;/span&gt; 模型维度 = &lt;span class="math"&gt;\(256 \times 7168 \approx 1.83 \text{ M (每层)}\)&lt;/span&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;虽然这部分参数相比 FFN 矩阵非常小，但在严谨的参数统计中是独立存在的。&lt;/p&gt;
+&lt;h3&gt;3. 完整的 MoE 层参数公式（单层）&lt;/h3&gt;
+&lt;p&gt;完整 MoE 层的总参数量（不含 Attention 部分），公式应该是：&lt;/p&gt;
+&lt;div class="math"&gt;$$\text{Params}_{\text{MoE}} = \underbrace{3 \times (d \times d_{inter}) \times (N_s + N_r)}_{\text{FFN 变换矩阵}} + \underbrace{(N_r \times d)}_{\text{Router 质心}}$$&lt;/div&gt;
+&lt;p&gt;代入数值：
+&lt;/p&gt;
+&lt;div class="math"&gt;$$\text{Params}_{\text{MoE}} \approx 11,318,341,632 + 1,835,008 \approx 11.32 \text{ B}$$&lt;/div&gt;
+&lt;h3&gt;4. MoE 总参数量&lt;/h3&gt;
+&lt;p&gt;DeepSeek-V3 一共有 &lt;strong&gt;58 层&lt;/strong&gt; 的MoE。简单相乘，得到 MoE的总参数为：&lt;span class="math"&gt;\(58 \text{ 层} \times 11.32 \text{ B/层} \approx 656.6 \text{ B}\)&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;DeepSeek 官方公布的总参数量是 &lt;strong&gt;671B&lt;/strong&gt;，可以看出模型的主要参数都是在MoE部分。 余下来的差别来自于：
+1.  MLA（注意力机制）层也会占用一部分参数。
+2.  Embedding 层（约 0.9B）和输出层。
+3.  实际上，DeepSeek 在 &lt;span class="math"&gt;\(671\)&lt;/span&gt;B 的总规模下，对某些维度进行了微调，以确保模型在 37B 激活参数的情况下达到最优性能平衡。&lt;/p&gt;
+&lt;script type="text/javascript"&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width &lt; 768) ? "left" : align;
+        indent = (screen.width &lt; 768) ? "0em" : indent;
+        linebreak = (screen.width &lt; 768) ? 'true' : linebreak;
+    }
+
+    var mathjaxscript = document.createElement('script');
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript';
+    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-AMS-MML_HTMLorMML';
+
+    var configscript = document.createElement('script');
+    configscript.type = 'text/x-mathjax-config';
+    configscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js'], equationNumbers: { autoNumber: 'none' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    messageStyle: 'normal'," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        availableFonts: ['STIX', 'TeX']," +
+        "        preferredFont: 'STIX'," +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+&lt;/script&gt;</content><category term="python"></category><category term="python"></category><category term="AI"></category><category term="LLM"></category><category term="AIG"></category></entry><entry><title>DeepSeek V3 Multi-head Latent Attention (MLA)</title><link href="/pages/2025/03/20/deepseek-v3-multi-head-latent-attention-mla/" rel="alternate"></link><published>2025-03-20T00:00:00-05:00</published><updated>2025-03-20T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2025-03-20:/pages/2025/03/20/deepseek-v3-multi-head-latent-attention-mla/</id><summary type="html">&lt;p&gt;&lt;img alt="MLA plot" src="/figures/20250320_deepseek_V3_MLA.svg"&gt;&lt;/p&gt;
 &lt;p&gt;在上一篇&lt;a href="https://songhuiming.github.io/pages/2025/02/23/deepseek-v3-learning-notes/"&gt;blog&lt;/a&gt;中，我们讨论了DeepSeek-V3 采用了 &lt;strong&gt;MLA (Multi-Head Latent Attention)&lt;/strong&gt; 架构，其核心目的是通过&lt;strong&gt;低秩联合压缩&lt;/strong&gt; Key 和 Value 来减少 KV 缓存。特别是在推理 …&lt;/p&gt;</summary><content type="html">&lt;p&gt;&lt;img alt="MLA plot" src="/figures/20250320_deepseek_V3_MLA.svg"&gt;&lt;/p&gt;
 &lt;p&gt;在上一篇&lt;a href="https://songhuiming.github.io/pages/2025/02/23/deepseek-v3-learning-notes/"&gt;blog&lt;/a&gt;中，我们讨论了DeepSeek-V3 采用了 &lt;strong&gt;MLA (Multi-Head Latent Attention)&lt;/strong&gt; 架构，其核心目的是通过&lt;strong&gt;低秩联合压缩&lt;/strong&gt; Key 和 Value 来减少 KV 缓存。特别是在推理的时候，通过低秩压缩，从而在generation（inference）的时候KV catch可以减少内存使用，增加速度。其架构设计的核心目标是用推理时的 KV 缓存节省，来换取训练和推理时投影矩阵（降维/升维）带来的额外计算。&lt;/p&gt;
 &lt;p&gt;虽然在配置文件中查询头 (Query Heads, num_attention_heads) 键值头 (Key/Value Heads, num_key_value_heads) &lt;span class="math"&gt;\(n_h = 128\)&lt;/span&gt; 且 &lt;span class="math"&gt;\(n_{kv} = 128\)&lt;/span&gt;（参数上是 MHA），但在其DeepSeek MLA 的内部实现中，它采用了 MQA 的思想，即&lt;strong&gt;每个 Key/Value 的latent vector &lt;span class="math"&gt;\(\mathbf{c}_t^{KV}\)&lt;/span&gt; 会在内核级别共享给所有查询头&lt;/strong&gt;，从而实现 KV 缓存的显著减少。&lt;/p&gt;
@@ -15228,542 +15448,4 @@ source deactivate
 pip install git+git://github.com/fchollet/keras.git@1.1.1
 source deactivate
 &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;After this, tensorflow and theano is ready for call. However, this is in the anaconda virtual enviroment, so it will require installing pandas in this enviroment.&lt;/p&gt;</content><category term="Python"></category><category term="python"></category><category term="tensorflow"></category></entry><entry><title>Exploratory analysis of Two Sigma Financial Modeling Challenge</title><link href="/pages/2017/02/19/exploratory-analysis-of-two-sigma-financial-modeling-challenge/" rel="alternate"></link><published>2017-02-19T00:00:00-06:00</published><updated>2017-02-19T00:00:00-06:00</updated><author><name>Huiming Song</name></author><id>tag:None,2017-02-19:/pages/2017/02/19/exploratory-analysis-of-two-sigma-financial-modeling-challenge/</id><summary type="html">&lt;p&gt;Two sigma provides the interesting data: y is a series of capped and floored time series which converged by time. The explainaroty variables have three types: fundmental, derived and techinical. This data also has a lot of missing values. All together makes the prediction interesting.&lt;/p&gt;</summary><content type="html">&lt;p&gt;The data is time-varying value for each instrument. Each instrument has id, and timestamp. y is the response value to be predicted. All the others are the anonymized features.&lt;/p&gt;
-&lt;h2&gt;0. Introduction&lt;/h2&gt;
-&lt;p&gt;This dataset contains anonymized features pertaining to a time-varying value for a financial instrument. Each instrument has an id. Time is represented by the 'timestamp' feature and the variable to predict is 'y'. No further information will be provided on the meaning of the features, the transformations that were applied to them, the timescale, or the type of instruments that are included in the data. Moreover, in accordance with competition rules, participants must not use data other than the data linked from the competition website for the purpose of use in this competition to develop and test their models and submissions.&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;import numpy as np
-import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
-
-%matplotlib inline
-plt.figure(figsize=(16, 12))
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;df = pd.read_hdf(r'../input/train.h5')   
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h2&gt;1. data description&lt;/h2&gt;
-&lt;p&gt;First we will have a look how many columns are there in the data, what are the columns. How many data are there totally, How many isstrements are there(unique id), and how many timestamp observed for each instrement.&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;df.columns
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;Index([u'id', u'timestamp', u'derived_0', u'derived_1', u'derived_2',
-       u'derived_3', u'derived_4', u'fundamental_0', u'fundamental_1',
-       u'fundamental_2',
-       ...
-       u'technical_36', u'technical_37', u'technical_38', u'technical_39',
-       u'technical_40', u'technical_41', u'technical_42', u'technical_43',
-       u'technical_44', u'y'],
-      dtype='object', length=111)
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;it is like the columns are fake names. it tells us 5 are  derived, 63 are fundamental, ant 40 are techinical.&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;cols = pd.Series(df.columns.map(lambda x: x[:8])).value_counts().values.tolist()
-print(&amp;quot;Fundmental columns: {}, Techinical columns: {}, Derived columns: {}&amp;quot;.format(*cols))
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;Fundmental columns: 63, Techinical columns: 40, Derived columns: 5
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;There are 1424 unique instrument id. Each id has unique timestamps. The instruments like id=1229, 1893 only has two timestamps. The instruments id = 1066, 704 have 1813 timestamps.&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;print len(df.id.unique())
-print df.groupby('id').size().sort_values().head()
-print df.groupby('id').size().sort_values(ascending = False).head()
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;1424
-id
-1229     2
-1893     2
-435      2
-1056     8
-980     12
-dtype: int64
-id
-1066    1813
-704     1813
-697     1813
-699     1813
-1548    1813
-dtype: int64
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;1.1. check the missing data&lt;/h3&gt;
-&lt;p&gt;Col 3 to col 110 are the independent variables. Most of these columns have missing values. The following is to count how many missing values are there for each variable and the percentage of missing values. The top 5 variables having the most missing values are fundamental_5 (56%), fundamental_38(47%), fundamental_6(41%), fundamental_1(40%) and fundamental_61(39%).&lt;/p&gt;
-&lt;p&gt;So we need to impute missing values. shall we impute directly or shall we impute within each group by id, timestamp or id+timestamp?&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;missing_cnts = df.isnull().sum(axis = 0)
-missing_pct = missing_cnts / df.shape[0]
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;missing_pct.sort_values(ascending = False).head()
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;fundamental_5     0.562336
-fundamental_38    0.469669
-fundamental_6     0.410126
-fundamental_1     0.396941
-fundamental_61    0.392692
-dtype: float64
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;ind = np.arange(df.shape[1])
-width = 0.6
-fig, ax = plt.subplots(figsize=(12,40))
-rects = ax.barh(ind, missing_pct.values, color='g')
-ax.set_yticks(ind+((width)/2.))
-ax.set_yticklabels(missing_cnts.index, rotation='horizontal')
-ax.set_xlabel(&amp;quot;Percentage of missing values&amp;quot;)
-ax.set_title(&amp;quot;Number of missing values in each column&amp;quot;)
-plt.show()
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170218_twosigma_01.png"&gt;&lt;/p&gt;
-&lt;h3&gt;1.2. y variable&lt;/h3&gt;
-&lt;p&gt;y distribution is like normal distribution, except that there are two high tails. We need to have a look why there are ourliers on the tail around 0.0934 and -0.086. It shows the data bas been capped and floored.&lt;/p&gt;
-&lt;p&gt;Then the questions comes: how shall we deal with the outliers? shall we use it directly or shall we do any transformation, even cap/floor again, flag it or delete it? These should be tested to check which way will be better.&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;plt.figure(figsize = (8, 6))
-plt.hist(df.y, bins = 150)
-plt.title(&amp;quot;Histogram of y&amp;quot;)
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;&amp;lt;matplotlib.text.Text at 0x1067c978&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170218_twosigma_02.png"&gt;&lt;/p&gt;
-&lt;p&gt;When check which ids have the outliers, it is like most id have the extreme values. It is 1284 of 1424 instruments have the outliers.&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;print df.y.describe()
-print len(df.query('(y &amp;gt;= 0.0934) | (y &amp;lt;= -0.0860)').id.unique())
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;count    1.710756e+06
-mean     2.217509e-04
-std      2.240643e-02
-min     -8.609413e-02
-25%     -9.561389e-03
-50%     -1.570681e-04
-75%      9.520990e-03
-max      9.349781e-02
-Name: y, dtype: float64
-1284
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Take some instruments with outliers as example to plot y v.s. timestamp, there is the trend that at the starting time the data is more volatile, and it shows converging trend around 0. When the data converges to 0, the instrument will be stopped.&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;for i in df.query('(y &amp;gt;= 0.0934) | (y &amp;lt;= -0.0860)').id.unique()[:5]:
-    plt.figure(figsize = (8, 6))
-    df_sel = df.query('id == @i')
-    plt.plot(df_sel.timestamp, df_sel.y, '.')
-    plt.plot()
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170218_twosigma_03.png"&gt;&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170218_twosigma_04.png"&gt;&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170218_twosigma_05.png"&gt;&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170218_twosigma_06.png"&gt;&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170218_twosigma_07.png"&gt;&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;for i in df.query('(y &amp;gt;= 0.0934) | (y &amp;lt;= -0.0860)').id.unique()[:5]:
-    print i
-    df_sel = df.query('id == @i')
-    plt.figure(figsize = (8, 6))
-    plt.hist(df_sel.y, bins = 50)
-    plt.title(&amp;quot;distribution of id = {}&amp;quot;.format(i))
-    plt.plot()
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;93
-419
-961
-1564
-1659
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170218_twosigma_08.png"&gt;&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170218_twosigma_09.png"&gt;&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170218_twosigma_10.png"&gt;&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170218_twosigma_11.png"&gt;&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170218_twosigma_12.png"&gt;&lt;/p&gt;
-&lt;h3&gt;1.3. timestamp&lt;/h3&gt;
-&lt;p&gt;The next variable to study is timestamp. It indicates each transaction for each instrument. We will check the frequency of timestamp first. This will help us to understand at what time there are more transactions and when there are less transactions.&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;timestamp = df.timestamp
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;for bins in [100, 200]:
-    plt.figure(figsize = (12, 9))
-    plt.hist(timestamp, bins = bins)
-    plt.xlabel(&amp;quot;timestamp&amp;quot;)
-    plt.ylabel(&amp;quot;data counts&amp;quot;)
-    plt.title(&amp;quot;Histogram of timestamp: {} bins&amp;quot;.format(bins))
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170218_twosigma_13.png"&gt;&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170218_twosigma_14.png"&gt;&lt;/p&gt;
-&lt;p&gt;It shows there is period of the counts data by timestamp. In each period the counts will slightl decrease and then it will jump. The interval is about 100. So is it daily transaction and there are about 100 timestamps everyday?&lt;/p&gt;
-&lt;h3&gt;1.4. Summary of data&lt;/h3&gt;
-&lt;ol&gt;
-&lt;li&gt;
-&lt;p&gt;There are 1424 unique id in the data, and there are 1813 unique timestamp in the data. within each id, the timestamp is unique.&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;some id only has a few transactions, while some id has more than 1000 transactions.&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;many independent variables has missing values. we need to impute missing values.&lt;/p&gt;
-&lt;/li&gt;
-&lt;/ol&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;print len(df.id.unique())
-print len(df.timestamp.unique())
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;1424
-1813
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h2&gt;2. More check of the data&lt;/h2&gt;
-&lt;h3&gt;2.1. is the timestamp unique for each instrument?&lt;/h3&gt;
-&lt;p&gt;First I want to check for each id, if there are duplicated timestamp or not. The result shows there is no duplicated timestamp for each id. The way to do is group by each id, then compare the length of the subgroup and the counts of unique timestamp at each subgroup. we can define two functions and apply multiple self defined functons on the groupby object.&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;def f1(x):
-    return [x.shape[0] , len(x.timestamp.unique())]
-
-def f2(x):
-    return {'shape': x.shape, 'uniq_cnt': len(x.timestamp.unique())}
-
-print df.groupby('id').apply(f1).head()
-print '\n'
-print df.groupby('id').apply(f2).head()
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;id
-0     [1646, 1646]
-6       [728, 728]
-7     [1543, 1543]
-10      [116, 116]
-11    [1813, 1813]
-dtype: object
-
-
-id
-0     {u'shape': (1646, 111), u'uniq_cnt': 1646}
-6       {u'shape': (728, 111), u'uniq_cnt': 728}
-7     {u'shape': (1543, 111), u'uniq_cnt': 1543}
-10      {u'shape': (116, 111), u'uniq_cnt': 116}
-11    {u'shape': (1813, 111), u'uniq_cnt': 1813}
-dtype: object
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;it shows in each id, the timestamp is unique. That is, there is only one obs for each id at each timestamp.&lt;/p&gt;
-&lt;h3&gt;2.2. a little more about y and x&lt;/h3&gt;
-&lt;p&gt;This is to show how to apply multiple funcitons on different columns. for y, we will calculate min, max and median within each instrument. for timestamp, check its counts; for a given x technical_40, calculate its non-null mean in each instrument to impute the missing values.&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;f0 = lambda x: x[~x.isnull()].mean()
-
-f = {'y': ['min', 'max', 'median'], 'timestamp': ['size'], u'technical_40': {'fake name': f0}}
-
-df.groupby('id').agg(f).head()
-&lt;/code&gt;&lt;/pre&gt;
-&lt;div&gt;
-&lt;table border="1" class="dataframe"&gt;
-  &lt;thead&gt;
-    &lt;tr&gt;
-      &lt;th&gt;&lt;/th&gt;
-      &lt;th colspan="3" halign="left"&gt;y&lt;/th&gt;
-      &lt;th&gt;timestamp&lt;/th&gt;
-      &lt;th&gt;technical_40&lt;/th&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;&lt;/th&gt;
-      &lt;th&gt;min&lt;/th&gt;
-      &lt;th&gt;max&lt;/th&gt;
-      &lt;th&gt;median&lt;/th&gt;
-      &lt;th&gt;size&lt;/th&gt;
-      &lt;th&gt;fake name&lt;/th&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;id&lt;/th&gt;
-      &lt;th&gt;&lt;/th&gt;
-      &lt;th&gt;&lt;/th&gt;
-      &lt;th&gt;&lt;/th&gt;
-      &lt;th&gt;&lt;/th&gt;
-      &lt;th&gt;&lt;/th&gt;
-    &lt;/tr&gt;
-  &lt;/thead&gt;
-  &lt;tbody&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;-0.086094&lt;/td&gt;
-      &lt;td&gt;0.093498&lt;/td&gt;
-      &lt;td&gt;0.000147&lt;/td&gt;
-      &lt;td&gt;1646&lt;/td&gt;
-      &lt;td&gt;-0.071997&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;6&lt;/th&gt;
-      &lt;td&gt;-0.075099&lt;/td&gt;
-      &lt;td&gt;0.057635&lt;/td&gt;
-      &lt;td&gt;-0.000100&lt;/td&gt;
-      &lt;td&gt;728&lt;/td&gt;
-      &lt;td&gt;-0.091534&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;7&lt;/th&gt;
-      &lt;td&gt;-0.086094&lt;/td&gt;
-      &lt;td&gt;0.093498&lt;/td&gt;
-      &lt;td&gt;-0.000009&lt;/td&gt;
-      &lt;td&gt;1543&lt;/td&gt;
-      &lt;td&gt;-0.079504&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;10&lt;/th&gt;
-      &lt;td&gt;-0.086094&lt;/td&gt;
-      &lt;td&gt;0.093498&lt;/td&gt;
-      &lt;td&gt;-0.002115&lt;/td&gt;
-      &lt;td&gt;116&lt;/td&gt;
-      &lt;td&gt;-0.471554&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;11&lt;/th&gt;
-      &lt;td&gt;-0.086094&lt;/td&gt;
-      &lt;td&gt;0.070152&lt;/td&gt;
-      &lt;td&gt;-0.000262&lt;/td&gt;
-      &lt;td&gt;1813&lt;/td&gt;
-      &lt;td&gt;-0.115141&lt;/td&gt;
-    &lt;/tr&gt;
-  &lt;/tbody&gt;
-&lt;/table&gt;
-&lt;/div&gt;
-
-&lt;h3&gt;2.3. impute missing by median in each id group&lt;/h3&gt;
-&lt;p&gt;As we shown above, lots of the x has missing values. A simple way to impute the missing value is its median. Here I will show how to impute all the missing values by the median value for each instrument, rather than using the median of the full data set.&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;fimpute = lambda x: x.fillna(x.median())
-
-grp = df.groupby('id').apply(fimpute)
-
-print grp.head()
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;           id  timestamp  derived_0  derived_1  derived_2  derived_3  \
-id                                                                     
-0  131062   0        167  -0.064533   0.090540  -0.012166   0.009563   
-   131895   0        168  -0.064533   0.090540  -0.012166   0.009563   
-   132728   0        169  -0.064533   0.090540  -0.012166   0.009563   
-   133561   0        170  -0.230583   0.488096   0.935920   0.028222   
-   134393   0        171  -0.230583   0.488096   0.935920   0.028222
-
-           derived_4  fundamental_0  fundamental_1  fundamental_2    ...     \
-id                                                                   ...      
-0  131062   0.130775      -0.182136       0.502698       0.169803    ...      
-   131895   0.130775      -0.182136       0.502698       0.169803    ...      
-   132728   0.130775      -0.182136       0.502698       0.169803    ...      
-   133561  -0.083071      -0.240929       0.502698       0.212425    ...      
-   134393  -0.083071      -0.240929       0.502698       0.212425    ...
-
-           technical_36  technical_37  technical_38  technical_39  \
-id                                                                  
-0  131062      0.039496     -0.000043     -0.000002 -2.547840e-10   
-   131895      0.039496     -0.000043     -0.000002 -2.547840e-10   
-   132728      0.039496     -0.000043     -0.000002 -2.547840e-10   
-   133561      0.727659      0.000000      0.000000  0.000000e+00   
-   134393      0.727659      0.000000      0.000000  0.000000e+00
-
-           technical_40  technical_41  technical_42  technical_43  \
-id                                                                  
-0  131062     -0.071485     -0.000941  2.955212e-38     -0.000102   
-   131895     -0.071485     -0.000941  2.955212e-38     -0.000102   
-   132728     -0.071485     -0.000941  2.955212e-38     -0.000102   
-   133561     -0.160478     -0.000941  0.000000e+00      0.000000   
-   134393     -0.160478     -0.000941  0.000000e+00      0.000000
-
-           technical_44         y  
-id                                 
-0  131062     -0.013518 -0.007108  
-   131895     -0.013518  0.001950  
-   132728     -0.013518  0.017724  
-   133561     -0.013518  0.012934  
-   134393     -0.013518 -0.025229
-
-[5 rows x 111 columns]
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;df.columns[df.query('(id == 0) &amp;amp; (timestamp&amp;lt;170)').isnull().sum() == 0]
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;Index([u'id', u'timestamp', u'technical_22', u'technical_34', u'y'], dtype='object')
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h2&gt;3. Correlation&lt;/h2&gt;
-&lt;h3&gt;3.1. check the correlation between x and y in the full data&lt;/h3&gt;
-&lt;p&gt;numpy provide functition np.corrcoef() to calculate the pearson correlation coefficient and pandas has df.corr() to do the same thing. The better of pandas is it will handle missing values directly while numpy need to impute the missing first.&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;corr_d = {}
-for i in df.columns:
-    if i not in ['id', 'timestamp', 'y']:
-        corr_d[i] = df.ix[:, [i, 'y']].corr().ix[0, 1]
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;corr = pd.DataFrame.from_dict(corr_d, orient = &amp;quot;index&amp;quot;).sort_values(0)
-
-print corr.head()
-print corr.tail()
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;                     0
-technical_20 -0.016534
-technical_27 -0.008092
-technical_19 -0.007647
-technical_35 -0.006009
-technical_36 -0.005902
-                       0
-fundamental_18  0.005123
-fundamental_53  0.006009
-fundamental_51  0.006013
-fundamental_11  0.008151
-technical_30    0.014272
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;as is shown, the correlation between all x and y are not low. The most negative correlated variables are technical_20(-0.016534), tenichical_27(-0.008092); the most positive correlated variables are fundamental_18 (0.005123), fundamental_53(0.006009). The maximum correlation is less them 2%. &lt;/p&gt;
-&lt;p&gt;Let's have a look at within each time stamp, if there is any variables have strong correlation with y.&lt;/p&gt;
-&lt;h3&gt;3.2. correlation between x and y within timestamp&lt;/h3&gt;
-&lt;p&gt;The direct correlation between x and y is very low. However, since the data is the combination of each instrument, the intuitive think is to check the correlation of y and x within each instrument. Data can also be treated as multiple instrments at each time stamp, so another thought is to check the correlation within each timestamp.&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;grp = df.groupby('timestamp')
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;s1 = []
-s2 = []
-for i, (k, g) in enumerate(grp):
-    for c in g.columns:
-        if c not in ['id', 'timestamp', 'y']:
-            s1.append((k, c))
-            s2.append(g.ix[:, [c, 'y']].corr().ix[0, 1])
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;After we sort the value, we can see that for for timestamp 679 and 359, technical_40 has the highest correlation with y; for timestamp 679, technical_7 has the highest correlation.&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;ssort = sorted([list(i) + [j] for i, j in zip(s1, s2)], key = lambda x: x[2])
-print ssort[:5]
-print '\n'
-print ssort[-5:-1]
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;[[679, u'technical_40', -0.61238033073603038], [359, u'technical_40', -0.60861802020416578], [679, u'technical_7', -0.6031429961412077], [1500, u'technical_36', -0.50500188603013252], [513, u'technical_20', -0.50077160906865514]]
-
-
-[[239, u'fundamental_59', 0.58286085236367469], [239, u'technical_22', 0.62048394512745275], [241, u'technical_40', 0.64763093025619489], [239, u'technical_7', 0.69531703280170543]]
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;For timestamp=679, techinicatl_40 has strong negative correlation(-0.61238033073603038) with y. For stimestamp=359, it is also techinical_40 has strong negative corrleation(-0.60861802). So although overll the correlation is weak, but if we look at the data with in each timestamp group, we can find some variables that has pretty storng correlation with y.&lt;/p&gt;
-&lt;h3&gt;3.3. correlation between x and y within id&lt;/h3&gt;
-&lt;p&gt;For each instrument, we can check which variables have the highest correlation with y. This will be the correlation within each group by instrument id.&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;grp = df.groupby('id')
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;s1 = []
-s2 = []
-for i, (k, g) in enumerate(grp):
-    for c in g.columns:
-        if c not in ['id', 'timestamp', 'y']:
-            s1.append((k, c))
-            s2.append(g.ix[:, [c, 'y']].corr().ix[0, 1])
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;It shows the correlation between x and y within each instrument is also higher then the correlation of the full data, although it is not as strong as group by timestamp.&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;ssort = sorted([list(i) + [j] for i, j in zip(s1, s2)], key = lambda x: x[2], reverse=True)
-print ssort[:5]
-print '\n'
-print ssort[-5:-1]
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;[[10, u'technical_5', 0.30671451385776877], [10, u'technical_2', 0.20053930725042707], [10, u'fundamental_61', 0.19872930349160989], [10, u'fundamental_57', 0.16555170011275736], [10, u'fundamental_63', 0.15923680951545652]]
-
-
-[[2158, u'technical_35', -0.30463890005790334], [2158, u'technical_31', -0.40696077297260669], [2158, u'technical_42', nan], [2158, u'technical_43', nan]]
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;For instrument 10, technical_5 has positive correlation(0.306714513) with y. instrument 2158, techinical_35 has negative correlation with y. &lt;/p&gt;
-&lt;p&gt;So we we study each instrument independently, we still get stronger correlation than using the whole data. This information will be helpful later in building the model.&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;from operator import itemgetter, attrgetter, methodcaller
-sorted([list(i) + [j] for i, j in zip(s1, s2)], key=itemgetter(0, 2))
-# sorted([list(i) + [j] for i, j in zip(s1, s2)], key=attrgetter('correlation'))
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;3.4. Summary&lt;/h3&gt;
-&lt;p&gt;If we take the full data, the correlation between all the x and y is very weak. However, if we group the data by instrument or by the timestamp, the correlation will be stronger. &lt;/p&gt;
-&lt;p&gt;But can we group the data for modeling?&lt;/p&gt;
-&lt;h2&gt;4. Model&lt;/h2&gt;
-&lt;h3&gt;4.1. models on full data&lt;/h3&gt;
-&lt;p&gt;Since y is (capped and floored) continuous variable, the easiest model is to build the linear regression model.3 regression will be compared: linear regression, ridge regression and lasso regression. The difference between redige and lasso is in the penalty function. Ridge is two order penalty function while lasso is absolute penalty function. Thus lasso can select variables by letting these coefficients appreach 0 but ridge regression cannot.Adaboost regressor is also tested. When building classification models, adaboost is thought to be the best out of pocket model. Here in the regression models, its performance is not that better comparing to linear gression.&lt;/p&gt;
-&lt;p&gt;Full data has beed used without variable selection. It shows linear regression has the best mean squared errors.&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;from sklearn.cross_validation import train_test_split
-from sklearn import linear_model
-from sklearn.tree import DecisionTreeRegressor
-from sklearn.ensemble import AdaBoostRegressor
-from sklearn.metrics import mean_squared_error
-
-lr = linear_model.LinearRegression()
-ridge = linear_model.Ridge()
-lasso = linear_model.Lasso()
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;df.timestamp.unique()
-dfx_median = df.ix[:, 2:100].median()
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;import time
-st = time.time()
-lr.fit(df.ix[:, 2:100].fillna(dfx_median), df['y'])
-print mean_squared_error(lr.predict(df.ix[:, 2:100].fillna(0)), df['y'])
-
-ridge.fit(df.ix[:, 2:100].fillna(dfx_median), df['y'])
-print mean_squared_error(ridge.predict(df.ix[:, 2:100].fillna(0)), df['y'])
-
-lasso.fit(df.ix[:, 2:100].fillna(dfx_median), df['y'])
-print mean_squared_error(lasso.predict(df.ix[:, 2:100].fillna(0)), df['y'])
-
-
-reg_ada = AdaBoostRegressor(DecisionTreeRegressor(max_depth = 4), n_estimators = 20)
-reg_ada.fit(df.ix[:, 2:100].fillna(dfx_median), df['y'])
-print mean_squared_error(reg_ada.predict(df.ix[:, 2:100].fillna(0)), df['y'])
-
-ed = time.time()
-
-print ed-st
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Of course this comparison is too raw to use since we put all data as training data and compare result from the training data. Usually if you try to overfit the model, the performance on the training data will be good but the prediction power of the model will not as good as expected. We should build a model to predict the trend rather than to predict the errors from the training data.&lt;/p&gt;
-&lt;p&gt;To compare the model performance more reasonable, we should split the data to training data and validation data. Building model on the training data and comparing model on the validation data. &lt;/p&gt;
-&lt;p&gt;In the above example all variables are used in the model. In fact this is not a good way either. One consern is incaluding too many variables will cause overfitting.Generally the more variables included, better performance will the training model performance be. The second is when there are a lot of variables, some variables may be high correlated, resulting in multi-collinearity. The third thing is including too many variables will cost lots of resources to fit the model.&lt;/p&gt;
-&lt;h3&gt;4.2. Split to training/validation and pick 20 most related vars&lt;/h3&gt;
-&lt;p&gt;From the correlation between x and y we can pick the top 20 variables by the correlation with y. The full data will be split to 60% as training data and 40% as validaiton data. As we can see, the running time is much shorter than using the all the x. Linear regression is the best model. For most cases, the MSE will be lower than using all the variables in the model. &lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;top20 = corr[0].map(lambda x: abs(x)).sort_values(ascending = False)[:20].index
-
-dfx_median = df.median()
-df2 = df.fillna(dfx_median)
-
-x_train, x_test, y_train, y_test = train_test_split(df2.ix[:, top20], df2['y'], test_size=0.4, random_state=0)
-
-
-lr = linear_model.LinearRegression()
-ridge = linear_model.Ridge()
-lasso = linear_model.Lasso()
-
-st = time.time()
-
-lr.fit(x_train, y_train)
-print mean_squared_error(lr.predict(x_test), y_test)
-
-ridge.fit(x_train, y_train)
-print mean_squared_error(ridge.predict(x_test), y_test)
-
-lasso.fit(x_train, y_train)
-print mean_squared_error(lasso.predict(x_test), y_test)
-
-reg_ada = AdaBoostRegressor(DecisionTreeRegressor(max_depth = 4), n_estimators = 20)
-reg_ada.fit(x_train, y_train)
-print mean_squared_error(reg_ada.predict(x_test), y_test)
-
-ed = time.time()
-
-print ed-st
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;0.000500598917586
-0.000500607067788
-0.000500847186479
-0.00050218493994
-90.745000124
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;4.3. model on each group&lt;/h3&gt;
-&lt;p&gt;Using the top 20 correlated coclumns will improve the model a little. The correlation is stronger amont the group: by instrument or by timestamp. So if building a model for each timestamp, will it improve more? &lt;/p&gt;
-&lt;p&gt;Let's look at the example of building the model on each timestamp and select the top 10 correlated variables.&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;pred_lr = []
-pred_ridge = []
-pred_lasso = []
-
-for i in df.timestamp.unique():
-    if i % 300 == 0:
-        print i
-    df0 = df.query('timestamp == @i')
-    df0 = df0.fillna(df0.median())
-    select_var =  df0.ix[:, 2:-1].corrwith(df0.y).dropna().map(lambda x: abs(x)).sort_values()[-10:].index
-    #print select_var
-
-    lr.fit(df0.ix[:, select_var], df0['y'])
-    ridge.fit(df0.ix[:, select_var], df0['y'])
-    lasso.fit(df0.ix[:, select_var], df0['y'])
-
-    pred_lr = np.r_[pred_lr, lr.predict(df0.ix[:, select_var])]
-    pred_ridge = np.r_[pred_ridge, ridge.predict(df0.ix[:, select_var])]
-    pred_lasso = np.r_[pred_lasso, lasso.predict(df0.ix[:, select_var])]
-
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;0
-300
-600
-900
-1200
-1500
-1800
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;print mean_squared_error(pred_lr, df['y'])
-print mean_squared_error(pred_ridge, df['y'])
-print mean_squared_error(pred_lasso, df['y'])
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;0.000414826716159
-0.000419801804688
-0.00048255088499
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Above are some exploratory analysis of the data and the tentative models. The more detailed models should be built on the consideration above and the variable selection.    &lt;/p&gt;
-&lt;h2&gt;Reference&lt;/h2&gt;
-&lt;ol&gt;
-&lt;li&gt;&lt;a href="http://stackoverflow.com/questions/14529838/apply-multiple-functions-to-multiple-groupby-columns"&gt;Apply multiple functions to multiple groupby columns&lt;/a&gt;&lt;/li&gt;
-&lt;/ol&gt;</content><category term="Python"></category><category term="python"></category><category term="data visualization"></category><category term="matplotlib"></category><category term="data minging"></category></entry></feed>
+&lt;p&gt;After this, tensorflow and theano is ready for call. However, this is in the anaconda virtual enviroment, so it will require installing pandas in this enviroment.&lt;/p&gt;</content><category term="Python"></category><category term="python"></category><category term="tensorflow"></category></entry></feed>

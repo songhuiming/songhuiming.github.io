@@ -360,7 +360,227 @@ print(result)
 &lt;li&gt;&lt;a href="https://github.com/songhuiming/draft-blogs/blob/main/archive/20250302.deepseek.eplb.md"&gt;原始笔记&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href="https://github.com/songhuiming/draft-blogs/blob/main/20250108.deepseek.%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB2.md"&gt;draft notes of deepseek-r1&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href="https://github.com/deepseek-ai/DeepEP"&gt;DeepEP communication library&lt;/a&gt;&lt;/li&gt;
-&lt;/ol&gt;</content><category term="python"></category><category term="python"></category><category term="AI"></category><category term="LLM"></category><category term="AGI"></category></entry><entry><title>DeepSeek V3 Multi-head Latent Attention (MLA)</title><link href="/pages/2025/03/20/deepseek-v3-multi-head-latent-attention-mla/" rel="alternate"></link><published>2025-03-20T00:00:00-05:00</published><updated>2025-03-20T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2025-03-20:/pages/2025/03/20/deepseek-v3-multi-head-latent-attention-mla/</id><summary type="html">&lt;p&gt;&lt;img alt="MLA plot" src="/figures/20250320_deepseek_V3_MLA.svg"&gt;&lt;/p&gt;
+&lt;/ol&gt;</content><category term="python"></category><category term="python"></category><category term="AI"></category><category term="LLM"></category><category term="AGI"></category></entry><entry><title>DeepSeek V3 MoE</title><link href="/pages/2025/03/20/deepseek-v3-moe/" rel="alternate"></link><published>2025-03-20T00:00:00-05:00</published><updated>2025-03-20T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2025-03-20:/pages/2025/03/20/deepseek-v3-moe/</id><summary type="html">&lt;p&gt;&lt;img alt="MLA plot" src="/figures/20250320_deepseek_V3_MoE.svg"&gt;&lt;/p&gt;
+&lt;h2&gt;1. Deepseek MoE 的结构&lt;/h2&gt;
+&lt;p&gt;DeepSeek-V3 的 MoE 架构延续并优化了其特有的 &lt;strong&gt;DeepSeekMoE&lt;/strong&gt; 设计，并引入了 &lt;strong&gt;无辅助损失的负载均衡（Auxiliary-loss-free Load Balancing&lt;/strong&gt; 策略。&lt;/p&gt;
+&lt;h3&gt;1. 整体结构公式 …&lt;/h3&gt;</summary><content type="html">&lt;p&gt;&lt;img alt="MLA plot" src="/figures/20250320_deepseek_V3_MoE.svg"&gt;&lt;/p&gt;
+&lt;h2&gt;1. Deepseek MoE 的结构&lt;/h2&gt;
+&lt;p&gt;DeepSeek-V3 的 MoE 架构延续并优化了其特有的 &lt;strong&gt;DeepSeekMoE&lt;/strong&gt; 设计，并引入了 &lt;strong&gt;无辅助损失的负载均衡（Auxiliary-loss-free Load Balancing&lt;/strong&gt; 策略。&lt;/p&gt;
+&lt;h3&gt;1. 整体结构公式&lt;/h3&gt;
+&lt;p&gt;对于 Token &lt;span class="math"&gt;\(t\)&lt;/span&gt; 层的输入向量 &lt;span class="math"&gt;\(\mathbf{u}_t\)&lt;/span&gt;（即 Attention 层的输出），MoE 层的输出 &lt;span class="math"&gt;\(\mathbf{h}_t^{\prime}\)&lt;/span&gt; 定义为：
+&lt;/p&gt;
+&lt;div class="math"&gt;$$\mathbf{h}_t^{\prime} = \mathbf{u}_t + \text{MoE}(\mathbf{u}_t)$$&lt;/div&gt;
+&lt;p&gt;其中 &lt;span class="math"&gt;\(\text{MoE}(\mathbf{u}_t)\)&lt;/span&gt; 由 &lt;strong&gt;共享专家（Shared Experts&lt;/strong&gt; 和 &lt;strong&gt;路由专家（Routed Experts&lt;/strong&gt; 两部分组成：
+&lt;/p&gt;
+&lt;div class="math"&gt;$$\text{MoE}(\mathbf{u}_t) = \sum_{i=1}^{N_s} \text{FFN}_i^{(s)}(\mathbf{u}_t) + \sum_{i=1}^{N_r} g_{i,t} \text{FFN}_{i}^{r}(\mathbf{u}_t)$$&lt;/div&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(N_s\)&lt;/span&gt;：共享专家的数量。&lt;/li&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(N_r\)&lt;/span&gt;：路由专家的数量， &lt;span class="math"&gt;\(=256\)&lt;/span&gt;。&lt;/li&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(g_{i,t}\)&lt;/span&gt;：第 &lt;span class="math"&gt;\(i\)&lt;/span&gt; 个激活专家的门控增益（Gating Value）。只有&lt;span class="math"&gt;\(K_r\)&lt;/span&gt;个激活专家。&lt;/li&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(\text{FFN}(\cdot)\)&lt;/span&gt;：标准的 Feed-Forward Network。&lt;/li&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(K_r\)&lt;/span&gt;：每个 token 激活的路由专家数量（Top-K）。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;2. 专家内部结构 (FFN)&lt;/h3&gt;
+&lt;p&gt;DeepSeek-V3 采用 &lt;strong&gt;SwiGLU&lt;/strong&gt; 作为专家内部的激活函数。对于任意专家 &lt;span class="math"&gt;\(i\)&lt;/span&gt;，其计算公式为：
+&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\text{FFN}(\mathbf{u}) =\mathbf{W}_{down} \left(\text{SiLU} \left(\mathbf{W}_{up} \mathbf{u}\right) \odot ( \mathbf{W}_{gate} \mathbf{u} ) \right) \in \mathbb{R}^{d} = \mathbb{R}^{7168}
+$$&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;维度定义：&lt;/strong&gt;
+* 输入向量 &lt;span class="math"&gt;\(\mathbf{u} \in \mathbb{R}^{d}\)&lt;/span&gt;，其中 &lt;span class="math"&gt;\(d = 7168\)&lt;/span&gt;。
+* &lt;strong&gt;&lt;span class="math"&gt;\(\mathbf{W}_{up}, \mathbf{W}_{gate} \in \mathbb{R}^{d_{inter} \times  d}\)&lt;/span&gt;&lt;/strong&gt;：升维矩阵。
+    * 对于路由专家，&lt;span class="math"&gt;\(d_{inter} = 2048\)&lt;/span&gt; which is the moe_intermediate_size。
+    * 对于共享专家，&lt;span class="math"&gt;\(d_{inter} = 2048\)&lt;/span&gt;（V3 中共享专家维度与路由专家一致，但始终激活）。
+* &lt;strong&gt;&lt;span class="math"&gt;\(\mathbf{W}_{down} \in \mathbb{R}^{d  \times  d_{inter}}\)&lt;/span&gt;&lt;/strong&gt;：降维矩阵。&lt;/p&gt;
+&lt;p&gt;这里 &lt;span class="math"&gt;\(\odot\)&lt;/span&gt; 是两个维度为2048的向量的逐个元素相乘。&lt;/p&gt;
+&lt;h3&gt;3. 路由与门控机制 (Routing &amp;amp; Gating)&lt;/h3&gt;
+&lt;p&gt;DeepSeek-V3 采用了 &lt;strong&gt;无辅助损失（Aux-loss-free&lt;/strong&gt;) 的负载均衡方案。&lt;/p&gt;
+&lt;h4&gt;(1) 计算亲和力分数 (Affinity Score)&lt;/h4&gt;
+&lt;p&gt;对于 token &lt;span class="math"&gt;\(t\)&lt;/span&gt;，计算其对第 &lt;span class="math"&gt;\(i\)&lt;/span&gt; 个路由专家的亲和力：
+&lt;/p&gt;
+&lt;div class="math"&gt;$$s_{i,t} = \text{Sigmoid}(\mathbf{u}_t^\top \mathbf{e}_i)$$&lt;/div&gt;
+&lt;p&gt;
+其中，&lt;span class="math"&gt;\(\mathbf{e}_i \in \mathbb{R}^{d}\)&lt;/span&gt; 是第 &lt;span class="math"&gt;\(i\)&lt;/span&gt; 个专家的质心向量（Centroid）。&lt;/p&gt;
+&lt;p&gt;对所有的专家，他就等价于跟一个 &lt;span class="math"&gt;\(\mathbf{u}_t\)&lt;/span&gt; 跟一个 Centroid 矩阵 &lt;span class="math"&gt;\(\mathbf{W}_{route}\)&lt;/span&gt;相乘，&lt;span class="math"&gt;\([\mathbf{s}_{1,t}; \mathbf{s}_{2,t}; \cdots ; \mathbf{s}_{N_r,t}] = \mathbf{u}_t \mathbf{W}_{route}\)&lt;/span&gt;。&lt;/p&gt;
+&lt;p&gt;这里 &lt;span class="math"&gt;\(\mathbf{W}_{route} \in \mathbb{R}^{d \times N_r} = \mathbb{R}^{7168 \times 256}\)&lt;/span&gt;.&lt;/p&gt;
+&lt;h4&gt;(2) 引入偏置项 (Load Balancing Bias)&lt;/h4&gt;
+&lt;p&gt;为了实现负载均衡而不损害性能，模型在推理和训练中维护一个动态偏置 &lt;span class="math"&gt;\(b_i\)&lt;/span&gt;：
+&lt;/p&gt;
+&lt;div class="math"&gt;$$s'_{i,t} = s_{i,t} + b_i$$&lt;/div&gt;
+&lt;p&gt;
+* 如果专家 &lt;span class="math"&gt;\(i\)&lt;/span&gt; 过载，算法会减小 &lt;span class="math"&gt;\(b_i\)&lt;/span&gt;；
+* 如果专家 &lt;span class="math"&gt;\(i\)&lt;/span&gt; 空闲，算法会增大 &lt;span class="math"&gt;\(b_i\)&lt;/span&gt;。&lt;/p&gt;
+&lt;h4&gt;(3) Top-K 选择与归一化&lt;/h4&gt;
+&lt;p&gt;选择 &lt;span class="math"&gt;\(s'_{i,t}\)&lt;/span&gt; 最高的 &lt;span class="math"&gt;\(K_r = 8\)&lt;/span&gt; 个专家。最终的门控值 &lt;span class="math"&gt;\(g_{i,t}\)&lt;/span&gt; 是通过对原始 &lt;span class="math"&gt;\(s_{i,t}\)&lt;/span&gt; 进行归一化得到的：
+&lt;/p&gt;
+&lt;div class="math"&gt;$$g_{i,t} = \frac{s_{i,t}}{\sum_{j \in \text{TopK}} s_{j,t}}$$&lt;/div&gt;
+&lt;p&gt;注意：计算 &lt;span class="math"&gt;\(g_{i,t}\)&lt;/span&gt; 时使用的是不含偏置的 &lt;span class="math"&gt;\(s_{i,t}\)&lt;/span&gt;，以保证数学上的纯净性。&lt;/p&gt;
+&lt;h3&gt;4. 关键维度与参数汇总&lt;/h3&gt;
+&lt;p&gt;根据官方参数设置，DeepSeek-V3 的 MoE 维度如下：&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th style="text-align: left;"&gt;参数项&lt;/th&gt;
+&lt;th style="text-align: left;"&gt;符号&lt;/th&gt;
+&lt;th style="text-align: left;"&gt;数值&lt;/th&gt;
+&lt;th style="text-align: left;"&gt;备注&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td style="text-align: left;"&gt;&lt;strong&gt;模型隐藏层维度&lt;/strong&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;&lt;span class="math"&gt;\(d\)&lt;/span&gt;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;&lt;strong&gt;7168&lt;/strong&gt;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;输入/输出向量维度&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style="text-align: left;"&gt;&lt;strong&gt;路由专家总数&lt;/strong&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;&lt;span class="math"&gt;\(N_r\)&lt;/span&gt;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;&lt;strong&gt;256&lt;/strong&gt;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;总共有 256 个可选专家&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style="text-align: left;"&gt;&lt;strong&gt;激活专家数&lt;/strong&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;&lt;span class="math"&gt;\(K_r\)&lt;/span&gt;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;&lt;strong&gt;8&lt;/strong&gt;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;每个 token 选 8 个专家&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style="text-align: left;"&gt;&lt;strong&gt;共享专家数&lt;/strong&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;&lt;span class="math"&gt;\(N_s\)&lt;/span&gt;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;&lt;strong&gt;1&lt;/strong&gt;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;始终激活的专家&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style="text-align: left;"&gt;&lt;strong&gt;专家中间层维度&lt;/strong&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;&lt;span class="math"&gt;\(d_{inter}\)&lt;/span&gt; &amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;&lt;strong&gt;2048&lt;/strong&gt;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;SwiGLU 升维后的维度&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style="text-align: left;"&gt;&lt;strong&gt;专家质心矩阵&lt;/strong&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;&lt;span class="math"&gt;\(\mathbf{E}\)&lt;/span&gt;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;&lt;strong&gt;&lt;span class="math"&gt;\(256 \times 7168\)&lt;/span&gt;&lt;/strong&gt; &amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;用于计算路由分数&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style="text-align: left;"&gt;&lt;strong&gt;激活参数量&lt;/strong&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;-&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;&lt;strong&gt;37B&lt;/strong&gt;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;每次推理实际调用的参数&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style="text-align: left;"&gt;&lt;strong&gt;总参数量&lt;/strong&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;-&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;&lt;strong&gt;671B&lt;/strong&gt;&lt;/td&gt;
+&lt;td style="text-align: left;"&gt;包含所有专家矩阵&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h3&gt;5. 总结：DeepSeekMoE 的精髓&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;细粒度专家（Fine-Grained Experts）：&lt;/strong&gt; 将 &lt;span class="math"&gt;\(d_{inter}\)&lt;/span&gt; 设为 2048（远小于传统 MoE 的 8192 或更高），通过增加专家数量 &lt;span class="math"&gt;\(N_r\)&lt;/span&gt; 来提高知识的覆盖面和专业化程度。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;共享专家（Shared Experts）：&lt;/strong&gt; 通过 &lt;span class="math"&gt;\(N_s\)&lt;/span&gt; 捕获公共知识，减少路由专家之间的信息冗余。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Aux-loss-free 策略：&lt;/strong&gt; 传统的辅助损失（如 Switch Transformer 的 load balance loss）会约束路由分布，导致性能下降。DeepSeek-V3 通过调节偏置 &lt;span class="math"&gt;\(b_i\)&lt;/span&gt; 来平衡流量，使得 Loss 专注于预测准确性，从而在 671B 规模下依然保持极高的性能。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2&gt;2. DeepSeek MoE 的参数数量&lt;/h2&gt;
+&lt;h3&gt;1. FFN 变换矩阵的参数量 (单层)&lt;/h3&gt;
+&lt;p&gt;对于每一个专家（无论是共享还是路由），它都包含三个主要的变换矩阵（基于 SwiGLU 结构）：
+* &lt;strong&gt;&lt;span class="math"&gt;\(\mathbf{W}_{up}\)&lt;/span&gt;&lt;/strong&gt;: &lt;span class="math"&gt;\(d_{inter} \times  d = 2048 \times 7168\)&lt;/span&gt;
+* &lt;strong&gt;&lt;span class="math"&gt;\(\mathbf{W}_{gate}\)&lt;/span&gt;&lt;/strong&gt;: &lt;span class="math"&gt;\(d_{inter} \times d = 2048 \times 7168\)&lt;/span&gt;
+* &lt;strong&gt;&lt;span class="math"&gt;\(\mathbf{W}_{down}\)&lt;/span&gt;&lt;/strong&gt;: &lt;span class="math"&gt;\(d \times d_{inter} =  7168 \times 2048\)&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;根据 DeepSeek-V3 的参数设置：
+* &lt;span class="math"&gt;\(d = 7168\)&lt;/span&gt;
+* &lt;span class="math"&gt;\(d_{inter} = 2048\)&lt;/span&gt;
+* 共享专家数 &lt;span class="math"&gt;\(N_s = 1\)&lt;/span&gt;
+* 路由专家总数 &lt;span class="math"&gt;\(N_r = 256\)&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;单个专家的 FFN 参数量为：&lt;/strong&gt;
+&lt;/p&gt;
+&lt;div class="math"&gt;$$(7168 \times 2048) + (7168 \times 2048) + (2048 \times 7168) = 3 \times (7168 \times 2048) \approx 44.04 \text{ M}$$&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;所有专家（1 个共享 + 256 个路由）的 FFN 总参数量为：&lt;/strong&gt;
+&lt;/p&gt;
+&lt;div class="math"&gt;$$3 \times (7168 \times 2048) \times (1 + 256) \approx 11.32 \text{ B (每层)}$$&lt;/div&gt;
+&lt;h3&gt;2. 路由中心（Router Centroids）(单层)&lt;/h3&gt;
+&lt;p&gt;除了 FFN 矩阵，MoE 层还有一个关键组件：&lt;strong&gt;Router&lt;/strong&gt;。
+它需要一套参数来决定每个 token 该去哪个专家。DeepSeek 使用的是向量内积来计算亲和力，因此每个路由专家都有一个对应的“质心”向量 &lt;span class="math"&gt;\(\mathbf{e}_i\)&lt;/span&gt;。对所有的256个路由专家，就是上面的 &lt;span class="math"&gt;\(\mathbf{W}_{route}\)&lt;/span&gt; &lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(\mathbf{W}_{route}\)&lt;/span&gt;： &lt;strong&gt;路由参数量&lt;/strong&gt; = 专家数 &lt;span class="math"&gt;\(\times\)&lt;/span&gt; 模型维度 = &lt;span class="math"&gt;\(256 \times 7168 \approx 1.83 \text{ M (每层)}\)&lt;/span&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;虽然这部分参数相比 FFN 矩阵非常小，但在严谨的参数统计中是独立存在的。&lt;/p&gt;
+&lt;h3&gt;3. 完整的 MoE 层参数公式（单层）&lt;/h3&gt;
+&lt;p&gt;完整 MoE 层的总参数量（不含 Attention 部分），公式应该是：&lt;/p&gt;
+&lt;div class="math"&gt;$$\text{Params}_{\text{MoE}} = \underbrace{3 \times (d \times d_{inter}) \times (N_s + N_r)}_{\text{FFN 变换矩阵}} + \underbrace{(N_r \times d)}_{\text{Router 质心}}$$&lt;/div&gt;
+&lt;p&gt;代入数值：
+&lt;/p&gt;
+&lt;div class="math"&gt;$$\text{Params}_{\text{MoE}} \approx 11,318,341,632 + 1,835,008 \approx 11.32 \text{ B}$$&lt;/div&gt;
+&lt;h3&gt;4. MoE 总参数量&lt;/h3&gt;
+&lt;p&gt;DeepSeek-V3 一共有 &lt;strong&gt;58 层&lt;/strong&gt; 的MoE。简单相乘，得到 MoE的总参数为：&lt;span class="math"&gt;\(58 \text{ 层} \times 11.32 \text{ B/层} \approx 656.6 \text{ B}\)&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;DeepSeek 官方公布的总参数量是 &lt;strong&gt;671B&lt;/strong&gt;，可以看出模型的主要参数都是在MoE部分。 余下来的差别来自于：
+1.  MLA（注意力机制）层也会占用一部分参数。
+2.  Embedding 层（约 0.9B）和输出层。
+3.  实际上，DeepSeek 在 &lt;span class="math"&gt;\(671\)&lt;/span&gt;B 的总规模下，对某些维度进行了微调，以确保模型在 37B 激活参数的情况下达到最优性能平衡。&lt;/p&gt;
+&lt;script type="text/javascript"&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width &lt; 768) ? "left" : align;
+        indent = (screen.width &lt; 768) ? "0em" : indent;
+        linebreak = (screen.width &lt; 768) ? 'true' : linebreak;
+    }
+
+    var mathjaxscript = document.createElement('script');
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript';
+    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-AMS-MML_HTMLorMML';
+
+    var configscript = document.createElement('script');
+    configscript.type = 'text/x-mathjax-config';
+    configscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js'], equationNumbers: { autoNumber: 'none' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    messageStyle: 'normal'," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        availableFonts: ['STIX', 'TeX']," +
+        "        preferredFont: 'STIX'," +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+&lt;/script&gt;</content><category term="python"></category><category term="python"></category><category term="AI"></category><category term="LLM"></category><category term="AIG"></category></entry><entry><title>DeepSeek V3 Multi-head Latent Attention (MLA)</title><link href="/pages/2025/03/20/deepseek-v3-multi-head-latent-attention-mla/" rel="alternate"></link><published>2025-03-20T00:00:00-05:00</published><updated>2025-03-20T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2025-03-20:/pages/2025/03/20/deepseek-v3-multi-head-latent-attention-mla/</id><summary type="html">&lt;p&gt;&lt;img alt="MLA plot" src="/figures/20250320_deepseek_V3_MLA.svg"&gt;&lt;/p&gt;
 &lt;p&gt;在上一篇&lt;a href="https://songhuiming.github.io/pages/2025/02/23/deepseek-v3-learning-notes/"&gt;blog&lt;/a&gt;中，我们讨论了DeepSeek-V3 采用了 &lt;strong&gt;MLA (Multi-Head Latent Attention)&lt;/strong&gt; 架构，其核心目的是通过&lt;strong&gt;低秩联合压缩&lt;/strong&gt; Key 和 Value 来减少 KV 缓存。特别是在推理 …&lt;/p&gt;</summary><content type="html">&lt;p&gt;&lt;img alt="MLA plot" src="/figures/20250320_deepseek_V3_MLA.svg"&gt;&lt;/p&gt;
 &lt;p&gt;在上一篇&lt;a href="https://songhuiming.github.io/pages/2025/02/23/deepseek-v3-learning-notes/"&gt;blog&lt;/a&gt;中，我们讨论了DeepSeek-V3 采用了 &lt;strong&gt;MLA (Multi-Head Latent Attention)&lt;/strong&gt; 架构，其核心目的是通过&lt;strong&gt;低秩联合压缩&lt;/strong&gt; Key 和 Value 来减少 KV 缓存。特别是在推理的时候，通过低秩压缩，从而在generation（inference）的时候KV catch可以减少内存使用，增加速度。其架构设计的核心目标是用推理时的 KV 缓存节省，来换取训练和推理时投影矩阵（降维/升维）带来的额外计算。&lt;/p&gt;
 &lt;p&gt;虽然在配置文件中查询头 (Query Heads, num_attention_heads) 键值头 (Key/Value Heads, num_key_value_heads) &lt;span class="math"&gt;\(n_h = 128\)&lt;/span&gt; 且 &lt;span class="math"&gt;\(n_{kv} = 128\)&lt;/span&gt;（参数上是 MHA），但在其DeepSeek MLA 的内部实现中，它采用了 MQA 的思想，即&lt;strong&gt;每个 Key/Value 的latent vector &lt;span class="math"&gt;\(\mathbf{c}_t^{KV}\)&lt;/span&gt; 会在内核级别共享给所有查询头&lt;/strong&gt;，从而实现 KV 缓存的显著减少。&lt;/p&gt;
@@ -14922,89 +15142,4 @@ Where:
 &lt;h3&gt;Reference&lt;/h3&gt;
 &lt;ol&gt;
 &lt;li&gt;&lt;a href="https://medium.com/all-of-us-are-belong-to-machines/gentlest-intro-to-tensorflow-4-logistic-regression-2afd0cabc54#.6erqpbxxl"&gt;Gentlest Intro to Tensorflow #4: Logistic Regression&lt;/a&gt;&lt;/li&gt;
-&lt;/ol&gt;</content><category term="Python"></category><category term="python"></category><category term="tensorflow"></category><category term="deep learning"></category></entry><entry><title>tensorflow简介--03</title><link href="/pages/2017/02/26/tensorflowjian-jie-03/" rel="alternate"></link><published>2017-02-26T22:03:00-06:00</published><updated>2017-02-26T22:03:00-06:00</updated><author><name>Huiming Song</name></author><id>tag:None,2017-02-26:/pages/2017/02/26/tensorflowjian-jie-03/</id><summary type="html">&lt;p&gt;经过前面介绍的单feature的线性模型，损失函数，梯度下降（part 1），epoch， learn-rate, 可变梯度下降(part 2)，我们可以继续介绍TF下面多特征(&lt;em&gt;multi-feature&lt;/em&gt;)的线性回归。&lt;/p&gt;</summary><content type="html">&lt;h2&gt;快速回顾&lt;/h2&gt;
-&lt;p&gt;前面两章的前提是：给定房屋面积作为feature，我们想预测房屋价格:&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;
-&lt;p&gt;我们找到一条直线(线性回归)来最好的拟合数据点。最好的线性回归拟合的意思是：真实值(灰色点)和预测值(灰色点在回归直线上的插值)的距离最小化。也就是那些蓝色线的值最小化。&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;用这条回归直线，对给定的房屋面积，我们可以预测对应的价格&lt;/p&gt;
-&lt;/li&gt;
-&lt;/ol&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p3_01.png"&gt;&lt;/p&gt;
-&lt;h2&gt;多特征(multi-feature)线性回归回顾&lt;/h2&gt;
-&lt;p&gt;实际当中，预测通常依赖于多个特征。所以我们要从单特征模型拓展到多特征模型。不失一般性，我们选择两个特征模型来可视化。这样既能保持简单，又可以推广到更多特征的情形。&lt;/p&gt;
-&lt;p&gt;我们引入一个新的特征，房间的数目(房屋里面房间的数目)。在收集数据的时候，我们需要新的特征房间数目，以及已经存在的特征，房屋面积，还有相应的房屋价格。&lt;/p&gt;
-&lt;p&gt;图形就是3-维的：&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p3_02.png"&gt;&lt;/p&gt;
-&lt;p&gt;我们的目标是给定房间数目，房屋面积，来预测房屋价格。&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p3_03.png"&gt;&lt;/p&gt;
-&lt;p&gt;在单特征假设下，我们要用线性回归来产生一条直线来预测房屋面积的结果。在2-维的情形下，我们同样可以做线性回归，只不过变成一个平面（而不是一条直线）。&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p3_04.png"&gt;&lt;/p&gt;
-&lt;h2&gt;多特征线性回归模型&lt;/h2&gt;
-&lt;p&gt;回忆一下单特征模型（下图左图），线性模型的结果(y)有一个系数(W),一个叫房屋面积的特征的placeholder(x)，以及截距b。&lt;/p&gt;
-&lt;p&gt;对一个2个特征的模型（下图右图），我们有一个新的系数(W2)，以及另外一个placeholder叫x2，用来表示房间的数量这个特征。&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p3_05.png"&gt;&lt;/p&gt;
-&lt;p&gt;当我们进行线性回归的时候，梯度下降帮助我们知道W2的值。&lt;/p&gt;
-&lt;h2&gt;TF实现多特征线性回归模型&lt;/h2&gt;
-&lt;h3&gt;快速回顾&lt;/h3&gt;
-&lt;p&gt;单特征的TF代码包含三个部分（见下图）：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;建立模型（蓝色部分）&lt;/li&gt;
-&lt;li&gt;构建基于模型的损失函数（红色部分）&lt;/li&gt;
-&lt;li&gt;用梯度下降来最小化损失函数（绿色部分）&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p3_06.png"&gt;&lt;/p&gt;
-&lt;h3&gt;TF求解两个特征的线性模型&lt;/h3&gt;
-&lt;p&gt;上面解释的两个特征的线性模型的TF代码表示成红色的颜色：&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p3_07.png"&gt;&lt;/p&gt;
-&lt;p&gt;请注意用这种办法来添加新的feature比较低效。随着特征的数量的增长，变量的数量（W）和placeholder的数量也相应的增长。现实当中的模型会有很多features，导致问题更加严重。我们怎么才能更高效的表示特征？&lt;/p&gt;
-&lt;h2&gt;使用矩阵来表示&lt;/h2&gt;
-&lt;p&gt;首先，我们推广一下从两个feature到n个feature的表示：&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p3_08.png"&gt;&lt;/p&gt;
-&lt;p&gt;用矩阵可以简化n个feature的表达式，TF内嵌了矩阵：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;数据可以表达成多维，这正好是我们需要的：把一个数据点用n个feature（下图左）和一个有n个系数（下图右，系数矩阵）的模型表达出来。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p3_09.png"&gt;&lt;/p&gt;
-&lt;p&gt;TF中，它们可以写为&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;x = tf.placeholder(tf.float, [1,n])
-W = tf.Variable(tf.zeros[n,1])
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;注意，我们用&lt;em&gt;tf.zeros&lt;/em&gt;来表示W，也就是说把W=(W1, W2, ..., Wn)全部初始化为0.&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;数学上矩阵相乘是对应的向量点的乘积的和。所以自然的，特征（下图中间）和系数（下图右边）的矩阵相乘就是我们想要的结果（下图左边）。这也就是上面描述的n个特征的线性回归表达式的第一部分（缺少了截距）.&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p3_10.png"&gt;&lt;/p&gt;
-&lt;p&gt;TF当中，这个相乘可以表示为&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;y = tf.matmul(x, W)
-&lt;/code&gt;&lt;/pre&gt;
-&lt;ul&gt;
-&lt;li&gt;一个多行的feature矩阵(每一行表示一个数据点的n个feature)乘以系数矩阵就得到多行的结果(每行表示一个数据点的结果)。所以通过矩阵相乘我们可以把线性回归模型表达成数据点的矩阵乘以系数矩阵。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;注意： feature矩阵的x的表达式会更加复杂，比如我们用x11，x12而不是x1 x2，这是因为feature矩阵(下图中间)已经从一个数据点的n个feature(1行乘以n列)的变成了m个数据点的n个feature(m行乘以n列)。&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p3_11.png"&gt;&lt;/p&gt;
-&lt;p&gt;TF中的表达形式为&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;x = tf.placeholder(tf.float, [m, n])
-W = tf.Variable(tf.zeros[n,1])
-y = tf.matmul(x, W)
-&lt;/code&gt;&lt;/pre&gt;
-&lt;ul&gt;
-&lt;li&gt;最后，在矩阵的每一行加一个常数项，就会在结果矩阵中加入常数项&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;在TF中，x和W已经表达成矩阵，不管有多少个feature或者多少个数据点，都可以简化为&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;b = tf.Variable(tf.zeros[1])
-y = tf.matmul(x, W) + b
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h2&gt;Tensorflow多特征备忘录&lt;/h2&gt;
-&lt;p&gt;我们做了一个比较的表格来总结从单feature到多feature的线性回归模型的变化&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p3_12.png"&gt;&lt;/p&gt;
-&lt;h2&gt;总结&lt;/h2&gt;
-&lt;p&gt;我们演示了多feature线性回归的概念，以及从单feature到多feature的TF代码。最后用一个速查表做了总结来展示怎么在TF中做多feature回归。&lt;/p&gt;
-&lt;h3&gt;下一步&lt;/h3&gt;
-&lt;p&gt;下一章会讨论logtistic回归，交叉熵(cross-entropy)，softmax，这样我们就能更好的明白Tensorflow关于MNIST的&lt;a href="https://www.tensorflow.org/versions/r0.11/tutorials/mnist/beginners/"&gt;官方初级教程&lt;/a&gt;。&lt;/p&gt;
-&lt;h3&gt;Reference&lt;/h3&gt;
-&lt;ol&gt;
-&lt;li&gt;&lt;a href="https://medium.com/all-of-us-are-belong-to-machines/gentlest-intro-to-tensorflow-part-3-matrices-multi-feature-linear-regression-30a81ebaaa6c#.r0w6hcjn2"&gt;Gentlest Intro to TensorFlow #3: Matrices &amp;amp; Multi-feature Linear Regression&lt;/a&gt;&lt;/li&gt;
 &lt;/ol&gt;</content><category term="Python"></category><category term="python"></category><category term="tensorflow"></category><category term="deep learning"></category></entry></feed>
