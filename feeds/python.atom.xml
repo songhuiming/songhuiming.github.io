@@ -1,5 +1,575 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata: Huiming's learning notes - python</title><link href="/" rel="alternate"></link><link href="/feeds/python.atom.xml" rel="self"></link><id>/</id><updated>2025-04-20T00:00:00-05:00</updated><subtitle>Keep Looking, Don't Settle</subtitle><entry><title>DeepSeek Expert Parallelism Load Balancer (EPLB) Code Reading</title><link href="/pages/2025/04/20/deepseek-expert-parallelism-load-balancer-eplb-code-reading/" rel="alternate"></link><published>2025-04-20T00:00:00-05:00</published><updated>2025-04-20T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2025-04-20:/pages/2025/04/20/deepseek-expert-parallelism-load-balancer-eplb-code-reading/</id><summary type="html">&lt;h2&gt;Introduction&lt;/h2&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata: Huiming's learning notes - python</title><link href="/" rel="alternate"></link><link href="/feeds/python.atom.xml" rel="self"></link><id>/</id><updated>2026-02-18T00:00:00-06:00</updated><subtitle>Keep Looking, Don't Settle</subtitle><entry><title>DeepSeek-V3.2 Lightning Indexer</title><link href="/pages/2026/02/18/deepseek-v32-lightning-indexer/" rel="alternate"></link><published>2026-02-18T00:00:00-06:00</published><updated>2026-02-18T00:00:00-06:00</updated><author><name>Huiming Song</name></author><id>tag:None,2026-02-18:/pages/2026/02/18/deepseek-v32-lightning-indexer/</id><summary type="html">&lt;p&gt;&lt;img alt="Deepseek Lighting Indexer plot" src="/figures/20260218_deepseek_V32_LightingIndexer.svg"&gt;&lt;/p&gt;
+&lt;h2&gt;背景&lt;/h2&gt;
+&lt;p&gt;在之前的文章 &lt;a href="https://songhuiming.github.io/pages/2025/03/20/deepseek-v3-multi-head-latent-attention-mla/"&gt;DeepSeek V3 Multi-head Latent Attention (MLA)&lt;/a&gt; 中，我们详细介绍了 DeepSeek-V3 的 MLA 机制如何通过低秩压缩减少 KV Cache 的内存占用。MLA 解决了推理 …&lt;/p&gt;</summary><content type="html">&lt;p&gt;&lt;img alt="Deepseek Lighting Indexer plot" src="/figures/20260218_deepseek_V32_LightingIndexer.svg"&gt;&lt;/p&gt;
+&lt;h2&gt;背景&lt;/h2&gt;
+&lt;p&gt;在之前的文章 &lt;a href="https://songhuiming.github.io/pages/2025/03/20/deepseek-v3-multi-head-latent-attention-mla/"&gt;DeepSeek V3 Multi-head Latent Attention (MLA)&lt;/a&gt; 中，我们详细介绍了 DeepSeek-V3 的 MLA 机制如何通过低秩压缩减少 KV Cache 的内存占用。MLA 解决了推理时的&lt;strong&gt;内存带宽&lt;/strong&gt;问题，但 attention 的计算复杂度仍然是 &lt;span class="math"&gt;\(O(L^2)\)&lt;/span&gt;，随着序列长度 &lt;span class="math"&gt;\(L\)&lt;/span&gt; 增长（如 128K tokens），计算量依然巨大。&lt;/p&gt;
+&lt;p&gt;DeepSeek-V3.2 引入了 &lt;strong&gt;DeepSeek Sparse Attention (DSA)&lt;/strong&gt;，其核心思想是：不需要让每个 query token 关注所有 preceding tokens，只需关注最相关的 top-k 个即可。这就需要一个&lt;strong&gt;快速评估机制&lt;/strong&gt;来决定哪些 token 值得关注——这就是 &lt;strong&gt;Lightning Indexer&lt;/strong&gt; 的作用。&lt;/p&gt;
+&lt;p&gt;本文基于 DeepSeek-V3.2 论文和&lt;a href="https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp/tree/main/inference"&gt;开源实现&lt;/a&gt;，详细解析 Lightning Indexer 的工作原理。&lt;/p&gt;
+&lt;hr&gt;
+&lt;h2&gt;1. DSA 的整体设计思路&lt;/h2&gt;
+&lt;p&gt;DSA 由两个组件构成：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;Lightning Indexer&lt;/strong&gt;：以极低计算代价为每个 query token 打出一个"相关性分数" &lt;span class="math"&gt;\(I_{t,s}\)&lt;/span&gt;，决定应该关注哪些 preceding tokens&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Fine-grained Token Selection&lt;/strong&gt;：根据 indexer 的分数，只选择 top-k 个 token 做完整的 MLA attention&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;这样，主 attention 的复杂度从 &lt;span class="math"&gt;\(O(L^2)\)&lt;/span&gt; 降低到 &lt;span class="math"&gt;\(O(L \cdot k)\)&lt;/span&gt;，其中 &lt;span class="math"&gt;\(k = 2048 \ll L = 128K\)&lt;/span&gt;。&lt;/p&gt;
+&lt;p&gt;虽然 Lightning Indexer 本身仍是 &lt;span class="math"&gt;\(O(L^2)\)&lt;/span&gt;，但由于它使用 &lt;strong&gt;FP8 计算、MQA 设计、ReLU 激活&lt;/strong&gt;，实际计算量远小于完整的 MLA attention。&lt;/p&gt;
+&lt;hr&gt;
+&lt;h2&gt;2. 符号定义&lt;/h2&gt;
+&lt;p&gt;首先定义本文使用的维度符号，对应 &lt;code&gt;config_671B_v3.2.json&lt;/code&gt; 中的配置：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\begin{aligned}
+&amp;amp; d = 7168 \quad \text{(模型隐藏维度, dim)} \\
+&amp;amp; n_h = 128 \quad \text{(MLA attention head数, n\_heads)} \\
+&amp;amp; d_c = 512 \quad \text{(KV LoRA rank, kv\_lora\_rank)} \\
+&amp;amp; d_c' = 1536 \quad \text{(Query LoRA rank, q\_lora\_rank)} \\
+&amp;amp; d_h = 128 \quad \text{(qk\_nope\_head\_dim)} \\
+&amp;amp; d_h^R = 64 \quad \text{(qk\_rope\_head\_dim)} \\
+&amp;amp; H_I = 64 \quad \text{(indexer head数, index\_n\_heads)} \\
+&amp;amp; d_I = 128 \quad \text{(indexer head维度, index\_head\_dim)} \\
+&amp;amp; k = 2048 \quad \text{(top-k选择数, index\_topk)}
+\end{aligned}
+$$&lt;/div&gt;
+&lt;hr&gt;
+&lt;h2&gt;3. Lightning Indexer 核心公式&lt;/h2&gt;
+&lt;h3&gt;3.1 Index Score 计算 (论文 Equation 1)&lt;/h3&gt;
+&lt;p&gt;对于 query token 位置 &lt;span class="math"&gt;\(t\)&lt;/span&gt; 和 preceding token 位置 &lt;span class="math"&gt;\(s\)&lt;/span&gt;，indexer 计算一个标量分数：&lt;/p&gt;
+&lt;div class="math"&gt;$$I_{t,s} = \sum_{j=1}^{H_I} w^I_{t,j} \cdot \text{ReLU}\left(\mathbf{q}^I_{t,j} \cdot \mathbf{k}^I_s\right) \tag{1}$$&lt;/div&gt;
+&lt;p&gt;其中：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(H_I = 64\)&lt;/span&gt;：indexer 的 head 数量&lt;/li&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(\mathbf{q}^I_{t,j} \in \mathbb{R}^{d_I}\)&lt;/span&gt;：位置 &lt;span class="math"&gt;\(t\)&lt;/span&gt; 在第 &lt;span class="math"&gt;\(j\)&lt;/span&gt; 个 indexer head 的 query 向量，&lt;span class="math"&gt;\(d_I = 128\)&lt;/span&gt;&lt;/li&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(\mathbf{k}^I_s \in \mathbb{R}^{d_I}\)&lt;/span&gt;：位置 &lt;span class="math"&gt;\(s\)&lt;/span&gt; 的 indexer key 向量，&lt;strong&gt;所有 head 共享&lt;/strong&gt;（Multi-Query 设计）&lt;/li&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(w^I_{t,j} \in \mathbb{R}\)&lt;/span&gt;：位置 &lt;span class="math"&gt;\(t\)&lt;/span&gt; 在第 &lt;span class="math"&gt;\(j\)&lt;/span&gt; 个 head 的标量权重&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;直觉理解&lt;/strong&gt;：这是一个&lt;strong&gt;加权多头线性注意力&lt;/strong&gt;。每个 head 计算 query-key 的点积，用 ReLU 截断负值（只保留正相关），然后通过可学习的权重 &lt;span class="math"&gt;\(w^I_{t,j}\)&lt;/span&gt; 汇总所有 head 的结果。&lt;/p&gt;
+&lt;h3&gt;3.2 Top-k 选择 (论文 Equation 2)&lt;/h3&gt;
+&lt;p&gt;根据分数选出最相关的 &lt;span class="math"&gt;\(k\)&lt;/span&gt; 个 token，只对这些 token 做完整 MLA attention：&lt;/p&gt;
+&lt;div class="math"&gt;$$\mathbf{u}_t = \text{Attn}\left(\mathbf{h}_t, \left\{\mathbf{c}_s \mid I_{t,s} \in \text{Top-k}(I_{t,:})\right\}\right) \tag{2}$$&lt;/div&gt;
+&lt;p&gt;其中 &lt;span class="math"&gt;\(\mathbf{c}_s\)&lt;/span&gt; 是 MLA 中 token &lt;span class="math"&gt;\(s\)&lt;/span&gt; 的 latent KV 表示 &lt;span class="math"&gt;\(\mathbf{c}_s^{KV} \in \mathbb{R}^{512}\)&lt;/span&gt;。&lt;/p&gt;
+&lt;hr&gt;
+&lt;h2&gt;4. 各矩阵的详细变换过程&lt;/h2&gt;
+&lt;h3&gt;4.1 Indexer Query 的计算&lt;/h3&gt;
+&lt;p&gt;Lightning Indexer 的 query &lt;strong&gt;复用了 MLA 的 query 压缩中间表示&lt;/strong&gt; &lt;span class="math"&gt;\(\mathbf{c}_t^Q\)&lt;/span&gt;（即 &lt;code&gt;qr&lt;/code&gt;），避免重复计算：&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Step 1: MLA query 压缩（与 MLA 共享）&lt;/strong&gt;&lt;/p&gt;
+&lt;div class="math"&gt;$$\mathbf{c}_t^Q = \text{RMSNorm}(\mathbf{W}^{DQ} \mathbf{h}_t) \in \mathbb{R}^{d_c'}$$&lt;/div&gt;
+&lt;p&gt;其中 &lt;span class="math"&gt;\(\mathbf{W}^{DQ} \in \mathbb{R}^{d_c' \times d} = \mathbb{R}^{1536 \times 7168}\)&lt;/span&gt;，这一步与 MLA 共享。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Step 2: Indexer query 投影&lt;/strong&gt;&lt;/p&gt;
+&lt;div class="math"&gt;$$\mathbf{q}^I_t = \mathbf{W}^{I,UQ} \mathbf{c}_t^Q \in \mathbb{R}^{H_I \cdot d_I}$$&lt;/div&gt;
+&lt;p&gt;其中 &lt;span class="math"&gt;\(\mathbf{W}^{I,UQ} \in \mathbb{R}^{(H_I \cdot d_I) \times d_c'} = \mathbb{R}^{8192 \times 1536}\)&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;Reshape 后得到每个 head 的 query 向量：&lt;/p&gt;
+&lt;div class="math"&gt;$$\mathbf{q}^I_t \to \{\mathbf{q}^I_{t,j}\}_{j=1}^{64}, \quad \mathbf{q}^I_{t,j} \in \mathbb{R}^{128}$$&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;Step 3: 部分施加 RoPE&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;对每个 head 的 128 维向量，从&lt;strong&gt;前面&lt;/strong&gt;取出 &lt;span class="math"&gt;\(d_h^R = 64\)&lt;/span&gt; 维施加 RoPE：&lt;/p&gt;
+&lt;div class="math"&gt;$$\mathbf{q}^I_{t,j} = [\underbrace{\mathbf{q}^{I,pe}_{t,j}}_{64d} \;|\; \underbrace{\mathbf{q}^{I,nope}_{t,j}}_{64d}]$$&lt;/div&gt;
+&lt;div class="math"&gt;$$\mathbf{q}^I_{t,j} \leftarrow [\text{RoPE}(\mathbf{q}^{I,pe}_{t,j}) \;;\; \mathbf{q}^{I,nope}_{t,j}] \in \mathbb{R}^{128}$$&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;Step 4: Hadamard Rotation + FP8 量化&lt;/strong&gt;&lt;/p&gt;
+&lt;div class="math"&gt;$$\mathbf{q}^I_{t,j} \leftarrow \text{Quantize}_{FP8}(\mathbf{H} \cdot \mathbf{q}^I_{t,j})$$&lt;/div&gt;
+&lt;p&gt;Hadamard Rotation 将 pe 和 nope 维度混合，使数值分布更均匀，有利于 FP8 量化精度。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;矩阵维度汇总&lt;/strong&gt;：&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;步骤&lt;/th&gt;
+&lt;th&gt;输入&lt;/th&gt;
+&lt;th&gt;变换矩阵&lt;/th&gt;
+&lt;th&gt;输出&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;压缩(共享)&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\mathbf{h}_t \in \mathbb{R}^{7168}\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\mathbf{W}^{DQ} \in \mathbb{R}^{1536 \times 7168}\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\mathbf{c}_t^Q \in \mathbb{R}^{1536}\)&lt;/span&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;投影&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\mathbf{c}_t^Q \in \mathbb{R}^{1536}\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\mathbf{W}^{I,UQ} \in \mathbb{R}^{8192 \times 1536}\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\mathbf{q}^I_t \in \mathbb{R}^{8192}\)&lt;/span&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;reshape&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\mathbb{R}^{8192}\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;—&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\mathbb{R}^{64 \times 128}\)&lt;/span&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;RoPE&lt;/td&gt;
+&lt;td&gt;每 head 前 64d&lt;/td&gt;
+&lt;td&gt;旋转矩阵&lt;/td&gt;
+&lt;td&gt;每 head 前 64d&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Hadamard&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\mathbb{R}^{64 \times 128}\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\mathbf{H} \in \mathbb{R}^{128 \times 128}\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\mathbb{R}^{64 \times 128}\)&lt;/span&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;FP8 量化&lt;/td&gt;
+&lt;td&gt;float → fp8&lt;/td&gt;
+&lt;td&gt;—&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\mathbb{R}^{64 \times 128}\)&lt;/span&gt; (FP8)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h3&gt;4.2 Indexer Key 的计算&lt;/h3&gt;
+&lt;p&gt;Key 直接从输入隐藏状态投影，&lt;strong&gt;所有 64 个 head 共享同一个 key&lt;/strong&gt;（Multi-Query Attention 风格）：&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Step 1: 线性投影 + LayerNorm&lt;/strong&gt;&lt;/p&gt;
+&lt;div class="math"&gt;$$\mathbf{k}^I_s = \text{LayerNorm}(\mathbf{W}^{I,K} \mathbf{h}_s) \in \mathbb{R}^{d_I}$$&lt;/div&gt;
+&lt;p&gt;其中 &lt;span class="math"&gt;\(\mathbf{W}^{I,K} \in \mathbb{R}^{d_I \times d} = \mathbb{R}^{128 \times 7168}\)&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Step 2: 部分施加 RoPE&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;与 query 相同，前 64 维施加 RoPE：&lt;/p&gt;
+&lt;div class="math"&gt;$$\mathbf{k}^I_s = [\underbrace{\mathbf{k}^{I,pe}_{s}}_{64d} \;|\; \underbrace{\mathbf{k}^{I,nope}_{s}}_{64d}]$$&lt;/div&gt;
+&lt;div class="math"&gt;$$\mathbf{k}^I_s \leftarrow [\text{RoPE}(\mathbf{k}^{I,pe}_{s}) \;;\; \mathbf{k}^{I,nope}_{s}] \in \mathbb{R}^{128}$$&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;Step 3: Hadamard Rotation + FP8 量化&lt;/strong&gt;&lt;/p&gt;
+&lt;div class="math"&gt;$$\mathbf{k}^I_s \leftarrow \text{Quantize}_{FP8}(\mathbf{H} \cdot \mathbf{k}^I_s)$$&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;矩阵维度汇总&lt;/strong&gt;：&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;步骤&lt;/th&gt;
+&lt;th&gt;输入&lt;/th&gt;
+&lt;th&gt;变换矩阵&lt;/th&gt;
+&lt;th&gt;输出&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;投影&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\mathbf{h}_s \in \mathbb{R}^{7168}\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\mathbf{W}^{I,K} \in \mathbb{R}^{128 \times 7168}\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\mathbf{k}^I_s \in \mathbb{R}^{128}\)&lt;/span&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;LayerNorm&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\mathbb{R}^{128}\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;—&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\mathbb{R}^{128}\)&lt;/span&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;RoPE&lt;/td&gt;
+&lt;td&gt;前 64d&lt;/td&gt;
+&lt;td&gt;旋转矩阵&lt;/td&gt;
+&lt;td&gt;前 64d&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Hadamard&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\mathbb{R}^{128}\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\mathbf{H} \in \mathbb{R}^{128 \times 128}\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\mathbb{R}^{128}\)&lt;/span&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;FP8 量化&lt;/td&gt;
+&lt;td&gt;float → fp8&lt;/td&gt;
+&lt;td&gt;—&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\mathbb{R}^{128}\)&lt;/span&gt; (FP8)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;&lt;strong&gt;关键设计选择&lt;/strong&gt;：Key 不分 head，所有 64 个 query head 共享同一个 key 向量。这意味着 indexer 的 KV cache 只需每个 token 存 128 维（FP8）= 128 bytes，远小于 MLA 的 KV cache（&lt;span class="math"&gt;\(c_t^{KV}\)&lt;/span&gt; 512 维 + &lt;span class="math"&gt;\(k_t^R\)&lt;/span&gt; 64 维）。&lt;/p&gt;
+&lt;h3&gt;4.3 Head 权重的计算&lt;/h3&gt;
+&lt;p&gt;每个 head 有一个可学习的标量权重 &lt;span class="math"&gt;\(w^I_{t,j}\)&lt;/span&gt;，用于控制各 head 对最终分数的贡献：&lt;/p&gt;
+&lt;div class="math"&gt;$$\mathbf{w}^I_t = \frac{1}{\sqrt{H_I}} \cdot \mathbf{W}^{I,w} \mathbf{h}_t \in \mathbb{R}^{H_I}$$&lt;/div&gt;
+&lt;p&gt;其中 &lt;span class="math"&gt;\(\mathbf{W}^{I,w} \in \mathbb{R}^{H_I \times d} = \mathbb{R}^{64 \times 7168}\)&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Note&lt;/strong&gt;: 这里 &lt;span class="math"&gt;\(\mathbf{w}^I_t\)&lt;/span&gt; 直接从 &lt;span class="math"&gt;\(\mathbf{h}_t\)&lt;/span&gt; 投影得到（float32 精度），而不是从压缩表示 &lt;span class="math"&gt;\(\mathbf{c}_t^Q\)&lt;/span&gt; 得到。这说明权重需要保留更完整的隐藏状态信息。&lt;/p&gt;
+&lt;h3&gt;4.4 完整的 Score 计算流程&lt;/h3&gt;
+&lt;p&gt;将上述所有部分组合，计算 &lt;span class="math"&gt;\(I_{t,s}\)&lt;/span&gt;：&lt;/p&gt;
+&lt;div class="math"&gt;$$I_{t,s} = \sum_{j=1}^{64} w^I_{t,j} \cdot \text{ReLU}\left(\mathbf{q}^{I}_{t,j} \cdot \mathbf{k}^{I}_s\right)$$&lt;/div&gt;
+&lt;p&gt;在实际 CUDA kernel 实现中，由于使用了 FP8 block quantization，计算被重组为：&lt;/p&gt;
+&lt;pre&gt;&lt;code class="language-python"&gt;# weights 与 q 的 scale 融合
+weights = (W_weights @ h_t) / sqrt(H_I)       # (B, L, 64)
+weights = weights.unsqueeze(-1) * q_scale * softmax_scale
+# shape: (B, L, 64, head_dim // block_size)
+
+# fp8_index kernel 一次性完成: dequant + dot product + ReLU + weighted sum
+index_score = fp8_index(q_fp8, weights, k_cache, k_scale_cache)
+# shape: (B, L, L)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;hr&gt;
+&lt;h2&gt;5. 与 MLA 中 RoPE 处理方式的对比&lt;/h2&gt;
+&lt;p&gt;这是 Lightning Indexer 与 MLA 主 Attention 的一个&lt;strong&gt;本质结构差异&lt;/strong&gt;，值得单独讨论。&lt;/p&gt;
+&lt;h3&gt;5.1 MLA 主 Attention 的 RoPE&lt;/h3&gt;
+&lt;p&gt;在 MLA 中（详见&lt;a href="https://songhuiming.github.io/pages/2025/03/20/deepseek-v3-multi-head-latent-attention-mla/"&gt;上一篇博客&lt;/a&gt;），RoPE 通过&lt;strong&gt;解耦（Decoupled RoPE）&lt;/strong&gt;的方式引入：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Key 的位置信息&lt;/strong&gt; &lt;span class="math"&gt;\(\mathbf{k}_t^R\)&lt;/span&gt; 是从 &lt;code&gt;wkv_a&lt;/code&gt; 投影中&lt;strong&gt;独立分支&lt;/strong&gt;得到的 64 维向量&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;wkv_a&lt;/code&gt; 的输出被 split 为 &lt;code&gt;[c_t^KV (512d) | k_t^R (64d)]&lt;/code&gt;，&lt;span class="math"&gt;\(\mathbf{k}_t^R\)&lt;/span&gt; 是&lt;strong&gt;单独投影&lt;/strong&gt;的&lt;/li&gt;
+&lt;li&gt;最终 key = &lt;strong&gt;concat&lt;/strong&gt;[&lt;span class="math"&gt;\(\mathbf{k}_{t,i}^C\)&lt;/span&gt; (128d, 从 &lt;span class="math"&gt;\(\mathbf{c}_t^{KV}\)&lt;/span&gt; 展开) ; &lt;span class="math"&gt;\(\mathbf{k}_t^R\)&lt;/span&gt; (64d, RoPE)] = 192d&lt;/li&gt;
+&lt;li&gt;最终 query = &lt;strong&gt;concat&lt;/strong&gt;[&lt;span class="math"&gt;\(\mathbf{q}_{t,i}^C\)&lt;/span&gt; (128d) ; &lt;span class="math"&gt;\(\mathbf{q}_{t,i}^R\)&lt;/span&gt; (64d, RoPE)] = 192d&lt;/li&gt;
+&lt;li&gt;顺序：&lt;strong&gt;nope 在前，pe 在后&lt;/strong&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;数学表达：&lt;/p&gt;
+&lt;div class="math"&gt;$$\mathbf{k}_{t,i}^{MLA} = [\mathbf{k}_{t,i}^C \;;\; \text{RoPE}(\mathbf{k}_t^R)] \in \mathbb{R}^{192}$$&lt;/div&gt;
+&lt;div class="math"&gt;$$\mathbf{q}_{t,i}^{MLA} = [\mathbf{q}_{t,i}^C \;;\; \text{RoPE}(\mathbf{q}_{t,i}^R)] \in \mathbb{R}^{192}$$&lt;/div&gt;
+&lt;p&gt;其中 &lt;span class="math"&gt;\(\mathbf{k}_t^R = \mathbf{W}^{KR} \mathbf{h}_t \in \mathbb{R}^{64}\)&lt;/span&gt; 是独立投影。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;设计原因&lt;/strong&gt;：MLA 中 &lt;span class="math"&gt;\(\mathbf{c}_t^{KV}\)&lt;/span&gt; 需要被缓存用于推理，如果对 &lt;span class="math"&gt;\(\mathbf{c}_t^{KV}\)&lt;/span&gt; 展开后的 key 施加 RoPE，则无法缓存压缩表示（因为 RoPE 依赖位置）。因此必须将位置信息解耦为独立分支 &lt;span class="math"&gt;\(\mathbf{k}_t^R\)&lt;/span&gt;，在推理时单独缓存 &lt;span class="math"&gt;\(\mathbf{k}_t^R\)&lt;/span&gt;（64 维）。&lt;/p&gt;
+&lt;h3&gt;5.2 Lightning Indexer 的 RoPE&lt;/h3&gt;
+&lt;p&gt;Indexer 采用了更简单的方式：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Key 通过&lt;strong&gt;单一投影&lt;/strong&gt;得到 128 维向量&lt;/li&gt;
+&lt;li&gt;在同一向量内部 split：前 64 维施加 RoPE，后 64 维不动&lt;/li&gt;
+&lt;li&gt;最终 key = &lt;strong&gt;concat&lt;/strong&gt;[&lt;span class="math"&gt;\(\mathbf{k}^{I,pe}\)&lt;/span&gt; (64d, RoPE) ; &lt;span class="math"&gt;\(\mathbf{k}^{I,nope}\)&lt;/span&gt; (64d)] = 128d&lt;/li&gt;
+&lt;li&gt;顺序：&lt;strong&gt;pe 在前，nope 在后&lt;/strong&gt;（与 MLA 相反！）&lt;/li&gt;
+&lt;li&gt;最后还要经过 &lt;strong&gt;Hadamard Rotation&lt;/strong&gt; 混合所有维度&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;数学表达：&lt;/p&gt;
+&lt;div class="math"&gt;$$\mathbf{k}^I_s = \mathbf{H} \cdot [\text{RoPE}(\mathbf{k}^{I,pe}_s) \;;\; \mathbf{k}^{I,nope}_s] \in \mathbb{R}^{128}$$&lt;/div&gt;
+&lt;h3&gt;5.3 为什么可以不同？&lt;/h3&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;设计考量&lt;/th&gt;
+&lt;th&gt;MLA&lt;/th&gt;
+&lt;th&gt;Lightning Indexer&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;目标&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;精确的 attention 计算&lt;/td&gt;
+&lt;td&gt;快速近似排序即可&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;需要缓存什么&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\mathbf{c}_t^{KV}\)&lt;/span&gt;（位置无关）+ &lt;span class="math"&gt;\(\mathbf{k}_t^R\)&lt;/span&gt;（位置相关）&lt;/td&gt;
+&lt;td&gt;整个 &lt;span class="math"&gt;\(\mathbf{k}^I_s\)&lt;/span&gt;（已含位置）&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;为什么可以&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;必须解耦，否则无法压缩缓存&lt;/td&gt;
+&lt;td&gt;不需要压缩，直接缓存完整 128d key（FP8 只需 128 bytes）&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Hadamard 的作用&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;不需要&lt;/td&gt;
+&lt;td&gt;将 pe/nope 混合，使 FP8 量化误差分布更均匀&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;核心区别在于：MLA 需要在推理时从缓存的 &lt;span class="math"&gt;\(\mathbf{c}_t^{KV}\)&lt;/span&gt; 恢复 key，因此位置信息必须解耦；而 Indexer 直接缓存完整的 key（FP8），不需要解耦。&lt;/p&gt;
+&lt;hr&gt;
+&lt;h2&gt;6. 完整数据流图&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;h_t ∈ R^7168 (输入隐藏状态)
+    │
+    ├──→ W^DQ (7168→1536) → RMSNorm → c_t^Q ∈ R^1536  [MLA与Indexer共享]
+    │       │
+    │       ├──→ [MLA主attention]
+    │       │       W^UQ (1536→128×192) → q_MLA ∈ R^(128, 192)
+    │       │
+    │       └──→ [Lightning Indexer]
+    │               W^{I,UQ} (1536→64×128) → reshape → R^(64, 128)
+    │               → split[前64 | 后64] → RoPE(前64) → concat
+    │               → Hadamard → FP8 → q_I ∈ R^(64, 128)
+    │
+    ├──→ [Lightning Indexer Key]
+    │       W^{I,K} (7168→128) → LayerNorm
+    │       → split[前64 | 后64] → RoPE(前64) → concat
+    │       → Hadamard → FP8 → k_I ∈ R^128
+    │
+    └──→ [Lightning Indexer Weight]
+            W^{I,w} (7168→64) / √64 → w_I ∈ R^64  [float32]
+
+                            ↓
+        I_{t,s} = Σ_j w_I[j] · ReLU(q_I[t,j] · k_I[s])
+                            ↓
+                    Top-2048 selection
+                            ↓
+            只对选中的 2048 个 token 做完整 MLA Attention
+&lt;/code&gt;&lt;/pre&gt;
+&lt;hr&gt;
+&lt;h2&gt;7. Prefill 和 Decode 时的行为&lt;/h2&gt;
+&lt;h3&gt;7.1 Prefill（处理整个输入序列）&lt;/h3&gt;
+&lt;p&gt;在 prefill 阶段，所有 token 同时处理：&lt;/p&gt;
+&lt;pre&gt;&lt;code class="language-python"&gt;# 1. 计算所有 token 的 indexer score (B, L, L)
+topk_indices = indexer(x, qr, start_pos, freqs_cis, mask)
+
+# 2. 构造 sparse mask
+index_mask = torch.full((B, L, L), float(&amp;quot;-inf&amp;quot;))
+index_mask.scatter_(-1, topk_indices, 0)  # 选中位置设为0
+index_mask += causal_mask                  # 叠加因果mask
+
+# 3. 主 MLA attention 计算 (MHA mode)
+q = torch.cat([q_nope, q_pe], dim=-1)     # (B, L, 128, 192)
+k = torch.cat([k_nope, k_pe], dim=-1)     # (B, L, 128, 192)
+scores = einsum(&amp;quot;bshd,bthd-&amp;gt;bsht&amp;quot;, q, k) * scale
+scores += index_mask.unsqueeze(2)          # 未选中位置被mask为-inf
+scores = softmax(scores, dim=-1)
+output = einsum(&amp;quot;bsht,bthd-&amp;gt;bshd&amp;quot;, scores, v)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;7.2 Decode（逐 token 生成）&lt;/h3&gt;
+&lt;p&gt;在 decode 阶段，每次只处理 1 个新 token，但需要和之前所有 token 的缓存做计算：&lt;/p&gt;
+&lt;pre&gt;&lt;code class="language-python"&gt;# 1. 新 token 的 indexer key 入缓存
+k_cache[:bsz, end_pos] = k_fp8  # 追加到 indexer key cache
+
+# 2. 计算新 token 与所有历史 token 的 indexer score
+topk_indices = indexer(x, qr, start_pos, freqs_cis, mask=None)
+# shape: (B, 1, 2048) — 从 end_pos 个候选中选出 2048 个
+
+# 3. 只对选中的 2048 个位置做 MLA attention (MQA mode)
+index_mask = torch.full((B, 1, end_pos), float(&amp;quot;-inf&amp;quot;))
+index_mask.scatter_(-1, topk_indices, 0)
+scores += index_mask.unsqueeze(2)
+scores = softmax(scores, dim=-1)
+output = einsum(&amp;quot;bsht,btc-&amp;gt;bshc&amp;quot;, scores, kv_cache[:bsz, :end_pos])
+&lt;/code&gt;&lt;/pre&gt;
+&lt;hr&gt;
+&lt;h2&gt;8. 训练过程&lt;/h2&gt;
+&lt;h3&gt;8.1 Dense Warm-up 阶段 (论文 Equation 3)&lt;/h3&gt;
+&lt;p&gt;首先冻结主模型所有参数，只训练 Lightning Indexer。目标是让 indexer 的分数分布与真实 attention 分布对齐：&lt;/p&gt;
+&lt;div class="math"&gt;$$\mathcal{L}_I = \sum_t D_{KL}\left(p_{t,:} \;\|\; \text{Softmax}(I_{t,:})\right) \tag{3}$$&lt;/div&gt;
+&lt;p&gt;其中 &lt;span class="math"&gt;\(p_{t,:} \in \mathbb{R}^t\)&lt;/span&gt; 是目标分布：将所有 128 个 MLA attention head 的 attention score 求和，再沿序列维度 L1-归一化：&lt;/p&gt;
+&lt;div class="math"&gt;$$p_{t,s} = \frac{\sum_{i=1}^{n_h} \alpha_{t,s,i}}{\sum_{s'} \sum_{i=1}^{n_h} \alpha_{t,s',i}}$$&lt;/div&gt;
+&lt;p&gt;其中 &lt;span class="math"&gt;\(\alpha_{t,s,i}\)&lt;/span&gt; 是主 attention 第 &lt;span class="math"&gt;\(i\)&lt;/span&gt; 个 head 在位置 &lt;span class="math"&gt;\((t,s)\)&lt;/span&gt; 的 attention score。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;训练参数&lt;/strong&gt;：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;学习率：&lt;span class="math"&gt;\(10^{-3}\)&lt;/span&gt;&lt;/li&gt;
+&lt;li&gt;训练步数：1000 步&lt;/li&gt;
+&lt;li&gt;每步数据：16 sequences × 128K tokens&lt;/li&gt;
+&lt;li&gt;总训练数据量：2.1B tokens&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;8.2 Sparse Training 阶段 (论文 Equation 4)&lt;/h3&gt;
+&lt;p&gt;解冻主模型参数，同时训练主模型和 indexer，但使用&lt;strong&gt;梯度分离（detach）&lt;/strong&gt;：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Indexer 只接收 &lt;span class="math"&gt;\(\mathcal{L}_I\)&lt;/span&gt; 的梯度&lt;/li&gt;
+&lt;li&gt;主模型只接收语言建模 loss 的梯度&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;此阶段的 indexer loss 只在&lt;strong&gt;已选中&lt;/strong&gt;的 token 集合 &lt;span class="math"&gt;\(\mathcal{S}_t\)&lt;/span&gt; 上计算：&lt;/p&gt;
+&lt;div class="math"&gt;$$\mathcal{L}_I = \sum_t D_{KL}\left(p_{t,\mathcal{S}_t} \;\|\; \text{Softmax}(I_{t,\mathcal{S}_t})\right) \tag{4}$$&lt;/div&gt;
+&lt;p&gt;其中 &lt;span class="math"&gt;\(\mathcal{S}_t = \{s \mid I_{t,s} \in \text{Top-k}(I_{t,:})\}\)&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;训练参数&lt;/strong&gt;：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;学习率：&lt;span class="math"&gt;\(7.3 \times 10^{-6}\)&lt;/span&gt;（比 warm-up 小约 137 倍）&lt;/li&gt;
+&lt;li&gt;训练步数：15000 步&lt;/li&gt;
+&lt;li&gt;每步数据：480 sequences × 128K tokens&lt;/li&gt;
+&lt;li&gt;总训练数据量：943.7B tokens&lt;/li&gt;
+&lt;li&gt;Top-k = 2048（每个 query 只选 2048 个 KV token）&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Note&lt;/strong&gt;：将 indexer 的梯度从主模型的计算图中 detach 是一个重要的设计选择。这避免了 indexer 的学习信号干扰主模型的语言建模能力，也避免了 top-k 选择带来的不可导问题。&lt;/p&gt;
+&lt;hr&gt;
+&lt;h2&gt;9. 效率分析&lt;/h2&gt;
+&lt;h3&gt;9.1 计算量对比&lt;/h3&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;组件&lt;/th&gt;
+&lt;th&gt;每 query token 的计算量&lt;/th&gt;
+&lt;th&gt;说明&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;MLA attention (dense)&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(128 \times 192 \times L \times 2\)&lt;/span&gt; FLOPs&lt;/td&gt;
+&lt;td&gt;128 heads, 192d per head, &lt;span class="math"&gt;\(L\)&lt;/span&gt; tokens&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Lightning Indexer&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(64 \times 128 \times L \times 2\)&lt;/span&gt; FLOPs (FP8)&lt;/td&gt;
+&lt;td&gt;64 heads, 128d per head, &lt;span class="math"&gt;\(L\)&lt;/span&gt; tokens&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;MLA attention (sparse)&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(128 \times 192 \times 2048 \times 2\)&lt;/span&gt; FLOPs&lt;/td&gt;
+&lt;td&gt;只对 2048 tokens 做完整 attention&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;Indexer 的计算量约为 dense MLA 的：&lt;/p&gt;
+&lt;div class="math"&gt;$$\frac{64 \times 128}{128 \times 192} = \frac{8192}{24576} = \frac{1}{3}$$&lt;/div&gt;
+&lt;p&gt;考虑 FP8 vs BF16 的吞吐差异（FP8 约 2x），实际加速约 &lt;strong&gt;6x&lt;/strong&gt;。&lt;/p&gt;
+&lt;h3&gt;9.2 内存/KV Cache 对比&lt;/h3&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;组件&lt;/th&gt;
+&lt;th&gt;每 token KV Cache&lt;/th&gt;
+&lt;th&gt;精度&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;MLA 主 attention&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\mathbf{c}_t^{KV}\)&lt;/span&gt; (512d) + &lt;span class="math"&gt;\(\mathbf{k}_t^R\)&lt;/span&gt; (64d) = 576 values&lt;/td&gt;
+&lt;td&gt;BF16 (1152 bytes)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Lightning Indexer&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\mathbf{k}^I_s\)&lt;/span&gt; (128d)&lt;/td&gt;
+&lt;td&gt;FP8 (128 bytes)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;Indexer 的 KV cache 只有主 attention 的 &lt;strong&gt;11%&lt;/strong&gt;。&lt;/p&gt;
+&lt;h3&gt;9.3 端到端效果&lt;/h3&gt;
+&lt;p&gt;论文 Figure 3 显示，当序列长度 &amp;gt; 32K 时，DSA 带来的加速显著。对于 128K 上下文，token 成本约降低 &lt;strong&gt;70-80%&lt;/strong&gt;。&lt;/p&gt;
+&lt;hr&gt;
+&lt;h2&gt;10. 设计选择总结&lt;/h2&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;设计选择&lt;/th&gt;
+&lt;th&gt;原因&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;ReLU 而非 Softmax&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;Softmax 需要遍历所有位置计算归一化分母；ReLU 逐元素操作，可完全并行，且硬件友好&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Multi-Query (共享 Key)&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;减少 key 的 KV cache（128 bytes/token vs 128d×64heads），且 kernel 实现更高效&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;FP8 量化&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;H800 GPU 的 FP8 Tensor Core 吞吐是 BF16 的 2x&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Hadamard Rotation&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;消除量化前数值分布的不均匀性（outlier channels），提升 FP8 精度&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;复用 &lt;span class="math"&gt;\(\mathbf{c}_t^Q\)&lt;/span&gt;&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;避免重复计算 query 压缩，indexer 只增加一个轻量投影&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Head 权重 &lt;span class="math"&gt;\(w^I_{t,j}\)&lt;/span&gt;&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;不同 head 的重要性可以根据输入动态调整，增加表达力&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;梯度分离&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;避免 indexer 训练信号污染主模型的语言建模能力&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;hr&gt;
+&lt;h2&gt;11. 所有投影矩阵汇总&lt;/h2&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;矩阵&lt;/th&gt;
+&lt;th&gt;维度&lt;/th&gt;
+&lt;th&gt;参数量&lt;/th&gt;
+&lt;th&gt;用途&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\mathbf{W}^{DQ}\)&lt;/span&gt; (共享)&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(1536 \times 7168\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;11.0M&lt;/td&gt;
+&lt;td&gt;Query 压缩&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\mathbf{W}^{I,UQ}\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(8192 \times 1536\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;12.6M&lt;/td&gt;
+&lt;td&gt;Indexer query 展开&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\mathbf{W}^{I,K}\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(128 \times 7168\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;0.9M&lt;/td&gt;
+&lt;td&gt;Indexer key 投影&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\mathbf{W}^{I,w}\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(64 \times 7168\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;0.5M&lt;/td&gt;
+&lt;td&gt;Head 权重投影&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Indexer 独有总计&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;—&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;14.0M&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;每层约 14M 参数&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;对于 61 层模型，Lightning Indexer 总共增加约 &lt;span class="math"&gt;\(14M \times 61 \approx 854M\)&lt;/span&gt; 参数，不到总模型 671B 的 &lt;strong&gt;0.13%&lt;/strong&gt;。&lt;/p&gt;
+&lt;hr&gt;
+&lt;h2&gt;12. 总结&lt;/h2&gt;
+&lt;p&gt;Lightning Indexer 是一个精心设计的"快速预筛选器"：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;输入&lt;/strong&gt;：复用 MLA 的 query 压缩表示 + 独立的 key 投影&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;计算&lt;/strong&gt;：Multi-Query、FP8、ReLU、Hadamard Rotation 四重优化&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;输出&lt;/strong&gt;：每个 query token 选出 2048 个最相关的 preceding token&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;效果&lt;/strong&gt;：以不到 1/6 的计算代价，实现了与 dense attention 相当的效果&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;其核心设计哲学是：&lt;strong&gt;用一个极其廉价但足够准确的近似分数，替代大部分不必要的精确 attention 计算&lt;/strong&gt;。这使得 DeepSeek-V3.2 能在 128K 上下文长度下，显著降低推理成本。&lt;/p&gt;
+&lt;hr&gt;
+&lt;h2&gt;参考&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="https://huggingface.co/deepseek-ai/DeepSeek-V3.2/blob/main/assets/paper.pdf"&gt;DeepSeek-V3.2 Paper&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp/tree/main/inference"&gt;DeepSeek-V3.2-Exp 开源推理实现&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://songhuiming.github.io/pages/2025/03/20/deepseek-v3-multi-head-latent-attention-mla/"&gt;DeepSeek V3 MLA 详解 (前篇)&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://aclanthology.org/2025.acl-long.1126/"&gt;Native Sparse Attention (NSA), Yuan et al., ACL 2025&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;script type="text/javascript"&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width &lt; 768) ? "left" : align;
+        indent = (screen.width &lt; 768) ? "0em" : indent;
+        linebreak = (screen.width &lt; 768) ? 'true' : linebreak;
+    }
+
+    var mathjaxscript = document.createElement('script');
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript';
+    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-AMS-MML_HTMLorMML';
+
+    var configscript = document.createElement('script');
+    configscript.type = 'text/x-mathjax-config';
+    configscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js'], equationNumbers: { autoNumber: 'none' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    messageStyle: 'normal'," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        availableFonts: ['STIX', 'TeX']," +
+        "        preferredFont: 'STIX'," +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+&lt;/script&gt;</content><category term="python"></category><category term="python"></category><category term="AI"></category><category term="LLM"></category><category term="AIGC"></category><category term="DeepSeek"></category></entry><entry><title>DeepSeek Expert Parallelism Load Balancer (EPLB) Code Reading</title><link href="/pages/2025/04/20/deepseek-expert-parallelism-load-balancer-eplb-code-reading/" rel="alternate"></link><published>2025-04-20T00:00:00-05:00</published><updated>2025-04-20T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2025-04-20:/pages/2025/04/20/deepseek-expert-parallelism-load-balancer-eplb-code-reading/</id><summary type="html">&lt;h2&gt;Introduction&lt;/h2&gt;
 &lt;p&gt;In the previous &lt;a href="https://songhuiming.github.io/pages/2025/02/16/deepseek-v3/"&gt;Introduction to DeepSeek-V3&lt;/a&gt;, a crucial component highlighted was the use of DeepSeekMoE. When employing Expert Parallelism, different Experts are assigned to different GPUs. Since the load on different Experts may vary depending on the current workload, maintaining load balance across GPUs is critical. DeepSeek-MoE addresses this …&lt;/p&gt;</summary><content type="html">&lt;h2&gt;Introduction&lt;/h2&gt;
 &lt;p&gt;In the previous &lt;a href="https://songhuiming.github.io/pages/2025/02/16/deepseek-v3/"&gt;Introduction to DeepSeek-V3&lt;/a&gt;, a crucial component highlighted was the use of DeepSeekMoE. When employing Expert Parallelism, different Experts are assigned to different GPUs. Since the load on different Experts may vary depending on the current workload, maintaining load balance across GPUs is critical. DeepSeek-MoE addresses this by replicating high-load Experts and optimizing load distribution to ensure that the load across GPUs/nodes is as balanced as possible. Replicated Experts are packed into GPUs to ensure load balancing between them. Additionally, as DeepSeek-V3 uses Node-limited routing, Experts from the same group are deployed on the same node whenever possible to minimize inter-node data communication.&lt;/p&gt;
 &lt;p&gt;DeepSeek has open-sourced its Expert Parallelism load-balancing algorithm for Expert replication and deployment in &lt;a href="https://github.com/deepseek-ai/EPLB/blob/main/eplb.py"&gt;eplb.py&lt;/a&gt;. This article provides a detailed study of this open-source code.&lt;/p&gt;
@@ -15416,36 +15986,4 @@ docker push pinseng/dl-docker
 &lt;li&gt;&lt;a href="https://hub.docker.com/r/tensorflow/tensorflow/"&gt;docker tensorflow repository&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href="http://stackoverflow.com/questions/3160909/how-do-i-deal-with-certificates-using-curl-while-trying-to-access-an-https-url"&gt;How do I deal with certificates using cURL while trying to access an HTTPS url&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href="http://stackoverflow.com/questions/28349392/how-to-push-a-docker-image-to-a-private-repository"&gt;How to push a docker image to a private repository&lt;/a&gt;&lt;/li&gt;
-&lt;/ol&gt;</content><category term="Python"></category><category term="python"></category><category term="docker"></category><category term="tensorflow"></category><category term="deep learning"></category></entry><entry><title>install tensorflow/theano on conda envirement</title><link href="/pages/2017/02/25/install-tensorflowtheano-on-conda-envirement/" rel="alternate"></link><published>2017-02-25T00:00:00-06:00</published><updated>2017-02-25T00:00:00-06:00</updated><author><name>Huiming Song</name></author><id>tag:None,2017-02-25:/pages/2017/02/25/install-tensorflowtheano-on-conda-envirement/</id><summary type="html">&lt;p&gt;to avoid conflict, it is better to install tensorflow/theano in the virtuenv in python. Another way is to install them in the conda enviroment. This is the notes how to do that.&lt;/p&gt;</summary><content type="html">&lt;h3&gt;anaconda install tensorflow&lt;/h3&gt;
-&lt;ol&gt;
-&lt;li&gt;from &lt;a href="https://www.tensorflow.org/versions/r0.12/get_started/os_setup#anaconda_installation"&gt;Anaconda installation&lt;/a&gt;&lt;/li&gt;
-&lt;/ol&gt;
-&lt;pre&gt;&lt;code class="language-bash"&gt;conda create -n tensorflow python=2.7
-source activate tensorflow
-conda install -c conda-forge tensorflow
-source deactivate
-&lt;/code&gt;&lt;/pre&gt;
-&lt;ol&gt;
-&lt;li&gt;install jupyter notebook, from &lt;a href="http://stackoverflow.com/questions/33960051/unable-to-import-a-module-from-python-notebook-in-jupyter/36613481#36613481"&gt;stackoverflow&lt;/a&gt;&lt;/li&gt;
-&lt;/ol&gt;
-&lt;pre&gt;&lt;code class="language-bash"&gt;source activate tensorflow
-conda install ipython
-ipython
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;conda install notebook ipykernel
-jupyter notebook
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;a href="http://www.datascienceassn.org/content/installation-quickstart-tensorflow-anaconda-jupyter"&gt;Installation Quickstart: TensorFlow, Anaconda, Jupyter&lt;/a&gt;&lt;/p&gt;
-&lt;h3&gt;anaconda install theano&lt;/h3&gt;
-&lt;p&gt;under tensorflow enviroment, install theano&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-bash"&gt;source activate tensorflow
-pip install git+git://github.com/Theano/Theano.git
-source deactivate
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;anaconda install keras&lt;/h3&gt;
-&lt;p&gt;under tensorflow enviroment, install keras&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-bash"&gt;source activate tensorflow
-pip install git+git://github.com/fchollet/keras.git@1.1.1
-source deactivate
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;After this, tensorflow and theano is ready for call. However, this is in the anaconda virtual enviroment, so it will require installing pandas in this enviroment.&lt;/p&gt;</content><category term="Python"></category><category term="python"></category><category term="tensorflow"></category></entry></feed>
+&lt;/ol&gt;</content><category term="Python"></category><category term="python"></category><category term="docker"></category><category term="tensorflow"></category><category term="deep learning"></category></entry></feed>
