@@ -1,5 +1,862 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata: Huiming's learning notes</title><link href="/" rel="alternate"></link><link href="/feeds/all-en.atom.xml" rel="self"></link><id>/</id><updated>2026-02-18T00:00:00-06:00</updated><subtitle>Keep Looking, Don't Settle</subtitle><entry><title>DeepSeek-V3.2 Lightning Indexer</title><link href="/pages/2026/02/18/deepseek-v32-lightning-indexer/" rel="alternate"></link><published>2026-02-18T00:00:00-06:00</published><updated>2026-02-18T00:00:00-06:00</updated><author><name>Huiming Song</name></author><id>tag:None,2026-02-18:/pages/2026/02/18/deepseek-v32-lightning-indexer/</id><summary type="html">&lt;p&gt;&lt;img alt="Deepseek Lighting Indexer plot" src="/figures/20260218_deepseek_V32_LightingIndexer.svg"&gt;&lt;/p&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata: Huiming's learning notes</title><link href="/" rel="alternate"></link><link href="/feeds/all-en.atom.xml" rel="self"></link><id>/</id><updated>2026-06-19T00:00:00-05:00</updated><subtitle>Keep Looking, Don't Settle</subtitle><entry><title>DeepSeek-V4: 面向百万Token上下文的高效智能</title><link href="/pages/2026/06/19/deepseek-v4-mian-xiang-bai-mo-tokenshang-xia-wen-de-gao-xiao-zhi-neng/" rel="alternate"></link><published>2026-06-19T00:00:00-05:00</published><updated>2026-06-19T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2026-06-19:/pages/2026/06/19/deepseek-v4-mian-xiang-bai-mo-tokenshang-xia-wen-de-gao-xiao-zhi-neng/</id><summary type="html">&lt;p&gt;[TOC]&lt;/p&gt;
+&lt;h2&gt;背景&lt;/h2&gt;
+&lt;p&gt;在之前的文章中，我们详细介绍了 DeepSeek-V3 的 &lt;a href="https://songhuiming.github.io/pages/2025/03/20/deepseek-v3-multi-head-latent-attention-mla/"&gt;MLA 机制&lt;/a&gt; 和 DeepSeek-V3.2 的 &lt;a href="https://songhuiming.github.io/pages/2026/02/18/deepseek-v32-lightning-indexer/"&gt;Lightning Indexer&lt;/a&gt;。MLA 解决了推理时的内存带宽问题，DSA 通过 sparse attention 将计算 …&lt;/p&gt;</summary><content type="html">&lt;p&gt;[TOC]&lt;/p&gt;
+&lt;h2&gt;背景&lt;/h2&gt;
+&lt;p&gt;在之前的文章中，我们详细介绍了 DeepSeek-V3 的 &lt;a href="https://songhuiming.github.io/pages/2025/03/20/deepseek-v3-multi-head-latent-attention-mla/"&gt;MLA 机制&lt;/a&gt; 和 DeepSeek-V3.2 的 &lt;a href="https://songhuiming.github.io/pages/2026/02/18/deepseek-v32-lightning-indexer/"&gt;Lightning Indexer&lt;/a&gt;。MLA 解决了推理时的内存带宽问题，DSA 通过 sparse attention 将计算复杂度从 &lt;span class="math"&gt;\(O(L^2)\)&lt;/span&gt; 降低到 &lt;span class="math"&gt;\(O(L \cdot k)\)&lt;/span&gt;。但随着上下文长度推向百万级别（1M tokens），即使是 sparse attention，KV Cache 的绝对大小和注意力的计算开销仍然是瓶颈。&lt;/p&gt;
+&lt;p&gt;DeepSeek-V4 在 V3.2 的基础上做了根本性的架构升级：引入 &lt;strong&gt;Compressed Sparse Attention (CSA)&lt;/strong&gt; 和 &lt;strong&gt;Heavily Compressed Attention (HCA)&lt;/strong&gt; 的混合注意力架构，从&lt;strong&gt;序列维度&lt;/strong&gt;压缩 KV Cache，再配合 sparse attention，实现了 1M token 上下文下仅需 V3.2 &lt;strong&gt;27% 的推理 FLOPs&lt;/strong&gt; 和 &lt;strong&gt;10% 的 KV Cache&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;本文基于 &lt;a href="https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf"&gt;DeepSeek-V4 技术报告&lt;/a&gt; 和开源实现，详细解析 V4 的核心架构创新。&lt;/p&gt;
+&lt;h2&gt;1. 模型概览&lt;/h2&gt;
+&lt;p&gt;DeepSeek-V4 系列包括两个模型：&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;模型&lt;/th&gt;
+&lt;th&gt;总参数量&lt;/th&gt;
+&lt;th&gt;激活参数量&lt;/th&gt;
+&lt;th&gt;上下文长度&lt;/th&gt;
+&lt;th&gt;训练数据&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;DeepSeek-V4-Pro&lt;/td&gt;
+&lt;td&gt;1.6T&lt;/td&gt;
+&lt;td&gt;49B&lt;/td&gt;
+&lt;td&gt;1M tokens&lt;/td&gt;
+&lt;td&gt;33T tokens&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;DeepSeek-V4-Flash&lt;/td&gt;
+&lt;td&gt;284B&lt;/td&gt;
+&lt;td&gt;13B&lt;/td&gt;
+&lt;td&gt;1M tokens&lt;/td&gt;
+&lt;td&gt;32T tokens&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;相比 DeepSeek-V3.2（671B 总参数 / 37B 激活），V4 的核心创新点：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;混合注意力架构&lt;/strong&gt;：CSA + HCA 的交替配置，大幅提升长上下文效率&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Manifold-Constrained Hyper-Connections (mHC)&lt;/strong&gt;：增强残差连接&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Muon 优化器&lt;/strong&gt;：替代 AdamW，加快收敛并提升训练稳定性&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2&gt;2. 符号定义&lt;/h2&gt;
+&lt;p&gt;以 DeepSeek-V4-Pro 为例，定义本文使用的维度符号：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\begin{aligned}
+&amp;amp; d = 7168 \quad \text{(模型隐藏维度)} \\
+&amp;amp; L = 61 \quad \text{(Transformer 层数)} \\
+&amp;amp; n_h = 128 \quad \text{(query head 数)} \\
+&amp;amp; d_h = 512 \quad \text{(head 维度)} \\
+&amp;amp; d_Q = 1536 \quad \text{(query 压缩维度)} \\
+&amp;amp; G = 16 \quad \text{(输出投影分组数)} \\
+&amp;amp; d_G = 1024 \quad \text{(中间输出维度)} \\
+&amp;amp; H_I = 64 \quad \text{(indexer head 数)} \\
+&amp;amp; d_I = 128 \quad \text{(indexer head 维度)} \\
+&amp;amp; c = 4 \quad \text{(CSA 压缩率)} \\
+&amp;amp; c' = 128 \quad \text{(HCA 压缩率)} \\
+&amp;amp; k = 1024 \quad \text{(CSA top-k 选择数)} \\
+&amp;amp; w_{\text{win}} = 128 \quad \text{(滑动窗口大小)} \\
+&amp;amp; n_{\text{hc}} = 4 \quad \text{(mHC 扩展因子)}
+\end{aligned}
+$$&lt;/div&gt;
+&lt;p&gt;DeepSeek-V4-Flash 的关键差异：&lt;span class="math"&gt;\(d = 4096\)&lt;/span&gt;, &lt;span class="math"&gt;\(L = 43\)&lt;/span&gt;, &lt;span class="math"&gt;\(n_h = 64\)&lt;/span&gt;, &lt;span class="math"&gt;\(d_Q = 1024\)&lt;/span&gt;, &lt;span class="math"&gt;\(G = 8\)&lt;/span&gt;, &lt;span class="math"&gt;\(k = 512\)&lt;/span&gt;。&lt;/p&gt;
+&lt;h2&gt;3. 整体架构&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;层配置&lt;/strong&gt;：V4-Pro 的前 2 层使用 HCA，后续层 CSA 和 HCA 交替使用。V4-Flash 的前 2 层使用纯滑动窗口 attention。&lt;/p&gt;
+&lt;h2&gt;4. Compressed Sparse Attention (CSA)&lt;/h2&gt;
+&lt;p&gt;CSA 是 V4 的核心注意力机制：&lt;strong&gt;先压缩 KV Cache（序列维度 &lt;span class="math"&gt;\(\frac{1}{m}\)&lt;/span&gt; 倍），再用 Lightning Indexer 做 sparse selection，只选 top-k 个压缩 entry 做核心注意力&lt;/strong&gt;。&lt;/p&gt;
+&lt;h3&gt;4.1 Compressed Key-Value Entries&lt;/h3&gt;
+&lt;p&gt;设输入隐藏状态为 &lt;span class="math"&gt;\(\mathbf{H} \in \mathbb{R}^{n \times d}\)&lt;/span&gt;（&lt;span class="math"&gt;\(n\)&lt;/span&gt; 为序列长度，&lt;span class="math"&gt;\(d\)&lt;/span&gt; 为隐藏维度），CSA 首先计算两组 KV entries 及其对应的压缩权重：&lt;/p&gt;
+&lt;div class="math"&gt;$$\mathbf{C}^a = \mathbf{H} \cdot \mathbf{W}^{aKV}, \quad \mathbf{C}^b = \mathbf{H} \cdot \mathbf{W}^{bKV} \tag{9}$$&lt;/div&gt;
+&lt;div class="math"&gt;$$\mathbf{Z}^a = \mathbf{H} \cdot \mathbf{W}^{aZ}, \quad \mathbf{Z}^b = \mathbf{H} \cdot \mathbf{W}^{bZ} \tag{10}$$&lt;/div&gt;
+&lt;p&gt;其中 &lt;span class="math"&gt;\(\mathbf{W}^{aKV}, \mathbf{W}^{bKV}, \mathbf{W}^{aZ}, \mathbf{W}^{bZ} \in \mathbb{R}^{d \times c}\)&lt;/span&gt; 是可训练参数（&lt;span class="math"&gt;\(c\)&lt;/span&gt; 为 head 维度）；&lt;span class="math"&gt;\(\mathbf{C}^a, \mathbf{C}^b \in \mathbb{R}^{n \times c}\)&lt;/span&gt; 是两组 KV entries；&lt;span class="math"&gt;\(\mathbf{Z}^a, \mathbf{Z}^b \in \mathbb{R}^{n \times c}\)&lt;/span&gt; 是对应的压缩权重。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Overlapped Compression&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;每 &lt;span class="math"&gt;\(m\)&lt;/span&gt; 个 token 的 KV entries 压缩为一个 entry。核心操作是&lt;strong&gt;重叠压缩&lt;/strong&gt;——每个压缩 entry &lt;span class="math"&gt;\(\mathbf{C}^{\text{Comp}}_i\)&lt;/span&gt; 由 &lt;span class="math"&gt;\(2m\)&lt;/span&gt; 个原始 token 加权得到（当前块 &lt;span class="math"&gt;\(m\)&lt;/span&gt; 个来自 &lt;span class="math"&gt;\(\mathbf{C}^a\)&lt;/span&gt; + 前一块 &lt;span class="math"&gt;\(m\)&lt;/span&gt; 个来自 &lt;span class="math"&gt;\(\mathbf{C}^b\)&lt;/span&gt;）：&lt;/p&gt;
+&lt;div class="math"&gt;$$[\mathbf{S}^a_{mi:m(i+1)-1}; \mathbf{S}^b_{m(i-1):mi-1}] = \text{Softmax}_{\text{row}}([\mathbf{Z}^a_{mi:m(i+1)-1} + \mathbf{B}^a; \mathbf{Z}^b_{m(i-1):mi-1} + \mathbf{B}^b]) \tag{11}$$&lt;/div&gt;
+&lt;div class="math"&gt;$$\mathbf{C}^{\text{Comp}}_i = \sum_{j=mi}^{m(i+1)-1} \mathbf{S}^a_j \odot \mathbf{C}^a_j + \sum_{j=m(i-1)}^{mi-1} \mathbf{S}^b_j \odot \mathbf{C}^b_j \tag{12}$$&lt;/div&gt;
+&lt;p&gt;其中：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(\odot\)&lt;/span&gt; 表示 Hadamard 积（逐元素乘法）&lt;/li&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(\text{Softmax}_{\text{row}}(\cdot)\)&lt;/span&gt; 沿行维度做归一化，跨当前块和前一块共 &lt;span class="math"&gt;\(2m\)&lt;/span&gt; 个元素&lt;/li&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(\mathbf{B}^a, \mathbf{B}^b \in \mathbb{R}^{m \times c}\)&lt;/span&gt; 是可学习的位置偏置&lt;/li&gt;
+&lt;li&gt;当 &lt;span class="math"&gt;\(i = 0\)&lt;/span&gt; 时，&lt;span class="math"&gt;\(\mathbf{Z}^b_{m(i-1):mi-1}\)&lt;/span&gt; 填充 &lt;span class="math"&gt;\(-\infty\)&lt;/span&gt;，&lt;span class="math"&gt;\(\mathbf{C}^b_{m(i-1):mi-1}\)&lt;/span&gt; 填充零&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;直觉解释&lt;/strong&gt;：&lt;/p&gt;
+&lt;p&gt;整个序列被划分为连续的块，每块 &lt;span class="math"&gt;\(m\)&lt;/span&gt; 个 token：块 0 是 token &lt;span class="math"&gt;\([0, m-1]\)&lt;/span&gt;，块 1 是 token &lt;span class="math"&gt;\([m, 2m-1]\)&lt;/span&gt;，…，块 &lt;span class="math"&gt;\(i\)&lt;/span&gt; 是 token &lt;span class="math"&gt;\([mi, m(i+1)-1]\)&lt;/span&gt;。&lt;span class="math"&gt;\(\mathbf{C}^{\text{Comp}}_i\)&lt;/span&gt; 就是&lt;strong&gt;第 &lt;span class="math"&gt;\(i\)&lt;/span&gt; 个压缩块的表示&lt;/strong&gt;——将块 &lt;span class="math"&gt;\(i\)&lt;/span&gt; 的信息浓缩为一个 &lt;span class="math"&gt;\(c\)&lt;/span&gt; 维向量。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Eq. (11) 做了什么&lt;/strong&gt;：为了计算第 &lt;span class="math"&gt;\(i\)&lt;/span&gt; 个压缩 entry，我们需要从 &lt;span class="math"&gt;\(2m\)&lt;/span&gt; 个 token 中学习贡献权重：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(\mathbf{Z}^a_{mi:m(i+1)-1}\)&lt;/span&gt;：从 &lt;span class="math"&gt;\(\mathbf{Z}^a\)&lt;/span&gt; 中取出&lt;strong&gt;当前块 &lt;span class="math"&gt;\(i\)&lt;/span&gt;&lt;/strong&gt; 的 &lt;span class="math"&gt;\(m\)&lt;/span&gt; 个 token 的压缩分数（位置 &lt;span class="math"&gt;\(mi\)&lt;/span&gt; 到 &lt;span class="math"&gt;\(m(i+1)-1\)&lt;/span&gt;）&lt;/li&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(\mathbf{Z}^b_{m(i-1):mi-1}\)&lt;/span&gt;：从 &lt;span class="math"&gt;\(\mathbf{Z}^b\)&lt;/span&gt; 中取出&lt;strong&gt;前一个块 &lt;span class="math"&gt;\(i-1\)&lt;/span&gt;&lt;/strong&gt; 的 &lt;span class="math"&gt;\(m\)&lt;/span&gt; 个 token 的压缩分数（位置 &lt;span class="math"&gt;\(m(i-1)\)&lt;/span&gt; 到 &lt;span class="math"&gt;\(mi-1\)&lt;/span&gt;）&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;将这 &lt;span class="math"&gt;\(2m\)&lt;/span&gt; 个分数拼接，加上位置偏置 &lt;span class="math"&gt;\(\mathbf{B}^a, \mathbf{B}^b\)&lt;/span&gt;，然后跨 &lt;span class="math"&gt;\(2m\)&lt;/span&gt; 个元素做 Softmax 归一化，得到权重 &lt;span class="math"&gt;\(\mathbf{S}^a\)&lt;/span&gt;（当前块 &lt;span class="math"&gt;\(m\)&lt;/span&gt; 个）和 &lt;span class="math"&gt;\(\mathbf{S}^b\)&lt;/span&gt;（前一块 &lt;span class="math"&gt;\(m\)&lt;/span&gt; 个）。Softmax 确保 &lt;span class="math"&gt;\(2m\)&lt;/span&gt; 个权重在每个维度上之和为 1，形成竞争关系——模型自适应地决定哪些 token 对该压缩 entry 贡献最大。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Eq. (12) 做了什么&lt;/strong&gt;：用 Eq. (11) 得到的权重对 KV entries 做加权求和：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;第一项 &lt;span class="math"&gt;\(\sum_{j=mi}^{m(i+1)-1} \mathbf{S}^a_j \odot \mathbf{C}^a_j\)&lt;/span&gt;：取当前块 &lt;span class="math"&gt;\(i\)&lt;/span&gt; 的 &lt;span class="math"&gt;\(m\)&lt;/span&gt; 个 KV entries（&lt;span class="math"&gt;\(\mathbf{C}^a\)&lt;/span&gt;），用对应权重 &lt;span class="math"&gt;\(\mathbf{S}^a\)&lt;/span&gt; 逐维度缩放后求和&lt;/li&gt;
+&lt;li&gt;第二项 &lt;span class="math"&gt;\(\sum_{j=m(i-1)}^{mi-1} \mathbf{S}^b_j \odot \mathbf{C}^b_j\)&lt;/span&gt;：取前一块 &lt;span class="math"&gt;\(i-1\)&lt;/span&gt; 的 &lt;span class="math"&gt;\(m\)&lt;/span&gt; 个 KV entries（&lt;span class="math"&gt;\(\mathbf{C}^b\)&lt;/span&gt;），用对应权重 &lt;span class="math"&gt;\(\mathbf{S}^b\)&lt;/span&gt; 逐维度缩放后求和&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;两项加在一起就是最终的 &lt;span class="math"&gt;\(\mathbf{C}^{\text{Comp}}_i \in \mathbb{R}^c\)&lt;/span&gt;。注意 &lt;span class="math"&gt;\(\odot\)&lt;/span&gt; 是 Hadamard 积（逐维度乘法），意味着每个维度独立地选择权重——比 scalar 加权更有表达力，模型可以在不同维度上关注不同的 token。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;重叠的意义&lt;/strong&gt;：块 &lt;span class="math"&gt;\(i\)&lt;/span&gt; 的压缩 entry 不仅看当前块的 token，还看前一块 &lt;span class="math"&gt;\(i-1\)&lt;/span&gt; 的 token（通过 &lt;span class="math"&gt;\(\mathbf{C}^b\)&lt;/span&gt;）；而块 &lt;span class="math"&gt;\(i+1\)&lt;/span&gt; 又会看块 &lt;span class="math"&gt;\(i\)&lt;/span&gt; 的 token。这样相邻压缩块之间共享了边界信息，避免了硬切分导致的信息断裂——跨块边界的语义依赖得以保留。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;为何压缩率是 &lt;span class="math"&gt;\(\frac{1}{m}\)&lt;/span&gt; 而非 &lt;span class="math"&gt;\(\frac{1}{2m}\)&lt;/span&gt;&lt;/strong&gt;：虽然每个 &lt;span class="math"&gt;\(\mathbf{C}^{\text{Comp}}_i\)&lt;/span&gt; 来自 &lt;span class="math"&gt;\(2m\)&lt;/span&gt; 个 token，但 &lt;span class="math"&gt;\(\mathbf{C}^a\)&lt;/span&gt; 用于 &lt;span class="math"&gt;\(\mathbf{C}^{\text{Comp}}_i\)&lt;/span&gt; 的 token 位置 &lt;span class="math"&gt;\([mi, m(i+1)-1]\)&lt;/span&gt;，恰好是 &lt;span class="math"&gt;\(\mathbf{C}^b\)&lt;/span&gt; 用于 &lt;span class="math"&gt;\(\mathbf{C}^{\text{Comp}}_{i+1}\)&lt;/span&gt; 的 token 位置（重叠部分）。每个原始 token 位置只"主导"一个压缩 entry（通过 &lt;span class="math"&gt;\(\mathbf{C}^a\)&lt;/span&gt;），同时"辅助"下一个压缩 entry（通过 &lt;span class="math"&gt;\(\mathbf{C}^b\)&lt;/span&gt;）。因此整体压缩率仍为 &lt;span class="math"&gt;\(\frac{1}{m}\)&lt;/span&gt;，最终产出 &lt;span class="math"&gt;\(\mathbf{C}^{\text{Comp}} \in \mathbb{R}^{\frac{n}{m} \times c}\)&lt;/span&gt;。&lt;/p&gt;
+&lt;h3&gt;4.2 Lightning Indexer (Sparse Selection)&lt;/h3&gt;
+&lt;p&gt;压缩后仍有 &lt;span class="math"&gt;\(\frac{n}{m}\)&lt;/span&gt; 个 KV entries。CSA 用 Lightning Indexer 选出 top-k 个做核心注意力。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Step 1: 压缩 Indexer Keys&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;对 indexer keys 执行与 &lt;span class="math"&gt;\(\mathbf{C}^{\text{Comp}}\)&lt;/span&gt; 相同的压缩操作，得到 &lt;span class="math"&gt;\(\mathbf{K}^{I\text{Comp}} \in \mathbb{R}^{\frac{n}{m} \times c^I}\)&lt;/span&gt;，其中 &lt;span class="math"&gt;\(c^I\)&lt;/span&gt; 是 indexer head 维度。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Step 2: Indexer Queries（低秩投影，与主注意力共享压缩向量 &lt;span class="math"&gt;\(\mathbf{c}^Q_t\)&lt;/span&gt;）&lt;/strong&gt;&lt;/p&gt;
+&lt;div class="math"&gt;$$\mathbf{c}^Q_t = \mathbf{h}_t \cdot \mathbf{W}^{DQ} \in \mathbb{R}^{d_c} \tag{13}$$&lt;/div&gt;
+&lt;div class="math"&gt;$$[\mathbf{q}^I_{t,1}; \mathbf{q}^I_{t,2}; ...; \mathbf{q}^I_{t,n^I_h}] = \mathbf{q}^I_t = \mathbf{c}^Q_t \cdot \mathbf{W}^{IUQ} \in \mathbb{R}^{n^I_h \cdot c^I} \tag{14}$$&lt;/div&gt;
+&lt;p&gt;其中 &lt;span class="math"&gt;\(\mathbf{W}^{DQ} \in \mathbb{R}^{d \times d_c}\)&lt;/span&gt; 为 query 下投影（&lt;span class="math"&gt;\(d_c\)&lt;/span&gt; 为 query 压缩维度）；&lt;span class="math"&gt;\(\mathbf{W}^{IUQ} \in \mathbb{R}^{d_c \times c^I n^I_h}\)&lt;/span&gt; 为 indexer query 上投影；&lt;span class="math"&gt;\(n^I_h\)&lt;/span&gt; 为 indexer head 数量。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Step 3: 计算 Index Score（加权多头 ReLU 点积）&lt;/strong&gt;&lt;/p&gt;
+&lt;div class="math"&gt;$$[w^I_{t,1}; w^I_{t,2}; ...; w^I_{t,n^I_h}] = \mathbf{w}^I_t = \mathbf{h}_t \cdot \mathbf{W}^w \tag{15}$$&lt;/div&gt;
+&lt;div class="math"&gt;$$I_{t,s} = \sum_{h=1}^{n^I_h} w^I_{t,h} \cdot \text{ReLU}\left(\mathbf{q}^I_{t,h} \cdot \mathbf{K}^{I\text{Comp}}_s\right) \tag{16}$$&lt;/div&gt;
+&lt;p&gt;其中 &lt;span class="math"&gt;\(\mathbf{W}^w \in \mathbb{R}^{d \times n^I_h}\)&lt;/span&gt; 是可学习权重矩阵；&lt;span class="math"&gt;\(w^I_{t,h} \in \mathbb{R}\)&lt;/span&gt; 是第 &lt;span class="math"&gt;\(h\)&lt;/span&gt; 个 indexer head 的标量权重；&lt;span class="math"&gt;\(s &amp;lt; \lfloor\frac{t}{m}\rfloor\)&lt;/span&gt; 保证因果性。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Step 4: Top-k 选择&lt;/strong&gt;&lt;/p&gt;
+&lt;div class="math"&gt;$$\mathcal{C}^{\text{SprsComp}}_t = \left\{\mathbf{C}^{\text{Comp}}_s \mid I_{t,s} \in \text{Top-k}(I_{t,:})\right\} \tag{17}$$&lt;/div&gt;
+&lt;p&gt;每个 query token &lt;span class="math"&gt;\(t\)&lt;/span&gt; 从 &lt;span class="math"&gt;\(\frac{n}{m}\)&lt;/span&gt; 个压缩 entry 中选出 &lt;span class="math"&gt;\(k\)&lt;/span&gt; 个。&lt;/p&gt;
+&lt;h3&gt;4.3 Shared Key-Value MQA&lt;/h3&gt;
+&lt;p&gt;选出稀疏 KV entries 后，CSA 执行核心注意力。关键设计：&lt;strong&gt;每个压缩 KV entry 同时作为 key 和 value&lt;/strong&gt;（Shared Key-Value MQA）。&lt;/p&gt;
+&lt;p&gt;主注意力的 queries 从&lt;strong&gt;同一个&lt;/strong&gt; &lt;span class="math"&gt;\(\mathbf{c}^Q_t\)&lt;/span&gt; 上投影得到（与 indexer queries 共享压缩向量 &lt;span class="math"&gt;\(\mathbf{c}^Q_t\)&lt;/span&gt;）：&lt;/p&gt;
+&lt;div class="math"&gt;$$[\mathbf{q}_{t,1}; \mathbf{q}_{t,2}; ...; \mathbf{q}_{t,n_h}] = \mathbf{q}_t = \mathbf{c}^Q_t \cdot \mathbf{W}^{UQ} \tag{18}$$&lt;/div&gt;
+&lt;div class="math"&gt;$$\mathbf{o}_{t,i} = \text{CoreAttn}\left(\text{query}=\mathbf{q}_{t,i}, \text{key}=\mathcal{C}^{\text{SprsComp}}_t, \text{value}=\mathcal{C}^{\text{SprsComp}}_t\right) \tag{19}$$&lt;/div&gt;
+&lt;p&gt;其中 &lt;span class="math"&gt;\(\mathbf{W}^{UQ} \in \mathbb{R}^{d_c \times c \cdot n_h}\)&lt;/span&gt;；&lt;span class="math"&gt;\(n_h\)&lt;/span&gt; 为主注意力 head 数量。注意 key 和 value 是&lt;strong&gt;同一组&lt;/strong&gt; entry。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;与 V3.2 MLA 的关键区别&lt;/strong&gt;：MLA 为 key 和 value 分别做上投影 (&lt;span class="math"&gt;\(\mathbf{W}^{UK}\)&lt;/span&gt;, &lt;span class="math"&gt;\(\mathbf{W}^{UV}\)&lt;/span&gt;)，KV Cache 中需要存独立的压缩向量。而 CSA 的 Shared KV 设计使得每个 entry 只需存一份，KV Cache 开销大幅减少。&lt;/p&gt;
+&lt;h3&gt;4.4 Grouped Output Projection&lt;/h3&gt;
+&lt;p&gt;&lt;span class="math"&gt;\(n_h\)&lt;/span&gt; 很大时，直接将 &lt;span class="math"&gt;\([\mathbf{o}_{t,1}; ...; \mathbf{o}_{t,n_h}] \in \mathbb{R}^{n_h \cdot c}\)&lt;/span&gt; 投影到 &lt;span class="math"&gt;\(\mathbb{R}^d\)&lt;/span&gt; 计算量巨大。V4 设计了分组输出投影：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;将 &lt;span class="math"&gt;\(n_h\)&lt;/span&gt; 个 head 分成 &lt;span class="math"&gt;\(G\)&lt;/span&gt; 组&lt;/li&gt;
+&lt;li&gt;每组 &lt;span class="math"&gt;\(\frac{n_h}{G}\)&lt;/span&gt; 个 head 的拼接输出 &lt;span class="math"&gt;\(\mathbf{o}^g_t \in \mathbb{R}^{\frac{n_h}{G} \cdot c}\)&lt;/span&gt; 先投影到中间维度 &lt;span class="math"&gt;\(d_G\)&lt;/span&gt;&lt;/li&gt;
+&lt;li&gt;再将 &lt;span class="math"&gt;\(G\)&lt;/span&gt; 组中间输出拼接后投影到最终维度 &lt;span class="math"&gt;\(d\)&lt;/span&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;div class="math"&gt;$$\mathbf{o}^{g'}_t = \mathbf{o}^g_t \cdot \mathbf{W}^g_{\text{proj1}}, \quad \mathbb{R}^{\frac{n_h}{G} \cdot c} \to \mathbb{R}^{d_G}$$&lt;/div&gt;
+&lt;div class="math"&gt;$$\hat{\mathbf{o}}_t = [\mathbf{o}^{1'}_t; ...; \mathbf{o}^{G'}_t] \cdot \mathbf{W}_{\text{proj2}}, \quad \mathbb{R}^{G \cdot d_G} \to \mathbb{R}^{d}$$&lt;/div&gt;
+&lt;h3&gt;4.5 其他细节&lt;/h3&gt;
+&lt;p&gt;论文还描述了 CSA（及 HCA）的几项附加技术：&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Query 和 KV Entry 归一化&lt;/strong&gt;：在核心注意力之前，对每个 query head 和压缩 KV entry 执行 RMSNorm，避免 attention logits 爆炸。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Partial RoPE&lt;/strong&gt;：对 query 向量和 KV entry 向量的最后 64 维施加 RoPE。由于 KV entry 同时作为 key 和 value，朴素注意力输出 &lt;span class="math"&gt;\(\mathbf{o}_{t,i}\)&lt;/span&gt; 会带有绝对位置编码。对策：对 &lt;span class="math"&gt;\(\mathbf{o}_{t,i}\)&lt;/span&gt; 的最后 64 维施加位置为 &lt;span class="math"&gt;\(-t\)&lt;/span&gt; 的 RoPE，使最终输出携带相对位置信息。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;滑动窗口分支（Sliding Window KV Entries）&lt;/strong&gt;：&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;为什么需要&lt;/em&gt;（两个互补的原因）：&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;原因一：因果性硬约束——同块 token 通过压缩路径完全不可达。&lt;/strong&gt; 压缩 entry &lt;span class="math"&gt;\(\mathbf{C}^{\text{Comp}}_i\)&lt;/span&gt; 是块 &lt;span class="math"&gt;\(i\)&lt;/span&gt; 内&lt;strong&gt;全部&lt;/strong&gt; &lt;span class="math"&gt;\(m\)&lt;/span&gt; 个 token 的加权融合（Eq. 12），包含了块内所有 token 的信息——包括块内靠后位置的"未来"token。由于 autoregressive 因果性，位于块 &lt;span class="math"&gt;\(i\)&lt;/span&gt; 内位置 &lt;span class="math"&gt;\(t\)&lt;/span&gt; 的 query 不能使用 &lt;span class="math"&gt;\(\mathbf{C}^{\text{Comp}}_i\)&lt;/span&gt;（否则会偷看到 &lt;span class="math"&gt;\(t\)&lt;/span&gt; 之后的 token）。论文的约束是 &lt;span class="math"&gt;\(s &amp;lt; \lfloor\frac{t}{m}\rfloor\)&lt;/span&gt;，即 query &lt;span class="math"&gt;\(t\)&lt;/span&gt; 只能 attend 到完全在它之前的压缩块。这意味着块 &lt;span class="math"&gt;\(i\)&lt;/span&gt; 内位于 &lt;span class="math"&gt;\(t\)&lt;/span&gt; 之前的 token（位置 &lt;span class="math"&gt;\(mi\)&lt;/span&gt; 到 &lt;span class="math"&gt;\(t-1\)&lt;/span&gt;），虽然是合法的"过去"，但被融合进了含有未来信息的 &lt;span class="math"&gt;\(\mathbf{C}^{\text{Comp}}_i\)&lt;/span&gt;，通过压缩路径&lt;strong&gt;根本无法访问&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;原因二：局部细节需要高精度——压缩会丢失 fine-grained 信息。&lt;/strong&gt; 在语言模型中，当前 query 与刚过去的邻近 token 关系最为紧密和微妙。即使前面的压缩块（&lt;span class="math"&gt;\(s &amp;lt; \lfloor\frac{t}{m}\rfloor\)&lt;/span&gt;）可以访问，这些块的信息也是 &lt;span class="math"&gt;\(m\)&lt;/span&gt; 个 token 融合后的"粗粒度摘要"。对于局部上下文（最近几十个 token），模型需要逐 token 级别的精确表示，而非压缩后的混合信号。&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;具体做法&lt;/em&gt;：为每个 query token 额外产出最近 &lt;span class="math"&gt;\(n_{\text{win}}\)&lt;/span&gt; 个 token 的&lt;strong&gt;未压缩&lt;/strong&gt; KV entries。这些 entries 与 compressed entries 维度相同（都是 &lt;span class="math"&gt;\(c = 512\)&lt;/span&gt;），但不经过任何压缩操作，以原始精度保留。在核心注意力中，query 同时 attend to 两部分：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Compressed KV entries&lt;/strong&gt;：经过压缩（和 sparse selection）的全局长程记忆&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Sliding Window KV entries&lt;/strong&gt;：未压缩的最近 &lt;span class="math"&gt;\(n_{\text{win}}\)&lt;/span&gt; 个 token，负责精确的局部上下文&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;两者参与同一个 softmax attention 计算（因为维度相同，可以直接拼接为统一的 key/value 集合）。&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;具体配置与 attention 总 entry 数&lt;/em&gt;：&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;参数&lt;/th&gt;
+&lt;th&gt;V4-Pro&lt;/th&gt;
+&lt;th&gt;V4-Flash&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;attention top-k（indexer 选出的压缩 entry 数）&lt;/td&gt;
+&lt;td&gt;1024&lt;/td&gt;
+&lt;td&gt;512&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(n_{\text{win}}\)&lt;/span&gt;（sliding window 大小）&lt;/td&gt;
+&lt;td&gt;128&lt;/td&gt;
+&lt;td&gt;128&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;每个 query 实际 attend to 的 entry 总数&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(1024 + 128 = 1152\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(512 + 128 = 640\)&lt;/span&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;Top-k 远大于 &lt;span class="math"&gt;\(n_{\text{win}}\)&lt;/span&gt;：top-k 覆盖&lt;strong&gt;全局&lt;/strong&gt;长程依赖（从 &lt;span class="math"&gt;\(\frac{n}{m}\)&lt;/span&gt; 个压缩 entries 中选出最相关的），&lt;span class="math"&gt;\(n_{\text{win}}\)&lt;/span&gt; 覆盖&lt;strong&gt;局部&lt;/strong&gt;精细依赖（最近 128 个 token 的未压缩表示）。两者拼接后共同参与同一个 softmax attention 计算（再加上 attention sink）。&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;工程实现&lt;/em&gt;：滑动窗口 entries 存储在固定大小的 state cache 中。随着新 token 生成，最老的 token 滑出窗口并被送入压缩路径。因此滑动窗口的内存开销是固定的、不随上下文长度增长。&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;与 compressed entries 维度相同的原因&lt;/em&gt;：从代码看，&lt;code&gt;self.wkv = Linear(self.dim, self.head_dim)&lt;/code&gt; 同时用于产出 sliding window entries 和作为压缩路径的输入——两者共享同一个投影矩阵和 head 维度 &lt;span class="math"&gt;\(c\)&lt;/span&gt;。这是 Shared Key-Value MQA 的设计要求：所有 entries（无论压缩与否）都同时充当 key 和 value，必须在同一个 attention 运算中兼容。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Attention Sink&lt;/strong&gt;：设可学习的 sink logits &lt;span class="math"&gt;\(\{s'_1, ..., s'_{n_h}\}\)&lt;/span&gt;，修改注意力分数计算：&lt;/p&gt;
+&lt;div class="math"&gt;$$a_{h,t,j} = \frac{\text{Exp}(l_{h,t,j})}{\sum_k \text{Exp}(l_{h,t,k}) + \text{Exp}(s'_h)} \tag{27}$$&lt;/div&gt;
+&lt;p&gt;使得每个 head 的注意力分数之和可以不等于 1（甚至接近 0），允许 head "不关注任何东西"。&lt;/p&gt;
+&lt;h3&gt;4.6 CSA 完整数据流图&lt;/h3&gt;
+&lt;p&gt;&lt;img alt="20260628_deekseekV4_CSA" src="/figures/20260628_deekseekV4_CSA.svg"&gt;&lt;/p&gt;
+&lt;h2&gt;5. Heavily Compressed Attention (HCA)&lt;/h2&gt;
+&lt;p&gt;HCA 采用更激进的压缩（&lt;span class="math"&gt;\(m' \gg m\)&lt;/span&gt;），但&lt;strong&gt;不使用 sparse attention&lt;/strong&gt;——直接对所有压缩 entries 做 dense attention。&lt;/p&gt;
+&lt;h3&gt;5.1 非重叠压缩&lt;/h3&gt;
+&lt;p&gt;与 CSA 不同，HCA 只使用&lt;strong&gt;一组&lt;/strong&gt; KV entries，且压缩是&lt;strong&gt;非重叠&lt;/strong&gt;的：&lt;/p&gt;
+&lt;div class="math"&gt;$$\mathbf{C} = \mathbf{H} \cdot \mathbf{W}^{KV}, \quad \mathbf{Z} = \mathbf{H} \cdot \mathbf{W}^{Z} \tag{20-21}$$&lt;/div&gt;
+&lt;div class="math"&gt;$$\mathbf{S}_{m'i:m'(i+1)-1} = \text{Softmax}_{\text{row}}(\mathbf{Z}_{m'i:m'(i+1)-1} + \mathbf{B}) \tag{22}$$&lt;/div&gt;
+&lt;div class="math"&gt;$$\mathbf{C}^{\text{Comp}}_i = \sum_{j=m'i}^{m'(i+1)-1} \mathbf{S}_j \odot \mathbf{C}_j \tag{23}$$&lt;/div&gt;
+&lt;p&gt;每 &lt;span class="math"&gt;\(m'\)&lt;/span&gt; 个 token 压缩为一个 entry，无重叠。结果 &lt;span class="math"&gt;\(\mathbf{C}^{\text{Comp}} \in \mathbb{R}^{\frac{n}{m'} \times c}\)&lt;/span&gt;。对于 1M 上下文，HCA 的 KV entries 数量仅为 &lt;span class="math"&gt;\(\frac{10^6}{128} \approx 7812\)&lt;/span&gt; 个。&lt;/p&gt;
+&lt;h3&gt;5.2 Dense Shared Key-Value MQA&lt;/h3&gt;
+&lt;p&gt;由于压缩后 entries 极少，HCA 直接对&lt;strong&gt;全部&lt;/strong&gt;压缩 entries 做 dense attention。Query 投影方式与 CSA 相同（低秩）：&lt;/p&gt;
+&lt;div class="math"&gt;$$\mathbf{c}^Q_t = \mathbf{h}_t \cdot \mathbf{W}^{DQ}, \quad [\mathbf{q}_{t,1}; ...; \mathbf{q}_{t,n_h}] = \mathbf{c}^Q_t \cdot \mathbf{W}^{UQ} \tag{24-25}$$&lt;/div&gt;
+&lt;div class="math"&gt;$$\mathbf{o}_{t,i} = \text{CoreAttn}\left(\text{query}=\mathbf{q}_{t,i}, \text{key}=\mathbf{C}^{\text{Comp}}, \text{value}=\mathbf{C}^{\text{Comp}}\right) \tag{26}$$&lt;/div&gt;
+&lt;p&gt;HCA 同样使用 Shared Key-Value MQA（KV entry 同时作为 key 和 value）、Grouped Output Projection、RMSNorm、Partial RoPE、滑动窗口和 Attention Sink。&lt;/p&gt;
+&lt;h3&gt;5.3 HCA 完整数据流图&lt;/h3&gt;
+&lt;p&gt;&lt;img alt="20260628_deekseekV4_HCA" src="/figures/20260628_deekseekV4_HCA.svg"&gt;&lt;/p&gt;
+&lt;h2&gt;6. CSA 与 HCA 的对比&lt;/h2&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;特性&lt;/th&gt;
+&lt;th&gt;CSA&lt;/th&gt;
+&lt;th&gt;HCA&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;压缩率&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(m = 4\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(m' = 128\)&lt;/span&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;压缩方式&lt;/td&gt;
+&lt;td&gt;重叠压缩（&lt;span class="math"&gt;\(2m\)&lt;/span&gt; tokens, 两组 &lt;span class="math"&gt;\(C^a, C^b\)&lt;/span&gt;）&lt;/td&gt;
+&lt;td&gt;非重叠压缩（&lt;span class="math"&gt;\(m'\)&lt;/span&gt; tokens, 一组 &lt;span class="math"&gt;\(C\)&lt;/span&gt;）&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Sparse Attention&lt;/td&gt;
+&lt;td&gt;是（Lightning Indexer + Top-k）&lt;/td&gt;
+&lt;td&gt;否（dense）&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;KV entries 数（1M context）&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\frac{10^6}{4} = 250K\)&lt;/span&gt;，sparse 选 &lt;span class="math"&gt;\(k\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\frac{10^6}{128} \approx 7812\)&lt;/span&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;层配置（V4-Pro）&lt;/td&gt;
+&lt;td&gt;偶数层（Layer 2, 4, 6, ...）&lt;/td&gt;
+&lt;td&gt;奇数层 + 前 2 层&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;适合场景&lt;/td&gt;
+&lt;td&gt;需要 fine-grained token-level 信息&lt;/td&gt;
+&lt;td&gt;粗粒度语义理解&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;&lt;strong&gt;设计哲学&lt;/strong&gt;：CSA 先轻度压缩再 sparse select，保留 token-level 精度；HCA 做极度压缩但保持 dense，确保全局信息覆盖。两者互补。&lt;/p&gt;
+&lt;h2&gt;7. 注意力层的其他细节&lt;/h2&gt;
+&lt;h3&gt;7.1 Partial RoPE&lt;/h3&gt;
+&lt;p&gt;CSA 和 HCA 都对 queries、KV entries、以及 attention outputs 的最后 64 维应用 RoPE：&lt;/p&gt;
+&lt;div class="math"&gt;$$\mathbf{q}_{t,i} \leftarrow [\mathbf{q}^{\text{nope}}_{t,i} \;;\; \text{RoPE}(\mathbf{q}^{\text{pe}}_{t,i})] \tag{18}$$&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;特殊处理&lt;/strong&gt;：由于 KV entry 同时作为 key 和 value，naive attention output 会携带绝对位置编码。为此，对 attention output 的最后 64 维也应用 RoPE（position &lt;span class="math"&gt;\(-t\)&lt;/span&gt;），使最终输出只携带相对位置信息。&lt;/p&gt;
+&lt;h3&gt;7.2 滑动窗口注意力 (SWA)&lt;/h3&gt;
+&lt;p&gt;由于压缩操作的因果性要求，每个 query 只能 attend 已完成压缩的前置块。为补充当前块内的局部信息，引入一个额外的滑动窗口分支：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;窗口大小 &lt;span class="math"&gt;\(w_{\text{win}} = 128\)&lt;/span&gt;&lt;/li&gt;
+&lt;li&gt;为最近 128 个 token 生成未压缩的 KV entries&lt;/li&gt;
+&lt;li&gt;在 core attention 中与压缩 KV entries 一起使用&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;7.3 Attention Sink&lt;/h3&gt;
+&lt;p&gt;在 core attention 的 softmax 分母中加入一个可学习的 sink logit，允许注意力权重总和不为 1：&lt;/p&gt;
+&lt;div class="math"&gt;$$a_{h,t,s} = \frac{\text{Exp}(l_{h,t,s})}{\sum_{s'} \text{Exp}(l_{h,t,s'}) + \text{Exp}(s'_h)} \tag{19}$$&lt;/div&gt;
+&lt;p&gt;其中 &lt;span class="math"&gt;\(s'_h\)&lt;/span&gt; 是每个 head 的可学习 sink logit。&lt;/p&gt;
+&lt;h3&gt;7.4 Query/KV Entry Normalization&lt;/h3&gt;
+&lt;p&gt;在 core attention 之前，对 queries 和 KV entries 分别做 RMSNorm，防止 attention logits 爆炸。&lt;/p&gt;
+&lt;h2&gt;8. Manifold-Constrained Hyper-Connections (mHC)&lt;/h2&gt;
+&lt;p&gt;V4 使用 mHC 替代传统残差连接，增强信号在层间的传播。&lt;/p&gt;
+&lt;h3&gt;8.1 基本思想&lt;/h3&gt;
+&lt;p&gt;标准 Hyper-Connections (HC) 将残差流宽度扩展 &lt;span class="math"&gt;\(n_{\text{hc}}\)&lt;/span&gt; 倍：从 &lt;span class="math"&gt;\(\mathbb{R}^d\)&lt;/span&gt; 扩展到 &lt;span class="math"&gt;\(\mathbb{R}^{n_{\text{hc}} \times d}\)&lt;/span&gt;（&lt;span class="math"&gt;\(n_{\text{hc}} = 4\)&lt;/span&gt;）。&lt;/p&gt;
+&lt;p&gt;每层的变换包含三个映射：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Input mapping&lt;/strong&gt; &lt;span class="math"&gt;\(\mathbf{A}_i \in \mathbb{R}^{1 \times n_{\text{hc}}}\)&lt;/span&gt;：从扩展残差流中提取 &lt;span class="math"&gt;\(d\)&lt;/span&gt; 维输入给层&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Residual mapping&lt;/strong&gt; &lt;span class="math"&gt;\(\mathbf{M}_i \in \mathbb{R}^{n_{\text{hc}} \times n_{\text{hc}}}\)&lt;/span&gt;：变换残差流本身&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Output mapping&lt;/strong&gt; &lt;span class="math"&gt;\(\mathbf{O}_i \in \mathbb{R}^{n_{\text{hc}} \times 1}\)&lt;/span&gt;：将层输出注入回扩展残差流&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;8.2 Manifold 约束&lt;/h3&gt;
+&lt;p&gt;mHC 的核心创新是将残差映射矩阵 &lt;span class="math"&gt;\(\mathbf{M}_i\)&lt;/span&gt; 约束到&lt;strong&gt;双随机矩阵的流形（Birkhoff 多面体）&lt;/strong&gt;：&lt;/p&gt;
+&lt;div class="math"&gt;$$\mathbf{M}_i \in \mathcal{M} \triangleq \{\mathbf{A} \in \mathbb{R}^{n \times n} \mid \mathbf{A}\mathbf{1}_n = \mathbf{1}_n, \; \mathbf{1}_n^T\mathbf{A} = \mathbf{1}_n^T, \; \mathbf{A} \geq 0\} \tag{20}$$&lt;/div&gt;
+&lt;p&gt;这确保：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;谱范数有界&lt;/strong&gt; &lt;span class="math"&gt;\(\|\mathbf{M}_i\|_2 \leq 1\)&lt;/span&gt;：残差变换是非扩张的，前向传播和反向传播数值稳定&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;乘法封闭&lt;/strong&gt;：&lt;span class="math"&gt;\(\mathcal{M}\)&lt;/span&gt; 在矩阵乘法下封闭，多层 mHC 堆叠后仍然稳定&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3&gt;8.3 动态参数化&lt;/h3&gt;
+&lt;p&gt;三个映射的参数由&lt;strong&gt;动态（输入依赖）+ 静态（偏置）&lt;/strong&gt;两部分组成：&lt;/p&gt;
+&lt;div class="math"&gt;$$\hat{\mathbf{x}}_i = \text{RMSNorm}(\text{vec}(\mathbf{x}_i)) \in \mathbb{R}^{1 \times n_{\text{hc}} d} \tag{21}$$&lt;/div&gt;
+&lt;div class="math"&gt;$$\tilde{\mathbf{A}}_i = \Psi^{\text{pre}}_i \cdot (\hat{\mathbf{x}}_i \mathbf{W}^{\text{pre}}_i) + \mathbf{b}^{\text{pre}}_i \tag{22}$$&lt;/div&gt;
+&lt;div class="math"&gt;$$\tilde{\mathbf{M}}_i = \Psi^{\text{res}}_i \cdot \text{Mat}(\hat{\mathbf{x}}_i \mathbf{W}^{\text{res}}_i) + \mathbf{B}^{\text{res}}_i \tag{23}$$&lt;/div&gt;
+&lt;div class="math"&gt;$$\tilde{\mathbf{O}}_i = \Psi^{\text{post}}_i \cdot (\hat{\mathbf{x}}_i \mathbf{W}^{\text{post}}_i)^T + \mathbf{b}^{\text{post}}_i \tag{24}$$&lt;/div&gt;
+&lt;p&gt;其中 &lt;span class="math"&gt;\(\Psi\)&lt;/span&gt; 是可学习的 gating factors（初始化为小值），&lt;span class="math"&gt;\(\mathbf{W}\)&lt;/span&gt; 是动态投影矩阵。&lt;/p&gt;
+&lt;h3&gt;8.4 约束应用&lt;/h3&gt;
+&lt;p&gt;对原始参数应用约束：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Input/Output mapping：用 Sigmoid 确保非负有界&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="math"&gt;$$\mathbf{A}_i = \sigma(\tilde{\mathbf{A}}_i), \quad \mathbf{O}_i = 2\sigma(\tilde{\mathbf{O}}_i) \tag{25}$$&lt;/div&gt;
+&lt;ul&gt;
+&lt;li&gt;Residual mapping：用 Sinkhorn-Knopp 迭代投影到双随机矩阵&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="math"&gt;$$\mathbf{M}_i = \text{SinkhornKnopp}(\exp(\tilde{\mathbf{M}}_i), \; n_{\text{max}}=20) \tag{26}$$&lt;/div&gt;
+&lt;h2&gt;9. Muon 优化器&lt;/h2&gt;
+&lt;p&gt;V4 系列的大部分参数使用 Muon 优化器（而非 AdamW），其核心思想是对梯度做&lt;strong&gt;近似正交化&lt;/strong&gt;。&lt;/p&gt;
+&lt;h3&gt;9.1 算法&lt;/h3&gt;
+&lt;p&gt;对于每个逻辑独立的权重矩阵 &lt;span class="math"&gt;\(\mathbf{W} \in \mathbb{R}^{m \times n}\)&lt;/span&gt;：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\begin{aligned}
+&amp;amp; \mathbf{G}_t = \nabla_\mathbf{W} \mathcal{L}_t(\mathbf{W}_{t-1}) \\
+&amp;amp; \mathbf{M}_t = \beta \mathbf{M}_{t-1} + \mathbf{G}_t \\
+&amp;amp; \mathbf{U}'_t = \text{HybridNewtonSchulz}(\beta \mathbf{M}_t + \mathbf{G}_t) \\
+&amp;amp; \mathbf{U}_t = \mathbf{U}'_t \cdot \sqrt{\max(m, n)} \cdot \rho \\
+&amp;amp; \mathbf{W}_t = \mathbf{W}_{t-1} \cdot (1 - \lambda \varepsilon) - \varepsilon \mathbf{U}_t
+\end{aligned}
+\tag{27}
+$$&lt;/div&gt;
+&lt;p&gt;其中：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(\beta = 0.95\)&lt;/span&gt;：动量系数&lt;/li&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(\lambda = 0.1\)&lt;/span&gt;：权重衰减&lt;/li&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(\rho\)&lt;/span&gt;：RMS 重缩放因子（V4 中设为 0.18）&lt;/li&gt;
+&lt;li&gt;HybridNewtonSchulz：将矩阵近似正交化为 &lt;span class="math"&gt;\(\mathbf{U}\mathbf{V}^T\)&lt;/span&gt; 形式&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;9.2 Hybrid Newton-Schulz 迭代&lt;/h3&gt;
+&lt;p&gt;目标：将矩阵 &lt;span class="math"&gt;\(\mathbf{X}\)&lt;/span&gt;（SVD = &lt;span class="math"&gt;\(\mathbf{U}\Sigma\mathbf{V}^T\)&lt;/span&gt;）正交化为 &lt;span class="math"&gt;\(\mathbf{U}\mathbf{V}^T\)&lt;/span&gt;。&lt;/p&gt;
+&lt;p&gt;先归一化 &lt;span class="math"&gt;\(\mathbf{X}_0 = \mathbf{X} / \|\mathbf{X}\|_F\)&lt;/span&gt;，然后迭代：&lt;/p&gt;
+&lt;div class="math"&gt;$$\mathbf{X}_k = a\mathbf{X}_{k-1} + b(\mathbf{X}_{k-1}\mathbf{X}_{k-1}^T)\mathbf{X}_{k-1} + c(\mathbf{X}_{k-1}\mathbf{X}_{k-1}^T)^2\mathbf{X}_{k-1} \tag{28}$$&lt;/div&gt;
+&lt;p&gt;V4 使用 10 次迭代，分两阶段：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;前 8 步：&lt;span class="math"&gt;\((a, b, c) = (3.4445, -4.7750, 2.0315)\)&lt;/span&gt;，快速收敛&lt;/li&gt;
+&lt;li&gt;后 2 步：&lt;span class="math"&gt;\((a, b, c) = (2, -1.5, 0.5)\)&lt;/span&gt;，精确稳定在 1&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;9.3 使用范围&lt;/h3&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;优化器&lt;/th&gt;
+&lt;th&gt;应用模块&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;Muon&lt;/td&gt;
+&lt;td&gt;绝大部分参数（attention, MoE experts, etc.）&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;AdamW&lt;/td&gt;
+&lt;td&gt;Embedding, Prediction Head, RMSNorm, mHC 的静态偏置和 gating&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h2&gt;10. MoE (Mixture-of-Experts)&lt;/h2&gt;
+&lt;p&gt;V4 沿用 DeepSeekMoE 架构，但做了若干调整：&lt;/p&gt;
+&lt;h3&gt;10.1 V4-Pro 配置&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;每层 1 个 shared expert + 384 个 routed experts&lt;/li&gt;
+&lt;li&gt;每个 expert 的 intermediate dimension = 3072&lt;/li&gt;
+&lt;li&gt;每个 token 激活 6 个 routed experts&lt;/li&gt;
+&lt;li&gt;激活函数：&lt;span class="math"&gt;\(\sqrt{\text{Softplus}(\cdot)}\)&lt;/span&gt;（替代 V3 的 Sigmoid）&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;10.2 Hash Routing&lt;/h3&gt;
+&lt;p&gt;V4-Pro 的前 3 层 MoE 使用 &lt;strong&gt;Hash routing&lt;/strong&gt;（根据 input token ID 的哈希函数确定目标 expert），后续层使用标准 learned routing。&lt;/p&gt;
+&lt;h3&gt;10.3 负载均衡&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;Auxiliary-loss-free 策略（bias update speed = 0.001）&lt;/li&gt;
+&lt;li&gt;额外的 sequence-wise balance loss（weight = 0.0001）防止单序列内极端不均衡&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;11. 效率分析&lt;/h2&gt;
+&lt;h3&gt;11.1 单 Token 推理 FLOPs 对比（1M context）&lt;/h3&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;模型&lt;/th&gt;
+&lt;th&gt;单 Token FLOPs&lt;/th&gt;
+&lt;th&gt;相对 V3.2&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;DeepSeek-V3.2&lt;/td&gt;
+&lt;td&gt;基准&lt;/td&gt;
+&lt;td&gt;100%&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;DeepSeek-V4-Pro&lt;/td&gt;
+&lt;td&gt;约 0.27×&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;27%&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;DeepSeek-V4-Flash&lt;/td&gt;
+&lt;td&gt;约 0.10×&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;10%&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h3&gt;11.2 KV Cache 对比（1M context）&lt;/h3&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;模型&lt;/th&gt;
+&lt;th&gt;累计 KV Cache&lt;/th&gt;
+&lt;th&gt;相对 V3.2&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;DeepSeek-V3.2&lt;/td&gt;
+&lt;td&gt;~50 GB&lt;/td&gt;
+&lt;td&gt;100%&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;DeepSeek-V4-Pro&lt;/td&gt;
+&lt;td&gt;~5 GB&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;10%&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;DeepSeek-V4-Flash&lt;/td&gt;
+&lt;td&gt;~3.6 GB&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;7%&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h3&gt;11.3 效率来源分析&lt;/h3&gt;
+&lt;p&gt;CSA 的效率提升路径：&lt;/p&gt;
+&lt;div class="math"&gt;$$L \xrightarrow{\text{压缩} \div c} \frac{L}{c} \xrightarrow{\text{sparse top-k}} k$$&lt;/div&gt;
+&lt;p&gt;以 V4-Pro 为例（&lt;span class="math"&gt;\(L = 10^6\)&lt;/span&gt;, &lt;span class="math"&gt;\(c = 4\)&lt;/span&gt;, &lt;span class="math"&gt;\(k = 1024\)&lt;/span&gt;）：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;压缩后 KV entries 数：&lt;span class="math"&gt;\(\frac{10^6}{4} = 250K\)&lt;/span&gt;&lt;/li&gt;
+&lt;li&gt;Sparse 选择后实际 attend 数：&lt;span class="math"&gt;\(1024\)&lt;/span&gt;&lt;/li&gt;
+&lt;li&gt;总压缩比：&lt;span class="math"&gt;\(\frac{1024}{10^6} \approx 0.1\%\)&lt;/span&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;HCA 的效率：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;直接压缩 &lt;span class="math"&gt;\(128 \times\)&lt;/span&gt;：&lt;span class="math"&gt;\(\frac{10^6}{128} \approx 7812\)&lt;/span&gt; entries&lt;/li&gt;
+&lt;li&gt;Dense attend，无需 indexer 开销&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;11.4 精度优化&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;KV entries 存储：RoPE 维度用 BF16，其余用 FP8（接近减半存储）&lt;/li&gt;
+&lt;li&gt;Lightning Indexer 的 QK 计算：FP4 精度&lt;/li&gt;
+&lt;li&gt;Routed expert 参数：FP4 精度（推理时）&lt;/li&gt;
+&lt;li&gt;Index scores：量化存储&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;12. 训练策略&lt;/h2&gt;
+&lt;h3&gt;12.1 Pre-training 阶段&lt;/h3&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;阶段&lt;/th&gt;
+&lt;th&gt;序列长度&lt;/th&gt;
+&lt;th&gt;说明&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;初始&lt;/td&gt;
+&lt;td&gt;4K&lt;/td&gt;
+&lt;td&gt;Dense attention&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;中期&lt;/td&gt;
+&lt;td&gt;16K → 64K&lt;/td&gt;
+&lt;td&gt;引入 sparse attention (两阶段)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;后期&lt;/td&gt;
+&lt;td&gt;1M&lt;/td&gt;
+&lt;td&gt;Sparse attention&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;Sparse attention 引入流程：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;前 1T tokens 使用 dense attention warmup&lt;/li&gt;
+&lt;li&gt;序列长度扩展到 64K 时引入 sparse attention&lt;/li&gt;
+&lt;li&gt;先短暂 warmup lightning indexer，然后全程 sparse training&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3&gt;12.2 Hyper-parameters（V4-Pro）&lt;/h3&gt;
+&lt;div class="math"&gt;$$
+\begin{aligned}
+&amp;amp; \text{Batch size (max)}: 94.4M \text{ tokens} \\
+&amp;amp; \text{Peak LR}: 2.0 \times 10^{-4} \\
+&amp;amp; \text{End LR}: 2.0 \times 10^{-5} \\
+&amp;amp; \text{AdamW}: \beta_1 = 0.9, \; \beta_2 = 0.95, \; \varepsilon = 10^{-20} \\
+&amp;amp; \text{Weight decay}: 0.1 \\
+&amp;amp; \text{MTP loss weight}: 0.3 \to 0.1 \text{ (LR decay 时切换)}
+\end{aligned}
+$$&lt;/div&gt;
+&lt;h3&gt;12.3 训练稳定性技术&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;Anticipatory Routing&lt;/strong&gt;：将 routing 的计算和 backbone 更新解耦——在 step &lt;span class="math"&gt;\(t\)&lt;/span&gt; 时，使用当前参数 &lt;span class="math"&gt;\(\theta_t\)&lt;/span&gt; 做特征计算，但 routing indices 使用历史参数 &lt;span class="math"&gt;\(\theta_{t - \Delta t}\)&lt;/span&gt; 预计算。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;SwiGLU Clamping&lt;/strong&gt;：将 SwiGLU 的线性部分 clamp 到 &lt;span class="math"&gt;\([-10, 10]\)&lt;/span&gt;，gate 部分上界 clamp 到 10。&lt;/p&gt;
+&lt;h2&gt;13. Post-Training&lt;/h2&gt;
+&lt;p&gt;V4 的 post-training 采用两阶段范式：&lt;/p&gt;
+&lt;h3&gt;13.1 Specialist Training&lt;/h3&gt;
+&lt;p&gt;针对不同领域（math, code, agent, instruction following）独立训练 specialist 模型：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;SFT 阶段&lt;/strong&gt;：在高质量领域数据上做 supervised fine-tuning&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;RL 阶段&lt;/strong&gt;：使用 GRPO (Group Relative Policy Optimization) + 领域专用 reward model&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3&gt;13.2 On-Policy Distillation (OPD)&lt;/h3&gt;
+&lt;p&gt;将多个 specialist 合并为统一模型：&lt;/p&gt;
+&lt;div class="math"&gt;$$\mathcal{L}_{\text{OPD}}(\theta) = \sum_{i=1}^{N} \lambda_i \cdot D_{\text{KL}}\left(\pi_\theta \| \pi_{T_i}\right) \tag{29}$$&lt;/div&gt;
+&lt;p&gt;其中：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(\pi_\theta\)&lt;/span&gt;：student 模型&lt;/li&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(\pi_{T_i}\)&lt;/span&gt;：第 &lt;span class="math"&gt;\(i\)&lt;/span&gt; 个 teacher (specialist)&lt;/li&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(\lambda_i\)&lt;/span&gt;：teacher 权重&lt;/li&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(D_{\text{KL}}(\pi_\theta \| \pi_{T_i})\)&lt;/span&gt;：&lt;strong&gt;reverse KL&lt;/strong&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;关键技术选择：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;使用 &lt;strong&gt;full-vocabulary logit distillation&lt;/strong&gt;（而非 token-level KL 近似），梯度估计更稳定&lt;/li&gt;
+&lt;li&gt;采用 &lt;strong&gt;reverse KL&lt;/strong&gt;（student &lt;span class="math"&gt;\(\to\)&lt;/span&gt; teacher），鼓励 mode-seeking behavior&lt;/li&gt;
+&lt;li&gt;训练轨迹从 student 采样（on-policy），超过 10 个 teacher 参与蒸馏&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;13.3 FP4 Quantization-Aware Training&lt;/h3&gt;
+&lt;p&gt;在 post-training 阶段引入 QAT，让模型适应量化带来的精度损失：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;MoE expert weights → FP4 (MXFP4)&lt;/li&gt;
+&lt;li&gt;CSA Indexer 的 QK path → FP4&lt;/li&gt;
+&lt;li&gt;Forward：用 FP4 模拟量化（通过 FP8 中间格式）&lt;/li&gt;
+&lt;li&gt;Backward：STE (Straight-Through Estimator)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;13.4 推理模式&lt;/h3&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;模式&lt;/th&gt;
+&lt;th&gt;特点&lt;/th&gt;
+&lt;th&gt;格式&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;Non-think&lt;/td&gt;
+&lt;td&gt;快速直觉响应&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;&amp;lt;/think&amp;gt; summary&lt;/code&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Think High&lt;/td&gt;
+&lt;td&gt;有意识的逻辑分析&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;&amp;lt;think&amp;gt;..tokens..&amp;lt;/think&amp;gt; summary&lt;/code&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Think Max&lt;/td&gt;
+&lt;td&gt;推理能力的极限&lt;/td&gt;
+&lt;td&gt;特殊 system prompt + &lt;code&gt;&amp;lt;think&amp;gt;..tokens..&amp;lt;/think&amp;gt;&lt;/code&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h2&gt;14. Benchmark 结果&lt;/h2&gt;
+&lt;h3&gt;14.1 Pre-training 基座模型&lt;/h3&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Benchmark&lt;/th&gt;
+&lt;th&gt;V3.2-Base (37B/671B)&lt;/th&gt;
+&lt;th&gt;V4-Flash-Base (13B/284B)&lt;/th&gt;
+&lt;th&gt;V4-Pro-Base (49B/1.6T)&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;MMLU&lt;/td&gt;
+&lt;td&gt;87.8&lt;/td&gt;
+&lt;td&gt;88.7&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;90.1&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;MMLU-Pro&lt;/td&gt;
+&lt;td&gt;65.5&lt;/td&gt;
+&lt;td&gt;68.3&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;73.5&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;SimpleQA verified&lt;/td&gt;
+&lt;td&gt;28.3&lt;/td&gt;
+&lt;td&gt;30.1&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;55.2&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;FACTS Parametric&lt;/td&gt;
+&lt;td&gt;27.1&lt;/td&gt;
+&lt;td&gt;33.9&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;62.6&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;HumanEval&lt;/td&gt;
+&lt;td&gt;62.8&lt;/td&gt;
+&lt;td&gt;69.5&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;76.8&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;MATH&lt;/td&gt;
+&lt;td&gt;60.5&lt;/td&gt;
+&lt;td&gt;57.4&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;64.5&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;LongBench-V2&lt;/td&gt;
+&lt;td&gt;40.2&lt;/td&gt;
+&lt;td&gt;44.7&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;51.5&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;&lt;strong&gt;关键发现&lt;/strong&gt;：V4-Flash（13B 激活）以 V3.2（37B 激活）不到一半的参数量，在大多数 benchmark 上超越 V3.2。&lt;/p&gt;
+&lt;h3&gt;14.2 Post-training (V4-Pro-Max vs 竞品)&lt;/h3&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Benchmark&lt;/th&gt;
+&lt;th&gt;Opus-4.6 Max&lt;/th&gt;
+&lt;th&gt;GPT-5.4 xHigh&lt;/th&gt;
+&lt;th&gt;Gemini-3.1-Pro High&lt;/th&gt;
+&lt;th style="text-align: right;"&gt;V4-Pro-Max&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;SimpleQA-Verified&lt;/td&gt;
+&lt;td&gt;46.2&lt;/td&gt;
+&lt;td&gt;45.3&lt;/td&gt;
+&lt;td&gt;75.6&lt;/td&gt;
+&lt;td style="text-align: right;"&gt;&lt;strong&gt;57.9&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;GPQA Diamond&lt;/td&gt;
+&lt;td&gt;91.3&lt;/td&gt;
+&lt;td&gt;93.0&lt;/td&gt;
+&lt;td&gt;94.3&lt;/td&gt;
+&lt;td style="text-align: right;"&gt;90.1&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;HLE&lt;/td&gt;
+&lt;td&gt;40.0&lt;/td&gt;
+&lt;td&gt;39.8&lt;/td&gt;
+&lt;td&gt;44.4&lt;/td&gt;
+&lt;td style="text-align: right;"&gt;37.7&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;LiveCodeBench&lt;/td&gt;
+&lt;td&gt;88.8&lt;/td&gt;
+&lt;td&gt;-&lt;/td&gt;
+&lt;td&gt;91.7&lt;/td&gt;
+&lt;td style="text-align: right;"&gt;&lt;strong&gt;93.5&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Codeforces (Rating)&lt;/td&gt;
+&lt;td&gt;-&lt;/td&gt;
+&lt;td&gt;3168&lt;/td&gt;
+&lt;td&gt;3052&lt;/td&gt;
+&lt;td style="text-align: right;"&gt;&lt;strong&gt;3206&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Apex Shortlist&lt;/td&gt;
+&lt;td&gt;85.9&lt;/td&gt;
+&lt;td&gt;78.1&lt;/td&gt;
+&lt;td&gt;89.1&lt;/td&gt;
+&lt;td style="text-align: right;"&gt;&lt;strong&gt;90.2&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;SWE Verified&lt;/td&gt;
+&lt;td&gt;80.8&lt;/td&gt;
+&lt;td&gt;-&lt;/td&gt;
+&lt;td&gt;80.6&lt;/td&gt;
+&lt;td style="text-align: right;"&gt;80.6&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Terminal Bench 2.0&lt;/td&gt;
+&lt;td&gt;65.4&lt;/td&gt;
+&lt;td&gt;75.1&lt;/td&gt;
+&lt;td&gt;68.5&lt;/td&gt;
+&lt;td style="text-align: right;"&gt;67.9&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h2&gt;15. 设计选择总结&lt;/h2&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;设计选择&lt;/th&gt;
+&lt;th&gt;原因&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;混合 CSA + HCA&lt;/td&gt;
+&lt;td&gt;CSA 提供 fine-grained 信息, HCA 提供全局覆盖，互补&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;重叠压缩 (CSA)&lt;/td&gt;
+&lt;td&gt;相邻块边界信息不丢失，提升 recall&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Shared Key-Value MQA&lt;/td&gt;
+&lt;td&gt;同一 entry 作为 key 和 value，大幅减少 KV Cache&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Grouped Output Projection&lt;/td&gt;
+&lt;td&gt;解决高 head 数导致的输出投影计算量&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;mHC (Birkhoff polytope)&lt;/td&gt;
+&lt;td&gt;双随机矩阵约束确保深层堆叠的数值稳定性&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Muon 优化器&lt;/td&gt;
+&lt;td&gt;比 AdamW 更快收敛，配合 RMSNorm 免去 QK-Clip&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;FP4 Indexer + Expert&lt;/td&gt;
+&lt;td&gt;进一步压缩计算和存储开销&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Anticipatory Routing&lt;/td&gt;
+&lt;td&gt;解耦 routing 和 backbone 更新，消除 loss spikes&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;SwiGLU Clamping&lt;/td&gt;
+&lt;td&gt;直接抑制异常值，稳定训练&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;On-Policy Distillation&lt;/td&gt;
+&lt;td&gt;替代 mixed RL，更稳定地合并多领域 specialist&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;滑动窗口注意力分支&lt;/td&gt;
+&lt;td&gt;补充压缩导致的局部信息缺失&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h2&gt;16. 与 V3.2 架构的关键区别&lt;/h2&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;维度&lt;/th&gt;
+&lt;th&gt;DeepSeek-V3.2&lt;/th&gt;
+&lt;th&gt;DeepSeek-V4&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;注意力机制&lt;/td&gt;
+&lt;td&gt;MLA + DSA (Lightning Indexer)&lt;/td&gt;
+&lt;td&gt;CSA + HCA (混合压缩)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;KV Cache 形式&lt;/td&gt;
+&lt;td&gt;低秩压缩 (&lt;span class="math"&gt;\(\mathbf{c}^{KV}\)&lt;/span&gt;, 512d per token)&lt;/td&gt;
+&lt;td&gt;序列维度压缩 (每 4/128 tokens → 1 entry)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;残差连接&lt;/td&gt;
+&lt;td&gt;标准 residual&lt;/td&gt;
+&lt;td&gt;mHC (Birkhoff polytope)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;优化器&lt;/td&gt;
+&lt;td&gt;AdamW&lt;/td&gt;
+&lt;td&gt;Muon (大部分参数)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;上下文长度&lt;/td&gt;
+&lt;td&gt;128K&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;1M&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Indexer 作用对象&lt;/td&gt;
+&lt;td&gt;原始 token&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;压缩后的 KV entries&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;总参数量 (大模型)&lt;/td&gt;
+&lt;td&gt;671B&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;1.6T&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;激活参数量&lt;/td&gt;
+&lt;td&gt;37B&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;49B&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h2&gt;17. 总结&lt;/h2&gt;
+&lt;p&gt;DeepSeek-V4 的核心设计哲学可以概括为：&lt;strong&gt;多层次压缩 + 精准选择&lt;/strong&gt;。&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;序列维度压缩&lt;/strong&gt;：CSA 将 &lt;span class="math"&gt;\(L\)&lt;/span&gt; 个 token 压缩为 &lt;span class="math"&gt;\(\frac{L}{c}\)&lt;/span&gt; 个 entry，HCA 压缩为 &lt;span class="math"&gt;\(\frac{L}{c'}\)&lt;/span&gt; 个 entry&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Sparse Selection&lt;/strong&gt;：CSA 进一步从 &lt;span class="math"&gt;\(\frac{L}{c}\)&lt;/span&gt; 个 entry 中只选 &lt;span class="math"&gt;\(k\)&lt;/span&gt; 个&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;混合配置&lt;/strong&gt;：CSA 层保留细粒度信息，HCA 层保证全局覆盖&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;精度优化&lt;/strong&gt;：FP4 indexer, FP8/FP4 KV cache, FP4 expert weights&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;最终实现了在 1M token 上下文下：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;FLOPs 仅为 V3.2 的 27%（V4-Pro）/ 10%（V4-Flash）&lt;/li&gt;
+&lt;li&gt;KV Cache 仅为 V3.2 的 10%（V4-Pro）/ 7%（V4-Flash）&lt;/li&gt;
+&lt;li&gt;性能上 V4-Pro-Max 在多数 benchmark 达到或接近 frontier 水平&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;这使得百万级别上下文从"理论可行"变为"日常可用"，为未来的 test-time scaling 和长程 agentic 任务奠定了基础。&lt;/p&gt;
+&lt;h2&gt;参考&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf"&gt;DeepSeek-V4 Technical Report&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/tree/main/inference"&gt;DeepSeek-V4-Pro Open-source Inference&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://songhuiming.github.io/pages/2026/02/18/deepseek-v32-lightning-indexer/"&gt;DeepSeek-V3.2 Lightning Indexer 详解 (前文)&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://songhuiming.github.io/pages/2025/03/20/deepseek-v3-multi-head-latent-attention-mla/"&gt;DeepSeek V3 MLA 详解 (前文)&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;Manifold-Constrained Hyper-Connections (Xie et al., 2026)&lt;/li&gt;
+&lt;li&gt;Muon Optimizer (Jordan et al., 2024; Liu et al., 2025)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;script type="text/javascript"&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width &lt; 768) ? "left" : align;
+        indent = (screen.width &lt; 768) ? "0em" : indent;
+        linebreak = (screen.width &lt; 768) ? 'true' : linebreak;
+    }
+
+    var mathjaxscript = document.createElement('script');
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript';
+    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-AMS-MML_HTMLorMML';
+
+    var configscript = document.createElement('script');
+    configscript.type = 'text/x-mathjax-config';
+    configscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js'], equationNumbers: { autoNumber: 'none' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    messageStyle: 'normal'," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        availableFonts: ['STIX', 'TeX']," +
+        "        preferredFont: 'STIX'," +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+&lt;/script&gt;</content><category term="python"></category><category term="python"></category><category term="AI"></category><category term="LLM"></category><category term="AIGC"></category><category term="DeepSeek"></category></entry><entry><title>DeepSeek-V3.2 Lightning Indexer</title><link href="/pages/2026/02/18/deepseek-v32-lightning-indexer/" rel="alternate"></link><published>2026-02-18T00:00:00-06:00</published><updated>2026-02-18T00:00:00-06:00</updated><author><name>Huiming Song</name></author><id>tag:None,2026-02-18:/pages/2026/02/18/deepseek-v32-lightning-indexer/</id><summary type="html">&lt;p&gt;&lt;img alt="Deepseek Lighting Indexer plot" src="/figures/20260218_deepseek_V32_LightingIndexer.svg"&gt;&lt;/p&gt;
 &lt;h2&gt;背景&lt;/h2&gt;
 &lt;p&gt;在之前的文章 &lt;a href="https://songhuiming.github.io/pages/2025/03/20/deepseek-v3-multi-head-latent-attention-mla/"&gt;DeepSeek V3 Multi-head Latent Attention (MLA)&lt;/a&gt; 中，我们详细介绍了 DeepSeek-V3 的 MLA 机制如何通过低秩压缩减少 KV Cache 的内存占用。MLA 解决了推理 …&lt;/p&gt;</summary><content type="html">&lt;p&gt;&lt;img alt="Deepseek Lighting Indexer plot" src="/figures/20260218_deepseek_V32_LightingIndexer.svg"&gt;&lt;/p&gt;
 &lt;h2&gt;背景&lt;/h2&gt;
@@ -15022,582 +15879,4 @@ FileLink('build_by_pelican.md')
 &lt;li&gt;
 &lt;p&gt;&lt;a href="http://pynash.org/2013/03/06/timing-and-profiling/"&gt;Timing and Profiling in IPython&lt;/a&gt;&lt;/p&gt;
 &lt;/li&gt;
-&lt;/ol&gt;</content><category term="Python"></category><category term="python"></category><category term="pandas"></category></entry><entry><title>weighted avarage, aggrefated function with apply and agg</title><link href="/pages/2017/03/18/weighted-avarage-aggrefated-function-with-apply-and-agg/" rel="alternate"></link><published>2017-03-18T00:00:00-05:00</published><updated>2017-03-18T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2017-03-18:/pages/2017/03/18/weighted-avarage-aggrefated-function-with-apply-and-agg/</id><summary type="html">&lt;p&gt;suppose we want to calculate the weighted average probability of default of all risk rating weighted by the number of borrowers on each pd risk rating(or a little more, grouped by industry or portfolio), we need this  weighted average function on each group. &lt;code&gt;Pandas&lt;/code&gt; has &lt;code&gt;groupby&lt;/code&gt; to split data, and then apply function to calculate and summarize.&lt;/p&gt;</summary><content type="html">&lt;pre&gt;&lt;code class="language-python"&gt;import numpy as np
-import pandas as pd
-from IPython.display import display
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;1. weighted average&lt;/h3&gt;
-&lt;p&gt;Let's denote &lt;code&gt;x = [x_1, ..., x_n]&lt;/code&gt;. The weight &lt;code&gt;w&lt;/code&gt; is denoted as &lt;code&gt;w = [w_1, ..., w_n]&lt;/code&gt;. The weighted average of &lt;code&gt;x&lt;/code&gt; by &lt;code&gt;w&lt;/code&gt; is &lt;span class="math"&gt;\(\frac{ \sum_{i=1}^{n} x_i * w_i } { \sum_{i=1}^{n} w_i}\)&lt;/span&gt;&lt;/p&gt;
-&lt;p&gt;&lt;code&gt;numpy&lt;/code&gt; provides a function called &lt;code&gt;np.average()&lt;/code&gt; to calculate the weighted average. An example of calculate by hand and by the &lt;code&gt;np.average&lt;/code&gt; is given below:&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;np.random.seed(9999)
-df = pd.DataFrame(np.random.random(20).reshape(10, 2), columns = ['val1', 'wt'])
-
-# if we want to calcuate the weighted average of val1 weighted by wt, that is:
-sum(df.val1 * df.wt) / sum(df.wt)    # 0.42105022244260254
-
-# np.average() function
-np.average(df.val1, weights = df.wt, axis = 0)    # 0.42105022244260254
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;0.42105022244260254
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;2. calculate weighted average within each group&lt;/h3&gt;
-&lt;p&gt;The above example is very simple. A more common situation is there are different groups, and we need to calculate the weighted average within each group. The following is an example:&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;there are two groups, called 'id'&lt;/li&gt;
-&lt;li&gt;we want to calculate the weighted average for data in group 1(id == 1) and group 2(id == 2)&lt;/li&gt;
-&lt;li&gt;calculate the weighted average of var1 and var2 by wt in group 1, and group 2 seperately&lt;/li&gt;
-&lt;/ol&gt;
-&lt;p&gt;so,  &lt;code&gt;0.339688030253 = sum(df1.val1 * df1.wt) / df1.wt.sum()&lt;/code&gt;&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;np.random.seed(9999)
-df = pd.DataFrame(np.random.random(20).reshape(10, 2), columns = ['val1', 'val2'])
-df['id'] = np.repeat([1, 2], 5)
-df['wt'] = [1, 2] * 5
-
-print df
-
-print '\n' + '-'*20 + ' weighted average of val1 and val2 by wt in each group ' + '-'*20
-
-wtavg = lambda x: np.average(x.ix[:, :2], weights = x.wt, axis = 0)
-dfwavg = df.groupby('id').apply(wtavg)
-display(dfwavg)
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;       val1      val2  id  wt
-0  0.823389  0.218603   1   1
-1  0.031461  0.545926   1   2
-2  0.154456  0.186963   1   1
-3  0.422348  0.605552   1   2
-4  0.492354  0.644119   1   1
-5  0.913049  0.771104   2   2
-6  0.288361  0.415441   2   1
-7  0.331490  0.366327   2   2
-8  0.312195  0.580446   2   1
-9  0.112952  0.325875   2   2
-
--------------------- weighted average of val1 and val2 by wt in each group --------------------
-
-
-
-id
-1    [0.339688030253, 0.478948919665]
-2     [0.41444248036, 0.490312314239]
-dtype: object
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;## verified by manual calculation
-df1 = df.query('id == 1')
-sum(df1.val1 * df1.wt) / df1.wt.sum()    ## 0.33968803025301908
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;0.33968803025301908
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Difference between &lt;code&gt;apply&lt;/code&gt; and &lt;code&gt;agg&lt;/code&gt;: &lt;code&gt;apply&lt;/code&gt; will apply the funciton on the data frame of each group, while &lt;code&gt;agg&lt;/code&gt; will aggregate each column of each group. So the arguments in the apply function is a dataframe.&lt;/p&gt;
-&lt;p&gt;The following is an example from pandas docs. The arguments in function f0 is a dataframe in each id group.&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;def f0(group): 
-    return pd.DataFrame({'original': group, 'group - mean': group - group.mean()})
-
-df.groupby('id')['val1'].apply(f0)
-&lt;/code&gt;&lt;/pre&gt;
-&lt;div&gt;
-&lt;table border="1" class="dataframe"&gt;
-  &lt;thead&gt;
-    &lt;tr style="text-align: right;"&gt;
-      &lt;th&gt;&lt;/th&gt;
-      &lt;th&gt;group - mean&lt;/th&gt;
-      &lt;th&gt;original&lt;/th&gt;
-    &lt;/tr&gt;
-  &lt;/thead&gt;
-  &lt;tbody&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;0.438588&lt;/td&gt;
-      &lt;td&gt;0.823389&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;1&lt;/th&gt;
-      &lt;td&gt;-0.353340&lt;/td&gt;
-      &lt;td&gt;0.031461&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;2&lt;/th&gt;
-      &lt;td&gt;-0.230346&lt;/td&gt;
-      &lt;td&gt;0.154456&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;3&lt;/th&gt;
-      &lt;td&gt;0.037546&lt;/td&gt;
-      &lt;td&gt;0.422348&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;4&lt;/th&gt;
-      &lt;td&gt;0.107553&lt;/td&gt;
-      &lt;td&gt;0.492354&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;5&lt;/th&gt;
-      &lt;td&gt;0.521440&lt;/td&gt;
-      &lt;td&gt;0.913049&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;6&lt;/th&gt;
-      &lt;td&gt;-0.103248&lt;/td&gt;
-      &lt;td&gt;0.288361&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;7&lt;/th&gt;
-      &lt;td&gt;-0.060119&lt;/td&gt;
-      &lt;td&gt;0.331490&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;8&lt;/th&gt;
-      &lt;td&gt;-0.079414&lt;/td&gt;
-      &lt;td&gt;0.312195&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;9&lt;/th&gt;
-      &lt;td&gt;-0.278658&lt;/td&gt;
-      &lt;td&gt;0.112952&lt;/td&gt;
-    &lt;/tr&gt;
-  &lt;/tbody&gt;
-&lt;/table&gt;
-&lt;/div&gt;
-
-&lt;h3&gt;multiple functions&lt;/h3&gt;
-&lt;h4&gt;1. different function for different column&lt;/h4&gt;
-&lt;p&gt;One condition is you want to apply different function on different columns in the dataframe. For example, you want to apply sum on one column, and stdev on another column. &lt;/p&gt;
-&lt;p&gt;if you want to apply multiple functions to aggregate, then you need to put them in the &lt;strong&gt;list&lt;/strong&gt; or &lt;strong&gt;dict&lt;/strong&gt;.&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;np.random.seed(9999)
-snapdf = pd.DataFrame(np.random.random(3000).reshape(-1, 3), \
-           columns = ['wt_var', 'var_to_sum', &amp;quot;var_to_stdev&amp;quot;])
-snapdf['stage'] = np.repeat([1, 2], 500)
-
-f = {&amp;quot;var_to_sum&amp;quot;: np.sum, &amp;quot;var_to_stdev&amp;quot;: np.std}
-stage_s1 = snapdf.ix[:, ['stage', 'var_to_sum', 'var_to_stdev']].groupby('stage').agg(f).reset_index()
-
-stage_s1
-&lt;/code&gt;&lt;/pre&gt;
-&lt;div&gt;
-&lt;table border="1" class="dataframe"&gt;
-  &lt;thead&gt;
-    &lt;tr style="text-align: right;"&gt;
-      &lt;th&gt;&lt;/th&gt;
-      &lt;th&gt;stage&lt;/th&gt;
-      &lt;th&gt;var_to_sum&lt;/th&gt;
-      &lt;th&gt;var_to_stdev&lt;/th&gt;
-    &lt;/tr&gt;
-  &lt;/thead&gt;
-  &lt;tbody&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;1&lt;/td&gt;
-      &lt;td&gt;245.666111&lt;/td&gt;
-      &lt;td&gt;0.288775&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;1&lt;/th&gt;
-      &lt;td&gt;2&lt;/td&gt;
-      &lt;td&gt;247.715539&lt;/td&gt;
-      &lt;td&gt;0.284739&lt;/td&gt;
-    &lt;/tr&gt;
-  &lt;/tbody&gt;
-&lt;/table&gt;
-&lt;/div&gt;
-
-&lt;h4&gt;2. multiple functions on one column&lt;/h4&gt;
-&lt;p&gt;Another condition is you want to apply multiple functions on each column. For example, you want to calcualte both mean and stdev for eachc column. Then your function is a dict of dicts: first key is the column(variable) to be applied by the functions. second key is the functions.&lt;/p&gt;
-&lt;p&gt;An example is like:&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;np.random.seed(9999)
-snapdf = pd.DataFrame(np.random.random(3000).reshape(-1, 3), \
-           columns = ['wt_var', 'var1', &amp;quot;var2&amp;quot;])
-snapdf['stage'] = np.repeat([1, 2], 500)
-
-snapdf.groupby('stage').agg({np.sum, np.mean, np.std})
-&lt;/code&gt;&lt;/pre&gt;
-&lt;div&gt;
-&lt;table border="1" class="dataframe"&gt;
-  &lt;thead&gt;
-    &lt;tr&gt;
-      &lt;th&gt;&lt;/th&gt;
-      &lt;th colspan="3" halign="left"&gt;wt_var&lt;/th&gt;
-      &lt;th colspan="3" halign="left"&gt;var1&lt;/th&gt;
-      &lt;th colspan="3" halign="left"&gt;var2&lt;/th&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;&lt;/th&gt;
-      &lt;th&gt;std&lt;/th&gt;
-      &lt;th&gt;mean&lt;/th&gt;
-      &lt;th&gt;sum&lt;/th&gt;
-      &lt;th&gt;std&lt;/th&gt;
-      &lt;th&gt;mean&lt;/th&gt;
-      &lt;th&gt;sum&lt;/th&gt;
-      &lt;th&gt;std&lt;/th&gt;
-      &lt;th&gt;mean&lt;/th&gt;
-      &lt;th&gt;sum&lt;/th&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;stage&lt;/th&gt;
-      &lt;th&gt;&lt;/th&gt;
-      &lt;th&gt;&lt;/th&gt;
-      &lt;th&gt;&lt;/th&gt;
-      &lt;th&gt;&lt;/th&gt;
-      &lt;th&gt;&lt;/th&gt;
-      &lt;th&gt;&lt;/th&gt;
-      &lt;th&gt;&lt;/th&gt;
-      &lt;th&gt;&lt;/th&gt;
-      &lt;th&gt;&lt;/th&gt;
-    &lt;/tr&gt;
-  &lt;/thead&gt;
-  &lt;tbody&gt;
-    &lt;tr&gt;
-      &lt;th&gt;1&lt;/th&gt;
-      &lt;td&gt;0.27400&lt;/td&gt;
-      &lt;td&gt;0.484682&lt;/td&gt;
-      &lt;td&gt;242.341116&lt;/td&gt;
-      &lt;td&gt;0.287491&lt;/td&gt;
-      &lt;td&gt;0.491332&lt;/td&gt;
-      &lt;td&gt;245.666111&lt;/td&gt;
-      &lt;td&gt;0.288775&lt;/td&gt;
-      &lt;td&gt;0.506056&lt;/td&gt;
-      &lt;td&gt;253.028070&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;2&lt;/th&gt;
-      &lt;td&gt;0.29702&lt;/td&gt;
-      &lt;td&gt;0.507317&lt;/td&gt;
-      &lt;td&gt;253.658370&lt;/td&gt;
-      &lt;td&gt;0.282293&lt;/td&gt;
-      &lt;td&gt;0.495431&lt;/td&gt;
-      &lt;td&gt;247.715539&lt;/td&gt;
-      &lt;td&gt;0.284739&lt;/td&gt;
-      &lt;td&gt;0.501093&lt;/td&gt;
-      &lt;td&gt;250.546638&lt;/td&gt;
-    &lt;/tr&gt;
-  &lt;/tbody&gt;
-&lt;/table&gt;
-&lt;/div&gt;
-
-&lt;pre&gt;&lt;code class="language-python"&gt;np.random.seed(9999)
-snapdf = pd.DataFrame(np.random.random(3000).reshape(-1, 3), \
-           columns = ['wt_var', 'var_to_wt_avg_1', 'var_to_wt_avg_2'])
-snapdf['stage'] = np.repeat([1, 2], 500)
-
-wtavg = lambda x: np.average(x, weights = snapdf.loc[x.index, &amp;quot;wt_var&amp;quot;])
-
-f2 = {'var_to_wt_avg_1': {'mean':'mean', 'wt_avg': wtavg}, 'var_to_wt_avg_2':{'mean':'mean', 'wt_avg':wtavg}}
-stage_s2 = snapdf.ix[:, ['stage', 'var_to_wt_avg_1', 'var_to_wt_avg_2']].groupby('stage').agg(f2).reset_index()
-
-# stage_s2.columns = stage_s2.columns.droplevel(0)
-
-stage_s2
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170320_pandas_agg_dict.PNG"&gt;&lt;/p&gt;
-&lt;div&gt;
-&lt;table border="1" class="dataframe"&gt;
-  &lt;thead&gt;
-    &lt;tr&gt;
-      &lt;th&gt;&lt;/th&gt;
-      &lt;th&gt;stage&lt;/th&gt;
-      &lt;th colspan="2" halign="left"&gt;var_to_wt_avg_2&lt;/th&gt;
-      &lt;th colspan="2" halign="left"&gt;var_to_wt_avg_1&lt;/th&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;&lt;/th&gt;
-      &lt;th&gt;&lt;/th&gt;
-      &lt;th&gt;wt_avg&lt;/th&gt;
-      &lt;th&gt;mean&lt;/th&gt;
-      &lt;th&gt;wt_avg&lt;/th&gt;
-      &lt;th&gt;mean&lt;/th&gt;
-    &lt;/tr&gt;
-  &lt;/thead&gt;
-  &lt;tbody&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;1&lt;/td&gt;
-      &lt;td&gt;0.498908&lt;/td&gt;
-      &lt;td&gt;0.506056&lt;/td&gt;
-      &lt;td&gt;0.486139&lt;/td&gt;
-      &lt;td&gt;0.491332&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;1&lt;/th&gt;
-      &lt;td&gt;2&lt;/td&gt;
-      &lt;td&gt;0.517657&lt;/td&gt;
-      &lt;td&gt;0.501093&lt;/td&gt;
-      &lt;td&gt;0.499796&lt;/td&gt;
-      &lt;td&gt;0.495431&lt;/td&gt;
-    &lt;/tr&gt;
-  &lt;/tbody&gt;
-&lt;/table&gt;
-&lt;/div&gt;
-
-&lt;h3&gt;3. weighted from stacked data: unstack data&lt;/h3&gt;
-&lt;p&gt;Data in the previous are stored in horizontial way: variables are in different columns. But sometimes data are in vertical way: in the following example, the 3 ratings(I/S/P) are stacked in vertical  line. We want to get the weighted average of I/S/P. So, the first step is to unstak the data. Then calculate the weighted average.&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;np.random.seed(9999)
-df = pd.DataFrame(np.random.random(72).reshape(36, 2), columns = [&amp;quot;var1&amp;quot;, &amp;quot;var2&amp;quot;])
-df[&amp;quot;rating&amp;quot;] = np.repeat(['I', 'S', 'P'], 12)
-df['qtrs'] = range(1, 13) * 3
-
-df = df.set_index(['rating', 'qtrs']).unstack(level = 0)
-df['cnts', 'I'] = 100
-df['cnts', 'P'] = 200
-df['cnts', &amp;quot;S&amp;quot;] = 300
-
-display(df.head())
-
-df['wt_var_1'] = np.average(df.var1, weights = df.cnts, axis = 1)
-df['wt_var_2'] = np.average(df.var2, weights = df.cnts, axis = 1)
-
-df.reset_index().ix[:, [&amp;quot;qtrs&amp;quot;, &amp;quot;wt_var_1&amp;quot;, &amp;quot;wt_var_2&amp;quot;]]
-
-&lt;/code&gt;&lt;/pre&gt;
-&lt;div&gt;
-&lt;table border="1" class="dataframe"&gt;
-  &lt;thead&gt;
-    &lt;tr&gt;
-      &lt;th&gt;&lt;/th&gt;
-      &lt;th colspan="3" halign="left"&gt;var1&lt;/th&gt;
-      &lt;th colspan="3" halign="left"&gt;var2&lt;/th&gt;
-      &lt;th colspan="3" halign="left"&gt;cnts&lt;/th&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;rating&lt;/th&gt;
-      &lt;th&gt;I&lt;/th&gt;
-      &lt;th&gt;P&lt;/th&gt;
-      &lt;th&gt;S&lt;/th&gt;
-      &lt;th&gt;I&lt;/th&gt;
-      &lt;th&gt;P&lt;/th&gt;
-      &lt;th&gt;S&lt;/th&gt;
-      &lt;th&gt;I&lt;/th&gt;
-      &lt;th&gt;P&lt;/th&gt;
-      &lt;th&gt;S&lt;/th&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;qtrs&lt;/th&gt;
-      &lt;th&gt;&lt;/th&gt;
-      &lt;th&gt;&lt;/th&gt;
-      &lt;th&gt;&lt;/th&gt;
-      &lt;th&gt;&lt;/th&gt;
-      &lt;th&gt;&lt;/th&gt;
-      &lt;th&gt;&lt;/th&gt;
-      &lt;th&gt;&lt;/th&gt;
-      &lt;th&gt;&lt;/th&gt;
-      &lt;th&gt;&lt;/th&gt;
-    &lt;/tr&gt;
-  &lt;/thead&gt;
-  &lt;tbody&gt;
-    &lt;tr&gt;
-      &lt;th&gt;1&lt;/th&gt;
-      &lt;td&gt;0.823389&lt;/td&gt;
-      &lt;td&gt;0.154764&lt;/td&gt;
-      &lt;td&gt;0.602518&lt;/td&gt;
-      &lt;td&gt;0.218603&lt;/td&gt;
-      &lt;td&gt;0.904529&lt;/td&gt;
-      &lt;td&gt;0.435665&lt;/td&gt;
-      &lt;td&gt;100&lt;/td&gt;
-      &lt;td&gt;200&lt;/td&gt;
-      &lt;td&gt;300&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;2&lt;/th&gt;
-      &lt;td&gt;0.031461&lt;/td&gt;
-      &lt;td&gt;0.365481&lt;/td&gt;
-      &lt;td&gt;0.472321&lt;/td&gt;
-      &lt;td&gt;0.545926&lt;/td&gt;
-      &lt;td&gt;0.580417&lt;/td&gt;
-      &lt;td&gt;0.866001&lt;/td&gt;
-      &lt;td&gt;100&lt;/td&gt;
-      &lt;td&gt;200&lt;/td&gt;
-      &lt;td&gt;300&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;3&lt;/th&gt;
-      &lt;td&gt;0.154456&lt;/td&gt;
-      &lt;td&gt;0.494557&lt;/td&gt;
-      &lt;td&gt;0.537686&lt;/td&gt;
-      &lt;td&gt;0.186963&lt;/td&gt;
-      &lt;td&gt;0.824609&lt;/td&gt;
-      &lt;td&gt;0.484590&lt;/td&gt;
-      &lt;td&gt;100&lt;/td&gt;
-      &lt;td&gt;200&lt;/td&gt;
-      &lt;td&gt;300&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;4&lt;/th&gt;
-      &lt;td&gt;0.422348&lt;/td&gt;
-      &lt;td&gt;0.503091&lt;/td&gt;
-      &lt;td&gt;0.333305&lt;/td&gt;
-      &lt;td&gt;0.605552&lt;/td&gt;
-      &lt;td&gt;0.670854&lt;/td&gt;
-      &lt;td&gt;0.582543&lt;/td&gt;
-      &lt;td&gt;100&lt;/td&gt;
-      &lt;td&gt;200&lt;/td&gt;
-      &lt;td&gt;300&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;5&lt;/th&gt;
-      &lt;td&gt;0.492354&lt;/td&gt;
-      &lt;td&gt;0.446044&lt;/td&gt;
-      &lt;td&gt;0.679368&lt;/td&gt;
-      &lt;td&gt;0.644119&lt;/td&gt;
-      &lt;td&gt;0.050341&lt;/td&gt;
-      &lt;td&gt;0.544653&lt;/td&gt;
-      &lt;td&gt;100&lt;/td&gt;
-      &lt;td&gt;200&lt;/td&gt;
-      &lt;td&gt;300&lt;/td&gt;
-    &lt;/tr&gt;
-  &lt;/tbody&gt;
-&lt;/table&gt;
-&lt;/div&gt;
-
-&lt;div&gt;
-&lt;table border="1" class="dataframe"&gt;
-  &lt;thead&gt;
-    &lt;tr&gt;
-      &lt;th&gt;&lt;/th&gt;
-      &lt;th&gt;qtrs&lt;/th&gt;
-      &lt;th&gt;wt_var_1&lt;/th&gt;
-      &lt;th&gt;wt_var_2&lt;/th&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;rating&lt;/th&gt;
-      &lt;th&gt;&lt;/th&gt;
-      &lt;th&gt;&lt;/th&gt;
-      &lt;th&gt;&lt;/th&gt;
-    &lt;/tr&gt;
-  &lt;/thead&gt;
-  &lt;tbody&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;1&lt;/td&gt;
-      &lt;td&gt;0.490078&lt;/td&gt;
-      &lt;td&gt;0.555776&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;1&lt;/th&gt;
-      &lt;td&gt;2&lt;/td&gt;
-      &lt;td&gt;0.363231&lt;/td&gt;
-      &lt;td&gt;0.717461&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;2&lt;/th&gt;
-      &lt;td&gt;3&lt;/td&gt;
-      &lt;td&gt;0.459438&lt;/td&gt;
-      &lt;td&gt;0.548325&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;3&lt;/th&gt;
-      &lt;td&gt;4&lt;/td&gt;
-      &lt;td&gt;0.404741&lt;/td&gt;
-      &lt;td&gt;0.615815&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;4&lt;/th&gt;
-      &lt;td&gt;5&lt;/td&gt;
-      &lt;td&gt;0.570425&lt;/td&gt;
-      &lt;td&gt;0.396460&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;5&lt;/th&gt;
-      &lt;td&gt;6&lt;/td&gt;
-      &lt;td&gt;0.870236&lt;/td&gt;
-      &lt;td&gt;0.845366&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;6&lt;/th&gt;
-      &lt;td&gt;7&lt;/td&gt;
-      &lt;td&gt;0.446611&lt;/td&gt;
-      &lt;td&gt;0.123709&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;7&lt;/th&gt;
-      &lt;td&gt;8&lt;/td&gt;
-      &lt;td&gt;0.735676&lt;/td&gt;
-      &lt;td&gt;0.185098&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;8&lt;/th&gt;
-      &lt;td&gt;9&lt;/td&gt;
-      &lt;td&gt;0.378114&lt;/td&gt;
-      &lt;td&gt;0.435725&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;9&lt;/th&gt;
-      &lt;td&gt;10&lt;/td&gt;
-      &lt;td&gt;0.533662&lt;/td&gt;
-      &lt;td&gt;0.248189&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;10&lt;/th&gt;
-      &lt;td&gt;11&lt;/td&gt;
-      &lt;td&gt;0.529564&lt;/td&gt;
-      &lt;td&gt;0.565223&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;11&lt;/th&gt;
-      &lt;td&gt;12&lt;/td&gt;
-      &lt;td&gt;0.536358&lt;/td&gt;
-      &lt;td&gt;0.297243&lt;/td&gt;
-    &lt;/tr&gt;
-  &lt;/tbody&gt;
-&lt;/table&gt;
-&lt;/div&gt;
-
-&lt;script type="text/javascript"&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
-    var align = "center",
-        indent = "0em",
-        linebreak = "false";
-
-    if (false) {
-        align = (screen.width &lt; 768) ? "left" : align;
-        indent = (screen.width &lt; 768) ? "0em" : indent;
-        linebreak = (screen.width &lt; 768) ? 'true' : linebreak;
-    }
-
-    var mathjaxscript = document.createElement('script');
-    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
-    mathjaxscript.type = 'text/javascript';
-    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-AMS-MML_HTMLorMML';
-
-    var configscript = document.createElement('script');
-    configscript.type = 'text/x-mathjax-config';
-    configscript[(window.opera ? "innerHTML" : "text")] =
-        "MathJax.Hub.Config({" +
-        "    config: ['MMLorHTML.js']," +
-        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js'], equationNumbers: { autoNumber: 'none' } }," +
-        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
-        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
-        "    displayAlign: '"+ align +"'," +
-        "    displayIndent: '"+ indent +"'," +
-        "    showMathMenu: true," +
-        "    messageStyle: 'normal'," +
-        "    tex2jax: { " +
-        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
-        "        displayMath: [ ['$$','$$'] ]," +
-        "        processEscapes: true," +
-        "        preview: 'TeX'," +
-        "    }, " +
-        "    'HTML-CSS': { " +
-        "        availableFonts: ['STIX', 'TeX']," +
-        "        preferredFont: 'STIX'," +
-        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
-        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
-        "    }, " +
-        "}); " +
-        "if ('default' !== 'default') {" +
-            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
-                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
-                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
-                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
-                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
-                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
-            "});" +
-            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
-                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
-                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
-                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
-                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
-                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
-            "});" +
-        "}";
-
-    (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
-    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
-}
-&lt;/script&gt;</content><category term="Python"></category><category term="python"></category><category term="pandas"></category></entry></feed>
+&lt;/ol&gt;</content><category term="Python"></category><category term="python"></category><category term="pandas"></category></entry></feed>
