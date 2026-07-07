@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>DeepSeek-V4: 百万Token上下文 &mdash; pydata: Huiming's learning notes</title>
+  <meta name="author" content="shm">
+
+
+
+
+
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+    <link href="/favicon.png" rel="icon">
+
+  <link href="/theme/css/main.css" media="screen, projection"
+        rel="stylesheet" type="text/css">
+
+  <link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic"
+        rel="stylesheet" type="text/css">
+  <link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic"
+        rel="stylesheet" type="text/css">
+</head>
+
+<body>
+  <header role="banner"><header>
+  <h1><a href="/">pydata: Huiming's learning notes</a></h1>
+    <h2>Keep Looking, Don't Settle</h2>
+</header>
+
+<script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],  // 允许 $...$ 和 \( ... \) 作为行内公式
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],  // 允许 $$...$$ 和 \[ ... \] 作为块级公式
+    processEscapes: true,  // 允许在公式中使用转义符，如 \$ 表示美元符号
+    processEnvironments: true  // 允许解析 \begin{equation} ... \end{equation} 等数学环境
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre'],  // 跳过某些 HTML 标签，防止错误解析
+    renderActions: {
+      addMenu: []  // 移除右键菜单
+    }
+  }
+};
+
+window.addEventListener('load', () => {
+  document.querySelectorAll("mjx-container").forEach(x => {
+    x.parentElement.classList.add('has-jax');  // 使用 classList.add() 避免字符串拼接错误
+  });
+});
+</script>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script></header>
+  <nav role="navigation">
+
+<form action="https://www.google.com/search" method="get">
+    <fieldset role="search">
+       <input type="hidden" name="q" value="site:songhuiming.github.io" />
+       <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+    </fieldset>
+</form>
+
+
+<ul class="main-navigation">
+    <li><a href="/functions/archives.html">Archives</a></li>
+      <li >
+        <a href="/category/career-growth.html">Career growth</a>
+      </li>
+      <li >
+        <a href="/category/linux.html">Linux</a>
+      </li>
+      <li class="active">
+        <a href="/category/python.html">Python</a>
+      </li>
+      <li >
+        <a href="/category/rthers.html">Rthers</a>
+      </li>
+</ul></nav>
+  <div id="main">
+    <div id="content">
+<div>
+  <article class="hentry" role="article">
+<header>
+      <h1 class="entry-title">DeepSeek-V4: 百万Token上下文</h1>
+    <p class="meta">
+<time datetime="2026-06-19T00:00:00-05:00" pubdate>Fri 19 June 2026</time>    </p>
+</header>
+
+  <div class="entry-content"><p>[TOC]</p>
+<h2>背景</h2>
+<p>在之前的文章中，我们详细介绍了 DeepSeek-V3 的 <a href="https://songhuiming.github.io/pages/2025/03/20/deepseek-v3-multi-head-latent-attention-mla/">MLA 机制</a> 和 DeepSeek-V3.2 的 <a href="https://songhuiming.github.io/pages/2026/02/18/deepseek-v32-lightning-indexer/">Lightning Indexer</a>。MLA 解决了推理时的内存带宽问题，DSA 通过 sparse attention 将计算复杂度从 <span class="math">\(O(L^2)\)</span> 降低到 <span class="math">\(O(L \cdot k)\)</span>。但随着上下文长度推向百万级别（1M tokens），即使是 sparse attention，KV Cache 的绝对大小和注意力的计算开销仍然是瓶颈。</p>
+<p>DeepSeek-V4 在 V3.2 的基础上做了根本性的架构升级：引入 <strong>Compressed Sparse Attention (CSA)</strong> 和 <strong>Heavily Compressed Attention (HCA)</strong> 的混合注意力架构，从<strong>序列维度</strong>压缩 KV Cache，再配合 sparse attention，实现了 1M token 上下文下仅需 V3.2 <strong>27% 的推理 FLOPs</strong> 和 <strong>10% 的 KV Cache</strong>。</p>
+<p>本文基于 <a href="https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf">DeepSeek-V4 技术报告</a> 和开源实现，详细解析 V4 的核心架构创新。</p>
+<h2>1. 模型概览</h2>
+<p>DeepSeek-V4 系列包括两个模型：</p>
+<table>
+<thead>
+<tr>
+<th>模型</th>
+<th>总参数量</th>
+<th>激活参数量</th>
+<th>上下文长度</th>
+<th>训练数据</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DeepSeek-V4-Pro</td>
+<td>1.6T</td>
+<td>49B</td>
+<td>1M tokens</td>
+<td>33T tokens</td>
+</tr>
+<tr>
+<td>DeepSeek-V4-Flash</td>
+<td>284B</td>
+<td>13B</td>
+<td>1M tokens</td>
+<td>32T tokens</td>
+</tr>
+</tbody>
+</table>
+<p>相比 DeepSeek-V3.2（671B 总参数 / 37B 激活），V4 的核心创新点：</p>
+<ol>
+<li><strong>混合注意力架构</strong>：CSA + HCA 的交替配置，大幅提升长上下文效率</li>
+<li><strong>Manifold-Constrained Hyper-Connections (mHC)</strong>：增强残差连接</li>
+<li><strong>Muon 优化器</strong>：替代 AdamW，加快收敛并提升训练稳定性</li>
+</ol>
+<h2>2. 符号定义</h2>
+<p>以 DeepSeek-V4-Pro 为例，定义本文使用的维度符号：</p>
+<div class="math">$$
+\begin{aligned}
+&amp; d = 7168 \quad \text{(模型隐藏维度)} \\
+&amp; L = 61 \quad \text{(Transformer 层数)} \\
+&amp; n_h = 128 \quad \text{(query head 数)} \\
+&amp; d_h = 512 \quad \text{(head 维度)} \\
+&amp; d_Q = 1536 \quad \text{(query 压缩维度)} \\
+&amp; G = 16 \quad \text{(输出投影分组数)} \\
+&amp; d_G = 1024 \quad \text{(中间输出维度)} \\
+&amp; H_I = 64 \quad \text{(indexer head 数)} \\
+&amp; d_I = 128 \quad \text{(indexer head 维度)} \\
+&amp; c = 4 \quad \text{(CSA 压缩率)} \\
+&amp; c' = 128 \quad \text{(HCA 压缩率)} \\
+&amp; k = 1024 \quad \text{(CSA top-k 选择数)} \\
+&amp; w_{\text{win}} = 128 \quad \text{(滑动窗口大小)} \\
+&amp; n_{\text{hc}} = 4 \quad \text{(mHC 扩展因子)}
+\end{aligned}
+$$</div>
+<p>DeepSeek-V4-Flash 的关键差异：<span class="math">\(d = 4096\)</span>, <span class="math">\(L = 43\)</span>, <span class="math">\(n_h = 64\)</span>, <span class="math">\(d_Q = 1024\)</span>, <span class="math">\(G = 8\)</span>, <span class="math">\(k = 512\)</span>。</p>
+<h2>3. 整体架构</h2>
+<p><strong>层配置</strong>：V4-Pro 的前 2 层使用 HCA，后续层 CSA 和 HCA 交替使用。V4-Flash 的前 2 层使用纯滑动窗口 attention。</p>
+<h2>4. Compressed Sparse Attention (CSA)</h2>
+<p>CSA 是 V4 的核心注意力机制：<strong>先压缩 KV Cache（序列维度 <span class="math">\(\frac{1}{m}\)</span> 倍），再用 Lightning Indexer 做 sparse selection，只选 top-k 个压缩 entry 做核心注意力</strong>。</p>
+<h3>4.1 Compressed Key-Value Entries</h3>
+<p>设输入隐藏状态为 <span class="math">\(\mathbf{H} \in \mathbb{R}^{n \times d}\)</span>（<span class="math">\(n\)</span> 为序列长度，<span class="math">\(d\)</span> 为隐藏维度），CSA 首先计算两组 KV entries 及其对应的压缩权重：</p>
+<div class="math">$$\mathbf{C}^a = \mathbf{H} \cdot \mathbf{W}^{aKV}, \quad \mathbf{C}^b = \mathbf{H} \cdot \mathbf{W}^{bKV} \tag{9}$$</div>
+<div class="math">$$\mathbf{Z}^a = \mathbf{H} \cdot \mathbf{W}^{aZ}, \quad \mathbf{Z}^b = \mathbf{H} \cdot \mathbf{W}^{bZ} \tag{10}$$</div>
+<p>其中 <span class="math">\(\mathbf{W}^{aKV}, \mathbf{W}^{bKV}, \mathbf{W}^{aZ}, \mathbf{W}^{bZ} \in \mathbb{R}^{d \times c}\)</span> 是可训练参数（<span class="math">\(c\)</span> 为 head 维度）；<span class="math">\(\mathbf{C}^a, \mathbf{C}^b \in \mathbb{R}^{n \times c}\)</span> 是两组 KV entries；<span class="math">\(\mathbf{Z}^a, \mathbf{Z}^b \in \mathbb{R}^{n \times c}\)</span> 是对应的压缩权重。</p>
+<p><strong>Overlapped Compression</strong></p>
+<p>每 <span class="math">\(m\)</span> 个 token 的 KV entries 压缩为一个 entry。核心操作是<strong>重叠压缩</strong>——每个压缩 entry <span class="math">\(\mathbf{C}^{\text{Comp}}_i\)</span> 由 <span class="math">\(2m\)</span> 个原始 token 加权得到（当前块 <span class="math">\(m\)</span> 个来自 <span class="math">\(\mathbf{C}^a\)</span> + 前一块 <span class="math">\(m\)</span> 个来自 <span class="math">\(\mathbf{C}^b\)</span>）：</p>
+<div class="math">$$[\mathbf{S}^a_{mi:m(i+1)-1}; \mathbf{S}^b_{m(i-1):mi-1}] = \text{Softmax}_{\text{row}}([\mathbf{Z}^a_{mi:m(i+1)-1} + \mathbf{B}^a; \mathbf{Z}^b_{m(i-1):mi-1} + \mathbf{B}^b]) \tag{11}$$</div>
+<div class="math">$$\mathbf{C}^{\text{Comp}}_i = \sum_{j=mi}^{m(i+1)-1} \mathbf{S}^a_j \odot \mathbf{C}^a_j + \sum_{j=m(i-1)}^{mi-1} \mathbf{S}^b_j \odot \mathbf{C}^b_j \tag{12}$$</div>
+<p>其中：</p>
+<ul>
+<li><span class="math">\(\odot\)</span> 表示 Hadamard 积（逐元素乘法）</li>
+<li><span class="math">\(\text{Softmax}_{\text{row}}(\cdot)\)</span> 沿行维度做归一化，跨当前块和前一块共 <span class="math">\(2m\)</span> 个元素</li>
+<li><span class="math">\(\mathbf{B}^a, \mathbf{B}^b \in \mathbb{R}^{m \times c}\)</span> 是可学习的位置偏置</li>
+<li>当 <span class="math">\(i = 0\)</span> 时，<span class="math">\(\mathbf{Z}^b_{m(i-1):mi-1}\)</span> 填充 <span class="math">\(-\infty\)</span>，<span class="math">\(\mathbf{C}^b_{m(i-1):mi-1}\)</span> 填充零</li>
+</ul>
+<p><strong>直觉解释</strong>：</p>
+<p>整个序列被划分为连续的块，每块 <span class="math">\(m\)</span> 个 token：块 0 是 token <span class="math">\([0, m-1]\)</span>，块 1 是 token <span class="math">\([m, 2m-1]\)</span>，…，块 <span class="math">\(i\)</span> 是 token <span class="math">\([mi, m(i+1)-1]\)</span>。<span class="math">\(\mathbf{C}^{\text{Comp}}_i\)</span> 就是<strong>第 <span class="math">\(i\)</span> 个压缩块的表示</strong>——将块 <span class="math">\(i\)</span> 的信息浓缩为一个 <span class="math">\(c\)</span> 维向量。</p>
+<p><strong>Eq. (11) 做了什么</strong>：为了计算第 <span class="math">\(i\)</span> 个压缩 entry，我们需要从 <span class="math">\(2m\)</span> 个 token 中学习贡献权重：</p>
+<ul>
+<li><span class="math">\(\mathbf{Z}^a_{mi:m(i+1)-1}\)</span>：从 <span class="math">\(\mathbf{Z}^a\)</span> 中取出<strong>当前块 <span class="math">\(i\)</span></strong> 的 <span class="math">\(m\)</span> 个 token 的压缩分数（位置 <span class="math">\(mi\)</span> 到 <span class="math">\(m(i+1)-1\)</span>）</li>
+<li><span class="math">\(\mathbf{Z}^b_{m(i-1):mi-1}\)</span>：从 <span class="math">\(\mathbf{Z}^b\)</span> 中取出<strong>前一个块 <span class="math">\(i-1\)</span></strong> 的 <span class="math">\(m\)</span> 个 token 的压缩分数（位置 <span class="math">\(m(i-1)\)</span> 到 <span class="math">\(mi-1\)</span>）</li>
+</ul>
+<p>将这 <span class="math">\(2m\)</span> 个分数拼接，加上位置偏置 <span class="math">\(\mathbf{B}^a, \mathbf{B}^b\)</span>，然后跨 <span class="math">\(2m\)</span> 个元素做 Softmax 归一化，得到权重 <span class="math">\(\mathbf{S}^a\)</span>（当前块 <span class="math">\(m\)</span> 个）和 <span class="math">\(\mathbf{S}^b\)</span>（前一块 <span class="math">\(m\)</span> 个）。Softmax 确保 <span class="math">\(2m\)</span> 个权重在每个维度上之和为 1，形成竞争关系——模型自适应地决定哪些 token 对该压缩 entry 贡献最大。</p>
+<p><strong>Eq. (12) 做了什么</strong>：用 Eq. (11) 得到的权重对 KV entries 做加权求和：</p>
+<ul>
+<li>第一项 <span class="math">\(\sum_{j=mi}^{m(i+1)-1} \mathbf{S}^a_j \odot \mathbf{C}^a_j\)</span>：取当前块 <span class="math">\(i\)</span> 的 <span class="math">\(m\)</span> 个 KV entries（<span class="math">\(\mathbf{C}^a\)</span>），用对应权重 <span class="math">\(\mathbf{S}^a\)</span> 逐维度缩放后求和</li>
+<li>第二项 <span class="math">\(\sum_{j=m(i-1)}^{mi-1} \mathbf{S}^b_j \odot \mathbf{C}^b_j\)</span>：取前一块 <span class="math">\(i-1\)</span> 的 <span class="math">\(m\)</span> 个 KV entries（<span class="math">\(\mathbf{C}^b\)</span>），用对应权重 <span class="math">\(\mathbf{S}^b\)</span> 逐维度缩放后求和</li>
+</ul>
+<p>两项加在一起就是最终的 <span class="math">\(\mathbf{C}^{\text{Comp}}_i \in \mathbb{R}^c\)</span>。注意 <span class="math">\(\odot\)</span> 是 Hadamard 积（逐维度乘法），意味着每个维度独立地选择权重——比 scalar 加权更有表达力，模型可以在不同维度上关注不同的 token。</p>
+<p><strong>重叠的意义</strong>：块 <span class="math">\(i\)</span> 的压缩 entry 不仅看当前块的 token，还看前一块 <span class="math">\(i-1\)</span> 的 token（通过 <span class="math">\(\mathbf{C}^b\)</span>）；而块 <span class="math">\(i+1\)</span> 又会看块 <span class="math">\(i\)</span> 的 token。这样相邻压缩块之间共享了边界信息，避免了硬切分导致的信息断裂——跨块边界的语义依赖得以保留。</p>
+<p><strong>为何压缩率是 <span class="math">\(\frac{1}{m}\)</span> 而非 <span class="math">\(\frac{1}{2m}\)</span></strong>：虽然每个 <span class="math">\(\mathbf{C}^{\text{Comp}}_i\)</span> 来自 <span class="math">\(2m\)</span> 个 token，但 <span class="math">\(\mathbf{C}^a\)</span> 用于 <span class="math">\(\mathbf{C}^{\text{Comp}}_i\)</span> 的 token 位置 <span class="math">\([mi, m(i+1)-1]\)</span>，恰好是 <span class="math">\(\mathbf{C}^b\)</span> 用于 <span class="math">\(\mathbf{C}^{\text{Comp}}_{i+1}\)</span> 的 token 位置（重叠部分）。每个原始 token 位置只"主导"一个压缩 entry（通过 <span class="math">\(\mathbf{C}^a\)</span>），同时"辅助"下一个压缩 entry（通过 <span class="math">\(\mathbf{C}^b\)</span>）。因此整体压缩率仍为 <span class="math">\(\frac{1}{m}\)</span>，最终产出 <span class="math">\(\mathbf{C}^{\text{Comp}} \in \mathbb{R}^{\frac{n}{m} \times c}\)</span>。</p>
+<h3>4.2 Lightning Indexer (Sparse Selection)</h3>
+<p>压缩后仍有 <span class="math">\(\frac{n}{m}\)</span> 个 KV entries。CSA 用 Lightning Indexer 选出 top-k 个做核心注意力。</p>
+<p><strong>Step 1: 压缩 Indexer Keys</strong></p>
+<p>对 indexer keys 执行与 <span class="math">\(\mathbf{C}^{\text{Comp}}\)</span> 相同的压缩操作，得到 <span class="math">\(\mathbf{K}^{I\text{Comp}} \in \mathbb{R}^{\frac{n}{m} \times c^I}\)</span>，其中 <span class="math">\(c^I\)</span> 是 indexer head 维度。</p>
+<p><strong>Step 2: Indexer Queries（低秩投影，与主注意力共享压缩向量 <span class="math">\(\mathbf{c}^Q_t\)</span>）</strong></p>
+<div class="math">$$\mathbf{c}^Q_t = \mathbf{h}_t \cdot \mathbf{W}^{DQ} \in \mathbb{R}^{d_c} \tag{13}$$</div>
+<div class="math">$$[\mathbf{q}^I_{t,1}; \mathbf{q}^I_{t,2}; ...; \mathbf{q}^I_{t,n^I_h}] = \mathbf{q}^I_t = \mathbf{c}^Q_t \cdot \mathbf{W}^{IUQ} \in \mathbb{R}^{n^I_h \cdot c^I} \tag{14}$$</div>
+<p>其中 <span class="math">\(\mathbf{W}^{DQ} \in \mathbb{R}^{d \times d_c}\)</span> 为 query 下投影（<span class="math">\(d_c\)</span> 为 query 压缩维度）；<span class="math">\(\mathbf{W}^{IUQ} \in \mathbb{R}^{d_c \times c^I n^I_h}\)</span> 为 indexer query 上投影；<span class="math">\(n^I_h\)</span> 为 indexer head 数量。</p>
+<p><strong>Step 3: 计算 Index Score（加权多头 ReLU 点积）</strong></p>
+<div class="math">$$[w^I_{t,1}; w^I_{t,2}; ...; w^I_{t,n^I_h}] = \mathbf{w}^I_t = \mathbf{h}_t \cdot \mathbf{W}^w \tag{15}$$</div>
+<div class="math">$$I_{t,s} = \sum_{h=1}^{n^I_h} w^I_{t,h} \cdot \text{ReLU}\left(\mathbf{q}^I_{t,h} \cdot \mathbf{K}^{I\text{Comp}}_s\right) \tag{16}$$</div>
+<p>其中 <span class="math">\(\mathbf{W}^w \in \mathbb{R}^{d \times n^I_h}\)</span> 是可学习权重矩阵；<span class="math">\(w^I_{t,h} \in \mathbb{R}\)</span> 是第 <span class="math">\(h\)</span> 个 indexer head 的标量权重；<span class="math">\(s &lt; \lfloor\frac{t}{m}\rfloor\)</span> 保证因果性。</p>
+<p><strong>Step 4: Top-k 选择</strong></p>
+<div class="math">$$\mathcal{C}^{\text{SprsComp}}_t = \left\{\mathbf{C}^{\text{Comp}}_s \mid I_{t,s} \in \text{Top-k}(I_{t,:})\right\} \tag{17}$$</div>
+<p>每个 query token <span class="math">\(t\)</span> 从 <span class="math">\(\frac{n}{m}\)</span> 个压缩 entry 中选出 <span class="math">\(k\)</span> 个。</p>
+<h3>4.3 Shared Key-Value MQA</h3>
+<p>选出稀疏 KV entries 后，CSA 执行核心注意力。关键设计：<strong>每个压缩 KV entry 同时作为 key 和 value</strong>（Shared Key-Value MQA）。</p>
+<p>主注意力的 queries 从<strong>同一个</strong> <span class="math">\(\mathbf{c}^Q_t\)</span> 上投影得到（与 indexer queries 共享压缩向量 <span class="math">\(\mathbf{c}^Q_t\)</span>）：</p>
+<div class="math">$$[\mathbf{q}_{t,1}; \mathbf{q}_{t,2}; ...; \mathbf{q}_{t,n_h}] = \mathbf{q}_t = \mathbf{c}^Q_t \cdot \mathbf{W}^{UQ} \tag{18}$$</div>
+<div class="math">$$\mathbf{o}_{t,i} = \text{CoreAttn}\left(\text{query}=\mathbf{q}_{t,i}, \text{key}=\mathcal{C}^{\text{SprsComp}}_t, \text{value}=\mathcal{C}^{\text{SprsComp}}_t\right) \tag{19}$$</div>
+<p>其中 <span class="math">\(\mathbf{W}^{UQ} \in \mathbb{R}^{d_c \times c \cdot n_h}\)</span>；<span class="math">\(n_h\)</span> 为主注意力 head 数量。注意 key 和 value 是<strong>同一组</strong> entry。</p>
+<p><strong>与 V3.2 MLA 的关键区别</strong>：MLA 为 key 和 value 分别做上投影 (<span class="math">\(\mathbf{W}^{UK}\)</span>, <span class="math">\(\mathbf{W}^{UV}\)</span>)，KV Cache 中需要存独立的压缩向量。而 CSA 的 Shared KV 设计使得每个 entry 只需存一份，KV Cache 开销大幅减少。</p>
+<h3>4.4 Grouped Output Projection</h3>
+<p><span class="math">\(n_h\)</span> 很大时，直接将 <span class="math">\([\mathbf{o}_{t,1}; ...; \mathbf{o}_{t,n_h}] \in \mathbb{R}^{n_h \cdot c}\)</span> 投影到 <span class="math">\(\mathbb{R}^d\)</span> 计算量巨大。V4 设计了分组输出投影：</p>
+<ol>
+<li>将 <span class="math">\(n_h\)</span> 个 head 分成 <span class="math">\(G\)</span> 组</li>
+<li>每组 <span class="math">\(\frac{n_h}{G}\)</span> 个 head 的拼接输出 <span class="math">\(\mathbf{o}^g_t \in \mathbb{R}^{\frac{n_h}{G} \cdot c}\)</span> 先投影到中间维度 <span class="math">\(d_G\)</span></li>
+<li>再将 <span class="math">\(G\)</span> 组中间输出拼接后投影到最终维度 <span class="math">\(d\)</span></li>
+</ol>
+<div class="math">$$\mathbf{o}^{g'}_t = \mathbf{o}^g_t \cdot \mathbf{W}^g_{\text{proj1}}, \quad \mathbb{R}^{\frac{n_h}{G} \cdot c} \to \mathbb{R}^{d_G}$$</div>
+<div class="math">$$\hat{\mathbf{o}}_t = [\mathbf{o}^{1'}_t; ...; \mathbf{o}^{G'}_t] \cdot \mathbf{W}_{\text{proj2}}, \quad \mathbb{R}^{G \cdot d_G} \to \mathbb{R}^{d}$$</div>
+<h3>4.5 其他细节</h3>
+<p>论文还描述了 CSA（及 HCA）的几项附加技术：</p>
+<p><strong>Query 和 KV Entry 归一化</strong>：在核心注意力之前，对每个 query head 和压缩 KV entry 执行 RMSNorm，避免 attention logits 爆炸。</p>
+<p><strong>Partial RoPE</strong>：对 query 向量和 KV entry 向量的最后 64 维施加 RoPE。由于 KV entry 同时作为 key 和 value，朴素注意力输出 <span class="math">\(\mathbf{o}_{t,i}\)</span> 会带有绝对位置编码。对策：对 <span class="math">\(\mathbf{o}_{t,i}\)</span> 的最后 64 维施加位置为 <span class="math">\(-t\)</span> 的 RoPE，使最终输出携带相对位置信息。</p>
+<p><strong>滑动窗口分支（Sliding Window KV Entries）</strong>：</p>
+<p><em>为什么需要</em>（两个互补的原因）：</p>
+<p><strong>原因一：因果性硬约束——同块 token 通过压缩路径完全不可达。</strong> 压缩 entry <span class="math">\(\mathbf{C}^{\text{Comp}}_i\)</span> 是块 <span class="math">\(i\)</span> 内<strong>全部</strong> <span class="math">\(m\)</span> 个 token 的加权融合（Eq. 12），包含了块内所有 token 的信息——包括块内靠后位置的"未来"token。由于 autoregressive 因果性，位于块 <span class="math">\(i\)</span> 内位置 <span class="math">\(t\)</span> 的 query 不能使用 <span class="math">\(\mathbf{C}^{\text{Comp}}_i\)</span>（否则会偷看到 <span class="math">\(t\)</span> 之后的 token）。论文的约束是 <span class="math">\(s &lt; \lfloor\frac{t}{m}\rfloor\)</span>，即 query <span class="math">\(t\)</span> 只能 attend 到完全在它之前的压缩块。这意味着块 <span class="math">\(i\)</span> 内位于 <span class="math">\(t\)</span> 之前的 token（位置 <span class="math">\(mi\)</span> 到 <span class="math">\(t-1\)</span>），虽然是合法的"过去"，但被融合进了含有未来信息的 <span class="math">\(\mathbf{C}^{\text{Comp}}_i\)</span>，通过压缩路径<strong>根本无法访问</strong>。</p>
+<p><strong>原因二：局部细节需要高精度——压缩会丢失 fine-grained 信息。</strong> 在语言模型中，当前 query 与刚过去的邻近 token 关系最为紧密和微妙。即使前面的压缩块（<span class="math">\(s &lt; \lfloor\frac{t}{m}\rfloor\)</span>）可以访问，这些块的信息也是 <span class="math">\(m\)</span> 个 token 融合后的"粗粒度摘要"。对于局部上下文（最近几十个 token），模型需要逐 token 级别的精确表示，而非压缩后的混合信号。</p>
+<p><em>具体做法</em>：为每个 query token 额外产出最近 <span class="math">\(n_{\text{win}}\)</span> 个 token 的<strong>未压缩</strong> KV entries。这些 entries 与 compressed entries 维度相同（都是 <span class="math">\(c = 512\)</span>），但不经过任何压缩操作，以原始精度保留。在核心注意力中，query 同时 attend to 两部分：</p>
+<ul>
+<li><strong>Compressed KV entries</strong>：经过压缩（和 sparse selection）的全局长程记忆</li>
+<li><strong>Sliding Window KV entries</strong>：未压缩的最近 <span class="math">\(n_{\text{win}}\)</span> 个 token，负责精确的局部上下文</li>
+</ul>
+<p>两者参与同一个 softmax attention 计算（因为维度相同，可以直接拼接为统一的 key/value 集合）。</p>
+<p><em>具体配置与 attention 总 entry 数</em>：</p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>V4-Pro</th>
+<th>V4-Flash</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>attention top-k（indexer 选出的压缩 entry 数）</td>
+<td>1024</td>
+<td>512</td>
+</tr>
+<tr>
+<td><span class="math">\(n_{\text{win}}\)</span>（sliding window 大小）</td>
+<td>128</td>
+<td>128</td>
+</tr>
+<tr>
+<td>每个 query 实际 attend to 的 entry 总数</td>
+<td><span class="math">\(1024 + 128 = 1152\)</span></td>
+<td><span class="math">\(512 + 128 = 640\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>Top-k 远大于 <span class="math">\(n_{\text{win}}\)</span>：top-k 覆盖<strong>全局</strong>长程依赖（从 <span class="math">\(\frac{n}{m}\)</span> 个压缩 entries 中选出最相关的），<span class="math">\(n_{\text{win}}\)</span> 覆盖<strong>局部</strong>精细依赖（最近 128 个 token 的未压缩表示）。两者拼接后共同参与同一个 softmax attention 计算（再加上 attention sink）。</p>
+<p><em>工程实现</em>：滑动窗口 entries 存储在固定大小的 state cache 中。随着新 token 生成，最老的 token 滑出窗口并被送入压缩路径。因此滑动窗口的内存开销是固定的、不随上下文长度增长。</p>
+<p><em>与 compressed entries 维度相同的原因</em>：从代码看，<code>self.wkv = Linear(self.dim, self.head_dim)</code> 同时用于产出 sliding window entries 和作为压缩路径的输入——两者共享同一个投影矩阵和 head 维度 <span class="math">\(c\)</span>。这是 Shared Key-Value MQA 的设计要求：所有 entries（无论压缩与否）都同时充当 key 和 value，必须在同一个 attention 运算中兼容。</p>
+<p><strong>Attention Sink</strong>：设可学习的 sink logits <span class="math">\(\{s'_1, ..., s'_{n_h}\}\)</span>，修改注意力分数计算：</p>
+<div class="math">$$a_{h,t,j} = \frac{\text{Exp}(l_{h,t,j})}{\sum_k \text{Exp}(l_{h,t,k}) + \text{Exp}(s'_h)} \tag{27}$$</div>
+<p>使得每个 head 的注意力分数之和可以不等于 1（甚至接近 0），允许 head "不关注任何东西"。</p>
+<h3>4.6 CSA 完整数据流图</h3>
+<p><img alt="20260628_deekseekV4_CSA" src="/figures/20260628_deekseekV4_CSA.svg"></p>
+<h2>5. Heavily Compressed Attention (HCA)</h2>
+<p>HCA 采用更激进的压缩（<span class="math">\(m' \gg m\)</span>），但<strong>不使用 sparse attention</strong>——直接对所有压缩 entries 做 dense attention。</p>
+<h3>5.1 非重叠压缩</h3>
+<p>与 CSA 不同，HCA 只使用<strong>一组</strong> KV entries，且压缩是<strong>非重叠</strong>的：</p>
+<div class="math">$$\mathbf{C} = \mathbf{H} \cdot \mathbf{W}^{KV}, \quad \mathbf{Z} = \mathbf{H} \cdot \mathbf{W}^{Z} \tag{20-21}$$</div>
+<div class="math">$$\mathbf{S}_{m'i:m'(i+1)-1} = \text{Softmax}_{\text{row}}(\mathbf{Z}_{m'i:m'(i+1)-1} + \mathbf{B}) \tag{22}$$</div>
+<div class="math">$$\mathbf{C}^{\text{Comp}}_i = \sum_{j=m'i}^{m'(i+1)-1} \mathbf{S}_j \odot \mathbf{C}_j \tag{23}$$</div>
+<p>每 <span class="math">\(m'\)</span> 个 token 压缩为一个 entry，无重叠。结果 <span class="math">\(\mathbf{C}^{\text{Comp}} \in \mathbb{R}^{\frac{n}{m'} \times c}\)</span>。对于 1M 上下文，HCA 的 KV entries 数量仅为 <span class="math">\(\frac{10^6}{128} \approx 7812\)</span> 个。</p>
+<h3>5.2 Dense Shared Key-Value MQA</h3>
+<p>由于压缩后 entries 极少，HCA 直接对<strong>全部</strong>压缩 entries 做 dense attention。Query 投影方式与 CSA 相同（低秩）：</p>
+<div class="math">$$\mathbf{c}^Q_t = \mathbf{h}_t \cdot \mathbf{W}^{DQ}, \quad [\mathbf{q}_{t,1}; ...; \mathbf{q}_{t,n_h}] = \mathbf{c}^Q_t \cdot \mathbf{W}^{UQ} \tag{24-25}$$</div>
+<div class="math">$$\mathbf{o}_{t,i} = \text{CoreAttn}\left(\text{query}=\mathbf{q}_{t,i}, \text{key}=\mathbf{C}^{\text{Comp}}, \text{value}=\mathbf{C}^{\text{Comp}}\right) \tag{26}$$</div>
+<p>HCA 同样使用 Shared Key-Value MQA（KV entry 同时作为 key 和 value）、Grouped Output Projection、RMSNorm、Partial RoPE、滑动窗口和 Attention Sink。</p>
+<h3>5.3 HCA 完整数据流图</h3>
+<p><img alt="20260628_deekseekV4_HCA" src="/figures/20260628_deekseekV4_HCA.svg"></p>
+<h2>6. CSA 与 HCA 的对比</h2>
+<table>
+<thead>
+<tr>
+<th>特性</th>
+<th>CSA</th>
+<th>HCA</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>压缩率</td>
+<td><span class="math">\(m = 4\)</span></td>
+<td><span class="math">\(m' = 128\)</span></td>
+</tr>
+<tr>
+<td>压缩方式</td>
+<td>重叠压缩（<span class="math">\(2m\)</span> tokens, 两组 <span class="math">\(C^a, C^b\)</span>）</td>
+<td>非重叠压缩（<span class="math">\(m'\)</span> tokens, 一组 <span class="math">\(C\)</span>）</td>
+</tr>
+<tr>
+<td>Sparse Attention</td>
+<td>是（Lightning Indexer + Top-k）</td>
+<td>否（dense）</td>
+</tr>
+<tr>
+<td>KV entries 数（1M context）</td>
+<td><span class="math">\(\frac{10^6}{4} = 250K\)</span>，sparse 选 <span class="math">\(k\)</span></td>
+<td><span class="math">\(\frac{10^6}{128} \approx 7812\)</span></td>
+</tr>
+<tr>
+<td>层配置（V4-Pro）</td>
+<td>偶数层（Layer 2, 4, 6, ...）</td>
+<td>奇数层 + 前 2 层</td>
+</tr>
+<tr>
+<td>适合场景</td>
+<td>需要 fine-grained token-level 信息</td>
+<td>粗粒度语义理解</td>
+</tr>
+</tbody>
+</table>
+<p><strong>设计哲学</strong>：CSA 先轻度压缩再 sparse select，保留 token-level 精度；HCA 做极度压缩但保持 dense，确保全局信息覆盖。两者互补。</p>
+<h2>7. 注意力层的其他细节</h2>
+<h3>7.1 Partial RoPE</h3>
+<p>CSA 和 HCA 都对 queries、KV entries、以及 attention outputs 的最后 64 维应用 RoPE：</p>
+<div class="math">$$\mathbf{q}_{t,i} \leftarrow [\mathbf{q}^{\text{nope}}_{t,i} \;;\; \text{RoPE}(\mathbf{q}^{\text{pe}}_{t,i})] \tag{18}$$</div>
+<p><strong>特殊处理</strong>：由于 KV entry 同时作为 key 和 value，naive attention output 会携带绝对位置编码。为此，对 attention output 的最后 64 维也应用 RoPE（position <span class="math">\(-t\)</span>），使最终输出只携带相对位置信息。</p>
+<h3>7.2 滑动窗口注意力 (SWA)</h3>
+<p>由于压缩操作的因果性要求，每个 query 只能 attend 已完成压缩的前置块。为补充当前块内的局部信息，引入一个额外的滑动窗口分支：</p>
+<ul>
+<li>窗口大小 <span class="math">\(w_{\text{win}} = 128\)</span></li>
+<li>为最近 128 个 token 生成未压缩的 KV entries</li>
+<li>在 core attention 中与压缩 KV entries 一起使用</li>
+</ul>
+<h3>7.3 Attention Sink</h3>
+<p>在 core attention 的 softmax 分母中加入一个可学习的 sink logit，允许注意力权重总和不为 1：</p>
+<div class="math">$$a_{h,t,s} = \frac{\text{Exp}(l_{h,t,s})}{\sum_{s'} \text{Exp}(l_{h,t,s'}) + \text{Exp}(s'_h)} \tag{19}$$</div>
+<p>其中 <span class="math">\(s'_h\)</span> 是每个 head 的可学习 sink logit。</p>
+<h3>7.4 Query/KV Entry Normalization</h3>
+<p>在 core attention 之前，对 queries 和 KV entries 分别做 RMSNorm，防止 attention logits 爆炸。</p>
+<h2>8. Manifold-Constrained Hyper-Connections (mHC)</h2>
+<p>V4 使用 mHC 替代传统残差连接，增强信号在层间的传播。</p>
+<h3>8.1 基本思想</h3>
+<p>标准 Hyper-Connections (HC) 将残差流宽度扩展 <span class="math">\(n_{\text{hc}}\)</span> 倍：从 <span class="math">\(\mathbb{R}^d\)</span> 扩展到 <span class="math">\(\mathbb{R}^{n_{\text{hc}} \times d}\)</span>（<span class="math">\(n_{\text{hc}} = 4\)</span>）。</p>
+<p>每层的变换包含三个映射：</p>
+<ul>
+<li><strong>Input mapping</strong> <span class="math">\(\mathbf{A}_i \in \mathbb{R}^{1 \times n_{\text{hc}}}\)</span>：从扩展残差流中提取 <span class="math">\(d\)</span> 维输入给层</li>
+<li><strong>Residual mapping</strong> <span class="math">\(\mathbf{M}_i \in \mathbb{R}^{n_{\text{hc}} \times n_{\text{hc}}}\)</span>：变换残差流本身</li>
+<li><strong>Output mapping</strong> <span class="math">\(\mathbf{O}_i \in \mathbb{R}^{n_{\text{hc}} \times 1}\)</span>：将层输出注入回扩展残差流</li>
+</ul>
+<h3>8.2 Manifold 约束</h3>
+<p>mHC 的核心创新是将残差映射矩阵 <span class="math">\(\mathbf{M}_i\)</span> 约束到<strong>双随机矩阵的流形（Birkhoff 多面体）</strong>：</p>
+<div class="math">$$\mathbf{M}_i \in \mathcal{M} \triangleq \{\mathbf{A} \in \mathbb{R}^{n \times n} \mid \mathbf{A}\mathbf{1}_n = \mathbf{1}_n, \; \mathbf{1}_n^T\mathbf{A} = \mathbf{1}_n^T, \; \mathbf{A} \geq 0\} \tag{20}$$</div>
+<p>这确保：</p>
+<ol>
+<li><strong>谱范数有界</strong> <span class="math">\(\|\mathbf{M}_i\|_2 \leq 1\)</span>：残差变换是非扩张的，前向传播和反向传播数值稳定</li>
+<li><strong>乘法封闭</strong>：<span class="math">\(\mathcal{M}\)</span> 在矩阵乘法下封闭，多层 mHC 堆叠后仍然稳定</li>
+</ol>
+<h3>8.3 动态参数化</h3>
+<p>三个映射的参数由<strong>动态（输入依赖）+ 静态（偏置）</strong>两部分组成：</p>
+<div class="math">$$\hat{\mathbf{x}}_i = \text{RMSNorm}(\text{vec}(\mathbf{x}_i)) \in \mathbb{R}^{1 \times n_{\text{hc}} d} \tag{21}$$</div>
+<div class="math">$$\tilde{\mathbf{A}}_i = \Psi^{\text{pre}}_i \cdot (\hat{\mathbf{x}}_i \mathbf{W}^{\text{pre}}_i) + \mathbf{b}^{\text{pre}}_i \tag{22}$$</div>
+<div class="math">$$\tilde{\mathbf{M}}_i = \Psi^{\text{res}}_i \cdot \text{Mat}(\hat{\mathbf{x}}_i \mathbf{W}^{\text{res}}_i) + \mathbf{B}^{\text{res}}_i \tag{23}$$</div>
+<div class="math">$$\tilde{\mathbf{O}}_i = \Psi^{\text{post}}_i \cdot (\hat{\mathbf{x}}_i \mathbf{W}^{\text{post}}_i)^T + \mathbf{b}^{\text{post}}_i \tag{24}$$</div>
+<p>其中 <span class="math">\(\Psi\)</span> 是可学习的 gating factors（初始化为小值），<span class="math">\(\mathbf{W}\)</span> 是动态投影矩阵。</p>
+<h3>8.4 约束应用</h3>
+<p>对原始参数应用约束：</p>
+<ul>
+<li>Input/Output mapping：用 Sigmoid 确保非负有界</li>
+</ul>
+<div class="math">$$\mathbf{A}_i = \sigma(\tilde{\mathbf{A}}_i), \quad \mathbf{O}_i = 2\sigma(\tilde{\mathbf{O}}_i) \tag{25}$$</div>
+<ul>
+<li>Residual mapping：用 Sinkhorn-Knopp 迭代投影到双随机矩阵</li>
+</ul>
+<div class="math">$$\mathbf{M}_i = \text{SinkhornKnopp}(\exp(\tilde{\mathbf{M}}_i), \; n_{\text{max}}=20) \tag{26}$$</div>
+<h2>9. Muon 优化器</h2>
+<p>V4 系列的大部分参数使用 Muon 优化器（而非 AdamW），其核心思想是对梯度做<strong>近似正交化</strong>。</p>
+<h3>9.1 算法</h3>
+<p>对于每个逻辑独立的权重矩阵 <span class="math">\(\mathbf{W} \in \mathbb{R}^{m \times n}\)</span>：</p>
+<div class="math">$$
+\begin{aligned}
+&amp; \mathbf{G}_t = \nabla_\mathbf{W} \mathcal{L}_t(\mathbf{W}_{t-1}) \\
+&amp; \mathbf{M}_t = \beta \mathbf{M}_{t-1} + \mathbf{G}_t \\
+&amp; \mathbf{U}'_t = \text{HybridNewtonSchulz}(\beta \mathbf{M}_t + \mathbf{G}_t) \\
+&amp; \mathbf{U}_t = \mathbf{U}'_t \cdot \sqrt{\max(m, n)} \cdot \rho \\
+&amp; \mathbf{W}_t = \mathbf{W}_{t-1} \cdot (1 - \lambda \varepsilon) - \varepsilon \mathbf{U}_t
+\end{aligned}
+\tag{27}
+$$</div>
+<p>其中：</p>
+<ul>
+<li><span class="math">\(\beta = 0.95\)</span>：动量系数</li>
+<li><span class="math">\(\lambda = 0.1\)</span>：权重衰减</li>
+<li><span class="math">\(\rho\)</span>：RMS 重缩放因子（V4 中设为 0.18）</li>
+<li>HybridNewtonSchulz：将矩阵近似正交化为 <span class="math">\(\mathbf{U}\mathbf{V}^T\)</span> 形式</li>
+</ul>
+<h3>9.2 Hybrid Newton-Schulz 迭代</h3>
+<p>目标：将矩阵 <span class="math">\(\mathbf{X}\)</span>（SVD = <span class="math">\(\mathbf{U}\Sigma\mathbf{V}^T\)</span>）正交化为 <span class="math">\(\mathbf{U}\mathbf{V}^T\)</span>。</p>
+<p>先归一化 <span class="math">\(\mathbf{X}_0 = \mathbf{X} / \|\mathbf{X}\|_F\)</span>，然后迭代：</p>
+<div class="math">$$\mathbf{X}_k = a\mathbf{X}_{k-1} + b(\mathbf{X}_{k-1}\mathbf{X}_{k-1}^T)\mathbf{X}_{k-1} + c(\mathbf{X}_{k-1}\mathbf{X}_{k-1}^T)^2\mathbf{X}_{k-1} \tag{28}$$</div>
+<p>V4 使用 10 次迭代，分两阶段：</p>
+<ul>
+<li>前 8 步：<span class="math">\((a, b, c) = (3.4445, -4.7750, 2.0315)\)</span>，快速收敛</li>
+<li>后 2 步：<span class="math">\((a, b, c) = (2, -1.5, 0.5)\)</span>，精确稳定在 1</li>
+</ul>
+<h3>9.3 使用范围</h3>
+<table>
+<thead>
+<tr>
+<th>优化器</th>
+<th>应用模块</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Muon</td>
+<td>绝大部分参数（attention, MoE experts, etc.）</td>
+</tr>
+<tr>
+<td>AdamW</td>
+<td>Embedding, Prediction Head, RMSNorm, mHC 的静态偏置和 gating</td>
+</tr>
+</tbody>
+</table>
+<h2>10. MoE (Mixture-of-Experts)</h2>
+<p>V4 沿用 DeepSeekMoE 架构，但做了若干调整：</p>
+<h3>10.1 V4-Pro 配置</h3>
+<ul>
+<li>每层 1 个 shared expert + 384 个 routed experts</li>
+<li>每个 expert 的 intermediate dimension = 3072</li>
+<li>每个 token 激活 6 个 routed experts</li>
+<li>激活函数：<span class="math">\(\sqrt{\text{Softplus}(\cdot)}\)</span>（替代 V3 的 Sigmoid）</li>
+</ul>
+<h3>10.2 Hash Routing</h3>
+<p>V4-Pro 的前 3 层 MoE 使用 <strong>Hash routing</strong>（根据 input token ID 的哈希函数确定目标 expert），后续层使用标准 learned routing。</p>
+<h3>10.3 负载均衡</h3>
+<ul>
+<li>Auxiliary-loss-free 策略（bias update speed = 0.001）</li>
+<li>额外的 sequence-wise balance loss（weight = 0.0001）防止单序列内极端不均衡</li>
+</ul>
+<h2>11. 效率分析</h2>
+<h3>11.1 单 Token 推理 FLOPs 对比（1M context）</h3>
+<table>
+<thead>
+<tr>
+<th>模型</th>
+<th>单 Token FLOPs</th>
+<th>相对 V3.2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DeepSeek-V3.2</td>
+<td>基准</td>
+<td>100%</td>
+</tr>
+<tr>
+<td>DeepSeek-V4-Pro</td>
+<td>约 0.27×</td>
+<td><strong>27%</strong></td>
+</tr>
+<tr>
+<td>DeepSeek-V4-Flash</td>
+<td>约 0.10×</td>
+<td><strong>10%</strong></td>
+</tr>
+</tbody>
+</table>
+<h3>11.2 KV Cache 对比（1M context）</h3>
+<table>
+<thead>
+<tr>
+<th>模型</th>
+<th>累计 KV Cache</th>
+<th>相对 V3.2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DeepSeek-V3.2</td>
+<td>~50 GB</td>
+<td>100%</td>
+</tr>
+<tr>
+<td>DeepSeek-V4-Pro</td>
+<td>~5 GB</td>
+<td><strong>10%</strong></td>
+</tr>
+<tr>
+<td>DeepSeek-V4-Flash</td>
+<td>~3.6 GB</td>
+<td><strong>7%</strong></td>
+</tr>
+</tbody>
+</table>
+<h3>11.3 效率来源分析</h3>
+<p>CSA 的效率提升路径：</p>
+<div class="math">$$L \xrightarrow{\text{压缩} \div c} \frac{L}{c} \xrightarrow{\text{sparse top-k}} k$$</div>
+<p>以 V4-Pro 为例（<span class="math">\(L = 10^6\)</span>, <span class="math">\(c = 4\)</span>, <span class="math">\(k = 1024\)</span>）：</p>
+<ul>
+<li>压缩后 KV entries 数：<span class="math">\(\frac{10^6}{4} = 250K\)</span></li>
+<li>Sparse 选择后实际 attend 数：<span class="math">\(1024\)</span></li>
+<li>总压缩比：<span class="math">\(\frac{1024}{10^6} \approx 0.1\%\)</span></li>
+</ul>
+<p>HCA 的效率：</p>
+<ul>
+<li>直接压缩 <span class="math">\(128 \times\)</span>：<span class="math">\(\frac{10^6}{128} \approx 7812\)</span> entries</li>
+<li>Dense attend，无需 indexer 开销</li>
+</ul>
+<h3>11.4 精度优化</h3>
+<ul>
+<li>KV entries 存储：RoPE 维度用 BF16，其余用 FP8（接近减半存储）</li>
+<li>Lightning Indexer 的 QK 计算：FP4 精度</li>
+<li>Routed expert 参数：FP4 精度（推理时）</li>
+<li>Index scores：量化存储</li>
+</ul>
+<h2>12. 训练策略</h2>
+<h3>12.1 Pre-training 阶段</h3>
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>序列长度</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>初始</td>
+<td>4K</td>
+<td>Dense attention</td>
+</tr>
+<tr>
+<td>中期</td>
+<td>16K → 64K</td>
+<td>引入 sparse attention (两阶段)</td>
+</tr>
+<tr>
+<td>后期</td>
+<td>1M</td>
+<td>Sparse attention</td>
+</tr>
+</tbody>
+</table>
+<p>Sparse attention 引入流程：</p>
+<ol>
+<li>前 1T tokens 使用 dense attention warmup</li>
+<li>序列长度扩展到 64K 时引入 sparse attention</li>
+<li>先短暂 warmup lightning indexer，然后全程 sparse training</li>
+</ol>
+<h3>12.2 Hyper-parameters（V4-Pro）</h3>
+<div class="math">$$
+\begin{aligned}
+&amp; \text{Batch size (max)}: 94.4M \text{ tokens} \\
+&amp; \text{Peak LR}: 2.0 \times 10^{-4} \\
+&amp; \text{End LR}: 2.0 \times 10^{-5} \\
+&amp; \text{AdamW}: \beta_1 = 0.9, \; \beta_2 = 0.95, \; \varepsilon = 10^{-20} \\
+&amp; \text{Weight decay}: 0.1 \\
+&amp; \text{MTP loss weight}: 0.3 \to 0.1 \text{ (LR decay 时切换)}
+\end{aligned}
+$$</div>
+<h3>12.3 训练稳定性技术</h3>
+<p><strong>Anticipatory Routing</strong>：将 routing 的计算和 backbone 更新解耦——在 step <span class="math">\(t\)</span> 时，使用当前参数 <span class="math">\(\theta_t\)</span> 做特征计算，但 routing indices 使用历史参数 <span class="math">\(\theta_{t - \Delta t}\)</span> 预计算。</p>
+<p><strong>SwiGLU Clamping</strong>：将 SwiGLU 的线性部分 clamp 到 <span class="math">\([-10, 10]\)</span>，gate 部分上界 clamp 到 10。</p>
+<h2>13. Post-Training</h2>
+<p>V4 的 post-training 采用两阶段范式：</p>
+<h3>13.1 Specialist Training</h3>
+<p>针对不同领域（math, code, agent, instruction following）独立训练 specialist 模型：</p>
+<ol>
+<li><strong>SFT 阶段</strong>：在高质量领域数据上做 supervised fine-tuning</li>
+<li><strong>RL 阶段</strong>：使用 GRPO (Group Relative Policy Optimization) + 领域专用 reward model</li>
+</ol>
+<h3>13.2 On-Policy Distillation (OPD)</h3>
+<p>将多个 specialist 合并为统一模型：</p>
+<div class="math">$$\mathcal{L}_{\text{OPD}}(\theta) = \sum_{i=1}^{N} \lambda_i \cdot D_{\text{KL}}\left(\pi_\theta \| \pi_{T_i}\right) \tag{29}$$</div>
+<p>其中：</p>
+<ul>
+<li><span class="math">\(\pi_\theta\)</span>：student 模型</li>
+<li><span class="math">\(\pi_{T_i}\)</span>：第 <span class="math">\(i\)</span> 个 teacher (specialist)</li>
+<li><span class="math">\(\lambda_i\)</span>：teacher 权重</li>
+<li><span class="math">\(D_{\text{KL}}(\pi_\theta \| \pi_{T_i})\)</span>：<strong>reverse KL</strong></li>
+</ul>
+<p>关键技术选择：</p>
+<ul>
+<li>使用 <strong>full-vocabulary logit distillation</strong>（而非 token-level KL 近似），梯度估计更稳定</li>
+<li>采用 <strong>reverse KL</strong>（student <span class="math">\(\to\)</span> teacher），鼓励 mode-seeking behavior</li>
+<li>训练轨迹从 student 采样（on-policy），超过 10 个 teacher 参与蒸馏</li>
+</ul>
+<h3>13.3 FP4 Quantization-Aware Training</h3>
+<p>在 post-training 阶段引入 QAT，让模型适应量化带来的精度损失：</p>
+<ul>
+<li>MoE expert weights → FP4 (MXFP4)</li>
+<li>CSA Indexer 的 QK path → FP4</li>
+<li>Forward：用 FP4 模拟量化（通过 FP8 中间格式）</li>
+<li>Backward：STE (Straight-Through Estimator)</li>
+</ul>
+<h3>13.4 推理模式</h3>
+<table>
+<thead>
+<tr>
+<th>模式</th>
+<th>特点</th>
+<th>格式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Non-think</td>
+<td>快速直觉响应</td>
+<td><code>&lt;/think&gt; summary</code></td>
+</tr>
+<tr>
+<td>Think High</td>
+<td>有意识的逻辑分析</td>
+<td><code>&lt;think&gt;..tokens..&lt;/think&gt; summary</code></td>
+</tr>
+<tr>
+<td>Think Max</td>
+<td>推理能力的极限</td>
+<td>特殊 system prompt + <code>&lt;think&gt;..tokens..&lt;/think&gt;</code></td>
+</tr>
+</tbody>
+</table>
+<h2>14. Benchmark 结果</h2>
+<h3>14.1 Pre-training 基座模型</h3>
+<table>
+<thead>
+<tr>
+<th>Benchmark</th>
+<th>V3.2-Base (37B/671B)</th>
+<th>V4-Flash-Base (13B/284B)</th>
+<th>V4-Pro-Base (49B/1.6T)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MMLU</td>
+<td>87.8</td>
+<td>88.7</td>
+<td><strong>90.1</strong></td>
+</tr>
+<tr>
+<td>MMLU-Pro</td>
+<td>65.5</td>
+<td>68.3</td>
+<td><strong>73.5</strong></td>
+</tr>
+<tr>
+<td>SimpleQA verified</td>
+<td>28.3</td>
+<td>30.1</td>
+<td><strong>55.2</strong></td>
+</tr>
+<tr>
+<td>FACTS Parametric</td>
+<td>27.1</td>
+<td>33.9</td>
+<td><strong>62.6</strong></td>
+</tr>
+<tr>
+<td>HumanEval</td>
+<td>62.8</td>
+<td>69.5</td>
+<td><strong>76.8</strong></td>
+</tr>
+<tr>
+<td>MATH</td>
+<td>60.5</td>
+<td>57.4</td>
+<td><strong>64.5</strong></td>
+</tr>
+<tr>
+<td>LongBench-V2</td>
+<td>40.2</td>
+<td>44.7</td>
+<td><strong>51.5</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>关键发现</strong>：V4-Flash（13B 激活）以 V3.2（37B 激活）不到一半的参数量，在大多数 benchmark 上超越 V3.2。</p>
+<h3>14.2 Post-training (V4-Pro-Max vs 竞品)</h3>
+<table>
+<thead>
+<tr>
+<th>Benchmark</th>
+<th>Opus-4.6 Max</th>
+<th>GPT-5.4 xHigh</th>
+<th>Gemini-3.1-Pro High</th>
+<th style="text-align: right;">V4-Pro-Max</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SimpleQA-Verified</td>
+<td>46.2</td>
+<td>45.3</td>
+<td>75.6</td>
+<td style="text-align: right;"><strong>57.9</strong></td>
+</tr>
+<tr>
+<td>GPQA Diamond</td>
+<td>91.3</td>
+<td>93.0</td>
+<td>94.3</td>
+<td style="text-align: right;">90.1</td>
+</tr>
+<tr>
+<td>HLE</td>
+<td>40.0</td>
+<td>39.8</td>
+<td>44.4</td>
+<td style="text-align: right;">37.7</td>
+</tr>
+<tr>
+<td>LiveCodeBench</td>
+<td>88.8</td>
+<td>-</td>
+<td>91.7</td>
+<td style="text-align: right;"><strong>93.5</strong></td>
+</tr>
+<tr>
+<td>Codeforces (Rating)</td>
+<td>-</td>
+<td>3168</td>
+<td>3052</td>
+<td style="text-align: right;"><strong>3206</strong></td>
+</tr>
+<tr>
+<td>Apex Shortlist</td>
+<td>85.9</td>
+<td>78.1</td>
+<td>89.1</td>
+<td style="text-align: right;"><strong>90.2</strong></td>
+</tr>
+<tr>
+<td>SWE Verified</td>
+<td>80.8</td>
+<td>-</td>
+<td>80.6</td>
+<td style="text-align: right;">80.6</td>
+</tr>
+<tr>
+<td>Terminal Bench 2.0</td>
+<td>65.4</td>
+<td>75.1</td>
+<td>68.5</td>
+<td style="text-align: right;">67.9</td>
+</tr>
+</tbody>
+</table>
+<h2>15. 设计选择总结</h2>
+<table>
+<thead>
+<tr>
+<th>设计选择</th>
+<th>原因</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>混合 CSA + HCA</td>
+<td>CSA 提供 fine-grained 信息, HCA 提供全局覆盖，互补</td>
+</tr>
+<tr>
+<td>重叠压缩 (CSA)</td>
+<td>相邻块边界信息不丢失，提升 recall</td>
+</tr>
+<tr>
+<td>Shared Key-Value MQA</td>
+<td>同一 entry 作为 key 和 value，大幅减少 KV Cache</td>
+</tr>
+<tr>
+<td>Grouped Output Projection</td>
+<td>解决高 head 数导致的输出投影计算量</td>
+</tr>
+<tr>
+<td>mHC (Birkhoff polytope)</td>
+<td>双随机矩阵约束确保深层堆叠的数值稳定性</td>
+</tr>
+<tr>
+<td>Muon 优化器</td>
+<td>比 AdamW 更快收敛，配合 RMSNorm 免去 QK-Clip</td>
+</tr>
+<tr>
+<td>FP4 Indexer + Expert</td>
+<td>进一步压缩计算和存储开销</td>
+</tr>
+<tr>
+<td>Anticipatory Routing</td>
+<td>解耦 routing 和 backbone 更新，消除 loss spikes</td>
+</tr>
+<tr>
+<td>SwiGLU Clamping</td>
+<td>直接抑制异常值，稳定训练</td>
+</tr>
+<tr>
+<td>On-Policy Distillation</td>
+<td>替代 mixed RL，更稳定地合并多领域 specialist</td>
+</tr>
+<tr>
+<td>滑动窗口注意力分支</td>
+<td>补充压缩导致的局部信息缺失</td>
+</tr>
+</tbody>
+</table>
+<h2>16. 与 V3.2 架构的关键区别</h2>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>DeepSeek-V3.2</th>
+<th>DeepSeek-V4</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>注意力机制</td>
+<td>MLA + DSA (Lightning Indexer)</td>
+<td>CSA + HCA (混合压缩)</td>
+</tr>
+<tr>
+<td>KV Cache 形式</td>
+<td>低秩压缩 (<span class="math">\(\mathbf{c}^{KV}\)</span>, 512d per token)</td>
+<td>序列维度压缩 (每 4/128 tokens → 1 entry)</td>
+</tr>
+<tr>
+<td>残差连接</td>
+<td>标准 residual</td>
+<td>mHC (Birkhoff polytope)</td>
+</tr>
+<tr>
+<td>优化器</td>
+<td>AdamW</td>
+<td>Muon (大部分参数)</td>
+</tr>
+<tr>
+<td>上下文长度</td>
+<td>128K</td>
+<td><strong>1M</strong></td>
+</tr>
+<tr>
+<td>Indexer 作用对象</td>
+<td>原始 token</td>
+<td><strong>压缩后的 KV entries</strong></td>
+</tr>
+<tr>
+<td>总参数量 (大模型)</td>
+<td>671B</td>
+<td><strong>1.6T</strong></td>
+</tr>
+<tr>
+<td>激活参数量</td>
+<td>37B</td>
+<td><strong>49B</strong></td>
+</tr>
+</tbody>
+</table>
+<h2>17. 总结</h2>
+<p>DeepSeek-V4 的核心设计哲学可以概括为：<strong>多层次压缩 + 精准选择</strong>。</p>
+<ol>
+<li><strong>序列维度压缩</strong>：CSA 将 <span class="math">\(L\)</span> 个 token 压缩为 <span class="math">\(\frac{L}{c}\)</span> 个 entry，HCA 压缩为 <span class="math">\(\frac{L}{c'}\)</span> 个 entry</li>
+<li><strong>Sparse Selection</strong>：CSA 进一步从 <span class="math">\(\frac{L}{c}\)</span> 个 entry 中只选 <span class="math">\(k\)</span> 个</li>
+<li><strong>混合配置</strong>：CSA 层保留细粒度信息，HCA 层保证全局覆盖</li>
+<li><strong>精度优化</strong>：FP4 indexer, FP8/FP4 KV cache, FP4 expert weights</li>
+</ol>
+<p>最终实现了在 1M token 上下文下：</p>
+<ul>
+<li>FLOPs 仅为 V3.2 的 27%（V4-Pro）/ 10%（V4-Flash）</li>
+<li>KV Cache 仅为 V3.2 的 10%（V4-Pro）/ 7%（V4-Flash）</li>
+<li>性能上 V4-Pro-Max 在多数 benchmark 达到或接近 frontier 水平</li>
+</ul>
+<p>这使得百万级别上下文从"理论可行"变为"日常可用"，为未来的 test-time scaling 和长程 agentic 任务奠定了基础。</p>
+<h2>参考</h2>
+<ul>
+<li><a href="https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf">DeepSeek-V4 Technical Report</a></li>
+<li><a href="https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/tree/main/inference">DeepSeek-V4-Pro Open-source Inference</a></li>
+<li><a href="https://songhuiming.github.io/pages/2026/02/18/deepseek-v32-lightning-indexer/">DeepSeek-V3.2 Lightning Indexer 详解 (前文)</a></li>
+<li><a href="https://songhuiming.github.io/pages/2025/03/20/deepseek-v3-multi-head-latent-attention-mla/">DeepSeek V3 MLA 详解 (前文)</a></li>
+<li>Manifold-Constrained Hyper-Connections (Xie et al., 2026)</li>
+<li>Muon Optimizer (Jordan et al., 2024; Liu et al., 2025)</li>
+</ul>
+<script type="text/javascript">if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width < 768) ? "left" : align;
+        indent = (screen.width < 768) ? "0em" : indent;
+        linebreak = (screen.width < 768) ? 'true' : linebreak;
+    }
+
+    var mathjaxscript = document.createElement('script');
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript';
+    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-AMS-MML_HTMLorMML';
+
+    var configscript = document.createElement('script');
+    configscript.type = 'text/x-mathjax-config';
+    configscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js'], equationNumbers: { autoNumber: 'none' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    messageStyle: 'normal'," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        availableFonts: ['STIX', 'TeX']," +
+        "        preferredFont: 'STIX'," +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+</script></div>
+    <footer>
+<p class="meta">
+  <span class="byline author vcard">
+    Posted by <span class="fn">
+        <a href="/author/huiming-song.html">Huiming Song</a>
+    </span>
+  </span>
+<time datetime="2026-06-19T00:00:00-05:00" pubdate>Fri 19 June 2026</time>  <span class="categories">
+    <a class='category' href='/category/python.html'>python</a>
+  </span>
+  <span class="categories">
+    <a class="category" href="/tag/python.html">python</a>,    <a class="category" href="/tag/ai.html">AI</a>,    <a class="category" href="/tag/llm.html">LLM</a>,    <a class="category" href="/tag/aigc.html">AIGC</a>,    <a class="category" href="/tag/deepseek.html">DeepSeek</a>  </span>
+</p><div class="sharing">
+</div>    </footer>
+  </article>
+
+</div>
+<aside class="sidebar">
+  <section>
+    <h1>Recent Posts</h1>
+    <ul id="recent_posts">
+      <li class="post">
+          <a href="/pages/2026/06/19/deepseek-v4-bai-mo-tokenshang-xia-wen/">DeepSeek-V4: 百万Token上下文</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2026/02/18/deepseek-v32-lightning-indexer/">DeepSeek-V3.2 Lightning Indexer</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2025/04/20/deepseek-expert-parallelism-load-balancer-eplb-code-reading/">DeepSeek Expert Parallelism Load Balancer (EPLB) Code Reading</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2025/03/20/deepseek-v3-moe/">DeepSeek V3 MoE</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2025/03/20/deepseek-v3-multi-head-latent-attention-mla/">DeepSeek V3 Multi-head Latent Attention (MLA)</a>
+      </li>
+    </ul>
+  </section>
+  <section>
+      
+    <h1>Categories</h1>
+    <ul id="recent_posts">
+        <li><a href="/category/career-growth.html">career growth</a></li>
+        <li><a href="/category/linux.html">Linux</a></li>
+        <li><a href="/category/python.html">python</a></li>
+        <li><a href="/category/rthers.html">Rthers</a></li>
+    </ul>
+  </section>
+ 
+
+  <section>
+  <h1>Tags</h1>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aigc.html">AIGC</a>,    <a href="/tag/deepseek.html">DeepSeek</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+
+
+    <section>
+        <h1>Social</h1>
+        <ul>
+            <li><a href="https://www.linkedin.com/pub/huiming-song/24/735/349" target="_blank">Linkedin</a></li>
+        </ul>
+    </section>
+    <section>
+        <h1>Blogroll</h1>
+        <ul>
+            <li><a href="http://easysas.blogspot.com/" target="_blank">my old SAS blog</a></li>
+        </ul>
+    </section>
+
+</aside>    </div>
+  </div>
+  <footer role="contentinfo"><p>
+    Copyright &copy;  2015&ndash;2026  shm &mdash;
+  <span class="credit">Powered by <a href="http://getpelican.com">Pelican</a></span>
+</p></footer>
+  <script src="/theme/js/modernizr-2.0.js"></script>
+  <script src="/theme/js/ender.js"></script>
+  <script src="/theme/js/octopress.js" type="text/javascript"></script>
+    <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-65938411-1']);
+    _gaq.push(['_trackPageview']);
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-65938411-1');
+    ga('send', 'pageview');
+</script>
+  <script type="text/javascript">
+    var disqus_shortname = 'songhuiming';
+    var disqus_identifier = '/pages/2026/06/19/deepseek-v4-bai-mo-tokenshang-xia-wen/';
+    var disqus_url = '/pages/2026/06/19/deepseek-v4-bai-mo-tokenshang-xia-wen/';
+    var disqus_title = 'DeepSeek-V4: 百万Token上下文';
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = "//" + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+     })();
+  </script>
+</body>
+</html>
