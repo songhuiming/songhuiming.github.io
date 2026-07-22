@@ -1,0 +1,400 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1490" viewBox="0 0 1600 1490">
+  <title>DeepSeek-V4 Shared Key-Value Multi-Query Attention</title>
+  <desc>Standalone MQA computation graph with DeepSeek-V4-Pro tensor and matrix dimensions.</desc>
+
+  <defs>
+    <linearGradient id="kvFill" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f7fbff"/>
+      <stop offset="1" stop-color="#dceeff"/>
+    </linearGradient>
+    <linearGradient id="queryFill" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f8fff5"/>
+      <stop offset="1" stop-color="#e0efd7"/>
+    </linearGradient>
+    <linearGradient id="computeFill" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f8fbff"/>
+      <stop offset="1" stop-color="#e5edf9"/>
+    </linearGradient>
+    <linearGradient id="softmaxFill" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fffdf6"/>
+      <stop offset="1" stop-color="#fff0d7"/>
+    </linearGradient>
+    <linearGradient id="headerFill" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#6aa9d6"/>
+      <stop offset="1" stop-color="#203f9b"/>
+    </linearGradient>
+
+    <marker id="arrowKv" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+      <path d="M0 0L9 4.5L0 9Z" fill="#4c8fbd"/>
+    </marker>
+    <marker id="arrowQuery" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+      <path d="M0 0L9 4.5L0 9Z" fill="#4b9565"/>
+    </marker>
+    <marker id="arrowCompute" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+      <path d="M0 0L9 4.5L0 9Z" fill="#214797"/>
+    </marker>
+    <marker id="arrowSoftmax" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+      <path d="M0 0L9 4.5L0 9Z" fill="#d96b16"/>
+    </marker>
+
+    <g id="matrixKv">
+      <rect width="58" height="46" rx="2" fill="#eaf5ff" stroke="#74a9cf" stroke-width="1.5"/>
+      <path d="M14.5 0V46M29 0V46M43.5 0V46M0 11.5H58M0 23H58M0 34.5H58" fill="none" stroke="#b7d7ec"/>
+    </g>
+    <g id="matrixQuery">
+      <rect width="58" height="46" rx="2" fill="#edf7e8" stroke="#287442" stroke-width="1.5"/>
+      <path d="M14.5 0V46M29 0V46M43.5 0V46M0 11.5H58M0 23H58M0 34.5H58" fill="none" stroke="#9fc296"/>
+    </g>
+    <g id="matrixCompute">
+      <rect width="58" height="46" rx="2" fill="#edf3fc" stroke="#315b9c" stroke-width="1.5"/>
+      <path d="M14.5 0V46M29 0V46M43.5 0V46M0 11.5H58M0 23H58M0 34.5H58" fill="none" stroke="#9db2d3"/>
+    </g>
+    <g id="matrixSoftmax">
+      <rect width="58" height="46" rx="2" fill="#fff4dd" stroke="#d87922" stroke-width="1.5"/>
+      <path d="M14.5 0V46M29 0V46M43.5 0V46M0 11.5H58M0 23H58M0 34.5H58" fill="none" stroke="#e8bd81"/>
+    </g>
+
+    <style>
+      .t { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", Arial, sans-serif; letter-spacing: 0; fill: #14171a; }
+      .math { font-family: "STIX Two Text", "Times New Roman", serif; letter-spacing: 0; }
+      .page-title { font-size: 27px; font-weight: 760; }
+      .subtitle { font-size: 15px; font-weight: 500; fill: #5a6472; }
+      .stage-title { font-size: 20px; font-weight: 750; }
+      .node-title { font-size: 18px; font-weight: 700; }
+      .body { font-size: 15px; font-weight: 500; }
+      .small { font-size: 13px; font-weight: 500; }
+      .tiny { font-size: 12px; font-weight: 500; }
+      .shape { font-size: 14px; font-weight: 650; }
+      .kv { fill: #3e7da8; }
+      .query { fill: #176b36; }
+      .compute { fill: #214797; }
+      .softmax { fill: #c85b12; }
+      .muted { fill: #5f6873; }
+      .panel { fill: #fff; stroke-width: 1.8; rx: 7; }
+      .kv-panel { stroke: #74a9cf; }
+      .query-panel { stroke: #287442; }
+      .compute-panel { stroke: #315b9c; }
+      .softmax-panel { stroke: #d87922; }
+      .flow { fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+      .kv-flow { stroke: #4c8fbd; marker-end: url(#arrowKv); }
+      .query-flow { stroke: #4b9565; marker-end: url(#arrowQuery); }
+      .compute-flow { stroke: #214797; marker-end: url(#arrowCompute); }
+      .softmax-flow { stroke: #d96b16; marker-end: url(#arrowSoftmax); }
+      .step { fill: #fff; font-size: 15px; font-weight: 800; text-anchor: middle; dominant-baseline: central; }
+      .matrix-row { font-size: 13px; font-weight: 560; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="1490" fill="#fff"/>
+
+  <g id="title" class="t">
+    <text x="48" y="40" class="page-title">DeepSeek-V4 MQA：Shared Key-Value Multi-Query Attention</text>
+    <text x="48" y="65" class="subtitle">论文 §2.3.1 / Eq. (18–19, 27) · 绿色：Query　淡蓝：共享 KV　深蓝：矩阵计算　橙色：Sink Softmax</text>
+    <rect x="1345" y="22" width="205" height="34" rx="6" fill="#e8f4ff" stroke="#74a9cf"/>
+    <text x="1448" y="44" class="shape kv" text-anchor="middle">数值 shape：V4-Pro</text>
+  </g>
+
+  <!-- Main flow connectors -->
+  <!-- Stage 1: query generation -->
+  <g id="query-generation" class="t">
+    <rect x="40" y="100" width="1060" height="180" class="panel query-panel" fill="url(#queryFill)"/>
+    <circle cx="61" cy="122" r="15" fill="#26743f"/>
+    <text x="61" y="122" class="step">1</text>
+    <text x="84" y="129" class="stage-title query">Query Projection：生成 128 个 Query Heads</text>
+
+    <use href="#matrixQuery" x="1010" y="176"/>
+    <text x="1039" y="165" class="small query" text-anchor="middle">输入</text>
+    <text x="1039" y="239" class="shape math query" text-anchor="middle">h<tspan baseline-shift="sub" font-size="10">t</tspan> ∈ ℝ<tspan baseline-shift="super" font-size="10">7168</tspan></text>
+
+    <rect x="794" y="168" width="137" height="62" rx="5" fill="#fff" stroke="#287442"/>
+    <text x="862.5" y="190" class="node-title math query" text-anchor="middle">W<tspan baseline-shift="super" font-size="11">DQ</tspan></text>
+    <text x="862.5" y="214" class="small math" text-anchor="middle">7168 × 1536</text>
+
+    <use href="#matrixQuery" x="658" y="176"/>
+    <text x="687" y="165" class="small query" text-anchor="middle">共享 latent</text>
+    <text x="687" y="239" class="shape math query" text-anchor="middle">c<tspan baseline-shift="sub" font-size="10">t</tspan><tspan baseline-shift="super" font-size="10">Q</tspan> ∈ ℝ<tspan baseline-shift="super" font-size="10">1536</tspan></text>
+
+    <rect x="449" y="168" width="131" height="62" rx="5" fill="#fff" stroke="#287442"/>
+    <text x="514.5" y="190" class="node-title math query" text-anchor="middle">W<tspan baseline-shift="super" font-size="11">UQ</tspan></text>
+    <text x="514.5" y="214" class="small math" text-anchor="middle">1536 × 65536</text>
+
+    <rect x="236" y="168" width="135" height="62" rx="5" fill="#fff" stroke="#287442"/>
+    <text x="303.5" y="190" class="body query" text-anchor="middle">Reshape</text>
+    <text x="303.5" y="214" class="small math" text-anchor="middle">65536 → 128 × 512</text>
+
+    <use href="#matrixQuery" x="100" y="176"/>
+    <text x="129" y="165" class="small query" text-anchor="middle">Attention Queries</text>
+    <text x="129" y="239" class="shape math query" text-anchor="middle">Q<tspan baseline-shift="sub" font-size="10">t</tspan> ∈ ℝ<tspan baseline-shift="super" font-size="10">128×512</tspan></text>
+    <text x="129" y="260" class="tiny query" text-anchor="middle">128 heads × 512 dim/head</text>
+  </g>
+
+  <!-- Stage 2: assemble one shared KV set -->
+  <g id="kv-assembly" class="t" transform="translate(60 0)">
+    <rect x="70" y="310" width="800" height="170" class="panel kv-panel" fill="url(#kvFill)"/>
+    <circle cx="91" cy="332" r="15" fill="#5d9bc7"/>
+    <text x="91" y="332" class="step">2</text>
+    <text x="114" y="339" class="stage-title kv">Shared KV Assembly：所有 Query Heads 共享同一组 K/V</text>
+
+    <use href="#matrixKv" x="98" y="374"/>
+    <text x="127" y="365" class="small kv" text-anchor="middle">Top-k 压缩 KV</text>
+    <text x="127" y="437" class="shape math kv" text-anchor="middle">1024 × 512</text>
+
+    <text x="360" y="404" class="node-title kv" text-anchor="middle">+</text>
+
+    <use href="#matrixCompute" x="236" y="374"/>
+    <text x="265" y="365" class="small compute" text-anchor="middle">Sliding Window KV</text>
+    <text x="265" y="437" class="shape math compute" text-anchor="middle">128 × 512</text>
+
+    <rect x="477" y="367" width="212" height="61" rx="5" fill="#fff" stroke="#74a9cf"/>
+    <text x="583" y="391" class="node-title kv" text-anchor="middle">Concatenation</text>
+    <text x="583" y="415" class="small math" text-anchor="middle">1024 + 128 = 1152 entries</text>
+
+    <use href="#matrixKv" x="760" y="374"/>
+    <text x="789" y="365" class="small kv" text-anchor="middle">唯一共享 KV Head</text>
+    <text x="789" y="437" class="shape math kv" text-anchor="middle">K = V ∈ ℝ<tspan baseline-shift="super" font-size="10">1152×512</tspan></text>
+
+    <text x="583" y="462" class="tiny kv" text-anchor="middle">每个 KV entry 是 512 维向量，同时作为 Key 和 Value；不存在 128 份独立 KV heads</text>
+  </g>
+
+  <!-- Stage 3: normalize, position encode, and compute QK^T -->
+  <g id="score-computation" class="t">
+    <rect x="120" y="520" width="900" height="240" class="panel compute-panel" fill="url(#computeFill)"/>
+    <circle cx="141" cy="542" r="15" fill="#315b9c"/>
+    <text x="141" y="542" class="step">3</text>
+    <text x="164" y="549" class="stage-title compute">Score Matrix：归一化与位置编码后计算</text>
+    <!-- MathJax SVG output generated from LaTeX: \sqrt{c} -->
+    <svg x="620" y="527" width="29" height="24" viewBox="0 -843 1286 1060" aria-label="sqrt(c)" display="none">
+      <g fill="#214797" transform="scale(1,-1)">
+        <g transform="translate(853,0)">
+          <path d="M34 159Q34 268 120 355T306 442Q362 442 394 418T427 355Q427 326 408 306T360 285Q341 285 330 295T319 325T330 359T352 380T366 386H367Q367 388 361 392T340 400T306 404Q276 404 249 390Q228 381 206 359Q162 315 142 235T121 119Q121 73 147 50Q169 26 205 26H209Q321 26 394 111Q403 121 406 121Q410 121 419 112T429 98T420 83T391 55T346 25T282 0T202 -11Q127 -11 81 37T34 159Z"/>
+        </g>
+        <g transform="translate(0,-17)">
+          <path d="M95 178Q89 178 81 186T72 200T103 230T169 280T207 309Q209 311 212 311H213Q219 311 227 294T281 177Q300 134 312 108L397 -77Q398 -77 501 136T707 565T814 786Q820 800 834 800Q841 800 846 794T853 782V776L620 293L385 -193Q381 -200 366 -200Q357 -200 354 -197Q352 -195 256 15L160 225L144 214Q129 202 113 190T95 178Z"/>
+        </g>
+        <rect width="433" height="60" x="853" y="723"/>
+      </g>
+    </svg>
+    <!-- MathJax SVG output generated from LaTeX: QK^T/\sqrt{c} -->
+    <svg x="530" y="526" width="96" height="26" viewBox="0 -843 4098.8 1093" aria-label="Q K superscript T divided by sqrt(c)">
+      <g fill="#214797" transform="scale(1,-1)">
+        <path d="M399 -80Q399 -47 400 -30T402 -11V-7L387 -11Q341 -22 303 -22Q208 -22 138 35T51 201Q50 209 50 244Q50 346 98 438T227 601Q351 704 476 704Q514 704 524 703Q621 689 680 617T740 435Q740 255 592 107Q529 47 461 16L444 8V3Q444 2 449 -24T470 -66T516 -82Q551 -82 583 -60T625 -3Q631 11 638 11Q647 11 649 2Q649 -6 639 -34T611 -100T557 -165T481 -194Q399 -194 399 -87V-80ZM636 468Q636 523 621 564T580 625T530 655T477 665Q429 665 379 640Q277 591 215 464T153 216Q153 110 207 59Q231 38 236 38V46Q236 86 269 120T347 155Q372 155 390 144T417 114T429 82T435 55L448 64Q512 108 557 185T619 334T636 468ZM314 18Q362 18 404 39L403 49Q399 104 366 115Q354 117 347 117Q344 117 341 117T337 118Q317 118 296 98T274 52Q274 18 314 18Z"/>
+        <g transform="translate(791,0)">
+          <path d="M285 628Q285 635 228 637Q205 637 198 638T191 647Q191 649 193 661Q199 681 203 682Q205 683 214 683H219Q260 681 355 681Q389 681 418 681T463 682T483 682Q500 682 500 674Q500 669 497 660Q496 658 496 654T495 648T493 644T490 641T486 639T479 638T470 637T456 637Q416 636 405 634T387 623L306 305Q307 305 490 449T678 597Q692 611 692 620Q692 635 667 637Q651 637 651 648Q651 650 654 662T659 677Q662 682 676 682Q680 682 711 681T791 680Q814 680 839 681T869 682Q889 682 889 672Q889 650 881 642Q878 637 862 637Q787 632 726 586Q710 576 656 534T556 455L509 418L518 396Q527 374 546 329T581 244Q656 67 661 61Q663 59 666 57Q680 47 717 46H738Q744 38 744 37T741 19Q737 6 731 0H720Q680 3 625 3Q503 3 488 0H478Q472 6 472 9T474 27Q478 40 480 43T491 46H494Q544 46 544 71Q544 75 517 141T485 216L427 354L359 301L291 248L268 155Q245 63 245 58Q245 51 253 49T303 46H334Q340 37 340 35Q340 19 333 5Q328 0 317 0Q314 0 280 1T180 2Q118 2 85 2T49 1Q31 1 31 11Q31 13 34 25Q38 41 42 43T65 46Q92 46 125 49Q139 52 144 61Q147 65 216 339T285 628Z"/>
+          <path transform="translate(974,363) scale(0.707)" d="M40 437Q21 437 21 445Q21 450 37 501T71 602L88 651Q93 669 101 677H569H659Q691 677 697 676T704 667Q704 661 687 553T668 444Q668 437 649 437Q640 437 637 437T631 442L629 445Q629 451 635 490T641 551Q641 586 628 604T573 629Q568 630 515 631Q469 631 457 630T439 622Q438 621 368 343T298 60Q298 48 386 46Q418 46 427 45T436 36Q436 31 433 22Q429 4 424 1L422 0Q419 0 415 0Q410 0 363 1T228 2Q99 2 64 0H49Q43 6 43 9T45 27Q49 40 55 46H83H94Q174 46 189 55Q190 56 191 56Q196 59 201 76T241 233Q258 301 269 344Q339 619 339 625Q339 630 310 630H279Q212 630 191 624Q146 614 121 583T67 467Q60 445 57 441T43 437H40Z"/>
+        </g>
+        <g transform="translate(2312.8,0)">
+          <path d="M423 750Q432 750 438 744T444 730Q444 725 271 248T92 -240Q85 -250 75 -250Q68 -250 62 -245T56 -231Q56 -221 230 257T407 740Q411 750 423 750Z"/>
+        </g>
+        <g transform="translate(2812.8,0)">
+          <g transform="translate(853,0)">
+            <path d="M34 159Q34 268 120 355T306 442Q362 442 394 418T427 355Q427 326 408 306T360 285Q341 285 330 295T319 325T330 359T352 380T366 386H367Q367 388 361 392T340 400T306 404Q276 404 249 390Q228 381 206 359Q162 315 142 235T121 119Q121 73 147 50Q169 26 205 26H209Q321 26 394 111Q403 121 406 121Q410 121 419 112T429 98T420 83T391 55T346 25T282 0T202 -11Q127 -11 81 37T34 159Z"/>
+          </g>
+          <g transform="translate(0,-17)">
+            <path d="M95 178Q89 178 81 186T72 200T103 230T169 280T207 309Q209 311 212 311H213Q219 311 227 294T281 177Q300 134 312 108L397 -77Q398 -77 501 136T707 565T814 786Q820 800 834 800Q841 800 846 794T853 782V776L620 293L385 -193Q381 -200 366 -200Q357 -200 354 -197Q352 -195 256 15L160 225L144 214Q129 202 113 190T95 178Z"/>
+          </g>
+          <rect width="433" height="60" x="853" y="723"/>
+        </g>
+      </g>
+    </svg>
+
+    <use href="#matrixQuery" x="126" y="590"/>
+    <text x="155" y="583" class="small query" text-anchor="middle">Q</text>
+    <text x="155" y="654" class="shape math query" text-anchor="middle">128 × 512</text>
+
+    <rect x="260" y="576" width="180" height="74" rx="5" fill="#fff" stroke="#287442"/>
+    <text x="350" y="600" class="body query" text-anchor="middle">逐 Query head RMSNorm</text>
+    <text x="350" y="625" class="small query" text-anchor="middle">RoPE：最后 64 维</text>
+
+    <circle cx="560" cy="620" r="22" fill="#fff" stroke="#315b9c" stroke-width="1.8"/>
+    <text x="560" y="627" class="node-title compute" text-anchor="middle">×</text>
+    <text x="590" y="653" class="small math compute" text-anchor="middle">÷</text>
+    <!-- MathJax SVG output generated from LaTeX: \sqrt{512} -->
+    <svg x="599" y="637" width="40" height="18" viewBox="0 -949.5 2353 1060" aria-label="sqrt(512)">
+      <g fill="#214797" transform="scale(1,-1)">
+        <g transform="translate(853,0)">
+          <path d="M164 157Q164 133 148 117T109 101H102Q148 22 224 22Q294 22 326 82Q345 115 345 210Q345 313 318 349Q292 382 260 382H254Q176 382 136 314Q132 307 129 306T114 304Q97 304 95 310Q93 314 93 485V614Q93 664 98 664Q100 666 102 666Q103 666 123 658T178 642T253 634Q324 634 389 662Q397 666 402 666Q410 666 410 648V635Q328 538 205 538Q174 538 149 544L139 546V374Q158 388 169 396T205 412T256 420Q337 420 393 355T449 201Q449 109 385 44T229 -22Q148 -22 99 32T50 154Q50 178 61 192T84 210T107 214Q132 214 148 197T164 157Z"/>
+          <path transform="translate(500,0)" d="M213 578L200 573Q186 568 160 563T102 556H83V602H102Q149 604 189 617T245 641T273 663Q275 666 285 666Q294 666 302 660V361L303 61Q310 54 315 52T339 48T401 46H427V0H416Q395 3 257 3Q121 3 100 0H88V46H114Q136 46 152 46T177 47T193 50T201 52T207 57T213 61V578Z"/>
+          <path transform="translate(1000,0)" d="M109 429Q82 429 66 447T50 491Q50 562 103 614T235 666Q326 666 387 610T449 465Q449 422 429 383T381 315T301 241Q265 210 201 149L142 93L218 92Q375 92 385 97Q392 99 409 186V189H449V186Q448 183 436 95T421 3V0H50V19V31Q50 38 56 46T86 81Q115 113 136 137Q145 147 170 174T204 211T233 244T261 278T284 308T305 340T320 369T333 401T340 431T343 464Q343 527 309 573T212 619Q179 619 154 602T119 569T109 550Q109 549 114 549Q132 549 151 535T170 489Q170 464 154 447T109 429Z"/>
+        </g>
+        <g transform="translate(0,89.5)">
+          <path d="M95 178Q89 178 81 186T72 200T103 230T169 280T207 309Q209 311 212 311H213Q219 311 227 294T281 177Q300 134 312 108L397 -77Q398 -77 501 136T707 565T814 786Q820 800 834 800Q841 800 846 794T853 782V776L620 293L385 -193Q381 -200 366 -200Q357 -200 354 -197Q352 -195 256 15L160 225L144 214Q129 202 113 190T95 178Z"/>
+        </g>
+        <rect width="1500" height="60" x="853" y="829.5"/>
+      </g>
+    </svg>
+
+    <rect x="730" y="666" width="170" height="72" rx="5" fill="#fff" stroke="#74a9cf"/>
+    <text x="815" y="690" class="body kv" text-anchor="middle">唯一 KV head RMSNorm</text>
+    <text x="815" y="715" class="small kv" text-anchor="middle">RoPE：最后 64 维</text>
+
+    <use href="#matrixKv" x="956" y="680"/>
+    <text x="985" y="673" class="small kv" text-anchor="middle">Kᵀ</text>
+    <text x="1012" y="744" class="shape math kv" text-anchor="end">512 × 1152</text>
+
+    <use href="#matrixCompute" x="790" y="590"/>
+    <text x="819" y="583" class="small compute" text-anchor="middle">Logits L</text>
+    <text x="819" y="654" class="shape math compute" text-anchor="middle">128 × 1152</text>
+
+    <text x="880" y="606" class="tiny compute">行 = Query head</text>
+    <text x="880" y="629" class="tiny compute">列 = 共享 KV entry</text>
+  </g>
+
+  <!-- Stage 4: sink softmax -->
+  <g id="sink-softmax" class="t">
+    <rect x="250" y="800" width="700" height="120" class="panel softmax-panel" fill="url(#softmaxFill)"/>
+    <circle cx="271" cy="822" r="15" fill="#dc711f"/>
+    <text x="271" y="822" class="step">4</text>
+    <text x="294" y="829" class="stage-title softmax">Attention Sink + Softmax</text>
+    <rect x="760" y="812" width="166" height="42" rx="5" fill="#fff8e9" stroke="#d87922"/>
+    <text x="843" y="838" class="small math softmax" text-anchor="middle">z′ ∈ ℝ<tspan baseline-shift="super" font-size="9">128</tspan>（每 head 一个）</text>
+    <text x="294" y="872" class="small math">P<tspan baseline-shift="sub" font-size="9">h,j</tspan> = exp(L<tspan baseline-shift="sub" font-size="9">h,j</tspan>) / [Σ<tspan baseline-shift="sub" font-size="9">l</tspan> exp(L<tspan baseline-shift="sub" font-size="9">h,l</tspan>) + exp(z′<tspan baseline-shift="sub" font-size="9">h</tspan>)]</text>
+    <text x="294" y="900" class="small math softmax">P ∈ ℝ<tspan baseline-shift="super" font-size="9">128×1152</tspan>；z′ 只进入分母，不是额外 KV entry；每行权重和可小于 1</text>
+  </g>
+
+  <!-- Stage 5: P times shared V -->
+  <g id="weighted-sum" class="t">
+    <rect x="170" y="960" width="800" height="180" class="panel compute-panel" fill="url(#computeFill)"/>
+    <circle cx="191" cy="982" r="15" fill="#315b9c"/>
+    <text x="191" y="982" class="step">5</text>
+    <text x="214" y="989" class="stage-title compute">Weighted Sum：PV</text>
+
+    <use href="#matrixSoftmax" x="700" y="1000"/>
+    <text x="770" y="1019" class="small softmax">P（Sink Softmax 输出）</text>
+    <text x="770" y="1044" class="shape math softmax">128 × 1152</text>
+
+    <circle cx="560" cy="1060" r="22" fill="#fff" stroke="#315b9c" stroke-width="1.8"/>
+    <text x="560" y="1067" class="node-title compute" text-anchor="middle">×</text>
+
+    <use href="#matrixKv" x="700" y="1070"/>
+    <text x="770" y="1089" class="small kv">V（共享）</text>
+    <text x="770" y="1114" class="shape math kv">1152 × 512</text>
+
+    <use href="#matrixCompute" x="380" y="1037"/>
+    <text x="409" y="1030" class="small compute" text-anchor="middle">Head Outputs O</text>
+    <text x="409" y="1101" class="shape math compute" text-anchor="middle">128 × 512</text>
+
+    <text x="190" y="1049" class="small math compute">O = PV</text>
+    <text x="190" y="1074" class="tiny compute">每个 head 输出 512 维</text>
+    <text x="190" y="1097" class="tiny compute">最后 64 维应用逆位置 RoPE</text>
+  </g>
+
+  <!-- Stage 6: grouped output projection -->
+  <g id="grouped-output" class="t">
+    <rect x="170" y="1180" width="800" height="120" class="panel compute-panel" fill="url(#computeFill)"/>
+    <circle cx="191" cy="1202" r="15" fill="#315b9c"/>
+    <text x="191" y="1202" class="step">6</text>
+    <text x="214" y="1209" class="stage-title compute">Grouped Output Projection</text>
+    <text x="214" y="1237" class="small math">128 heads ÷ g=16 → 每组 8 heads；O<tspan baseline-shift="super" font-size="9">G</tspan><tspan baseline-shift="sub" font-size="9">i</tspan> ∈ ℝ<tspan baseline-shift="super" font-size="9">8×512</tspan> → flatten 4096</text>
+    <text x="214" y="1262" class="small math">每组：4096 · W<tspan baseline-shift="super" font-size="9">G</tspan><tspan baseline-shift="sub" font-size="9">i</tspan>(4096×1024) → 1024；16 组拼接 → 16384</text>
+    <text x="214" y="1287" class="small math">最终：16384 · W<tspan baseline-shift="super" font-size="9">O</tspan>(16384×7168) → ô<tspan baseline-shift="sub" font-size="9">t</tspan> ∈ ℝ<tspan baseline-shift="super" font-size="9">7168</tspan></text>
+  </g>
+
+  <!-- Final output -->
+  <g id="output" class="t">
+    <rect x="360" y="1330" width="480" height="58" class="panel kv-panel" fill="url(#kvFill)"/>
+    <text x="600" y="1356" class="node-title compute" text-anchor="middle">Attention Output</text>
+    <text x="600" y="1377" class="shape math" text-anchor="middle">ô<tspan baseline-shift="sub" font-size="10">t</tspan> ∈ ℝ<tspan baseline-shift="super" font-size="10">7168</tspan>（回到残差路径）</text>
+  </g>
+
+  <!-- Right reference panel -->
+  <g id="reference" class="t">
+    <rect x="1130" y="80" width="430" height="1310" rx="7" fill="#fff" stroke="#608db0" stroke-width="1.8"/>
+    <path d="M1137 80H1553Q1560 80 1560 87V126H1130V87Q1130 80 1137 80Z" fill="url(#headerFill)"/>
+    <text x="1345" y="109" font-size="22" font-weight="800" fill="#fff" text-anchor="middle">MQA 矩阵与张量维度</text>
+
+    <text x="1153" y="156" class="node-title query">A. Query 投影矩阵</text>
+    <line x1="1152" y1="169" x2="1538" y2="169" stroke="#c5d8e6"/>
+    <rect x="1152" y="180" width="386" height="58" rx="4" fill="#f8fcf6" stroke="#d4e5cf"/>
+    <use href="#matrixQuery" x="1162" y="186"/>
+    <text x="1232" y="202" class="matrix-row math query">W<tspan baseline-shift="super" font-size="9">DQ</tspan></text>
+    <text x="1232" y="225" class="tiny math">7168 × 1536</text>
+    <rect x="1152" y="246" width="386" height="58" rx="4" fill="#f8fcf6" stroke="#d4e5cf"/>
+    <use href="#matrixQuery" x="1162" y="252"/>
+    <text x="1232" y="268" class="matrix-row math query">W<tspan baseline-shift="super" font-size="9">UQ</tspan></text>
+    <text x="1232" y="291" class="tiny math">1536 × (128·512) = 1536 × 65536</text>
+
+    <text x="1153" y="337" class="node-title kv">B. MQA 全部输入</text>
+    <line x1="1152" y1="350" x2="1538" y2="350" stroke="#c5d8e6"/>
+    <g class="small">
+      <text x="1155" y="379" class="math">Query hidden h<tspan baseline-shift="sub" font-size="9">t</tspan></text><text x="1390" y="379" class="math muted">7168</text>
+      <text x="1155" y="405" class="math">Selected compressed KV</text><text x="1390" y="405" class="math muted">1024 × 512</text>
+      <text x="1155" y="431" class="math">Sliding window KV</text><text x="1390" y="431" class="math muted">128 × 512</text>
+      <text x="1155" y="457" class="math">Shared K = V</text><text x="1390" y="457" class="math muted">1152 × 512</text>
+      <text x="1155" y="483" class="math softmax">Sink logits z′</text><text x="1390" y="483" class="math muted">128</text>
+    </g>
+
+    <text x="1153" y="526" class="node-title compute">C. 核心矩阵乘法</text>
+    <line x1="1152" y1="539" x2="1538" y2="539" stroke="#c5d8e6"/>
+    <rect x="1152" y="551" width="386" height="79" rx="4" fill="#f7faff" stroke="#d4dfef"/>
+    <text x="1168" y="575" class="matrix-row math compute">QK<tspan baseline-shift="super" font-size="9">T</tspan></text>
+    <text x="1168" y="600" class="small math">(128×512)(512×1152)</text>
+    <text x="1168" y="620" class="small math compute">→ L ∈ ℝ<tspan baseline-shift="super" font-size="9">128×1152</tspan></text>
+    <rect x="1152" y="638" width="386" height="79" rx="4" fill="#fffaf0" stroke="#ead9bc"/>
+    <text x="1168" y="662" class="matrix-row math softmax">Sink Softmax</text>
+    <text x="1168" y="687" class="small math">分母逐 head 加 exp(z′<tspan baseline-shift="sub" font-size="9">h</tspan>)；z′ ∈ ℝ<tspan baseline-shift="super" font-size="9">128</tspan></text>
+    <text x="1168" y="707" class="small math softmax">→ P ∈ ℝ<tspan baseline-shift="super" font-size="9">128×1152</tspan></text>
+    <rect x="1152" y="725" width="386" height="79" rx="4" fill="#f7faff" stroke="#d4dfef"/>
+    <text x="1168" y="749" class="matrix-row math compute">PV</text>
+    <text x="1168" y="774" class="small math">(128×1152)(1152×512)</text>
+    <text x="1168" y="794" class="small math compute">→ O ∈ ℝ<tspan baseline-shift="super" font-size="9">128×512</tspan></text>
+
+    <text x="1153" y="847" class="node-title compute">D. Grouped Output Projection</text>
+    <line x1="1152" y1="860" x2="1538" y2="860" stroke="#c5d8e6"/>
+    <rect x="1152" y="872" width="386" height="62" rx="4" fill="#f7faff" stroke="#d4dfef"/>
+    <use href="#matrixCompute" x="1162" y="880"/>
+    <text x="1232" y="896" class="matrix-row math compute">W<tspan baseline-shift="super" font-size="9">G</tspan><tspan baseline-shift="sub" font-size="9">i</tspan>（每组）</text>
+    <text x="1232" y="919" class="tiny math">4096 × 1024，共 16 个</text>
+    <rect x="1152" y="942" width="386" height="62" rx="4" fill="#f7faff" stroke="#d4dfef"/>
+    <use href="#matrixCompute" x="1162" y="950"/>
+    <text x="1232" y="966" class="matrix-row math compute">W<tspan baseline-shift="super" font-size="9">O</tspan>（最终输出）</text>
+    <text x="1232" y="989" class="tiny math">16384 × 7168</text>
+
+    <text x="1153" y="1044" class="node-title kv">E. MQA 的共享含义</text>
+    <line x1="1152" y1="1057" x2="1538" y2="1057" stroke="#c5d8e6"/>
+    <text x="1155" y="1083" class="small">128 个 Query heads：</text>
+    <text x="1155" y="1107" class="small query">每个 head 有独立的 512 维 q<tspan baseline-shift="sub" font-size="9">h</tspan></text>
+    <text x="1155" y="1134" class="small">唯一共享的 KV head：</text>
+    <text x="1155" y="1158" class="small kv">同一 K/V 矩阵供全部 128 个 heads 使用</text>
+
+    <text x="1153" y="1210" class="node-title compute">F. CoreAttn 前后处理</text>
+    <line x1="1152" y1="1223" x2="1538" y2="1223" stroke="#c5d8e6"/>
+    <text x="1155" y="1250" class="small query">Q：逐 head RMSNorm；后 64 维 RoPE</text>
+    <text x="1155" y="1277" class="small kv">共享 KV：唯一 head RMSNorm；后 64 维 RoPE</text>
+    <text x="1155" y="1304" class="small compute">Core output：后 64 维应用逆位置 RoPE</text>
+    <text x="1155" y="1331" class="tiny muted">顺序依据论文 §2.3.3；图中 K=V，但打分使用 Kᵀ。</text>
+  </g>
+
+  <g id="footer" class="t">
+    <text x="40" y="1430" class="tiny muted">V4-Pro：n<tspan baseline-shift="sub" font-size="8">h</tspan>=128, c=512, d<tspan baseline-shift="sub" font-size="8">c</tspan>=1536, k=1024, n<tspan baseline-shift="sub" font-size="8">win</tspan>=128, g=16, d<tspan baseline-shift="sub" font-size="8">g</tspan>=1024。参考：DeepSeek-V4 paper v1, §2.3.1–2.3.3 / §4.2.1。</text>
+  </g>
+  <g id="connectors">
+    <path d="M1010 199H931" class="flow query-flow"/>
+    <path d="M794 199H716" class="flow query-flow"/>
+    <path d="M658 199H580" class="flow query-flow"/>
+    <path d="M449 199H371" class="flow query-flow"/>
+    <path d="M236 199H158" class="flow query-flow"/>
+    <path d="M158 397H140V475H370V397H400" class="flow kv-flow"/>
+    <path d="M354 397H400" class="flow kv-flow"/>
+    <path d="M432 397H537" class="flow kv-flow"/>
+    <path d="M749 397H820" class="flow kv-flow"/>
+    <!-- Q uses the left margin; K and V use the right margin. The paths never cross. -->
+    <path d="M40 199H20V613H110" class="flow query-flow"/>
+    <path d="M940 397H1080V703H1030" class="flow kv-flow"/>
+    <path d="M1080 505H1100V1093H980" class="flow kv-flow"/>
+    <!-- Stage 3 local data flow. -->
+    <path d="M184 613H260" class="flow query-flow"/>
+    <path d="M440 613H538" class="flow query-flow"/>
+    <path d="M956 703H900" class="flow kv-flow"/>
+    <path d="M730 703H560V642" class="flow kv-flow"/>
+    <path d="M582 620H790" class="flow compute-flow"/>
+    <!-- P enters stage 5 vertically; P and V then converge without crossing. -->
+    <path d="M600 760V800" class="flow compute-flow"/>
+    <path d="M950 880H1060V1023H980" class="flow softmax-flow"/>
+    <path d="M700 1023H620V1050H580" class="flow softmax-flow"/>
+    <path d="M700 1093H620V1070H580" class="flow kv-flow"/>
+    <path d="M538 1060H438" class="flow compute-flow"/>
+    <path d="M600 1140V1180" class="flow compute-flow"/>
+    <path d="M600 1300V1330" class="flow compute-flow"/>
+  </g>
+</svg>

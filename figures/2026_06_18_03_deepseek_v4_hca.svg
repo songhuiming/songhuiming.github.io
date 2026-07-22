@@ -1,0 +1,353 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1200" viewBox="0 0 1600 1200">
+  <title>DeepSeek-V4 Heavily Compressed Attention (HCA)</title>
+  <desc>Paper-aligned editable vector diagram of DeepSeek-V4 HCA with all principal inputs, tensors, and matrix dimensions. Concrete dimensions use DeepSeek-V4-Pro.</desc>
+
+  <defs>
+    <linearGradient id="kvFill" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f7fbff"/>
+      <stop offset="1" stop-color="#dceeff"/>
+    </linearGradient>
+    <linearGradient id="queryFill" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f8fff5"/>
+      <stop offset="1" stop-color="#e0efd7"/>
+    </linearGradient>
+    <linearGradient id="computeFill" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f8fbff"/>
+      <stop offset="1" stop-color="#e5edf9"/>
+    </linearGradient>
+    <linearGradient id="weightFill" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fffdf6"/>
+      <stop offset="1" stop-color="#fff0d7"/>
+    </linearGradient>
+    <linearGradient id="headerFill" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#6aa9d6"/>
+      <stop offset="1" stop-color="#203f9b"/>
+    </linearGradient>
+
+    <marker id="arrowKv" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+      <path d="M0 0L9 4.5L0 9Z" fill="#4c8fbd"/>
+    </marker>
+    <marker id="arrowQuery" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+      <path d="M0 0L9 4.5L0 9Z" fill="#176b36"/>
+    </marker>
+    <marker id="arrowCompute" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+      <path d="M0 0L9 4.5L0 9Z" fill="#214797"/>
+    </marker>
+
+    <g id="matrixKv">
+      <rect width="52" height="40" rx="2" fill="#eaf5ff" stroke="#74a9cf" stroke-width="1.5"/>
+      <path d="M13 0V40M26 0V40M39 0V40M0 10H52M0 20H52M0 30H52" fill="none" stroke="#b7d7ec" stroke-width="1"/>
+    </g>
+    <g id="matrixQuery">
+      <rect width="52" height="40" rx="2" fill="#edf7e8" stroke="#287442" stroke-width="1.5"/>
+      <path d="M13 0V40M26 0V40M39 0V40M0 10H52M0 20H52M0 30H52" fill="none" stroke="#9fc296" stroke-width="1"/>
+    </g>
+    <g id="matrixCompute">
+      <rect width="52" height="40" rx="2" fill="#edf3fc" stroke="#315b9c" stroke-width="1.5"/>
+      <path d="M13 0V40M26 0V40M39 0V40M0 10H52M0 20H52M0 30H52" fill="none" stroke="#9db2d3" stroke-width="1"/>
+    </g>
+    <g id="matrixWeight">
+      <rect width="52" height="40" rx="2" fill="#fff4dd" stroke="#d87922" stroke-width="1.5"/>
+      <path d="M13 0V40M26 0V40M39 0V40M0 10H52M0 20H52M0 30H52" fill="none" stroke="#e8bd81" stroke-width="1"/>
+    </g>
+
+    <style>
+      .t { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", Arial, sans-serif; letter-spacing: 0; fill: #14171a; }
+      .math { font-family: "STIX Two Text", "Times New Roman", serif; letter-spacing: 0; }
+      .page-title { font-size: 27px; font-weight: 760; }
+      .subtitle { font-size: 15px; font-weight: 500; fill: #5a6472; }
+      .stage-title { font-size: 20px; font-weight: 750; }
+      .node-title { font-size: 18px; font-weight: 700; }
+      .body { font-size: 15px; font-weight: 500; }
+      .small { font-size: 13px; font-weight: 500; }
+      .tiny { font-size: 12px; font-weight: 500; }
+      .shape { font-size: 14px; font-weight: 650; }
+      .kv { fill: #3e7da8; }
+      .query { fill: #176b36; }
+      .compute { fill: #214797; }
+      .weight { fill: #c85b12; }
+      .muted { fill: #5f6873; }
+      .panel { fill: #fff; stroke-width: 1.8; rx: 7; }
+      .kv-panel { stroke: #74a9cf; }
+      .query-panel { stroke: #287442; }
+      .compute-panel { stroke: #315b9c; }
+      .weight-panel { stroke: #d87922; }
+      .flow { fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+      .kv-flow { stroke: #4c8fbd; marker-end: url(#arrowKv); }
+      .query-flow { stroke: #176b36; marker-end: url(#arrowQuery); }
+      .compute-flow { stroke: #214797; marker-end: url(#arrowCompute); }
+      .step { fill: #fff; font-size: 15px; font-weight: 800; text-anchor: middle; dominant-baseline: central; }
+      .matrix-row { font-size: 13px; font-weight: 560; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="1200" fill="#fff"/>
+
+  <g id="title" class="t">
+    <text x="48" y="40" class="page-title">DeepSeek-V4 HCA：Heavily Compressed Attention</text>
+    <text x="48" y="65" class="subtitle">论文 §2.3.2 / Eq. (20–27) · 淡蓝：KV / 压缩路径　绿色：Query 路径　深蓝：注意力计算　橙色：压缩权重</text>
+    <rect x="1345" y="22" width="205" height="34" rx="6" fill="#e8f4ff" stroke="#74a9cf"/>
+    <text x="1448" y="44" class="shape kv" text-anchor="middle">数值 shape：V4-Pro</text>
+  </g>
+
+  <!-- Main connectors -->
+  <g id="main-connectors">
+    <path d="M376 128V157" class="flow kv-flow"/>
+    <path d="M905 128V157" class="flow query-flow"/>
+    <path d="M366 558V631H526V668" class="flow kv-flow"/>
+    <path d="M300 667V700H365" class="flow kv-flow"/>
+    <path d="M581 760V792" class="flow kv-flow"/>
+    <path d="M905 338H1080V835H865" class="flow query-flow"/>
+    <path d="M581 890V922" class="flow compute-flow"/>
+    <path d="M581 1001V1033" class="flow compute-flow"/>
+    <path d="M581 1101V1130" class="flow compute-flow"/>
+  </g>
+
+  <!-- External inputs -->
+  <g id="inputs" class="t">
+    <g id="history-input">
+      <use href="#matrixKv" x="83" y="84"/>
+      <rect x="91" y="78" width="52" height="40" rx="2" fill="#f6fbff" stroke="#74a9cf" stroke-width="1.2"/>
+      <rect x="99" y="72" width="52" height="40" rx="2" fill="#eaf5ff" stroke="#74a9cf" stroke-width="1.5"/>
+      <text x="170" y="92" class="node-title kv">历史隐藏状态 H</text>
+      <text x="170" y="116" class="shape math">H ∈ ℝ<tspan baseline-shift="super" font-size="10">n×d</tspan> = ℝ<tspan baseline-shift="super" font-size="10">n×7168</tspan></text>
+      <text x="170" y="137" class="small muted">输入 1：当前可见历史序列</text>
+    </g>
+    <g id="query-input">
+      <use href="#matrixQuery" x="788" y="84"/>
+      <text x="856" y="92" class="node-title query">Query token 隐状态</text>
+      <text x="856" y="116" class="shape math">h<tspan baseline-shift="sub" font-size="10">t</tspan> ∈ ℝ<tspan baseline-shift="super" font-size="10">d</tspan> = ℝ<tspan baseline-shift="super" font-size="10">7168</tspan></text>
+      <text x="856" y="137" class="small muted">输入 2：当前位置 t</text>
+    </g>
+  </g>
+
+  <!-- Stage 1: non-overlapping heavy compression -->
+  <g id="compression-stage" class="t">
+    <rect x="40" y="158" width="650" height="400" class="panel kv-panel" fill="url(#kvFill)"/>
+    <circle cx="61" cy="180" r="15" fill="#5d9bc7"/>
+    <text x="61" y="180" class="step">1</text>
+    <text x="84" y="187" class="stage-title kv">Token-Level Compressor（强压缩，非重叠）</text>
+    <text x="637" y="211" class="small kv" text-anchor="end">compression rate m′ = 128，stride = 128</text>
+
+    <text x="67" y="224" class="small muted">线性投影与位置偏置</text>
+    <g id="compression-parameters">
+      <rect x="81" y="236" width="130" height="42" rx="4" fill="#fff" stroke="#8ab9da"/>
+      <text x="146" y="253" class="body math kv" text-anchor="middle">W<tspan baseline-shift="super" font-size="9">KV</tspan></text>
+      <text x="146" y="272" class="tiny math" text-anchor="middle">d × c = 7168 × 512</text>
+      <rect x="260" y="236" width="130" height="42" rx="4" fill="#fff" stroke="#dca361"/>
+      <text x="325" y="253" class="body math weight" text-anchor="middle">W<tspan baseline-shift="super" font-size="9">Z</tspan></text>
+      <text x="325" y="272" class="tiny math" text-anchor="middle">d × c = 7168 × 512</text>
+      <rect x="439" y="236" width="130" height="42" rx="4" fill="#fff" stroke="#dca361"/>
+      <text x="504" y="253" class="body math weight" text-anchor="middle">B</text>
+      <text x="504" y="272" class="tiny math" text-anchor="middle">m′ × c = 128 × 512</text>
+    </g>
+
+    <g id="projection-results">
+      <g transform="translate(126.5 292) scale(.75)"><use href="#matrixKv"/></g>
+      <text x="146" y="343" class="body math kv" text-anchor="middle">C = H · W<tspan baseline-shift="super" font-size="9">KV</tspan></text>
+      <text x="146" y="362" class="tiny math kv" text-anchor="middle">C ∈ ℝ<tspan baseline-shift="super" font-size="8">n×c</tspan></text>
+      <g transform="translate(305.5 292) scale(.75)"><use href="#matrixWeight"/></g>
+      <text x="325" y="343" class="body math weight" text-anchor="middle">Z = H · W<tspan baseline-shift="super" font-size="9">Z</tspan></text>
+      <text x="325" y="362" class="tiny math weight" text-anchor="middle">Z ∈ ℝ<tspan baseline-shift="super" font-size="8">n×c</tspan></text>
+      <g transform="translate(484.5 292) scale(.75)"><use href="#matrixWeight"/></g>
+      <text x="504" y="343" class="body math weight" text-anchor="middle">learnable B</text>
+      <text x="504" y="362" class="tiny math weight" text-anchor="middle">B ∈ ℝ<tspan baseline-shift="super" font-size="8">m′×c</tspan></text>
+    </g>
+
+    <g id="non-overlap-blocks">
+      <text x="67" y="391" class="small kv">不重叠分块：</text>
+      <g transform="translate(167 376)" fill="#eaf5ff" stroke="#74a9cf">
+        <rect x="0" y="0" width="20" height="23"/><rect x="22" y="0" width="20" height="23"/>
+        <rect x="44" y="0" width="20" height="23"/><rect x="66" y="0" width="20" height="23"/>
+        <text x="94" y="18" class="small muted" stroke="none">··· 128</text>
+        <rect x="151" y="0" width="20" height="23"/><rect x="173" y="0" width="20" height="23"/>
+        <rect x="195" y="0" width="20" height="23"/><rect x="217" y="0" width="20" height="23"/>
+        <text x="245" y="18" class="small muted" stroke="none">··· 128</text>
+      </g>
+    </g>
+
+    <g id="compression-formula">
+      <rect x="67" y="409" width="570" height="80" rx="6" fill="#fff" stroke="#74a9cf" stroke-width="1.5"/>
+      <text x="83" y="436" class="small math">S<tspan baseline-shift="sub" font-size="9">m′i:m′(i+1)−1</tspan> = row-Softmax(Z<tspan baseline-shift="sub" font-size="9">m′i:m′(i+1)−1</tspan> + B)</text>
+      <text x="83" y="468" class="small math">C<tspan baseline-shift="sub" font-size="9">i</tspan><tspan baseline-shift="super" font-size="9">Comp</tspan> = Σ<tspan baseline-shift="sub" font-size="9">j=m′i</tspan><tspan baseline-shift="super" font-size="9">m′(i+1)−1</tspan> S<tspan baseline-shift="sub" font-size="9">j</tspan> ⊙ C<tspan baseline-shift="sub" font-size="9">j</tspan></text>
+    </g>
+
+    <g id="compressed-output">
+      <g transform="translate(282 503) scale(.84)"><use href="#matrixKv"/></g>
+      <text x="340" y="521" class="node-title kv">C<tspan baseline-shift="super" font-size="12">Comp</tspan> ∈ ℝ<tspan baseline-shift="super" font-size="12">(n/m′)×c</tspan></text>
+      <text x="340" y="546" class="small kv">Pro: (n/128) × 512；序列长度压到 1/128</text>
+    </g>
+  </g>
+
+  <!-- Stage 2: low-rank query path -->
+  <g id="query-stage" class="t">
+    <rect x="746" y="158" width="354" height="180" class="panel query-panel" fill="url(#queryFill)"/>
+    <circle cx="767" cy="180" r="15" fill="#26743f"/>
+    <text x="767" y="180" class="step">2</text>
+    <text x="790" y="187" class="stage-title query">Shared Latent Query</text>
+
+    <rect x="772" y="207" width="133" height="50" rx="5" fill="#fff" stroke="#287442"/>
+    <text x="839" y="227" class="shape math query" text-anchor="middle">W<tspan baseline-shift="super" font-size="11">DQ</tspan></text>
+    <text x="839" y="247" class="small math" text-anchor="middle">d × d<tspan baseline-shift="sub" font-size="9">c</tspan></text>
+    <path d="M906 232H937" class="flow query-flow"/>
+    <use href="#matrixQuery" x="945" y="211"/>
+    <text x="1007" y="228" class="shape math query">c<tspan baseline-shift="sub" font-size="10">t</tspan><tspan baseline-shift="super" font-size="10">Q</tspan> ∈ ℝ<tspan baseline-shift="super" font-size="10">d<tspan baseline-shift="sub" font-size="8">c</tspan></tspan></text>
+    <text x="1007" y="249" class="small query">Pro: 1536</text>
+
+    <rect x="772" y="276" width="302" height="42" rx="5" fill="#fff" stroke="#287442"/>
+    <text x="923" y="293" class="small math query" text-anchor="middle">W<tspan baseline-shift="super" font-size="9">UQ</tspan> ∈ ℝ<tspan baseline-shift="super" font-size="9">d<tspan baseline-shift="sub" font-size="7">c</tspan>×(cn<tspan baseline-shift="sub" font-size="7">h</tspan>)</tspan> = 1536 × 65536</text>
+    <text x="923" y="310" class="tiny query" text-anchor="middle">q<tspan baseline-shift="sub" font-size="8">t</tspan> ∈ ℝ<tspan baseline-shift="super" font-size="8">n<tspan baseline-shift="sub" font-size="7">h</tspan>×c</tspan> = 128 × 512</text>
+  </g>
+
+  <!-- Complete attention input inventory -->
+  <g id="attention-inputs" class="t">
+    <rect x="746" y="370" width="354" height="282" class="panel compute-panel" fill="url(#computeFill)"/>
+    <text x="770" y="401" class="stage-title compute">Core Attention 全部输入</text>
+    <line x1="770" y1="412" x2="1075" y2="412" stroke="#a9b8d0"/>
+
+    <use href="#matrixQuery" x="772" y="428"/>
+    <text x="839" y="445" class="node-title query">Attention Queries</text>
+    <text x="839" y="466" class="small math">q<tspan baseline-shift="sub" font-size="9">t</tspan>：128 × 512</text>
+
+    <use href="#matrixKv" x="772" y="483"/>
+    <text x="839" y="500" class="node-title kv">Compressed KV</text>
+    <text x="839" y="521" class="small math">C<tspan baseline-shift="super" font-size="9">Comp</tspan>：(n/128) × 512</text>
+
+    <use href="#matrixCompute" x="772" y="538"/>
+    <text x="839" y="555" class="node-title compute">Sliding Window KV</text>
+    <text x="839" y="576" class="small math">C<tspan baseline-shift="super" font-size="9">Win</tspan>：128 × 512</text>
+
+    <rect x="772" y="597" width="303" height="38" rx="5" fill="#fff8e9" stroke="#d87922"/>
+    <text x="785" y="621" class="small math weight">Attention Sink：z′ ∈ ℝ<tspan baseline-shift="super" font-size="8">n<tspan baseline-shift="sub" font-size="7">h</tspan></tspan> = ℝ<tspan baseline-shift="super" font-size="8">128</tspan>（可学习 logits）</text>
+    <text x="1075" y="648" class="tiny compute" text-anchor="end">per-head RMSNorm · RoPE(last 64 dims)</text>
+  </g>
+
+  <!-- Third external input: local uncompressed KV -->
+  <g id="sliding-window" class="t">
+    <rect x="40" y="601" width="260" height="98" rx="7" fill="#fff" stroke="#315b9c" stroke-width="1.7" stroke-dasharray="7 5"/>
+    <text x="61" y="628" class="node-title compute">Sliding Window KV</text>
+    <text x="61" y="652" class="shape math">C<tspan baseline-shift="super" font-size="10">Win</tspan> ∈ ℝ<tspan baseline-shift="super" font-size="10">n<tspan baseline-shift="sub" font-size="8">win</tspan>×c</tspan></text>
+    <text x="61" y="677" class="small compute">输入 3：最近 128 个 token，128 × 512</text>
+    <g transform="translate(197 640)" fill="#e8f0fb" stroke="#315b9c">
+      <rect x="0" y="0" width="16" height="28"/><rect x="19" y="0" width="16" height="28"/>
+      <rect x="38" y="0" width="16" height="28"/><text x="61" y="22" class="small muted" stroke="none">···</text>
+    </g>
+  </g>
+
+  <!-- Stage 3: concatenate dense compressed sequence and local window -->
+  <g id="concat-stage" class="t">
+    <rect x="365" y="668" width="432" height="92" class="panel kv-panel" fill="url(#kvFill)"/>
+    <circle cx="386" cy="690" r="15" fill="#5d9bc7"/>
+    <text x="386" y="690" class="step">3</text>
+    <text x="410" y="697" class="node-title kv">Concatenation（压缩 KV + 局部 KV）</text>
+    <text x="410" y="724" class="small math">K = V = [C<tspan baseline-shift="super" font-size="9">Comp</tspan> ; C<tspan baseline-shift="super" font-size="9">Win</tspan>]</text>
+    <text x="410" y="747" class="small math">K,V ∈ ℝ<tspan baseline-shift="super" font-size="9">(n/128+128)×512</tspan>（dense，无 Top-k）</text>
+  </g>
+
+  <!-- Stage 4: dense shared-KV MQA -->
+  <g id="mqa-stage" class="t">
+    <rect x="297" y="792" width="568" height="98" class="panel compute-panel" fill="url(#computeFill)"/>
+    <circle cx="318" cy="814" r="15" fill="#315b9c"/>
+    <text x="318" y="814" class="step">4</text>
+    <text x="342" y="821" class="stage-title compute">Shared Key-Value Multi-Query Attention (MQA)</text>
+    <text x="342" y="850" class="small math">q<tspan baseline-shift="sub" font-size="9">t</tspan>：128 × 512；共享 K = V：(n/128+128) × 512</text>
+    <text x="342" y="875" class="small math">o<tspan baseline-shift="sub" font-size="9">t,i</tspan> = CoreAttn(q<tspan baseline-shift="sub" font-size="9">t,i</tspan>, K, V) ∈ ℝ<tspan baseline-shift="super" font-size="9">512</tspan>；Attention Sink 加入 softmax 分母</text>
+  </g>
+
+  <!-- Stage 5: grouped output projection -->
+  <g id="grouped-output" class="t">
+    <rect x="297" y="922" width="568" height="79" class="panel compute-panel" fill="url(#computeFill)"/>
+    <circle cx="318" cy="944" r="15" fill="#315b9c"/>
+    <text x="318" y="944" class="step">5</text>
+    <text x="342" y="951" class="stage-title compute">Grouped Output Projection</text>
+    <text x="342" y="978" class="small math">o<tspan baseline-shift="super" font-size="9">G</tspan><tspan baseline-shift="sub" font-size="9">t,i</tspan>: 4096 → o<tspan baseline-shift="super" font-size="9">G′</tspan><tspan baseline-shift="sub" font-size="9">t,i</tspan>: 1024；16 组拼接：16384 → d = 7168</text>
+  </g>
+
+  <!-- Output -->
+  <g id="output" class="t">
+    <rect x="366" y="1033" width="430" height="68" class="panel kv-panel" fill="url(#kvFill)"/>
+    <text x="581" y="1060" class="node-title compute" text-anchor="middle">Attention Output</text>
+    <text x="581" y="1086" class="shape math" text-anchor="middle">ô<tspan baseline-shift="sub" font-size="10">t</tspan> ∈ ℝ<tspan baseline-shift="super" font-size="10">d</tspan> = ℝ<tspan baseline-shift="super" font-size="10">7168</tspan>（回到残差路径）</text>
+    <g transform="translate(507 1132)" fill="#e8f4ff" stroke="#74a9cf" stroke-width="1.4">
+      <rect x="0" y="0" width="23" height="34" rx="3"/><rect x="28" y="0" width="23" height="34" rx="3"/>
+      <rect x="56" y="0" width="23" height="34" rx="3"/><rect x="84" y="0" width="23" height="34" rx="3"/>
+      <rect x="112" y="0" width="23" height="34" rx="3"/><text x="145" y="25" class="body muted" stroke="none">···</text>
+    </g>
+  </g>
+
+  <!-- Right-side matrix and tensor reference -->
+  <g id="dimension-reference" class="t">
+    <rect x="1130" y="80" width="430" height="1065" rx="7" fill="#fff" stroke="#608db0" stroke-width="1.8"/>
+    <path d="M1137 80H1553Q1560 80 1560 87V126H1130V87Q1130 80 1137 80Z" fill="url(#headerFill)"/>
+    <text x="1345" y="109" font-size="22" font-weight="800" fill="#fff" text-anchor="middle">HCA 矩阵与全部输入</text>
+
+    <text x="1153" y="156" class="node-title kv">A. 论文命名的可学习矩阵</text>
+    <text x="1153" y="176" class="tiny muted">右列为 DeepSeek-V4-Pro 的具体 shape</text>
+    <line x1="1152" y1="188" x2="1538" y2="188" stroke="#c5d8e6"/>
+
+    <g id="matrix-table">
+      <rect x="1152" y="198" width="386" height="54" rx="4" fill="#f6fbff" stroke="#d4e5f0"/>
+      <use href="#matrixKv" x="1162" y="205"/>
+      <text x="1225" y="219" class="matrix-row math kv">W<tspan baseline-shift="super" font-size="9">KV</tspan>（KV 投影）</text>
+      <text x="1225" y="239" class="tiny math">ℝ<tspan baseline-shift="super" font-size="8">d×c</tspan>　7168 × 512</text>
+
+      <rect x="1152" y="260" width="386" height="54" rx="4" fill="#fffaf0" stroke="#ead9bc"/>
+      <use href="#matrixWeight" x="1162" y="267"/>
+      <text x="1225" y="281" class="matrix-row math weight">W<tspan baseline-shift="super" font-size="9">Z</tspan>（压缩权重投影）</text>
+      <text x="1225" y="301" class="tiny math">ℝ<tspan baseline-shift="super" font-size="8">d×c</tspan>　7168 × 512</text>
+
+      <rect x="1152" y="322" width="386" height="54" rx="4" fill="#fffaf0" stroke="#ead9bc"/>
+      <use href="#matrixWeight" x="1162" y="329"/>
+      <text x="1225" y="343" class="matrix-row math weight">B（可学习位置偏置）</text>
+      <text x="1225" y="363" class="tiny math">ℝ<tspan baseline-shift="super" font-size="8">m′×c</tspan>　128 × 512</text>
+
+      <rect x="1152" y="384" width="386" height="54" rx="4" fill="#f8fcf6" stroke="#d4e5cf"/>
+      <use href="#matrixQuery" x="1162" y="391"/>
+      <text x="1225" y="405" class="matrix-row math query">W<tspan baseline-shift="super" font-size="9">DQ</tspan>（query 下投影）</text>
+      <text x="1225" y="425" class="tiny math">ℝ<tspan baseline-shift="super" font-size="8">d×d<tspan baseline-shift="sub" font-size="7">c</tspan></tspan>　7168 × 1536</text>
+
+      <rect x="1152" y="446" width="386" height="54" rx="4" fill="#f8fcf6" stroke="#d4e5cf"/>
+      <use href="#matrixQuery" x="1162" y="453"/>
+      <text x="1225" y="467" class="matrix-row math query">W<tspan baseline-shift="super" font-size="9">UQ</tspan>（query 上投影）</text>
+      <text x="1225" y="487" class="tiny math">ℝ<tspan baseline-shift="super" font-size="8">d<tspan baseline-shift="sub" font-size="7">c</tspan>×(cn<tspan baseline-shift="sub" font-size="7">h</tspan>)</tspan>　1536 × 65536</text>
+    </g>
+
+    <text x="1153" y="538" class="node-title compute">B. 分组输出投影（功能性记号）</text>
+    <text x="1153" y="559" class="tiny muted">论文描述 shape，但未为这两个矩阵指定符号</text>
+    <rect x="1152" y="572" width="386" height="62" rx="4" fill="#f7faff" stroke="#d4dfef"/>
+    <use href="#matrixCompute" x="1162" y="583"/>
+    <text x="1225" y="597" class="matrix-row math compute">W<tspan baseline-shift="super" font-size="9">G</tspan><tspan baseline-shift="sub" font-size="9">i</tspan>（图中功能性命名）</text>
+    <text x="1225" y="618" class="tiny math">ℝ<tspan baseline-shift="super" font-size="8">(cn<tspan baseline-shift="sub" font-size="7">h</tspan>/g)×d<tspan baseline-shift="sub" font-size="7">g</tspan></tspan>　4096 × 1024，共 16 个</text>
+
+    <rect x="1152" y="643" width="386" height="62" rx="4" fill="#f7faff" stroke="#d4dfef"/>
+    <use href="#matrixCompute" x="1162" y="654"/>
+    <text x="1225" y="668" class="matrix-row math compute">W<tspan baseline-shift="super" font-size="9">O</tspan>（图中功能性命名）</text>
+    <text x="1225" y="689" class="tiny math">ℝ<tspan baseline-shift="super" font-size="8">(d<tspan baseline-shift="sub" font-size="7">g</tspan>g)×d</tspan>　16384 × 7168</text>
+
+    <text x="1153" y="746" class="node-title weight">C. 其他可学习输入</text>
+    <rect x="1152" y="758" width="386" height="49" rx="4" fill="#fffaf0" stroke="#ead9bc"/>
+    <text x="1168" y="779" class="matrix-row math weight">Attention Sink logits：z′</text>
+    <text x="1168" y="798" class="tiny math">z′ ∈ ℝ<tspan baseline-shift="super" font-size="8">n<tspan baseline-shift="sub" font-size="7">h</tspan></tspan> = ℝ<tspan baseline-shift="super" font-size="8">128</tspan>（向量，不是 KV entry）</text>
+
+    <text x="1153" y="846" class="node-title kv">D. 全部数据输入与关键张量</text>
+    <line x1="1152" y1="859" x2="1538" y2="859" stroke="#c5d8e6"/>
+    <g class="small">
+      <text x="1155" y="886" class="math">输入 H</text><text x="1310" y="886" class="math muted">n × 7168</text>
+      <text x="1155" y="911" class="math">输入 h<tspan baseline-shift="sub" font-size="9">t</tspan></text><text x="1310" y="911" class="math muted">7168</text>
+      <text x="1155" y="936" class="math">输入 C<tspan baseline-shift="super" font-size="9">Win</tspan></text><text x="1310" y="936" class="math muted">128 × 512</text>
+      <text x="1155" y="961" class="math">C, Z</text><text x="1310" y="961" class="math muted">n × 512</text>
+      <text x="1155" y="986" class="math">C<tspan baseline-shift="super" font-size="9">Comp</tspan></text><text x="1310" y="986" class="math muted">(n/128) × 512</text>
+      <text x="1155" y="1011" class="math">c<tspan baseline-shift="sub" font-size="9">t</tspan><tspan baseline-shift="super" font-size="9">Q</tspan></text><text x="1310" y="1011" class="math muted">1536</text>
+      <text x="1155" y="1036" class="math">q<tspan baseline-shift="sub" font-size="9">t</tspan></text><text x="1310" y="1036" class="math muted">128 × 512</text>
+      <text x="1155" y="1061" class="math">K = V</text><text x="1310" y="1061" class="math muted">(n/128+128) × 512</text>
+      <text x="1155" y="1086" class="math">o<tspan baseline-shift="sub" font-size="9">t</tspan> / ô<tspan baseline-shift="sub" font-size="9">t</tspan></text><text x="1310" y="1086" class="math muted">65536 / 7168</text>
+      <text x="1155" y="1118" class="tiny compute">归一化：每个 query head 与唯一 KV head 做 RMSNorm</text>
+      <text x="1155" y="1137" class="tiny compute">位置编码：q、KV、core output 的最后 64 维使用 RoPE</text>
+    </g>
+  </g>
+
+  <g id="footer" class="t">
+    <text x="40" y="1188" class="tiny muted">参数：d=7168, m′=128, n<tspan baseline-shift="sub" font-size="8">h</tspan>=128, c=512, d<tspan baseline-shift="sub" font-size="8">c</tspan>=1536, g=16, d<tspan baseline-shift="sub" font-size="8">g</tspan>=1024, n<tspan baseline-shift="sub" font-size="8">win</tspan>=128。参考：DeepSeek-V4 paper v1, §2.3.2–2.3.3 / §4.2.1。</text>
+  </g>
+</svg>
