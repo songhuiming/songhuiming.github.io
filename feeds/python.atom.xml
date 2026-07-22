@@ -1,5 +1,485 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata: Huiming's learning notes - python</title><link href="/" rel="alternate"></link><link href="/feeds/python.atom.xml" rel="self"></link><id>/</id><updated>2026-06-19T00:00:00-05:00</updated><subtitle>Keep Looking, Don't Settle</subtitle><entry><title>DeepSeek-V4: 百万 Token Context</title><link href="/pages/2026/06/19/deepseek-v4-bai-mo-token-context/" rel="alternate"></link><published>2026-06-19T00:00:00-05:00</published><updated>2026-06-19T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2026-06-19:/pages/2026/06/19/deepseek-v4-bai-mo-token-context/</id><summary type="html">&lt;h2&gt;背景&lt;/h2&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata: Huiming's learning notes - python</title><link href="/" rel="alternate"></link><link href="/feeds/python.atom.xml" rel="self"></link><id>/</id><updated>2026-06-30T00:00:00-05:00</updated><subtitle>Keep Looking, Don't Settle</subtitle><entry><title>GLM-5: From Vibe Coding to Agentic Engineering</title><link href="/pages/2026/06/30/glm-5-from-vibe-coding-to-agentic-engineering/" rel="alternate"></link><published>2026-06-30T00:00:00-05:00</published><updated>2026-06-30T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2026-06-30:/pages/2026/06/30/glm-5-from-vibe-coding-to-agentic-engineering/</id><summary type="html">&lt;h2&gt;背景&lt;/h2&gt;
+&lt;p&gt;在之前的文章 &lt;a href="https://songhuiming.github.io/pages/2026/02/18/deepseek-v32-lightning-indexer/"&gt;DeepSeek-V3.2 Lightning Indexer&lt;/a&gt; 中，我们详细介绍了 DeepSeek Sparse Attention (DSA) 的 Lightning Indexer 如何通过 top-k 选择实现 token 级别的稀疏注意力。GLM-5 作为智谱 …&lt;/p&gt;</summary><content type="html">&lt;h2&gt;背景&lt;/h2&gt;
+&lt;p&gt;在之前的文章 &lt;a href="https://songhuiming.github.io/pages/2026/02/18/deepseek-v32-lightning-indexer/"&gt;DeepSeek-V3.2 Lightning Indexer&lt;/a&gt; 中，我们详细介绍了 DeepSeek Sparse Attention (DSA) 的 Lightning Indexer 如何通过 top-k 选择实现 token 级别的稀疏注意力。GLM-5 作为智谱的下一代基础模型，同样采用了 DSA 来降低长上下文场景的计算和推理成本，同时在 MLA 架构和 RL 训练流程上做了重要创新。&lt;/p&gt;
+&lt;p&gt;本文基于 &lt;a href="https://arxiv.org/abs/2602.15763"&gt;GLM-5 技术报告&lt;/a&gt; 和 &lt;a href="https://z.ai/blog/glm-5.2"&gt;Z.ai 博客&lt;/a&gt;，总结 GLM-5 的核心架构设计和训练方法。&lt;/p&gt;
+&lt;hr&gt;
+&lt;h2&gt;1. 模型概览&lt;/h2&gt;
+&lt;p&gt;GLM-5 的核心定位是&lt;strong&gt;将 vibe coding 升级为 agentic engineering&lt;/strong&gt;——不仅仅是写代码，而是能完成端到端的软件工程任务。&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;参数&lt;/th&gt;
+&lt;th&gt;GLM-5&lt;/th&gt;
+&lt;th&gt;GLM-4.5 (对比)&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;总参数量&lt;/td&gt;
+&lt;td&gt;744B&lt;/td&gt;
+&lt;td&gt;355B&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;激活参数量&lt;/td&gt;
+&lt;td&gt;40B&lt;/td&gt;
+&lt;td&gt;32B&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;专家数量&lt;/td&gt;
+&lt;td&gt;256&lt;/td&gt;
+&lt;td&gt;—&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Transformer 层数&lt;/td&gt;
+&lt;td&gt;80&lt;/td&gt;
+&lt;td&gt;—&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;注意力机制&lt;/td&gt;
+&lt;td&gt;MLA-256 + DSA&lt;/td&gt;
+&lt;td&gt;MLA&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;优化器&lt;/td&gt;
+&lt;td&gt;Muon (with Muon Split)&lt;/td&gt;
+&lt;td&gt;Muon&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;预训练 tokens&lt;/td&gt;
+&lt;td&gt;28.5T&lt;/td&gt;
+&lt;td&gt;—&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;上下文长度&lt;/td&gt;
+&lt;td&gt;200K&lt;/td&gt;
+&lt;td&gt;—&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;三大核心创新：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;MLA-256 + Muon Split&lt;/strong&gt;：优化 MLA 的解码效率，使 Muon 优化器能稳定训练 MLA&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;DSA (DeepSeek Sparse Attention)&lt;/strong&gt;：以近乎无损的方式将 &lt;span class="math"&gt;\(O(L^2)\)&lt;/span&gt; attention 降低到 &lt;span class="math"&gt;\(O(Lk)\)&lt;/span&gt;&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;异步 RL 基础设施 + Agent RL 算法&lt;/strong&gt;：解耦生成与训练，支持长 horizon 交互学习&lt;/li&gt;
+&lt;/ol&gt;
+&lt;hr&gt;
+&lt;h2&gt;2. MLA-256 与 Muon Split&lt;/h2&gt;
+&lt;h3&gt;2.1 问题：MLA + Muon 的不兼容性&lt;/h3&gt;
+&lt;p&gt;GLM-4.5 使用 MLA (Multi-Latent Attention) 减少推理时的 KV Cache（latent KV-cache 维度为 576）。但当使用 Muon 优化器时，标准 MLA &lt;strong&gt;无法匹配&lt;/strong&gt; GQA-8（8 query groups, 2048维 KV-cache）的性能。&lt;/p&gt;
+&lt;p&gt;原因在于 Muon 对 MLA 的上投影矩阵 &lt;span class="math"&gt;\(\mathbf{W}^{UQ}, \mathbf{W}^{UK}, \mathbf{W}^{UV}\)&lt;/span&gt; 做整体矩阵正交化（Newton-Schulz iterations），但不同 attention head 需要以不同的 scale 更新。&lt;/p&gt;
+&lt;h3&gt;2.2 Muon Split&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;核心思想&lt;/strong&gt;：将上投影矩阵按 head 切分为独立的小矩阵，对每个 head 独立地做正交化。&lt;/p&gt;
+&lt;p&gt;原始做法：对 &lt;span class="math"&gt;\(\mathbf{W}^{UQ} \in \mathbb{R}^{d_c \times (d_h \cdot n_h)}\)&lt;/span&gt; 做整体正交化。&lt;/p&gt;
+&lt;p&gt;Muon Split：将 &lt;span class="math"&gt;\(\mathbf{W}^{UQ}\)&lt;/span&gt; 切分为 &lt;span class="math"&gt;\(n_h\)&lt;/span&gt; 个 &lt;span class="math"&gt;\(\mathbf{W}^{UQ}_i \in \mathbb{R}^{d_c \times d_h}\)&lt;/span&gt;，对每个 &lt;span class="math"&gt;\(\mathbf{W}^{UQ}_i\)&lt;/span&gt; 独立做正交化。&lt;/p&gt;
+&lt;p&gt;效果：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;不同 attention head 的权重可以以不同 scale 更新&lt;/li&gt;
+&lt;li&gt;训练过程中 attention logits 的 scale 保持稳定，无需额外的 clipping 策略&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;2.3 MLA-256：减少解码计算&lt;/h3&gt;
+&lt;p&gt;标准 MLA 的解码瓶颈：MLA 做 576 维的点积，而 GQA 只做 128 维。为减少解码计算量：&lt;/p&gt;
+&lt;div class="math"&gt;$$\text{MLA-256}: \quad d_h = 192 \to 256, \quad n_h \text{ 减少 } \frac{1}{3}$$&lt;/div&gt;
+&lt;p&gt;这保持了训练计算量和参数量不变，但降低了解码计算（因为 head 数量减少）。&lt;/p&gt;
+&lt;h3&gt;2.4 消融实验&lt;/h3&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;配置&lt;/th&gt;
+&lt;th&gt;MMLU&lt;/th&gt;
+&lt;th&gt;BBH&lt;/th&gt;
+&lt;th&gt;GSM8K&lt;/th&gt;
+&lt;th&gt;HumanEval&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;GQA-8 (baseline)&lt;/td&gt;
+&lt;td&gt;61.2&lt;/td&gt;
+&lt;td&gt;53.3&lt;/td&gt;
+&lt;td&gt;47.6&lt;/td&gt;
+&lt;td&gt;38.5&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;MLA&lt;/td&gt;
+&lt;td&gt;61.5&lt;/td&gt;
+&lt;td&gt;48.9&lt;/td&gt;
+&lt;td&gt;46.2&lt;/td&gt;
+&lt;td&gt;33.5&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;MLA + Muon Split&lt;/td&gt;
+&lt;td&gt;62.5&lt;/td&gt;
+&lt;td&gt;51.8&lt;/td&gt;
+&lt;td&gt;45.0&lt;/td&gt;
+&lt;td&gt;36.7&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;MLA-256 + Muon Split&lt;/td&gt;
+&lt;td&gt;62.0&lt;/td&gt;
+&lt;td&gt;51.3&lt;/td&gt;
+&lt;td&gt;47.5&lt;/td&gt;
+&lt;td&gt;36.6&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;MLA-256 + Muon Split 性能匹配标准 MLA + Muon Split，同时降低了解码计算。&lt;/p&gt;
+&lt;hr&gt;
+&lt;h2&gt;3. DeepSeek Sparse Attention (DSA)&lt;/h2&gt;
+&lt;h3&gt;3.1 设计思路&lt;/h3&gt;
+&lt;p&gt;DSA 将传统的 dense &lt;span class="math"&gt;\(O(L^2)\)&lt;/span&gt; attention 替换为&lt;strong&gt;动态、细粒度的 token 选择机制&lt;/strong&gt;：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;引入一个轻量级的 &lt;strong&gt;Lightning Indexer&lt;/strong&gt;，为每个 query token 打分，选出 top-k 个最相关的 KV entries&lt;/li&gt;
+&lt;li&gt;主 attention 只在选出的 &lt;span class="math"&gt;\(k\)&lt;/span&gt; 个 entries 上计算，复杂度从 &lt;span class="math"&gt;\(O(L^2)\)&lt;/span&gt; 降低到 &lt;span class="math"&gt;\(O(Lk)\)&lt;/span&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;与 SWA（Sliding Window Attention）等固定模式不同，DSA &lt;strong&gt;根据内容动态决定&lt;/strong&gt;哪些 token 重要，因此不会丢失长程依赖。&lt;/p&gt;
+&lt;h3&gt;3.2 GLM-5 中 DSA 的关键参数&lt;/h3&gt;
+&lt;div class="math"&gt;$$
+\begin{aligned}
+&amp;amp; k = 2048 \quad \text{(top-k 选择数)} \\
+&amp;amp; \text{Indexer: 基于 DeepSeek-V3.2 的 Lightning Indexer 架构}
+\end{aligned}
+$$&lt;/div&gt;
+&lt;h3&gt;3.3 DSA 训练流程&lt;/h3&gt;
+&lt;p&gt;DSA 不从头训练，而是从 MLA 基座模型通过 continue pre-training 引入：&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Stage 1: Warmup（仅训练 Indexer）&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;1000 步&lt;/li&gt;
+&lt;li&gt;每步 14 个序列，每序列 202,752 tokens&lt;/li&gt;
+&lt;li&gt;最大学习率 5e-3&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;冻结所有基座模型权重&lt;/strong&gt;，仅训练 indexer 参数&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Stage 2: Sparse Adaptation（联合训练）&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;使用 mid-training 的超参数&lt;/li&gt;
+&lt;li&gt;共 20B tokens（远少于 DeepSeek-V3.2 的 943.7B tokens）&lt;/li&gt;
+&lt;li&gt;Indexer 和基座模型联合优化&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;3.4 DSA vs 其他 Efficient Attention（消融实验，GLM-9B, RULER@128K）&lt;/h3&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;方法&lt;/th&gt;
+&lt;th&gt;RULER@128K&lt;/th&gt;
+&lt;th&gt;相对 baseline 下降&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;Full Attention (baseline)&lt;/td&gt;
+&lt;td&gt;75.28&lt;/td&gt;
+&lt;td&gt;—&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;SWA Interleave&lt;/td&gt;
+&lt;td&gt;44.93&lt;/td&gt;
+&lt;td&gt;−30.35&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;SWA Pattern (search-based)&lt;/td&gt;
+&lt;td&gt;69.59&lt;/td&gt;
+&lt;td&gt;−5.69&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;GDN&lt;/td&gt;
+&lt;td&gt;64.00&lt;/td&gt;
+&lt;td&gt;−11.28&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;SimpleGDN&lt;/td&gt;
+&lt;td&gt;67.03&lt;/td&gt;
+&lt;td&gt;−8.25&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;DSA&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;~75&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;~0（近乎无损）&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;DSA 是唯一&lt;strong&gt;几乎无损&lt;/strong&gt;的高效 attention 方案——因为 Lightning Indexer 实现了 token 级别的精确选择，不会像 SWA 那样系统性丢失远距离 token。&lt;/p&gt;
+&lt;h3&gt;3.5 GLM-4.7-Flash + DSA 实验&lt;/h3&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;配置&lt;/th&gt;
+&lt;th&gt;64K&lt;/th&gt;
+&lt;th&gt;128K&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;Baseline (MLA)&lt;/td&gt;
+&lt;td&gt;85.34&lt;/td&gt;
+&lt;td&gt;79.21&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;DSA warmup only&lt;/td&gt;
+&lt;td&gt;84.05&lt;/td&gt;
+&lt;td&gt;71.35&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;DSA full (warmup + adaptation)&lt;/td&gt;
+&lt;td&gt;&lt;strong&gt;87.06&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;78.86&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;Full DSA 在 16K/32K/64K 上甚至&lt;strong&gt;超过 baseline&lt;/strong&gt;（分别 +0.86, +0.49, +1.72），仅在 128K 有 0.35 分的微小下降。&lt;/p&gt;
+&lt;h3&gt;3.6 DSA 在 RL 中的特殊处理&lt;/h3&gt;
+&lt;p&gt;在 RL 训练阶段使用 DSA 有两个关键发现：&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;1. 必须使用确定性 top-k&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;非确定性的 CUDA top-k 实现会导致"仅几步后性能急剧下降，伴随 entropy 崩塌"。GLM-5 全程使用 &lt;code&gt;torch.topk&lt;/code&gt;（确定性但稍慢）。&lt;/p&gt;
+&lt;p&gt;类比：这类似于 MoE 模型中用 routing replay 保持 top-k expert 选择的确定性。但由于 DSA 的 &lt;span class="math"&gt;\(k=2048\)&lt;/span&gt; 远大于 MoE 的 &lt;span class="math"&gt;\(k\)&lt;/span&gt;，存储索引不现实，必须在算子层面保证确定性。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;2. 冻结 Indexer 参数&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;RL 阶段默认冻结 indexer 参数——避免 sparse attention routing 和 policy 的联合优化带来不稳定。&lt;/p&gt;
+&lt;hr&gt;
+&lt;h2&gt;4. Multi-Token Prediction (MTP) 参数共享&lt;/h2&gt;
+&lt;p&gt;GLM-5 训练时使用 3 层 MTP（Multi-Token Prediction），但采用&lt;strong&gt;参数共享&lt;/strong&gt;——3 层共享权重，推理时的内存开销与 DeepSeek-V3 相同。&lt;/p&gt;
+&lt;p&gt;效果：GLM-5 的 speculative decoding &lt;strong&gt;接受长度为 2.76&lt;/strong&gt;（4 speculative steps），优于 DeepSeek-V3.2 的 2.55。&lt;/p&gt;
+&lt;hr&gt;
+&lt;h2&gt;5. 预训练&lt;/h2&gt;
+&lt;h3&gt;5.1 数据构成（28.5T tokens）&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Web 数据&lt;/strong&gt;：基于 DCLM classifier + World Knowledge classifier 过滤&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;代码数据&lt;/strong&gt;：相比 GLM-4.5 去重后增加 28% unique tokens&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;数学/科学&lt;/strong&gt;：chunk-and-aggregate 打分算法，严格排除合成/AI 生成数据&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;长文档&lt;/strong&gt;：重点优化科学论文、技术报告&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;5.2 Mid-Training（上下文扩展）&lt;/h3&gt;
+&lt;p&gt;三阶段渐进式扩展：&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;阶段&lt;/th&gt;
+&lt;th&gt;上下文长度&lt;/th&gt;
+&lt;th&gt;训练 tokens&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;1&lt;/td&gt;
+&lt;td&gt;32K&lt;/td&gt;
+&lt;td&gt;1T&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;2&lt;/td&gt;
+&lt;td&gt;128K&lt;/td&gt;
+&lt;td&gt;500B&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;3&lt;/td&gt;
+&lt;td&gt;200K&lt;/td&gt;
+&lt;td&gt;50B&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;额外引入 ~10M issue-PR pairs (~160B unique tokens) 的软件工程数据。&lt;/p&gt;
+&lt;hr&gt;
+&lt;h2&gt;6. Post-Training Pipeline&lt;/h2&gt;
+&lt;p&gt;GLM-5 的 post-training 采用&lt;strong&gt;五阶段&lt;/strong&gt;流水线：&lt;/p&gt;
+&lt;div class="math"&gt;$$\text{SFT} \to \text{Reasoning RL} \to \text{Agentic RL} \to \text{General RL} \to \text{On-Policy Cross-Stage Distillation}$$&lt;/div&gt;
+&lt;h3&gt;6.1 SFT&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;最大上下文 202,752 tokens&lt;/li&gt;
+&lt;li&gt;三种 thinking 模式：Interleaved Thinking, Preserved Thinking, Turn-level Thinking&lt;/li&gt;
+&lt;li&gt;覆盖：General Chat, Reasoning, Coding &amp;amp; Agent&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;6.2 Reasoning RL（GRPO + IcePop）&lt;/h3&gt;
+&lt;p&gt;核心损失函数：&lt;/p&gt;
+&lt;div class="math"&gt;$$\mathcal{L}(\theta) = -\mathbb{E}\left[\frac{1}{G}\sum_{i=1}^G \frac{1}{|y_i|}\sum_{t=1}^{|y_i|} \text{pop}(\rho_{i,t}, \frac{1}{\beta}, \beta) \cdot \min\left(r_{i,t}\hat{A}_{i,t}, \text{clip}(r_{i,t}, 1-\epsilon_l, 1+\epsilon_h)\hat{A}_{i,t}\right)\right]$$&lt;/div&gt;
+&lt;p&gt;其中 training-inference mismatch ratio：&lt;/p&gt;
+&lt;div class="math"&gt;$$\rho_{i,t} = \frac{\pi^{\text{train}}_{\theta_{\text{old}}}(y_{i,t}|x, y_{i,&amp;lt;t})}{\pi^{\text{infer}}_{\theta_{\text{old}}}(y_{i,t}|x, y_{i,&amp;lt;t})}$$&lt;/div&gt;
+&lt;p&gt;pop 算子（用于过滤 train-infer 不一致的 token）：&lt;/p&gt;
+&lt;div class="math"&gt;$$\text{pop}(\rho, \frac{1}{\beta}, \beta) = \begin{cases} \rho, &amp;amp; \frac{1}{\beta} \leq \rho \leq \beta \\ 0, &amp;amp; \text{otherwise} \end{cases}$$&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;超参数&lt;/strong&gt;：&lt;span class="math"&gt;\(\beta=2\)&lt;/span&gt;, &lt;span class="math"&gt;\(\epsilon_l=0.2\)&lt;/span&gt;, &lt;span class="math"&gt;\(\epsilon_h=0.28\)&lt;/span&gt;, group size=32, batch size=32, fully on-policy。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;混合域&lt;/strong&gt;：Mathematics, Science, Code (competitive programming + scientific coding), Tool-Integrated Reasoning (TIR)。&lt;/p&gt;
+&lt;h3&gt;6.3 Agentic RL&lt;/h3&gt;
+&lt;h4&gt;Token-in-Token-out (TITO)&lt;/h4&gt;
+&lt;p&gt;保留推理引擎的&lt;strong&gt;精确 tokenization&lt;/strong&gt;（而非对文本重新 tokenize），消除 token 边界、空白/归一化处理等微妙不匹配。&lt;/p&gt;
+&lt;h4&gt;Direct Double-Sided Importance Sampling&lt;/h4&gt;
+&lt;p&gt;优化目标（token 级 clipping）：&lt;/p&gt;
+&lt;div class="math"&gt;$$L(\theta) = \mathbb{E}_t\left[f(r_t(\theta), \epsilon_l, \epsilon_h)\hat{A}_t \log\pi_\theta(a_t|s_t)\right]$$&lt;/div&gt;
+&lt;p&gt;Importance sampling ratio：&lt;/p&gt;
+&lt;div class="math"&gt;$$r_t(\theta) = \exp(\log\pi_\theta(a_t|s_t) - \log\pi_{\text{rollout}}(a_t|s_t))$$&lt;/div&gt;
+&lt;p&gt;Calibration function：&lt;/p&gt;
+&lt;div class="math"&gt;$$f(x; \epsilon_l, \epsilon_h) = \begin{cases} x, &amp;amp; 1-\epsilon_l &amp;lt; x &amp;lt; 1+\epsilon_h \\ 0, &amp;amp; \text{otherwise} \end{cases}$$&lt;/div&gt;
+&lt;p&gt;优势：&lt;strong&gt;无需维护历史 policy checkpoints&lt;/strong&gt; &lt;span class="math"&gt;\(\pi_{\theta_{\text{old}}}\)&lt;/span&gt;，直接用 rollout 时的 log probability。&lt;/p&gt;
+&lt;h4&gt;Off-Policy Sample Dropping&lt;/h4&gt;
+&lt;ul&gt;
+&lt;li&gt;记录每个 trajectory 的 policy 权重版本 &lt;span class="math"&gt;\((w_0, ..., w_k)\)&lt;/span&gt;&lt;/li&gt;
+&lt;li&gt;若 &lt;span class="math"&gt;\(w' - w_0 &amp;gt; \tau\)&lt;/span&gt;（过时阈值），丢弃该 trajectory&lt;/li&gt;
+&lt;li&gt;group 内 &amp;gt;50% 有效则保留并 padding，否则丢弃整个 group&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4&gt;DP-Aware Routing&lt;/h4&gt;
+&lt;ul&gt;
+&lt;li&gt;一致性哈希将 rollout ID 映射到固定的 DP rank&lt;/li&gt;
+&lt;li&gt;最大化 multi-turn 交互中的 KV-cache 复用&lt;/li&gt;
+&lt;li&gt;轻量级动态负载均衡&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;6.4 On-Policy Cross-Stage Distillation&lt;/h3&gt;
+&lt;p&gt;最终阶段用于恢复早期阶段的能力。将 advantage 替换为 teacher-student gap：&lt;/p&gt;
+&lt;div class="math"&gt;$$\hat{A}_{i,t} = \text{sg}\left[\log\frac{\pi^{\text{infer}}_{\theta_{\text{teacher}}}(y_{i,t}|x, y_{i,&amp;lt;t})}{\pi^{\text{train}}_\theta(y_{i,t}|x, y_{i,&amp;lt;t})}\right]$$&lt;/div&gt;
+&lt;p&gt;Group size = 1（advantage 来自 teacher gap，不需要组内方差），batch size = 1024。&lt;/p&gt;
+&lt;hr&gt;
+&lt;h2&gt;7. 异步 RL 基础设施（"Slime" 框架）&lt;/h2&gt;
+&lt;h3&gt;7.1 核心设计&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;训练引擎与推理引擎&lt;strong&gt;部署在不同 GPU 设备&lt;/strong&gt;上&lt;/li&gt;
+&lt;li&gt;推理引擎持续生成 trajectories&lt;/li&gt;
+&lt;li&gt;当 trajectory 数量达到阈值时触发训练&lt;/li&gt;
+&lt;li&gt;每 K 个梯度更新后同步权重&lt;/li&gt;
+&lt;li&gt;每次权重同步后重置 optimizer state&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;7.2 Multi-Task Rollout Orchestrator&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;每个任务实现独立的 rollout/reward 微服务&lt;/li&gt;
+&lt;li&gt;支持 &amp;gt;1000 并发 rollouts&lt;/li&gt;
+&lt;li&gt;将 trajectories 标准化为统一的 message-list 格式&lt;/li&gt;
+&lt;li&gt;动态调整任务采样比例&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;7.3 Tail-Latency 优化&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;Multi-node inference (EP64, DP64 over 8 nodes)&lt;/li&gt;
+&lt;li&gt;FP8 rollouts 降低 per-token latency&lt;/li&gt;
+&lt;li&gt;MTP 加速小 batch decoding&lt;/li&gt;
+&lt;li&gt;Prefill-Decode (PD) disaggregation 防止 multi-turn RL 中的干扰&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;7.4 容错&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;心跳驱动：rollout server 定期发送心跳&lt;/li&gt;
+&lt;li&gt;不健康节点主动终止并注销&lt;/li&gt;
+&lt;li&gt;重试请求自动路由到健康节点&lt;/li&gt;
+&lt;/ul&gt;
+&lt;hr&gt;
+&lt;h2&gt;8. 环境规模&lt;/h2&gt;
+&lt;h3&gt;8.1 SWE Environments&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;超过 10K 可验证环境，覆盖上千个代码仓库&lt;/li&gt;
+&lt;li&gt;9 种编程语言：Python, Java, Go, C, CPP, JavaScript, TypeScript, PHP, Ruby&lt;/li&gt;
+&lt;li&gt;基于 RepoLaunch 框架&lt;/li&gt;
+&lt;li&gt;提取 Fail-to-Pass (F2P) 和 Pass-to-Pass (P2P) 测试用例&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;8.2 Terminal Environments&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;Docker 构建准确率 &amp;gt;90%&lt;/li&gt;
+&lt;li&gt;两种合成 pipeline：from seed data 和 from web-corpus&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;8.3 Search Tasks (BrowseComp)&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;Web Knowledge Graph 含 &amp;gt;2M 页面&lt;/li&gt;
+&lt;li&gt;三阶段过滤 pipeline 生成高难度问题&lt;/li&gt;
+&lt;li&gt;Context Management: Keep-recent-k (&lt;span class="math"&gt;\(k=5\)&lt;/span&gt;) + Discard-all 混合策略&lt;/li&gt;
+&lt;li&gt;阈值 &lt;span class="math"&gt;\(T=32k\)&lt;/span&gt; 触发 context reset&lt;/li&gt;
+&lt;li&gt;效果：55.3% → 62.0% (keep-recent) → 75.9% (full hierarchical strategy)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;hr&gt;
+&lt;h2&gt;9. 总结&lt;/h2&gt;
+&lt;p&gt;GLM-5 的核心贡献：&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;维度&lt;/th&gt;
+&lt;th&gt;创新点&lt;/th&gt;
+&lt;th&gt;效果&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;架构&lt;/td&gt;
+&lt;td&gt;MLA-256 + Muon Split&lt;/td&gt;
+&lt;td&gt;匹配 GQA 性能，降低解码计算&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;注意力&lt;/td&gt;
+&lt;td&gt;DSA (k=2048)&lt;/td&gt;
+&lt;td&gt;近乎无损的 sparse attention，200K context&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;推理加速&lt;/td&gt;
+&lt;td&gt;MTP 参数共享 (3层)&lt;/td&gt;
+&lt;td&gt;接受长度 2.76 (vs DeepSeek-V3.2 的 2.55)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;RL 基础设施&lt;/td&gt;
+&lt;td&gt;Slime 异步框架&lt;/td&gt;
+&lt;td&gt;解耦生成与训练，&amp;gt;1000 并发 rollout&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;RL 算法&lt;/td&gt;
+&lt;td&gt;GRPO+IcePop, TITO, Direct IS&lt;/td&gt;
+&lt;td&gt;fully on-policy, 无需 historical checkpoint&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Agent 能力&lt;/td&gt;
+&lt;td&gt;10K+ SWE environments&lt;/td&gt;
+&lt;td&gt;端到端软件工程，9种编程语言&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;GLM-5 将 DSA 证实为&lt;strong&gt;可以应用于任意 MLA 模型的通用加速方案&lt;/strong&gt;（仅需 20B tokens 的 continue pre-training），并通过大规模异步 RL 和丰富的 agent 环境，首次在开源模型中达到 frontier 级别的 agentic engineering 能力。&lt;/p&gt;
+&lt;script type="text/javascript"&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width &lt; 768) ? "left" : align;
+        indent = (screen.width &lt; 768) ? "0em" : indent;
+        linebreak = (screen.width &lt; 768) ? 'true' : linebreak;
+    }
+
+    var mathjaxscript = document.createElement('script');
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript';
+    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-AMS-MML_HTMLorMML';
+
+    var configscript = document.createElement('script');
+    configscript.type = 'text/x-mathjax-config';
+    configscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js'], equationNumbers: { autoNumber: 'none' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    messageStyle: 'normal'," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        availableFonts: ['STIX', 'TeX']," +
+        "        preferredFont: 'STIX'," +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+&lt;/script&gt;</content><category term="python"></category><category term="python"></category><category term="LLM"></category><category term="AIGC"></category><category term="GLM"></category></entry><entry><title>DeepSeek-V4: 百万 Token Context</title><link href="/pages/2026/06/19/deepseek-v4-bai-mo-token-context/" rel="alternate"></link><published>2026-06-19T00:00:00-05:00</published><updated>2026-06-19T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2026-06-19:/pages/2026/06/19/deepseek-v4-bai-mo-token-context/</id><summary type="html">&lt;h2&gt;背景&lt;/h2&gt;
 &lt;p&gt;在之前的文章中，我们详细介绍了 DeepSeek-V3 的 &lt;a href="https://songhuiming.github.io/pages/2025/03/20/deepseek-v3-multi-head-latent-attention-mla/"&gt;MLA 机制&lt;/a&gt; 和 DeepSeek-V3.2 的 &lt;a href="https://songhuiming.github.io/pages/2026/02/18/deepseek-v32-lightning-indexer/"&gt;Lightning Indexer&lt;/a&gt;。MLA 解决了推理时的内存带宽问题，DSA 通过 sparse attention 将计算复 …&lt;/p&gt;</summary><content type="html">&lt;h2&gt;背景&lt;/h2&gt;
 &lt;p&gt;在之前的文章中，我们详细介绍了 DeepSeek-V3 的 &lt;a href="https://songhuiming.github.io/pages/2025/03/20/deepseek-v3-multi-head-latent-attention-mla/"&gt;MLA 机制&lt;/a&gt; 和 DeepSeek-V3.2 的 &lt;a href="https://songhuiming.github.io/pages/2026/02/18/deepseek-v32-lightning-indexer/"&gt;Lightning Indexer&lt;/a&gt;。MLA 解决了推理时的内存带宽问题，DSA 通过 sparse attention 将计算复杂度从 &lt;span class="math"&gt;\(O(L^2)\)&lt;/span&gt; 降低到 &lt;span class="math"&gt;\(O(L \cdot k)\)&lt;/span&gt;。但随着上下文长度推向百万级别（1M tokens），即使是 sparse attention，KV Cache 的绝对大小和注意力的计算开销仍然是瓶颈。&lt;/p&gt;
 &lt;p&gt;DeepSeek-V4 在 V3.2 的基础上做了根本性的架构升级：引入 &lt;strong&gt;Compressed Sparse Attention (CSA)&lt;/strong&gt; 和 &lt;strong&gt;Heavily Compressed Attention (HCA)&lt;/strong&gt; 的混合注意力架构，从&lt;strong&gt;序列维度&lt;/strong&gt;压缩 KV Cache，再配合 sparse attention，实现了 1M token 上下文下仅需 V3.2 &lt;strong&gt;27% 的推理 FLOPs&lt;/strong&gt; 和 &lt;strong&gt;10% 的 KV Cache&lt;/strong&gt;。&lt;/p&gt;
@@ -16477,109 +16957,4 @@ sess.run(train_step, feed_dict=feed)
 &lt;h3&gt;Reference&lt;/h3&gt;
 &lt;ol&gt;
 &lt;li&gt;&lt;a href="https://medium.com/all-of-us-are-belong-to-machines/gentlest-introduction-to-tensorflow-part-2-ed2a0a7a624f#.9cxp5xvf0"&gt;Gentlest Introduction to Tensorflow #2&lt;/a&gt;&lt;/li&gt;
-&lt;/ol&gt;</content><category term="Python"></category><category term="python"></category><category term="tensorflow"></category><category term="deep learning"></category></entry><entry><title>tensorflow简介--01</title><link href="/pages/2017/02/26/tensorflowjian-jie-01/" rel="alternate"></link><published>2017-02-26T11:35:00-06:00</published><updated>2017-02-26T11:36:00-06:00</updated><author><name>Huiming Song</name></author><id>tag:None,2017-02-26:/pages/2017/02/26/tensorflowjian-jie-01/</id><summary type="html">&lt;p&gt;python的群里有人询问深度学习的基本概念，正好最近看到一篇非常简洁明了的介绍TF的基本概念的文章，尝试把它翻译成中文。以下为原文翻译：Tensorflow(TF)是google开源的深度学习框架。它有&lt;a href="https://www.tensorflow.org/get_started/mnist/beginners"&gt;初级&lt;/a&gt;和&lt;a href="https://www.tensorflow.org/get_started/mnist/pros"&gt;高级&lt;/a&gt;两个教程实例。然后那两个例子把ML和TF放在一起解决一个多feature的问题--图像识别。本文尝试从最简单的线性模型来介绍一个单feature的问题，然后从这儿开始扩展下去。&lt;/p&gt;</summary><content type="html">&lt;h2&gt;介绍&lt;/h2&gt;
-&lt;p&gt;我们将会用一个非常简单非实际的问题来帮助理解机器学习和tensorflow(TF)。我们使用一个feature(变量)房屋面积来预测房屋价格。这样将避免讨论高维数据，让我们可以集中理解TF中定义模型，应用模型和训练模型。&lt;/p&gt;
-&lt;p&gt;(原文中都写的是machine learning，机器学习。尽管现在大家都管TF为深度学习框架，我仍然翻译成机器学习。)&lt;/p&gt;
-&lt;h2&gt;机器学习简介&lt;/h2&gt;
-&lt;p&gt;我们从下面收集的一组数据开始。下图每一个点表示两个值--一个&lt;strong&gt;outcome&lt;/strong&gt;（房屋价格）和一个影响&lt;strong&gt;feature&lt;/strong&gt;(房屋面积)。
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_01.png"&gt;&lt;/p&gt;
-&lt;p&gt;然而，我们不知道那些不在图上的features点对应的价格。
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_02.png"&gt;&lt;/p&gt;
-&lt;p&gt;我们可以使用机器学习来发现两个之间的关系，这样的话给定一个feature点，我们可以精确的预测出结果。
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_03.png"&gt;&lt;/p&gt;
-&lt;h2&gt;第一步，选择模型&lt;/h2&gt;
-&lt;h3&gt;模型类型&lt;/h3&gt;
-&lt;p&gt;要进行预测，我们需要选择一个模拟可以最好的拟合我们上面收集的数据。&lt;/p&gt;
-&lt;p&gt;我们可以选择一个线性模型，然后通过调整斜率和截距来拟合那些点。
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_04.png"&gt;&lt;/p&gt;
-&lt;p&gt;我们也可以选择一个指数模型，然后通过调整曲率和位置来拟合那些点。
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_05.png"&gt;&lt;/p&gt;
-&lt;h3&gt;损失函数&lt;/h3&gt;
-&lt;p&gt;要比较哪个模型拟合更好，我们定义最佳拟合为损失函数，我们要最小化这个损失函数。一个损失函数的例子是真实值和预测值的差的绝对值的和（数学上也叫L1）。也就是下图中那些蓝色线的和就是。
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_06.png"&gt;&lt;/p&gt;
-&lt;p&gt;注意：更通常的损失函数是距离的平方和，也就是最小二乘。&lt;/p&gt;
-&lt;h3&gt;线性模型简介&lt;/h3&gt;
-&lt;p&gt;为了简单化问题，我们用线性模型来拟合数据。一个线性模型何以数学的表达为&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;y = W.x + b
-Where:
-x: house size, in sqm
-y: predicted house price, in $
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;要调整参数来拟合数据，我们可以&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;
-&lt;p&gt;调整&lt;code&gt;W&lt;/code&gt;来改变线性模型的梯度
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_07.png"&gt;&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;调整&lt;code&gt;b&lt;/code&gt;来改变位置
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_08.png"&gt;&lt;/p&gt;
-&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;通过选择不同的&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;，我们可以最终选者一个最合适的模型来最小化损失函数。除了随机的选择&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;，我们有没有更好的办法来尝试&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;？&lt;/p&gt;
-&lt;h3&gt;梯度下降&lt;/h3&gt;
-&lt;p&gt;如果你在山上的一个平台上，当你想下降到最低点的时候，你的视野是这样的
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_09.png"&gt;&lt;/p&gt;
-&lt;p&gt;下降的方向是不明了的！这样最好的办法就是梯度下降(gradient descent)：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;在当前位置找到最陡峭的方向最为梯度方向&lt;/li&gt;
-&lt;li&gt;沿着选择的方向走一步，步长为&lt;code&gt;X&lt;/code&gt;&lt;/li&gt;
-&lt;li&gt;重复上面的办法，这就是&lt;strong&gt;training&lt;/strong&gt;&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;最小化损失函数也相似。下图中，损失函数就像那个山一样起伏，我们的目的是找到最低点。通过梯度下降，我们可以做到这一点。
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_10.png"&gt;&lt;/p&gt;
-&lt;p&gt;有了线性模型，损失函数，和梯度下降这些概念，我们可以进一步学习TF了。&lt;/p&gt;
-&lt;h2&gt;第二步：TF中建模&lt;/h2&gt;
-&lt;h3&gt;TF中线性模型&lt;/h3&gt;
-&lt;p&gt;TF的两个基本概念是：&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;1. placeholder&lt;/strong&gt;: 表示进行梯度下降算法的时候，输入模型中的实际值。在上面的例子中，也就是房屋面积(x)和房屋价格(y_)。&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_11.png"&gt;&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;2. variable&lt;/strong&gt;：表示损失函数中我们要寻找最佳值的那些变量，也就是上例中的&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;。
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_12.png"&gt;&lt;/p&gt;
-&lt;p&gt;在TF中线性模型&lt;code&gt;y = W.x + b&lt;/code&gt;表示为
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_13.png"&gt;&lt;/p&gt;
-&lt;h3&gt;TF中的损失函数&lt;/h3&gt;
-&lt;p&gt;类似于把真实房屋价格输入到模型中，我们建立一个placeholder:
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_14.png"&gt;&lt;/p&gt;
-&lt;p&gt;我们的最小二乘损失函数可以表示为
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_15.png"&gt;&lt;/p&gt;
-&lt;h3&gt;数据&lt;/h3&gt;
-&lt;p&gt;因为我们没有实际的房屋价格(y_)和房屋面积(x)，我们模拟出它们的值
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_16.png"&gt;&lt;/p&gt;
-&lt;p&gt;模拟的时候，我们假设房屋价格是房屋面积的2倍。&lt;/p&gt;
-&lt;h3&gt;梯度下降&lt;/h3&gt;
-&lt;p&gt;有了线性模型，损失函数，数据，我们就可以用梯度下降来最小化损失函数，寻找到最优的W和b。&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_17.png"&gt;&lt;/p&gt;
-&lt;p&gt;&lt;code&gt;0.00001&lt;/code&gt;就是梯度下降中的沿着最陡峭方向的步长，也叫&lt;strong&gt;learning rate&lt;/strong&gt;。&lt;/p&gt;
-&lt;h2&gt;第三步：训练模型&lt;/h2&gt;
-&lt;p&gt;训练模型包括按照预先设置的迭代次数进行梯度下降，或者直到损失函数小于一个预先给定的值。&lt;/p&gt;
-&lt;h3&gt;TF Quirks&lt;/h3&gt;
-&lt;p&gt;所有的variable都要给定初始值，否则的话他们可能保持上次迭代的值
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_18.png"&gt;&lt;/p&gt;
-&lt;h3&gt;TF Session&lt;/h3&gt;
-&lt;p&gt;尽管TF是一个python库，python是一个解释型的语言，但是因为性能原因，TF默认却不能执行解释运算。所以上面的&lt;code&gt;init&lt;/code&gt;并没有执行。TF在&lt;strong&gt;session&lt;/strong&gt;里面执行，建立一个session(sess)然后执行的话使用&lt;code&gt;sess.run()&lt;/code&gt;
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_19.png"&gt;&lt;/p&gt;
-&lt;p&gt;类似的，我们通过调用&lt;code&gt;sess.run()&lt;/code&gt;里的循环来执行&lt;em&gt;train_step&lt;/em&gt;.
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_20.png"&gt;&lt;/p&gt;
-&lt;p&gt;你需要把实际值输入到x，y_组成的&lt;em&gt;feed&lt;/em&gt;里面去，这是因为TF把解出来的&lt;em&gt;train_step&lt;/em&gt;放入他的dependencies里：
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_21.png"&gt;&lt;/p&gt;
-&lt;p&gt;dependencies的底部就是x, y_的placeholders.我们已经知道，&lt;strong&gt;tf.placeholders&lt;/strong&gt;是用来输入实际的房屋价格(y_)和房屋面积(x)的。&lt;/p&gt;
-&lt;h3&gt;结果&lt;/h3&gt;
-&lt;p&gt;我们打印出循环里的值来显示TF怎么找到最佳的&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;的。
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_22.png"&gt;&lt;/p&gt;
-&lt;h2&gt;总结&lt;/h2&gt;
-&lt;p&gt;我们学习了机器学习的最简单的模型，用一个feature来预测结果。为了简化问题，我们使用了线性模型来拟合数据。然后定义一个损失函数来找到最佳拟合。最后通过梯度下降来找到variable&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;的最佳估计。&lt;/p&gt;
-&lt;h3&gt;下一步&lt;/h3&gt;
-&lt;p&gt;在下一篇文章，我们将会&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;
-&lt;p&gt;设置Tensor Board来可视化TF的执行，这样可以检测到我们模型，损失函数和梯度下降的问题&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;分批(batches)输入数据来训练模型(而不是每次输入一个数据点)，并且展示这样会怎么影响结果&lt;/p&gt;
-&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h3&gt;Reference&lt;/h3&gt;
-&lt;ol&gt;
-&lt;li&gt;&lt;a href="https://medium.com/all-of-us-are-belong-to-machines/the-gentlest-introduction-to-tensorflow-248dc871a224#.7ptf8ybid"&gt;Gentlest Introduction to Tensorflow #1&lt;/a&gt;&lt;/li&gt;
 &lt;/ol&gt;</content><category term="Python"></category><category term="python"></category><category term="tensorflow"></category><category term="deep learning"></category></entry></feed>

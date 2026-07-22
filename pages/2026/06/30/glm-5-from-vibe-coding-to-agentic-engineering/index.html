@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>GLM-5: From Vibe Coding to Agentic Engineering &mdash; pydata: Huiming's learning notes</title>
+  <meta name="author" content="shm">
+
+
+
+
+
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+    <link href="/favicon.png" rel="icon">
+
+  <link href="/theme/css/main.css" media="screen, projection"
+        rel="stylesheet" type="text/css">
+
+  <link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic"
+        rel="stylesheet" type="text/css">
+  <link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic"
+        rel="stylesheet" type="text/css">
+</head>
+
+<body>
+  <header role="banner"><header>
+  <h1><a href="/">pydata: Huiming's learning notes</a></h1>
+    <h2>Keep Looking, Don't Settle</h2>
+</header>
+
+<script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],  // 允许 $...$ 和 \( ... \) 作为行内公式
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],  // 允许 $$...$$ 和 \[ ... \] 作为块级公式
+    processEscapes: true,  // 允许在公式中使用转义符，如 \$ 表示美元符号
+    processEnvironments: true  // 允许解析 \begin{equation} ... \end{equation} 等数学环境
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre'],  // 跳过某些 HTML 标签，防止错误解析
+    renderActions: {
+      addMenu: []  // 移除右键菜单
+    }
+  }
+};
+
+window.addEventListener('load', () => {
+  document.querySelectorAll("mjx-container").forEach(x => {
+    x.parentElement.classList.add('has-jax');  // 使用 classList.add() 避免字符串拼接错误
+  });
+});
+</script>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script></header>
+  <nav role="navigation">
+
+<form action="https://www.google.com/search" method="get">
+    <fieldset role="search">
+       <input type="hidden" name="q" value="site:songhuiming.github.io" />
+       <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+    </fieldset>
+</form>
+
+
+<ul class="main-navigation">
+    <li><a href="/functions/archives.html">Archives</a></li>
+      <li >
+        <a href="/category/career-growth.html">Career growth</a>
+      </li>
+      <li >
+        <a href="/category/linux.html">Linux</a>
+      </li>
+      <li class="active">
+        <a href="/category/python.html">Python</a>
+      </li>
+      <li >
+        <a href="/category/rthers.html">Rthers</a>
+      </li>
+</ul></nav>
+  <div id="main">
+    <div id="content">
+<div>
+  <article class="hentry" role="article">
+<header>
+      <h1 class="entry-title">GLM-5: From Vibe Coding to Agentic Engineering</h1>
+    <p class="meta">
+<time datetime="2026-06-30T00:00:00-05:00" pubdate>Tue 30 June 2026</time>    </p>
+</header>
+
+  <div class="entry-content"><h2>背景</h2>
+<p>在之前的文章 <a href="https://songhuiming.github.io/pages/2026/02/18/deepseek-v32-lightning-indexer/">DeepSeek-V3.2 Lightning Indexer</a> 中，我们详细介绍了 DeepSeek Sparse Attention (DSA) 的 Lightning Indexer 如何通过 top-k 选择实现 token 级别的稀疏注意力。GLM-5 作为智谱的下一代基础模型，同样采用了 DSA 来降低长上下文场景的计算和推理成本，同时在 MLA 架构和 RL 训练流程上做了重要创新。</p>
+<p>本文基于 <a href="https://arxiv.org/abs/2602.15763">GLM-5 技术报告</a> 和 <a href="https://z.ai/blog/glm-5.2">Z.ai 博客</a>，总结 GLM-5 的核心架构设计和训练方法。</p>
+<hr>
+<h2>1. 模型概览</h2>
+<p>GLM-5 的核心定位是<strong>将 vibe coding 升级为 agentic engineering</strong>——不仅仅是写代码，而是能完成端到端的软件工程任务。</p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>GLM-5</th>
+<th>GLM-4.5 (对比)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>总参数量</td>
+<td>744B</td>
+<td>355B</td>
+</tr>
+<tr>
+<td>激活参数量</td>
+<td>40B</td>
+<td>32B</td>
+</tr>
+<tr>
+<td>专家数量</td>
+<td>256</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Transformer 层数</td>
+<td>80</td>
+<td>—</td>
+</tr>
+<tr>
+<td>注意力机制</td>
+<td>MLA-256 + DSA</td>
+<td>MLA</td>
+</tr>
+<tr>
+<td>优化器</td>
+<td>Muon (with Muon Split)</td>
+<td>Muon</td>
+</tr>
+<tr>
+<td>预训练 tokens</td>
+<td>28.5T</td>
+<td>—</td>
+</tr>
+<tr>
+<td>上下文长度</td>
+<td>200K</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p>三大核心创新：</p>
+<ol>
+<li><strong>MLA-256 + Muon Split</strong>：优化 MLA 的解码效率，使 Muon 优化器能稳定训练 MLA</li>
+<li><strong>DSA (DeepSeek Sparse Attention)</strong>：以近乎无损的方式将 <span class="math">\(O(L^2)\)</span> attention 降低到 <span class="math">\(O(Lk)\)</span></li>
+<li><strong>异步 RL 基础设施 + Agent RL 算法</strong>：解耦生成与训练，支持长 horizon 交互学习</li>
+</ol>
+<hr>
+<h2>2. MLA-256 与 Muon Split</h2>
+<h3>2.1 问题：MLA + Muon 的不兼容性</h3>
+<p>GLM-4.5 使用 MLA (Multi-Latent Attention) 减少推理时的 KV Cache（latent KV-cache 维度为 576）。但当使用 Muon 优化器时，标准 MLA <strong>无法匹配</strong> GQA-8（8 query groups, 2048维 KV-cache）的性能。</p>
+<p>原因在于 Muon 对 MLA 的上投影矩阵 <span class="math">\(\mathbf{W}^{UQ}, \mathbf{W}^{UK}, \mathbf{W}^{UV}\)</span> 做整体矩阵正交化（Newton-Schulz iterations），但不同 attention head 需要以不同的 scale 更新。</p>
+<h3>2.2 Muon Split</h3>
+<p><strong>核心思想</strong>：将上投影矩阵按 head 切分为独立的小矩阵，对每个 head 独立地做正交化。</p>
+<p>原始做法：对 <span class="math">\(\mathbf{W}^{UQ} \in \mathbb{R}^{d_c \times (d_h \cdot n_h)}\)</span> 做整体正交化。</p>
+<p>Muon Split：将 <span class="math">\(\mathbf{W}^{UQ}\)</span> 切分为 <span class="math">\(n_h\)</span> 个 <span class="math">\(\mathbf{W}^{UQ}_i \in \mathbb{R}^{d_c \times d_h}\)</span>，对每个 <span class="math">\(\mathbf{W}^{UQ}_i\)</span> 独立做正交化。</p>
+<p>效果：</p>
+<ul>
+<li>不同 attention head 的权重可以以不同 scale 更新</li>
+<li>训练过程中 attention logits 的 scale 保持稳定，无需额外的 clipping 策略</li>
+</ul>
+<h3>2.3 MLA-256：减少解码计算</h3>
+<p>标准 MLA 的解码瓶颈：MLA 做 576 维的点积，而 GQA 只做 128 维。为减少解码计算量：</p>
+<div class="math">$$\text{MLA-256}: \quad d_h = 192 \to 256, \quad n_h \text{ 减少 } \frac{1}{3}$$</div>
+<p>这保持了训练计算量和参数量不变，但降低了解码计算（因为 head 数量减少）。</p>
+<h3>2.4 消融实验</h3>
+<table>
+<thead>
+<tr>
+<th>配置</th>
+<th>MMLU</th>
+<th>BBH</th>
+<th>GSM8K</th>
+<th>HumanEval</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GQA-8 (baseline)</td>
+<td>61.2</td>
+<td>53.3</td>
+<td>47.6</td>
+<td>38.5</td>
+</tr>
+<tr>
+<td>MLA</td>
+<td>61.5</td>
+<td>48.9</td>
+<td>46.2</td>
+<td>33.5</td>
+</tr>
+<tr>
+<td>MLA + Muon Split</td>
+<td>62.5</td>
+<td>51.8</td>
+<td>45.0</td>
+<td>36.7</td>
+</tr>
+<tr>
+<td>MLA-256 + Muon Split</td>
+<td>62.0</td>
+<td>51.3</td>
+<td>47.5</td>
+<td>36.6</td>
+</tr>
+</tbody>
+</table>
+<p>MLA-256 + Muon Split 性能匹配标准 MLA + Muon Split，同时降低了解码计算。</p>
+<hr>
+<h2>3. DeepSeek Sparse Attention (DSA)</h2>
+<h3>3.1 设计思路</h3>
+<p>DSA 将传统的 dense <span class="math">\(O(L^2)\)</span> attention 替换为<strong>动态、细粒度的 token 选择机制</strong>：</p>
+<ul>
+<li>引入一个轻量级的 <strong>Lightning Indexer</strong>，为每个 query token 打分，选出 top-k 个最相关的 KV entries</li>
+<li>主 attention 只在选出的 <span class="math">\(k\)</span> 个 entries 上计算，复杂度从 <span class="math">\(O(L^2)\)</span> 降低到 <span class="math">\(O(Lk)\)</span></li>
+</ul>
+<p>与 SWA（Sliding Window Attention）等固定模式不同，DSA <strong>根据内容动态决定</strong>哪些 token 重要，因此不会丢失长程依赖。</p>
+<h3>3.2 GLM-5 中 DSA 的关键参数</h3>
+<div class="math">$$
+\begin{aligned}
+&amp; k = 2048 \quad \text{(top-k 选择数)} \\
+&amp; \text{Indexer: 基于 DeepSeek-V3.2 的 Lightning Indexer 架构}
+\end{aligned}
+$$</div>
+<h3>3.3 DSA 训练流程</h3>
+<p>DSA 不从头训练，而是从 MLA 基座模型通过 continue pre-training 引入：</p>
+<p><strong>Stage 1: Warmup（仅训练 Indexer）</strong></p>
+<ul>
+<li>1000 步</li>
+<li>每步 14 个序列，每序列 202,752 tokens</li>
+<li>最大学习率 5e-3</li>
+<li><strong>冻结所有基座模型权重</strong>，仅训练 indexer 参数</li>
+</ul>
+<p><strong>Stage 2: Sparse Adaptation（联合训练）</strong></p>
+<ul>
+<li>使用 mid-training 的超参数</li>
+<li>共 20B tokens（远少于 DeepSeek-V3.2 的 943.7B tokens）</li>
+<li>Indexer 和基座模型联合优化</li>
+</ul>
+<h3>3.4 DSA vs 其他 Efficient Attention（消融实验，GLM-9B, RULER@128K）</h3>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>RULER@128K</th>
+<th>相对 baseline 下降</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Full Attention (baseline)</td>
+<td>75.28</td>
+<td>—</td>
+</tr>
+<tr>
+<td>SWA Interleave</td>
+<td>44.93</td>
+<td>−30.35</td>
+</tr>
+<tr>
+<td>SWA Pattern (search-based)</td>
+<td>69.59</td>
+<td>−5.69</td>
+</tr>
+<tr>
+<td>GDN</td>
+<td>64.00</td>
+<td>−11.28</td>
+</tr>
+<tr>
+<td>SimpleGDN</td>
+<td>67.03</td>
+<td>−8.25</td>
+</tr>
+<tr>
+<td><strong>DSA</strong></td>
+<td><strong>~75</strong></td>
+<td><strong>~0（近乎无损）</strong></td>
+</tr>
+</tbody>
+</table>
+<p>DSA 是唯一<strong>几乎无损</strong>的高效 attention 方案——因为 Lightning Indexer 实现了 token 级别的精确选择，不会像 SWA 那样系统性丢失远距离 token。</p>
+<h3>3.5 GLM-4.7-Flash + DSA 实验</h3>
+<table>
+<thead>
+<tr>
+<th>配置</th>
+<th>64K</th>
+<th>128K</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Baseline (MLA)</td>
+<td>85.34</td>
+<td>79.21</td>
+</tr>
+<tr>
+<td>DSA warmup only</td>
+<td>84.05</td>
+<td>71.35</td>
+</tr>
+<tr>
+<td>DSA full (warmup + adaptation)</td>
+<td><strong>87.06</strong></td>
+<td>78.86</td>
+</tr>
+</tbody>
+</table>
+<p>Full DSA 在 16K/32K/64K 上甚至<strong>超过 baseline</strong>（分别 +0.86, +0.49, +1.72），仅在 128K 有 0.35 分的微小下降。</p>
+<h3>3.6 DSA 在 RL 中的特殊处理</h3>
+<p>在 RL 训练阶段使用 DSA 有两个关键发现：</p>
+<p><strong>1. 必须使用确定性 top-k</strong></p>
+<p>非确定性的 CUDA top-k 实现会导致"仅几步后性能急剧下降，伴随 entropy 崩塌"。GLM-5 全程使用 <code>torch.topk</code>（确定性但稍慢）。</p>
+<p>类比：这类似于 MoE 模型中用 routing replay 保持 top-k expert 选择的确定性。但由于 DSA 的 <span class="math">\(k=2048\)</span> 远大于 MoE 的 <span class="math">\(k\)</span>，存储索引不现实，必须在算子层面保证确定性。</p>
+<p><strong>2. 冻结 Indexer 参数</strong></p>
+<p>RL 阶段默认冻结 indexer 参数——避免 sparse attention routing 和 policy 的联合优化带来不稳定。</p>
+<hr>
+<h2>4. Multi-Token Prediction (MTP) 参数共享</h2>
+<p>GLM-5 训练时使用 3 层 MTP（Multi-Token Prediction），但采用<strong>参数共享</strong>——3 层共享权重，推理时的内存开销与 DeepSeek-V3 相同。</p>
+<p>效果：GLM-5 的 speculative decoding <strong>接受长度为 2.76</strong>（4 speculative steps），优于 DeepSeek-V3.2 的 2.55。</p>
+<hr>
+<h2>5. 预训练</h2>
+<h3>5.1 数据构成（28.5T tokens）</h3>
+<ul>
+<li><strong>Web 数据</strong>：基于 DCLM classifier + World Knowledge classifier 过滤</li>
+<li><strong>代码数据</strong>：相比 GLM-4.5 去重后增加 28% unique tokens</li>
+<li><strong>数学/科学</strong>：chunk-and-aggregate 打分算法，严格排除合成/AI 生成数据</li>
+<li><strong>长文档</strong>：重点优化科学论文、技术报告</li>
+</ul>
+<h3>5.2 Mid-Training（上下文扩展）</h3>
+<p>三阶段渐进式扩展：</p>
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>上下文长度</th>
+<th>训练 tokens</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>32K</td>
+<td>1T</td>
+</tr>
+<tr>
+<td>2</td>
+<td>128K</td>
+<td>500B</td>
+</tr>
+<tr>
+<td>3</td>
+<td>200K</td>
+<td>50B</td>
+</tr>
+</tbody>
+</table>
+<p>额外引入 ~10M issue-PR pairs (~160B unique tokens) 的软件工程数据。</p>
+<hr>
+<h2>6. Post-Training Pipeline</h2>
+<p>GLM-5 的 post-training 采用<strong>五阶段</strong>流水线：</p>
+<div class="math">$$\text{SFT} \to \text{Reasoning RL} \to \text{Agentic RL} \to \text{General RL} \to \text{On-Policy Cross-Stage Distillation}$$</div>
+<h3>6.1 SFT</h3>
+<ul>
+<li>最大上下文 202,752 tokens</li>
+<li>三种 thinking 模式：Interleaved Thinking, Preserved Thinking, Turn-level Thinking</li>
+<li>覆盖：General Chat, Reasoning, Coding &amp; Agent</li>
+</ul>
+<h3>6.2 Reasoning RL（GRPO + IcePop）</h3>
+<p>核心损失函数：</p>
+<div class="math">$$\mathcal{L}(\theta) = -\mathbb{E}\left[\frac{1}{G}\sum_{i=1}^G \frac{1}{|y_i|}\sum_{t=1}^{|y_i|} \text{pop}(\rho_{i,t}, \frac{1}{\beta}, \beta) \cdot \min\left(r_{i,t}\hat{A}_{i,t}, \text{clip}(r_{i,t}, 1-\epsilon_l, 1+\epsilon_h)\hat{A}_{i,t}\right)\right]$$</div>
+<p>其中 training-inference mismatch ratio：</p>
+<div class="math">$$\rho_{i,t} = \frac{\pi^{\text{train}}_{\theta_{\text{old}}}(y_{i,t}|x, y_{i,&lt;t})}{\pi^{\text{infer}}_{\theta_{\text{old}}}(y_{i,t}|x, y_{i,&lt;t})}$$</div>
+<p>pop 算子（用于过滤 train-infer 不一致的 token）：</p>
+<div class="math">$$\text{pop}(\rho, \frac{1}{\beta}, \beta) = \begin{cases} \rho, &amp; \frac{1}{\beta} \leq \rho \leq \beta \\ 0, &amp; \text{otherwise} \end{cases}$$</div>
+<p><strong>超参数</strong>：<span class="math">\(\beta=2\)</span>, <span class="math">\(\epsilon_l=0.2\)</span>, <span class="math">\(\epsilon_h=0.28\)</span>, group size=32, batch size=32, fully on-policy。</p>
+<p><strong>混合域</strong>：Mathematics, Science, Code (competitive programming + scientific coding), Tool-Integrated Reasoning (TIR)。</p>
+<h3>6.3 Agentic RL</h3>
+<h4>Token-in-Token-out (TITO)</h4>
+<p>保留推理引擎的<strong>精确 tokenization</strong>（而非对文本重新 tokenize），消除 token 边界、空白/归一化处理等微妙不匹配。</p>
+<h4>Direct Double-Sided Importance Sampling</h4>
+<p>优化目标（token 级 clipping）：</p>
+<div class="math">$$L(\theta) = \mathbb{E}_t\left[f(r_t(\theta), \epsilon_l, \epsilon_h)\hat{A}_t \log\pi_\theta(a_t|s_t)\right]$$</div>
+<p>Importance sampling ratio：</p>
+<div class="math">$$r_t(\theta) = \exp(\log\pi_\theta(a_t|s_t) - \log\pi_{\text{rollout}}(a_t|s_t))$$</div>
+<p>Calibration function：</p>
+<div class="math">$$f(x; \epsilon_l, \epsilon_h) = \begin{cases} x, &amp; 1-\epsilon_l &lt; x &lt; 1+\epsilon_h \\ 0, &amp; \text{otherwise} \end{cases}$$</div>
+<p>优势：<strong>无需维护历史 policy checkpoints</strong> <span class="math">\(\pi_{\theta_{\text{old}}}\)</span>，直接用 rollout 时的 log probability。</p>
+<h4>Off-Policy Sample Dropping</h4>
+<ul>
+<li>记录每个 trajectory 的 policy 权重版本 <span class="math">\((w_0, ..., w_k)\)</span></li>
+<li>若 <span class="math">\(w' - w_0 &gt; \tau\)</span>（过时阈值），丢弃该 trajectory</li>
+<li>group 内 &gt;50% 有效则保留并 padding，否则丢弃整个 group</li>
+</ul>
+<h4>DP-Aware Routing</h4>
+<ul>
+<li>一致性哈希将 rollout ID 映射到固定的 DP rank</li>
+<li>最大化 multi-turn 交互中的 KV-cache 复用</li>
+<li>轻量级动态负载均衡</li>
+</ul>
+<h3>6.4 On-Policy Cross-Stage Distillation</h3>
+<p>最终阶段用于恢复早期阶段的能力。将 advantage 替换为 teacher-student gap：</p>
+<div class="math">$$\hat{A}_{i,t} = \text{sg}\left[\log\frac{\pi^{\text{infer}}_{\theta_{\text{teacher}}}(y_{i,t}|x, y_{i,&lt;t})}{\pi^{\text{train}}_\theta(y_{i,t}|x, y_{i,&lt;t})}\right]$$</div>
+<p>Group size = 1（advantage 来自 teacher gap，不需要组内方差），batch size = 1024。</p>
+<hr>
+<h2>7. 异步 RL 基础设施（"Slime" 框架）</h2>
+<h3>7.1 核心设计</h3>
+<ul>
+<li>训练引擎与推理引擎<strong>部署在不同 GPU 设备</strong>上</li>
+<li>推理引擎持续生成 trajectories</li>
+<li>当 trajectory 数量达到阈值时触发训练</li>
+<li>每 K 个梯度更新后同步权重</li>
+<li>每次权重同步后重置 optimizer state</li>
+</ul>
+<h3>7.2 Multi-Task Rollout Orchestrator</h3>
+<ul>
+<li>每个任务实现独立的 rollout/reward 微服务</li>
+<li>支持 &gt;1000 并发 rollouts</li>
+<li>将 trajectories 标准化为统一的 message-list 格式</li>
+<li>动态调整任务采样比例</li>
+</ul>
+<h3>7.3 Tail-Latency 优化</h3>
+<ul>
+<li>Multi-node inference (EP64, DP64 over 8 nodes)</li>
+<li>FP8 rollouts 降低 per-token latency</li>
+<li>MTP 加速小 batch decoding</li>
+<li>Prefill-Decode (PD) disaggregation 防止 multi-turn RL 中的干扰</li>
+</ul>
+<h3>7.4 容错</h3>
+<ul>
+<li>心跳驱动：rollout server 定期发送心跳</li>
+<li>不健康节点主动终止并注销</li>
+<li>重试请求自动路由到健康节点</li>
+</ul>
+<hr>
+<h2>8. 环境规模</h2>
+<h3>8.1 SWE Environments</h3>
+<ul>
+<li>超过 10K 可验证环境，覆盖上千个代码仓库</li>
+<li>9 种编程语言：Python, Java, Go, C, CPP, JavaScript, TypeScript, PHP, Ruby</li>
+<li>基于 RepoLaunch 框架</li>
+<li>提取 Fail-to-Pass (F2P) 和 Pass-to-Pass (P2P) 测试用例</li>
+</ul>
+<h3>8.2 Terminal Environments</h3>
+<ul>
+<li>Docker 构建准确率 &gt;90%</li>
+<li>两种合成 pipeline：from seed data 和 from web-corpus</li>
+</ul>
+<h3>8.3 Search Tasks (BrowseComp)</h3>
+<ul>
+<li>Web Knowledge Graph 含 &gt;2M 页面</li>
+<li>三阶段过滤 pipeline 生成高难度问题</li>
+<li>Context Management: Keep-recent-k (<span class="math">\(k=5\)</span>) + Discard-all 混合策略</li>
+<li>阈值 <span class="math">\(T=32k\)</span> 触发 context reset</li>
+<li>效果：55.3% → 62.0% (keep-recent) → 75.9% (full hierarchical strategy)</li>
+</ul>
+<hr>
+<h2>9. 总结</h2>
+<p>GLM-5 的核心贡献：</p>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>创新点</th>
+<th>效果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>架构</td>
+<td>MLA-256 + Muon Split</td>
+<td>匹配 GQA 性能，降低解码计算</td>
+</tr>
+<tr>
+<td>注意力</td>
+<td>DSA (k=2048)</td>
+<td>近乎无损的 sparse attention，200K context</td>
+</tr>
+<tr>
+<td>推理加速</td>
+<td>MTP 参数共享 (3层)</td>
+<td>接受长度 2.76 (vs DeepSeek-V3.2 的 2.55)</td>
+</tr>
+<tr>
+<td>RL 基础设施</td>
+<td>Slime 异步框架</td>
+<td>解耦生成与训练，&gt;1000 并发 rollout</td>
+</tr>
+<tr>
+<td>RL 算法</td>
+<td>GRPO+IcePop, TITO, Direct IS</td>
+<td>fully on-policy, 无需 historical checkpoint</td>
+</tr>
+<tr>
+<td>Agent 能力</td>
+<td>10K+ SWE environments</td>
+<td>端到端软件工程，9种编程语言</td>
+</tr>
+</tbody>
+</table>
+<p>GLM-5 将 DSA 证实为<strong>可以应用于任意 MLA 模型的通用加速方案</strong>（仅需 20B tokens 的 continue pre-training），并通过大规模异步 RL 和丰富的 agent 环境，首次在开源模型中达到 frontier 级别的 agentic engineering 能力。</p>
+<script type="text/javascript">if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width < 768) ? "left" : align;
+        indent = (screen.width < 768) ? "0em" : indent;
+        linebreak = (screen.width < 768) ? 'true' : linebreak;
+    }
+
+    var mathjaxscript = document.createElement('script');
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript';
+    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-AMS-MML_HTMLorMML';
+
+    var configscript = document.createElement('script');
+    configscript.type = 'text/x-mathjax-config';
+    configscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js'], equationNumbers: { autoNumber: 'none' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    messageStyle: 'normal'," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        availableFonts: ['STIX', 'TeX']," +
+        "        preferredFont: 'STIX'," +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+</script></div>
+    <footer>
+<p class="meta">
+  <span class="byline author vcard">
+    Posted by <span class="fn">
+        <a href="/author/huiming-song.html">Huiming Song</a>
+    </span>
+  </span>
+<time datetime="2026-06-30T00:00:00-05:00" pubdate>Tue 30 June 2026</time>  <span class="categories">
+    <a class='category' href='/category/python.html'>python</a>
+  </span>
+  <span class="categories">
+    <a class="category" href="/tag/python.html">python</a>,    <a class="category" href="/tag/llm.html">LLM</a>,    <a class="category" href="/tag/aigc.html">AIGC</a>,    <a class="category" href="/tag/glm.html">GLM</a>  </span>
+</p><div class="sharing">
+</div>    </footer>
+  </article>
+
+</div>
+<aside class="sidebar">
+  <section>
+    <h1>Recent Posts</h1>
+    <ul id="recent_posts">
+      <li class="post">
+          <a href="/pages/2026/06/30/glm-5-from-vibe-coding-to-agentic-engineering/">GLM-5: From Vibe Coding to Agentic Engineering</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2026/06/19/deepseek-v4-bai-mo-token-context/">DeepSeek-V4: 百万 Token Context</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2026/02/18/deepseek-v32-lightning-indexer/">DeepSeek-V3.2 Lightning Indexer</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2025/04/20/deepseek-expert-parallelism-load-balancer-eplb-code-reading/">DeepSeek Expert Parallelism Load Balancer (EPLB) Code Reading</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2025/03/20/deepseek-v3-moe/">DeepSeek V3 MoE</a>
+      </li>
+    </ul>
+  </section>
+  <section>
+      
+    <h1>Categories</h1>
+    <ul id="recent_posts">
+        <li><a href="/category/career-growth.html">career growth</a></li>
+        <li><a href="/category/linux.html">Linux</a></li>
+        <li><a href="/category/python.html">python</a></li>
+        <li><a href="/category/rthers.html">Rthers</a></li>
+    </ul>
+  </section>
+ 
+
+  <section>
+  <h1>Tags</h1>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aigc.html">AIGC</a>,    <a href="/tag/glm.html">GLM</a>,    <a href="/tag/deepseek.html">DeepSeek</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+
+
+    <section>
+        <h1>Social</h1>
+        <ul>
+            <li><a href="https://www.linkedin.com/pub/huiming-song/24/735/349" target="_blank">Linkedin</a></li>
+        </ul>
+    </section>
+    <section>
+        <h1>Blogroll</h1>
+        <ul>
+            <li><a href="http://easysas.blogspot.com/" target="_blank">my old SAS blog</a></li>
+        </ul>
+    </section>
+
+</aside>    </div>
+  </div>
+  <footer role="contentinfo"><p>
+    Copyright &copy;  2015&ndash;2026  shm &mdash;
+  <span class="credit">Powered by <a href="http://getpelican.com">Pelican</a></span>
+</p></footer>
+  <script src="/theme/js/modernizr-2.0.js"></script>
+  <script src="/theme/js/ender.js"></script>
+  <script src="/theme/js/octopress.js" type="text/javascript"></script>
+    <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-65938411-1']);
+    _gaq.push(['_trackPageview']);
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-65938411-1');
+    ga('send', 'pageview');
+</script>
+  <script type="text/javascript">
+    var disqus_shortname = 'songhuiming';
+    var disqus_identifier = '/pages/2026/06/30/glm-5-from-vibe-coding-to-agentic-engineering/';
+    var disqus_url = '/pages/2026/06/30/glm-5-from-vibe-coding-to-agentic-engineering/';
+    var disqus_title = 'GLM-5: From Vibe Coding to Agentic Engineering';
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = "//" + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+     })();
+  </script>
+</body>
+</html>
