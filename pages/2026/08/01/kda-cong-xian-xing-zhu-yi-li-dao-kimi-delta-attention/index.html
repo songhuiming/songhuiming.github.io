@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>KDA - 从线性注意力到 Kimi Delta Attention &mdash; pydata: Huiming's learning notes</title>
+  <meta name="author" content="shm">
+
+
+
+
+
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+    <link href="/favicon.png" rel="icon">
+
+  <link href="/theme/css/main.css" media="screen, projection"
+        rel="stylesheet" type="text/css">
+
+  <link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic"
+        rel="stylesheet" type="text/css">
+  <link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic"
+        rel="stylesheet" type="text/css">
+</head>
+
+<body>
+  <header role="banner"><header>
+  <h1><a href="/">pydata: Huiming's learning notes</a></h1>
+    <h2>Keep Looking, Don't Settle</h2>
+</header>
+
+<script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],  // 允许 $...$ 和 \( ... \) 作为行内公式
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],  // 允许 $$...$$ 和 \[ ... \] 作为块级公式
+    processEscapes: true,  // 允许在公式中使用转义符，如 \$ 表示美元符号
+    processEnvironments: true  // 允许解析 \begin{equation} ... \end{equation} 等数学环境
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre'],  // 跳过某些 HTML 标签，防止错误解析
+    renderActions: {
+      addMenu: []  // 移除右键菜单
+    }
+  }
+};
+
+window.addEventListener('load', () => {
+  document.querySelectorAll("mjx-container").forEach(x => {
+    x.parentElement.classList.add('has-jax');  // 使用 classList.add() 避免字符串拼接错误
+  });
+});
+</script>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script></header>
+  <nav role="navigation">
+
+<form action="https://www.google.com/search" method="get">
+    <fieldset role="search">
+       <input type="hidden" name="q" value="site:songhuiming.github.io" />
+       <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+    </fieldset>
+</form>
+
+
+<ul class="main-navigation">
+    <li><a href="/functions/archives.html">Archives</a></li>
+      <li >
+        <a href="/category/career-growth.html">Career growth</a>
+      </li>
+      <li >
+        <a href="/category/linux.html">Linux</a>
+      </li>
+      <li class="active">
+        <a href="/category/python.html">Python</a>
+      </li>
+      <li >
+        <a href="/category/rthers.html">Rthers</a>
+      </li>
+</ul></nav>
+  <div id="main">
+    <div id="content">
+<div>
+  <article class="hentry" role="article">
+<header>
+      <h1 class="entry-title">KDA - 从线性注意力到 Kimi Delta Attention</h1>
+    <p class="meta">
+<time datetime="2026-08-01T00:00:00-05:00" pubdate>Sat 01 August 2026</time>    </p>
+</header>
+
+  <div class="entry-content"><p>本文从标准自注意力出发，依次说明核化线性注意力、循环状态、门控与 Delta 规则，并最终落到 Kimi Linear 的核心组件 Kimi Delta Attention（KDA）。重点不是把所有模型强行归为同一种结构，而是追踪一个共同问题：如何用固定大小的状态高效地读写长序列记忆，同时尽量降低信息干扰。</p>
+<h2>0. 统一符号与维度</h2>
+<p>全文采用列向量约定。第 <span class="math">\(t\)</span> 个 token 的输入表示统一记为</p>
+<div class="math">$$
+\mathbf{x}_t\in\mathbb{R}^{d_{\mathrm{model}}}.
+$$</div>
+<p>对第 <span class="math">\(h\)</span> 个注意力头，投影统一写成</p>
+<div class="math">$$
+\mathbf{q}_t^{h}=\mathbf{W}_{h}^{Q}\mathbf{x}_t,\qquad
+\mathbf{k}_t^{h}=\mathbf{W}_{h}^{K}\mathbf{x}_t,\qquad
+\mathbf{v}_t^{h}=\mathbf{W}_{h}^{V}\mathbf{x}_t,
+$$</div>
+<p>其中</p>
+<div class="math">$$
+\mathbf{W}_{h}^{Q},\mathbf{W}_{h}^{K}\in
+\mathbb{R}^{d_k\times d_{\mathrm{model}}},\qquad
+\mathbf{W}_{h}^{V}\in
+\mathbb{R}^{d_v\times d_{\mathrm{model}}}.
+$$</div>
+<p>为简化公式，讨论单头时省略上标 <span class="math">\(h\)</span>。其他符号如下：</p>
+<table>
+<thead>
+<tr>
+<th>符号</th>
+<th>含义</th>
+<th>维度</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="math">\(N\)</span></td>
+<td>序列长度</td>
+<td>标量</td>
+</tr>
+<tr>
+<td><span class="math">\(H\)</span></td>
+<td>注意力头数</td>
+<td>标量</td>
+</tr>
+<tr>
+<td><span class="math">\(\mathbf{Q},\mathbf{K}\)</span></td>
+<td>按行堆叠的 query/key</td>
+<td><span class="math">\(N\times d_k\)</span></td>
+</tr>
+<tr>
+<td><span class="math">\(\mathbf{V},\mathbf{O}\)</span></td>
+<td>按行堆叠的 value/output</td>
+<td><span class="math">\(N\times d_v\)</span></td>
+</tr>
+<tr>
+<td><span class="math">\(\mathbf{S}_t\)</span></td>
+<td>关联记忆状态</td>
+<td><span class="math">\(d_k\times d_v\)</span></td>
+</tr>
+<tr>
+<td><span class="math">\(\mathbf{z}_t\)</span></td>
+<td>归一化状态</td>
+<td><span class="math">\(d_k\)</span></td>
+</tr>
+<tr>
+<td><span class="math">\(\alpha_t,\boldsymbol{\alpha}_t\)</span></td>
+<td>标量/通道级遗忘门</td>
+<td>标量或 <span class="math">\(d_k\)</span></td>
+</tr>
+<tr>
+<td><span class="math">\(\beta_t\)</span></td>
+<td>Delta 更新强度</td>
+<td>标量</td>
+</tr>
+</tbody>
+</table>
+<p>输出投影统一记为 <span class="math">\(\mathbf{W}^{O}\)</span>。矩阵 <span class="math">\(\operatorname{Diag}(\boldsymbol{\alpha}_t)\)</span> 以向量 <span class="math">\(\boldsymbol{\alpha}_t\)</span> 为对角线。</p>
+<h2>1. 从标准注意力到线性注意力</h2>
+<h3>1.1 标准自注意力</h3>
+<p>单头标准注意力为</p>
+<div class="math">$$
+\mathbf{O}
+=
+\operatorname{softmax}\!\left(
+\frac{\mathbf{Q}\mathbf{K}^{\top}}{\sqrt{d_k}}
++\mathbf{M}
+\right)\mathbf{V},
+$$</div>
+<p>其中 <span class="math">\(\mathbf{M}\)</span> 是因果掩码；不需要因果约束时可省略。多头结果拼接后再经过输出投影。按行堆叠整个序列时：</p>
+<div class="math">$$
+\mathbf{Y}
+=
+\operatorname{Concat}\!\left(
+\mathbf{O}^{1},\ldots,\mathbf{O}^{H}
+\right)
+\left(\mathbf{W}^{O}\right)^{\top}.
+$$</div>
+<p><span class="math">\(\mathbf{Q}\mathbf{K}^{\top}\in\mathbb{R}^{N\times N}\)</span>，因此核心计算量为
+<span class="math">\(O(N^2d_k)\)</span>。显式实现的注意力矩阵空间开销为 <span class="math">\(O(N^2)\)</span>；FlashAttention 等 IO-aware 实现可以避免把整张矩阵持久写入显存，但不会改变全局注意力的二次算术复杂度。自回归推理虽然不必重新计算整张矩阵，但每个新 query 仍要读取全部历史 key/value，单步代价随上下文长度 <span class="math">\(N\)</span> 增长。</p>
+<h3>1.2 为什么不能直接改变 Softmax 的乘法顺序</h3>
+<p>如果去掉 Softmax，则矩阵结合律给出</p>
+<div class="math">$$
+(\mathbf{Q}\mathbf{K}^{\top})\mathbf{V}
+=
+\mathbf{Q}(\mathbf{K}^{\top}\mathbf{V}).
+$$</div>
+<p>为什么右侧的复杂度是线性的？设</p>
+<div class="math">$$
+\mathbf{Q},\mathbf{K}\in\mathbb{R}^{N\times d_k},
+\qquad
+\mathbf{V}\in\mathbb{R}^{N\times d_v}.
+$$</div>
+<p>右侧按两步计算：</p>
+<ol>
+<li>先计算 <span class="math">\(\mathbf{K}^{\top}\mathbf{V}\)</span>。其维度变化为
+   <span class="math">\((d_k\times N)(N\times d_v)\rightarrow d_k\times d_v\)</span>，因此需要
+   <span class="math">\(O(Nd_kd_v)\)</span> 次运算。</li>
+<li>再计算 <span class="math">\(\mathbf{Q}(\mathbf{K}^{\top}\mathbf{V})\)</span>。其维度变化为
+   <span class="math">\((N\times d_k)(d_k\times d_v)\rightarrow N\times d_v\)</span>，同样需要
+   <span class="math">\(O(Nd_kd_v)\)</span> 次运算。</li>
+</ol>
+<p>两步合计约为 <span class="math">\(2Nd_kd_v\)</span>，忽略常数后即</p>
+<div class="math">$$
+O(Nd_kd_v).
+$$</div>
+<p>当 <span class="math">\(d_k=d_v=d\)</span> 时，它就是 <span class="math">\(O(Nd^2)\)</span>。关键在于中间结果
+<span class="math">\(\mathbf{K}^{\top}\mathbf{V}\)</span> 的大小是 <span class="math">\(d_k\times d_v\)</span>，整个过程中没有生成
+<span class="math">\(N\times N\)</span> 矩阵。相反，若按左侧顺序先计算
+<span class="math">\(\mathbf{Q}\mathbf{K}^{\top}\)</span>，就会产生 <span class="math">\(N\times N\)</span> 中间矩阵，复杂度回到关于
+<span class="math">\(N\)</span> 的二次量级。</p>
+<p>以上结合律推导适用于没有 Softmax 且没有因果掩码阻断的可结合形式。因果线性注意力需要使用前缀状态或并行扫描，不能直接用整段序列的
+<span class="math">\(\mathbf{K}^{\top}\mathbf{V}\)</span>。</p>
+<p>但标准注意力中的 Softmax 是逐行归一化的非线性算子：</p>
+<div class="math">$$
+\operatorname{softmax}(\mathbf{Q}\mathbf{K}^{\top})\mathbf{V}
+\neq
+\mathbf{Q}(\mathbf{K}^{\top}\mathbf{V}).
+$$</div>
+<p>因此，线性注意力不是简单地给原公式“换括号”，而是要把相似度改写为可分解的核。为简化符号，本文将核特征映射吸收到 query/key 的生成过程，映射后的向量仍记为 <span class="math">\(\mathbf{q}_t,\mathbf{k}_t\)</span>，不再额外添加函数或波浪号：</p>
+<div class="math">$$
+\operatorname{sim}(\mathbf{q}_t,\mathbf{k}_j)
+=
+\mathbf{q}_t^{\top}\mathbf{k}_j.
+$$</div>
+<p>归一化的核注意力输出为</p>
+<div class="math">$$
+\mathbf{o}_t
+=
+\frac{
+\sum_{j=1}^{N}
+\left(\mathbf{q}_t^{\top}\mathbf{k}_j\right)\mathbf{v}_j
+}{
+\sum_{j=1}^{N}
+\mathbf{q}_t^{\top}\mathbf{k}_j+\varepsilon
+}.
+$$</div>
+<p>将只依赖 <span class="math">\(t\)</span> 的 query 移到求和外：</p>
+<div class="math">$$
+\mathbf{o}_t
+=
+\frac{
+\left(\sum_{j=1}^{N}\mathbf{k}_j\mathbf{v}_j^{\top}\right)^{\top}
+\mathbf{q}_t
+}{
+\left(\sum_{j=1}^{N}\mathbf{k}_j\right)^{\top}
+\mathbf{q}_t+\varepsilon
+}.
+$$</div>
+<p>这里不再生成 <span class="math">\(N\times N\)</span> 的中间矩阵，而是先形成固定大小的
+<span class="math">\(d_k\times d_v\)</span> 统计量。</p>
+<h3>1.3 复杂度为什么对 <span class="math">\(N\)</span> 是线性的</h3>
+<p>设</p>
+<div class="math">$$
+\mathbf{A}=\mathbf{K}^{\top}\mathbf{V}
+\in\mathbb{R}^{d_k\times d_v}.
+$$</div>
+<p>矩阵 <span class="math">\(\mathbf{A}\)</span> 有 <span class="math">\(d_kd_v\)</span> 个元素，每个元素需要沿序列维度做长度为 <span class="math">\(N\)</span> 的内积，因此计算量是</p>
+<div class="math">$$
+O(Nd_kd_v).
+$$</div>
+<p>当 <span class="math">\(d_k\sim d_v\sim d\)</span> 时，通常简写为 <span class="math">\(O(Nd^2)\)</span>。相比之下，标准注意力先生成 <span class="math">\(N\times N\)</span> 分数矩阵，计算量是 <span class="math">\(O(N^2d)\)</span>。</p>
+<p>“线性”只表示复杂度关于 <span class="math">\(N\)</span> 线性，并不表示关于隐藏维度也是线性。实际性能还取决于头维度、特征映射、分块算法、内存访问和硬件利用率。</p>
+<h3>1.4 因果场景需要逐时间步的前缀聚合</h3>
+<p>上一节的全局聚合</p>
+<div class="math">$$
+\mathbf{K}^{\top}\mathbf{V}
+=
+\sum_{j=1}^{N}\mathbf{k}_j\mathbf{v}_j^{\top}
+$$</div>
+<p>包含整段序列的全部 token。如果时间步 <span class="math">\(t\)</span> 直接使用这个全局状态，求和中就会包含
+<span class="math">\(j&gt;t\)</span> 的 key/value，即模型会提前看到未来信息。因果注意力要求时间步 <span class="math">\(t\)</span> 只能使用
+<span class="math">\(j\le t\)</span> 的前缀，因此每个时间步需要不同的聚合状态。</p>
+<p>先从多头分解形式看这一点。对第 <span class="math">\(h\)</span> 个头，仍采用全文统一的列向量约定：</p>
+<div class="math">$$
+\mathbf{q}_t^h=\mathbf{W}_h^Q\mathbf{x}_t,\qquad
+\mathbf{k}_j^h=\mathbf{W}_h^K\mathbf{x}_j,\qquad
+\mathbf{v}_j^h=\mathbf{W}_h^V\mathbf{x}_j.
+$$</div>
+<p>原稿的“分块/分解形式”可更严谨地改写为下面的未归一化多头线性注意力：</p>
+<div class="math">$$
+\mathbf{y}_t
+=
+\sum_{h=1}^{H}
+\mathbf{W}_h^O
+\left[
+\sum_{j=1}^{t}
+\frac{(\mathbf{q}_t^h)^{\top}\mathbf{k}_j^h}{\sqrt{d_k}}
+\mathbf{v}_j^h
+\right]
+\tag{2}
+$$</div>
+<p>其中 <span class="math">\(\mathbf{W}_h^O\in\mathbb{R}^{d_{\mathrm{model}}\times d_v}\)</span> 是总输出投影 <span class="math">\(\mathbf{W}^O\)</span> 中对应第 <span class="math">\(h\)</span> 个头的分块。这里的上限是 <span class="math">\(t\)</span> 而不是 <span class="math">\(N\)</span>，正是因果约束。原稿使用的索引 <span class="math">\(c\)</span> 容易与后文的序列分块混淆，因此这里改用头索引 <span class="math">\(h\)</span>。若采用归一化核注意力，还需要将每个头的结果除以对应的权重和；上式只保留与状态递推最相关的未归一化部分。</p>
+<p>进一步把同一头中的 Q/K 投影与 V/O 投影分别合并。定义</p>
+<div class="math">$$
+\mathbf{W}_h^{QK}
+=
+(\mathbf{W}_h^Q)^{\top}\mathbf{W}_h^K
+\in\mathbb{R}^{d_{\mathrm{model}}\times d_{\mathrm{model}}},
+\qquad
+\mathbf{W}_h^{OV}
+=
+\mathbf{W}_h^O\mathbf{W}_h^V
+\in\mathbb{R}^{d_{\mathrm{model}}\times d_{\mathrm{model}}}.
+$$</div>
+<p>由于</p>
+<div class="math">$$
+(\mathbf{q}_t^h)^{\top}\mathbf{k}_j^h
+=
+\mathbf{x}_t^{\top}\mathbf{W}_h^{QK}\mathbf{x}_j,
+\qquad
+\mathbf{W}_h^O\mathbf{v}_j^h
+=
+\mathbf{W}_h^{OV}\mathbf{x}_j,
+$$</div>
+<p>公式 (2) 可写成下面的合并权重形式：</p>
+<div class="math">$$
+\mathbf{y}_t
+=
+\sum_{h=1}^{H}
+\sum_{j=1}^{t}
+\frac{
+\mathbf{x}_t^{\top}\mathbf{W}_h^{QK}\mathbf{x}_j
+}{\sqrt{d_k}}
+\mathbf{W}_h^{OV}\mathbf{x}_j
+\tag{3}
+$$</div>
+<p>公式 (3) 主要用于说明代数结构：相关性是关于 <span class="math">\(\mathbf{x}_t\)</span> 与 <span class="math">\(\mathbf{x}_j\)</span> 的双线性形式，value 与输出投影也可以合并。这一步依赖 <span class="math">\(\mathbf{q}_t^h,\mathbf{k}_j^h\)</span> 是上面定义的线性投影；如果 query/key 的生成中还包含不可合并的非线性特征映射，就不能把它们压缩成单个 <span class="math">\(\mathbf{W}_h^{QK}\)</span>，但后面的前缀状态递推仍然成立。</p>
+<p>实际实现通常仍保留低秩分解后的
+<span class="math">\(\mathbf{W}_h^Q,\mathbf{W}_h^K,\mathbf{W}_h^V,\mathbf{W}_h^O\)</span>，避免显式构造较大的
+<span class="math">\(\mathbf{W}_h^{QK}\)</span> 与 <span class="math">\(\mathbf{W}_h^{OV}\)</span>。</p>
+<p>对因果计算而言，更关键的改写是为每个头定义前缀状态：</p>
+<div class="math">$$
+\mathbf{S}_t^h
+=
+\sum_{j=1}^{t}\mathbf{k}_j^h(\mathbf{v}_j^h)^{\top},
+\qquad
+\mathbf{o}_t^h
+=
+(\mathbf{S}_t^h)^{\top}\mathbf{q}_t^h.
+$$</div>
+<p>这个状态随时间步递推：</p>
+<div class="math">$$
+\mathbf{S}_t^h
+=
+\mathbf{S}_{t-1}^h
++
+\mathbf{k}_t^h(\mathbf{v}_t^h)^{\top}.
+$$</div>
+<p>因此，因果线性注意力仍然具有关于序列长度的线性复杂度，但不能让所有时间步共享同一个全局
+<span class="math">\(\mathbf{K}^{\top}\mathbf{V}\)</span>。推理时应逐 token 更新前缀状态；训练时则可以用并行前缀扫描或分块算法同时计算各时间步对应的前缀状态。下一节将在加入归一化项后完整推导这一 RNN 形式。</p>
+<h2>2. 因果线性注意力的 RNN 形式</h2>
+<h3>2.1 从前缀和到循环状态</h3>
+<p>因果核注意力为</p>
+<div class="math">$$
+\mathbf{o}_t
+=
+\frac{
+\sum_{j=1}^{t}
+\left(\mathbf{q}_t^{\top}\mathbf{k}_j\right)\mathbf{v}_j
+}{
+\sum_{j=1}^{t}
+\mathbf{q}_t^{\top}\mathbf{k}_j+\varepsilon
+}.
+$$</div>
+<p>定义矩阵状态和归一化状态</p>
+<div class="math">$$
+\mathbf{S}_t
+=
+\sum_{j=1}^{t}\mathbf{k}_j\mathbf{v}_j^{\top},
+\qquad
+\mathbf{z}_t
+=
+\sum_{j=1}^{t}\mathbf{k}_j.
+$$</div>
+<p>于是</p>
+<div class="math">$$
+\mathbf{o}_t
+=
+\frac{
+\mathbf{S}_t^{\top}\mathbf{q}_t
+}{
+\mathbf{z}_t^{\top}\mathbf{q}_t+\varepsilon
+}.
+$$</div>
+<p>两个状态都可递推：</p>
+<div class="math">$$
+\begin{aligned}
+\mathbf{S}_0&amp;=\mathbf{0},&amp;
+\mathbf{S}_t&amp;=\mathbf{S}_{t-1}
++\mathbf{k}_t\mathbf{v}_t^{\top},\\
+\mathbf{z}_0&amp;=\mathbf{0},&amp;
+\mathbf{z}_t&amp;=\mathbf{z}_{t-1}
++\mathbf{k}_t.
+\end{aligned}
+$$</div>
+<p>若加入残差与层变换，可写为</p>
+<div class="math">$$
+\mathbf{y}_t
+=
+f_{\mathrm{layer}}\!\left(
+\mathbf{x}_t+\mathbf{W}^{O}\mathbf{o}_t
+\right).
+$$</div>
+<h3>2.2 这种等价带来什么</h3>
+<p>训练时，整段长度为 <span class="math">\(N\)</span> 的序列可以通过分块矩阵乘法或并行扫描计算，线性注意力核心的总时间复杂度为 <span class="math">\(O(Nd_kd_v)\)</span>；当 <span class="math">\(d_k=d_v=d\)</span> 时，可简写为 <span class="math">\(O(Nd^2)\)</span>。推理时，每生成一个 token，只需更新并读取 <span class="math">\(\mathbf{S}_{t-1}\)</span> 与 <span class="math">\(\mathbf{z}_{t-1}\)</span>，单步时间复杂度为 <span class="math">\(O(d_kd_v)\)</span>；生成完整的 <span class="math">\(N\)</span> 个 token 总计仍为 <span class="math">\(O(Nd_kd_v)\)</span>。</p>
+<p>推理时不再保存随 <span class="math">\(N\)</span> 增长的 KV cache，只需维护 <span class="math">\(\mathbf{S}_{t-1}\)</span> 与 <span class="math">\(\mathbf{z}_{t-1}\)</span>，状态空间复杂度为 <span class="math">\(O(d_kd_v+d_k)\)</span>。在模型维度固定时，单步时间和状态空间都不随上下文长度增长，所以常被口语化地称为“单步 <span class="math">\(O(1)\)</span>”；更严谨的写法是“关于 <span class="math">\(N\)</span> 为 <span class="math">\(O(1)\)</span>”。</p>
+<p>固定状态也有代价：所有历史被压入有限容量的关联记忆，不能保证无损保存。序列变长后，不同 key/value 可能发生干扰或碰撞，这正是后续门控与 Delta 规则要解决的问题。</p>
+<h2>3. 从纯累加到可选择的状态更新</h2>
+<h3>3.1 纯累加的局限</h3>
+<p>省略核映射与归一化后，最简单的线性注意力状态为</p>
+<div class="math">$$
+\mathbf{S}_t
+=
+\mathbf{S}_{t-1}
++\mathbf{k}_t\mathbf{v}_t^{\top},
+\qquad
+\mathbf{o}_t=\mathbf{S}_t^{\top}\mathbf{q}_t.
+$$</div>
+<p>它把每个关联永久写入状态，没有显式遗忘机制。有限状态在长序列中会逐渐混入过时信息，降低精确检索能力。</p>
+<h3>3.2 Mamba-2：标量衰减</h3>
+<p>用与本文一致的状态方向，Mamba-2 的核心递推可概括为</p>
+<div class="math">$$
+\mathbf{S}_t
+=
+\alpha_t\mathbf{S}_{t-1}
++\mathbf{k}_t\mathbf{v}_t^{\top},
+\qquad
+\alpha_t\in(0,1].
+$$</div>
+<p><span class="math">\(\alpha_t\)</span> 可以快速清除旧记忆，但同一状态头的所有通道共享一个衰减率，遗忘较粗粒度。</p>
+<p>若定义累计衰减</p>
+<div class="math">$$
+\gamma_t=\prod_{i=1}^{t}\alpha_i,
+$$</div>
+<p>则时刻 <span class="math">\(j\)</span> 写入的记忆在时刻 <span class="math">\(t\)</span> 的权重为 <span class="math">\(\gamma_t/\gamma_j\)</span>。这揭示了递推形式与带衰减因果掩码之间的对应关系。</p>
+<h3>3.3 DeltaNet：定向覆盖</h3>
+<p>纯累加更新</p>
+<div class="math">$$
+\mathbf{S}_t
+=
+\mathbf{S}_{t-1}
++\mathbf{k}_t\mathbf{v}_t^\top
+$$</div>
+<p>只负责把新关联叠加到状态中，却没有回答一个重要问题：如果同一个 key
+再次出现，应该把新 value 继续累加，还是用新 value 修正旧关联？把状态看成一个从
+key 空间到 value 空间的线性映射后，当前 key 在写入前读出的旧值为</p>
+<div class="math">$$
+\widehat{\mathbf{v}}_t
+=
+\mathbf{S}_{t-1}^{\top}\mathbf{k}_t.
+$$</div>
+<p>若仍采用加法写入，则写入后在同一 key 上读到</p>
+<div class="math">$$
+\left(
+\mathbf{S}_{t-1}
++\beta_t\mathbf{k}_t\mathbf{v}_t^\top
+\right)^\top\mathbf{k}_t
+=
+\widehat{\mathbf{v}}_t
++\beta_t\|\mathbf{k}_t\|_2^2\mathbf{v}_t.
+$$</div>
+<p>旧值 <span class="math">\(\widehat{\mathbf{v}}_t\)</span> 并没有被消除；同一关联被反复写入时，状态会不断累加，
+而不是趋近于最新目标。DeltaNet 的设计动机正是把“写入完整的新 value”改成“只写入
+预测误差”。先定义读写残差</p>
+<div class="math">$$
+\mathbf{e}_t
+=
+\mathbf{v}_t-\widehat{\mathbf{v}}_t
+=
+\mathbf{v}_t-\mathbf{S}_{t-1}^{\top}\mathbf{k}_t.
+$$</div>
+<p>我们希望寻找一个状态修正 <span class="math">\(\Delta\mathbf{S}_t\)</span>，使它在当前 key 上产生
+<span class="math">\(\mathbf{e}_t\)</span>：</p>
+<div class="math">$$
+\Delta\mathbf{S}_t^\top\mathbf{k}_t
+=
+\mathbf{e}_t.
+$$</div>
+<p>满足这一约束的最小 Frobenius 范数秩一修正为</p>
+<div class="math">$$
+\Delta\mathbf{S}_t
+=
+\frac{\mathbf{k}_t\mathbf{e}_t^\top}
+{\|\mathbf{k}_t\|_2^2}.
+$$</div>
+<p>当 key 已做 L2 归一化时，分母为 <span class="math">\(1\)</span>。再引入更新强度
+<span class="math">\(\beta_t\)</span>，便得到 DeltaNet 更新：</p>
+<div class="math">$$
+\mathbf{S}_t
+=
+\mathbf{S}_{t-1}
++\beta_t\mathbf{k}_t
+\left(
+\mathbf{v}_t-\mathbf{S}_{t-1}^{\top}\mathbf{k}_t
+\right)^{\top}.
+$$</div>
+<p>这一步可以直接验证。更新后在当前 key 上的读出为</p>
+<div class="math">$$
+\begin{aligned}
+\mathbf{S}_t^\top\mathbf{k}_t
+&amp;=
+\widehat{\mathbf{v}}_t
++\beta_t\|\mathbf{k}_t\|_2^2
+\left(
+\mathbf{v}_t-\widehat{\mathbf{v}}_t
+\right).
+\end{aligned}
+$$</div>
+<p>若 <span class="math">\(\|\mathbf{k}_t\|_2=1\)</span>，则</p>
+<div class="math">$$
+\mathbf{S}_t^\top\mathbf{k}_t
+=
+(1-\beta_t)\widehat{\mathbf{v}}_t
++\beta_t\mathbf{v}_t.
+$$</div>
+<p>因此 <span class="math">\(\beta_t=0\)</span> 表示保留旧关联，<span class="math">\(0&lt;\beta_t&lt;1\)</span> 表示向新 value
+做部分修正，<span class="math">\(\beta_t=1\)</span> 则在当前 key 方向上完成精确覆盖。对任意其他
+query <span class="math">\(\mathbf{q}\)</span>，更新引起的读出变化为</p>
+<div class="math">$$
+\mathbf{S}_t^\top\mathbf{q}
+-
+\mathbf{S}_{t-1}^\top\mathbf{q}
+=
+\beta_t
+\left(
+\mathbf{k}_t^\top\mathbf{q}
+\right)\mathbf{e}_t.
+$$</div>
+<p>也就是说，修正强度由 <span class="math">\(\mathbf{q}\)</span> 与当前 key 的相似度控制：与
+<span class="math">\(\mathbf{k}_t\)</span> 正交的方向不受影响，相似方向共享这次误差修正。这就是“定向覆盖”
+而不是“全局遗忘”。</p>
+<p>将残差形式展开，可以进一步看出一次更新由“擦除旧关联”和“写入新关联”组成：</p>
+<div class="math">$$
+\begin{aligned}
+\mathbf{S}_t
+&amp;=
+\mathbf{S}_{t-1}
+-\beta_t\mathbf{k}_t\mathbf{k}_t^\top\mathbf{S}_{t-1}
++\beta_t\mathbf{k}_t\mathbf{v}_t^\top\\
+&amp;=
+\left(
+\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^{\top}
+\right)\mathbf{S}_{t-1}
++\beta_t\mathbf{k}_t\mathbf{v}_t^{\top}.
+\end{aligned}
+$$</div>
+<p>其中
+<span class="math">\(-\beta_t\mathbf{k}_t\mathbf{k}_t^\top\mathbf{S}_{t-1}\)</span>
+只擦除旧状态在 <span class="math">\(\mathbf{k}_t\)</span> 方向上的分量，而
+<span class="math">\(\beta_t\mathbf{k}_t\mathbf{v}_t^\top\)</span> 随后写入新关联。</p>
+<p>Delta 规则还可以从在线学习角度得到。定义当前样本的重建损失：</p>
+<div class="math">$$
+\mathcal{L}_t(\mathbf{S})
+=
+\frac{1}{2}
+\left\|
+\mathbf{S}^{\top}\mathbf{k}_t-\mathbf{v}_t
+\right\|_2^2
+$$</div>
+<p>其关于状态的梯度为</p>
+<div class="math">$$
+\nabla_{\mathbf{S}}\mathcal{L}_t
+=
+\mathbf{k}_t
+\left(
+\mathbf{S}^{\top}\mathbf{k}_t-\mathbf{v}_t
+\right)^\top.
+$$</div>
+<p>从 <span class="math">\(\mathbf{S}_{t-1}\)</span> 出发执行一步学习率为 <span class="math">\(\beta_t\)</span> 的在线梯度下降：</p>
+<div class="math">$$
+\begin{aligned}
+\mathbf{S}_t
+&amp;=
+\mathbf{S}_{t-1}
+-\beta_t
+\nabla_{\mathbf{S}}\mathcal{L}_t
+\big|_{\mathbf{S}=\mathbf{S}_{t-1}}\\
+&amp;=
+\mathbf{S}_{t-1}
++\beta_t\mathbf{k}_t
+\left(
+\mathbf{v}_t-\mathbf{S}_{t-1}^\top\mathbf{k}_t
+\right)^\top.
+\end{aligned}
+$$</div>
+<p>因此，DeltaNet 不是额外附加的一条启发式擦除规则，而是在固定大小的关联记忆上，
+用当前 key/value 对执行一步数据依赖的在线误差校正。它能精确修改被当前 key
+访问到的方向，但不会主动清理长期未再次出现的旧方向；这正是下一节加入遗忘门的原因。</p>
+<h3>3.4 Gated DeltaNet：全局遗忘与定向编辑</h3>
+<p>DeltaNet 解决了“如何覆盖当前 key 对应的旧值”，但它的擦除矩阵</p>
+<div class="math">$$
+\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^\top
+$$</div>
+<p>只作用于当前 key 方向。若某些旧记忆长期不再被相似 key 访问，它们仍会保留在有限状态
+中并持续占用容量。反过来，Mamba-2 式标量门
+<span class="math">\(\alpha_t\mathbf{S}_{t-1}\)</span> 可以快速衰减全部历史，却无法只修改某一个具体关联。
+Gated DeltaNet（GDN）把这两种互补机制组合起来：<span class="math">\(\alpha_t\)</span> 决定旧状态整体保留多少，
+<span class="math">\(\beta_t\)</span> 决定当前 key 方向修改多少。</p>
+<p>这个公式可以从两个连续步骤推导。第一步只对旧记忆施加标量遗忘门：</p>
+<div class="math">$$
+\overline{\mathbf{S}}_{t-1}
+=
+\alpha_t\mathbf{S}_{t-1},
+\qquad
+\alpha_t\in(0,1].
+$$</div>
+<p>此时在当前 key 上读出的、经过遗忘后的旧值为</p>
+<div class="math">$$
+\widehat{\mathbf{v}}_t^{\,\mathrm{g}}
+=
+\overline{\mathbf{S}}_{t-1}^{\top}\mathbf{k}_t
+=
+\alpha_t\mathbf{S}_{t-1}^{\top}\mathbf{k}_t.
+$$</div>
+<p>第二步以衰减后的状态为起点，执行一次 Delta 误差校正：</p>
+<div class="math">$$
+\begin{aligned}
+\mathbf{S}_t
+&amp;=
+\overline{\mathbf{S}}_{t-1}
++\beta_t\mathbf{k}_t
+\left(
+\mathbf{v}_t-\widehat{\mathbf{v}}_t^{\,\mathrm{g}}
+\right)^\top\\
+&amp;=
+\overline{\mathbf{S}}_{t-1}
++\beta_t\mathbf{k}_t
+\left(
+\mathbf{v}_t-\overline{\mathbf{S}}_{t-1}^{\top}\mathbf{k}_t
+\right)^\top.
+\end{aligned}
+$$</div>
+<p>将 <span class="math">\(\overline{\mathbf{S}}_{t-1}=\alpha_t\mathbf{S}_{t-1}\)</span> 代入并展开：</p>
+<div class="math">$$
+\begin{aligned}
+\mathbf{S}_t
+&amp;=
+\alpha_t\mathbf{S}_{t-1}
+-\alpha_t\beta_t
+\mathbf{k}_t\mathbf{k}_t^\top\mathbf{S}_{t-1}
++\beta_t\mathbf{k}_t\mathbf{v}_t^\top\\
+&amp;=
+\alpha_t
+\left(
+\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^{\top}
+\right)\mathbf{S}_{t-1}
++\beta_t\mathbf{k}_t\mathbf{v}_t^{\top}.
+\end{aligned}
+$$</div>
+<p>这里 <span class="math">\(\alpha_t\)</span> 只乘在旧状态的转移项上，不乘新写入的
+<span class="math">\(\beta_t\mathbf{k}_t\mathbf{v}_t^\top\)</span>。这样，新 value 不会在刚写入时就被遗忘门
+再次缩小。由于 <span class="math">\(\alpha_t\)</span> 是标量，它与擦除矩阵可交换；但它不能跨过加号作用到新写入项。</p>
+<p>在 <span class="math">\(\|\mathbf{k}_t\|_2=1\)</span> 时，GDN 对当前 key 的读出为</p>
+<div class="math">$$
+\mathbf{S}_t^\top\mathbf{k}_t
+=
+(1-\beta_t)\alpha_t
+\mathbf{S}_{t-1}^\top\mathbf{k}_t
++\beta_t\mathbf{v}_t.
+$$</div>
+<p>这个式子把两个门的职责分开得很清楚：</p>
+<ol>
+<li><span class="math">\(\alpha_t\)</span> 先决定旧读出还能保留多少，较小的 <span class="math">\(\alpha_t\)</span> 可以在边界变化或上下文切换时快速重置整头记忆。</li>
+<li><span class="math">\(\beta_t\)</span> 再在当前 key 方向上混合旧读出与新目标；当 <span class="math">\(\beta_t=1\)</span> 时，无论 <span class="math">\(\alpha_t\)</span> 取何值，当前关联都被新 value 覆盖。</li>
+<li>对与当前 key 不相似的方向，Delta 项影响很小，但它们仍会受到 <span class="math">\(\alpha_t\)</span> 的全局衰减。</li>
+</ol>
+<p>对任意 query <span class="math">\(\mathbf{q}\)</span>，同样可以写出</p>
+<div class="math">$$
+\mathbf{S}_t^\top\mathbf{q}
+=
+\alpha_t\mathbf{S}_{t-1}^\top\mathbf{q}
++\beta_t
+\left(
+\mathbf{k}_t^\top\mathbf{q}
+\right)
+\left(
+\mathbf{v}_t
+-\alpha_t\mathbf{S}_{t-1}^\top\mathbf{k}_t
+\right).
+$$</div>
+<p>第一项是全局保留的历史，第二项是按 key 相似度路由的局部误差修正。因此 GDN
+同时具备可学习的时间尺度与关联级编辑能力：它比纯累加更能抑制状态污染，比单独使用
+标量衰减更擅长精确更新，也补上了 DeltaNet 无法主动清理未访问旧方向的缺口。不过，
+同一个状态头仍共享单个 <span class="math">\(\alpha_t\)</span>，所有 key 通道只能同步遗忘；第 4 节的 KDA
+将进一步把这个标量门提升为通道级向量门。</p>
+<h3>3.5 与状态空间模型的关系</h3>
+<p>经典离散线性时不变状态空间模型（LTI SSM）为</p>
+<div class="math">$$
+\mathbf{h}_t=\mathbf{A}\mathbf{h}_{t-1}+\mathbf{B}\mathbf{x}_t,
+\qquad
+\mathbf{y}_t=\mathbf{C}\mathbf{h}_t.
+$$</div>
+<p>当 <span class="math">\(\mathbf{A},\mathbf{B},\mathbf{C}\)</span> 固定时，它可展开为卷积核</p>
+<div class="math">$$
+\overline{\mathbf{K}}
+=
+\left(
+\mathbf{C}\mathbf{B},
+\mathbf{C}\mathbf{A}\mathbf{B},
+\mathbf{C}\mathbf{A}^2\mathbf{B},
+\ldots
+\right).
+$$</div>
+<p>线性注意力、Mamba-2、GDN 与 KDA 都可视为“输入驱动的线性状态更新”，并可借用递推、分块和扫描算法。但 KDA 的转移矩阵依赖当前输入，因此不是固定的 LTI 系统，也不能简单化为一个数据无关的全局卷积核。二者是相关的状态序列模型，而不是完全相同的数学对象。</p>
+<h2>4. Kimi Delta Attention</h2>
+<h3>4.1 GDN 的剩余瓶颈</h3>
+<p>GDN 的 <span class="math">\(\alpha_t\)</span> 是头级标量。若不同记忆通道需要不同时间尺度，一个标量只能让整头状态同步遗忘，限制了记忆控制的粒度。</p>
+<p>KDA 将它改为通道级向量</p>
+<div class="math">$$
+\boldsymbol{\alpha}_t\in(0,1]^{d_k},
+\qquad
+\mathbf{D}_t=\operatorname{Diag}(\boldsymbol{\alpha}_t).
+$$</div>
+<p>每个 key 通道因此拥有独立衰减率。</p>
+<h3>4.2 KDA 的核心递推</h3>
+<p>KDA 的状态更新与读取为</p>
+<div class="math">$$
+\mathbf{S}_t
+=
+\left(
+\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^{\top}
+\right)
+\mathbf{D}_t\mathbf{S}_{t-1}
++\beta_t\mathbf{k}_t\mathbf{v}_t^{\top}
+$$</div>
+<div class="math">$$
+\mathbf{o}_t=\mathbf{S}_t^{\top}\mathbf{q}_t
+$$</div>
+<p>其中</p>
+<div class="math">$$
+\mathbf{S}_t\in\mathbb{R}^{d_k\times d_v},\quad
+\mathbf{k}_t,\mathbf{q}_t\in\mathbb{R}^{d_k},\quad
+\mathbf{v}_t,\mathbf{o}_t\in\mathbb{R}^{d_v}.
+$$</div>
+<p>可以把 <span class="math">\(\mathbf{S}_{t-1}\)</span> 理解为一个固定大小的“压缩记忆”：它不是逐条保存历史
+key/value，而是把历史关联压入一个从 key 空间到 value 空间的线性映射。于是
+<span class="math">\(\mathbf{k}_t\)</span> 决定当前信息写到哪个方向，<span class="math">\(\mathbf{v}_t\)</span> 决定写入什么内容，
+<span class="math">\(\mathbf{q}_t\)</span> 则在更新完成后决定从哪个方向读取。为了把更新公式与“选择性遗忘、
+修正与调整、写入新信息”三步对应起来，可以引入两个中间状态。</p>
+<p><strong>第一步：选择性遗忘。</strong> 先对旧状态应用通道级门：</p>
+<div class="math">$$
+\widetilde{\mathbf{S}}_{t-1}
+=
+\mathbf{D}_t\mathbf{S}_{t-1}.
+$$</div>
+<p>因为 <span class="math">\(\mathbf{D}_t\)</span> 是对角矩阵，第 <span class="math">\(i\)</span> 个 key 通道满足</p>
+<div class="math">$$
+\left[
+\widetilde{\mathbf{S}}_{t-1}
+\right]_{i,:}
+=
+\alpha_{t,i}
+\left[
+\mathbf{S}_{t-1}
+\right]_{i,:}.
+$$</div>
+<p>当 <span class="math">\(\alpha_{t,i}\)</span> 接近 <span class="math">\(1\)</span> 时，该通道中的旧信息基本保留；接近 <span class="math">\(0\)</span>
+时，该通道被快速衰减。这里的“选择性”不是从历史 token 列表中删除某一条记录，
+而是当前输入为每个 key 特征通道生成不同的保留率。不同通道因此可以学习不同的
+记忆时间尺度：有些通道长期积累信息，有些通道快速响应局部变化。</p>
+<p><strong>第二步：修正与调整。</strong> 在写入新 value 之前，先擦除衰减后状态在当前 key
+方向上的旧关联。定义经过遗忘后的旧读出</p>
+<div class="math">$$
+\widehat{\mathbf{v}}_t^{\,\mathrm{old}}
+=
+\widetilde{\mathbf{S}}_{t-1}^{\top}\mathbf{k}_t,
+$$</div>
+<p>再令</p>
+<div class="math">$$
+\begin{aligned}
+\overline{\mathbf{S}}_{t-1}
+&amp;=
+\left(
+\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^\top
+\right)
+\widetilde{\mathbf{S}}_{t-1}\\
+&amp;=
+\widetilde{\mathbf{S}}_{t-1}
+-\beta_t\mathbf{k}_t
+\left(
+\widehat{\mathbf{v}}_t^{\,\mathrm{old}}
+\right)^\top.
+\end{aligned}
+$$</div>
+<p>第二行说明，这一步实际减去的是“当前 key 方向 <span class="math">\(\mathbf{k}_t\)</span>”与“该方向原来
+读出的 value”所形成的秩一关联。若
+<span class="math">\(\|\mathbf{k}_t\|_2=1\)</span>，则修正后在同一 key 上的读出变为</p>
+<div class="math">$$
+\overline{\mathbf{S}}_{t-1}^{\top}\mathbf{k}_t
+=
+(1-\beta_t)
+\widehat{\mathbf{v}}_t^{\,\mathrm{old}}.
+$$</div>
+<p>因此 <span class="math">\(\beta_t=1\)</span> 会完全清空当前 key 方向上的旧值，
+<span class="math">\(0&lt;\beta_t&lt;1\)</span> 则只做部分调整。对任意其他 query <span class="math">\(\mathbf{q}\)</span>，这一步引起的变化为</p>
+<div class="math">$$
+\overline{\mathbf{S}}_{t-1}^{\top}\mathbf{q}
+-
+\widetilde{\mathbf{S}}_{t-1}^{\top}\mathbf{q}
+=
+-\beta_t
+\left(
+\mathbf{k}_t^\top\mathbf{q}
+\right)
+\widehat{\mathbf{v}}_t^{\,\mathrm{old}}.
+$$</div>
+<p>只有与 <span class="math">\(\mathbf{k}_t\)</span> 内积绝对值较大的读取方向会受到明显影响，所以这种“修正”不同于第一步
+对所有旧记忆通道施加的遗忘：第一步按通道控制时间尺度，第二步按当前 key
+定位需要覆盖的关联。</p>
+<p><strong>第三步：写入新信息。</strong> 最后把当前 key/value 关联加入修正后的状态：</p>
+<div class="math">$$
+\mathbf{S}_t
+=
+\overline{\mathbf{S}}_{t-1}
++\beta_t\mathbf{k}_t\mathbf{v}_t^\top.
+$$</div>
+<p>把第二步与第三步合并，可以重新得到更直观的残差校正形式：</p>
+<div class="math">$$
+\begin{aligned}
+\mathbf{S}_t
+&amp;=
+\widetilde{\mathbf{S}}_{t-1}
++\beta_t\mathbf{k}_t
+\left(
+\mathbf{v}_t
+-\widetilde{\mathbf{S}}_{t-1}^{\top}\mathbf{k}_t
+\right)^\top\\
+&amp;=
+\widetilde{\mathbf{S}}_{t-1}
++\beta_t\mathbf{k}_t
+\left(
+\mathbf{v}_t-\widehat{\mathbf{v}}_t^{\,\mathrm{old}}
+\right)^\top.
+\end{aligned}
+$$</div>
+<p>这表明“修正”与“写入”不是两次无关操作：二者共同把当前 key
+上的旧读出推向新目标 <span class="math">\(\mathbf{v}_t\)</span>。当
+<span class="math">\(\|\mathbf{k}_t\|_2=1\)</span> 时，</p>
+<div class="math">$$
+\mathbf{S}_t^\top\mathbf{k}_t
+=
+(1-\beta_t)\widehat{\mathbf{v}}_t^{\,\mathrm{old}}
++\beta_t\mathbf{v}_t.
+$$</div>
+<p><span class="math">\(\beta_t\)</span> 同时控制擦除强度和写入强度，使旧值减少多少与新值增加多少保持匹配；
+当 <span class="math">\(\beta_t=1\)</span> 时，新 value 精确覆盖经过选择性遗忘后的旧关联。</p>
+<p>完成这三步后，
+<span class="math">\(\mathbf{o}_t=\mathbf{S}_t^\top\mathbf{q}_t\)</span> 使用 query 从新状态中提取输出。
+在线性映射的意义下，可以把 <span class="math">\(\mathbf{k}_t\)</span> 看作写入地址、<span class="math">\(\mathbf{v}_t\)</span>
+看作写入内容、<span class="math">\(\mathbf{q}_t\)</span> 看作读取地址；但这些“地址”是连续向量方向，
+相似方向之间会共享和干扰记忆，并不是离散存储槽。</p>
+<p>对角门的位置不能随意移动。一般情况下，</p>
+<div class="math">$$
+\left(\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^\top\right)\mathbf{D}_t
+\neq
+\mathbf{D}_t\left(\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^\top\right),
+$$</div>
+<p>因为矩阵乘法不可交换。KDA 采用前一种次序，并围绕该结构设计了稳定的分块 WY/UT 算法。</p>
+<h3>4.3 KDA 的神经参数化</h3>
+<p>对第 <span class="math">\(h\)</span> 个头，Kimi Linear 使用</p>
+<div class="math">$$
+\begin{aligned}
+\mathbf{q}_t^h
+&amp;=
+\operatorname{L2Norm}\!\left(
+\operatorname{Swish}\!\left(
+\operatorname{ShortConv}(\mathbf{W}_h^Q\mathbf{x}_t)
+\right)\right),\\
+\mathbf{k}_t^h
+&amp;=
+\operatorname{L2Norm}\!\left(
+\operatorname{Swish}\!\left(
+\operatorname{ShortConv}(\mathbf{W}_h^K\mathbf{x}_t)
+\right)\right),\\
+\mathbf{v}_t^h
+&amp;=
+\operatorname{Swish}\!\left(
+\operatorname{ShortConv}(\mathbf{W}_h^V\mathbf{x}_t)
+\right),\\
+\boldsymbol{\alpha}_t^h
+&amp;=
+f\!\left(
+\mathbf{W}_{\uparrow}^{\alpha}
+\mathbf{W}_{\downarrow}^{\alpha}
+\mathbf{x}_t
+\right),\\
+\beta_t^h
+&amp;=
+\operatorname{sigmoid}\!\left(
+\mathbf{W}_h^{\beta}\mathbf{x}_t
+\right).
+\end{aligned}
+$$</div>
+<p><span class="math">\(\mathbf{W}_{\downarrow}^{\alpha}\)</span> 与
+<span class="math">\(\mathbf{W}_{\uparrow}^{\alpha}\)</span> 构成低秩瓶颈，在控制参数量的同时生成
+<span class="math">\(d_k\)</span> 维通道级遗忘门。query 与 key 的 L2 归一化用于改善状态转移的数值稳定性。</p>
+<p>多头 KDA 的结果经过逐头 RMSNorm、数据依赖输出门和输出投影：</p>
+<div class="math">$$
+\mathbf{y}_t
+=
+\mathbf{W}^{O}
+\left[
+\operatorname{sigmoid}\!\left(
+\mathbf{W}_{\uparrow}^{G}
+\mathbf{W}_{\downarrow}^{G}\mathbf{x}_t
+\right)
+\odot
+\operatorname{RMSNorm}\!\left(
+\operatorname{Concat}(\mathbf{o}_t^1,\ldots,\mathbf{o}_t^H)
+\right)
+\right].
+$$</div>
+<h3>4.4 为什么仍能高效训练</h3>
+<p>逐 token 递推适合推理，但会限制训练并行度。KDA 将序列切成长度为 <span class="math">\(C\)</span> 的块：</p>
+<ul>
+<li>块之间递推传递固定大小的状态；</li>
+<li>块内部把连续的秩一更新压缩为 WY 表示；</li>
+<li>使用 UT 变换减少非矩阵乘法操作；</li>
+<li>通过 Tensor Core 友好的矩阵乘法并行计算输出。</li>
+</ul>
+<p>因此 KDA 同时保留了循环推理的固定状态和训练阶段的块内并行能力。它的优势并非只来自渐近复杂度，也来自对 GPU 计算路径的专门设计。</p>
+<h2>5. Kimi Linear 的混合架构</h2>
+<p>纯线性状态模型在精确长程检索上仍可能受有限状态容量约束。Kimi Linear 因此没有把全部层都替换成 KDA，而是采用层级混合：</p>
+<div class="math">$$
+\underbrace{\mathrm{KDA}\rightarrow\mathrm{KDA}\rightarrow\mathrm{KDA}}_{3\ \text{层}}
+\rightarrow
+\underbrace{\mathrm{Full\ MLA}}_{1\ \text{层}},
+$$</div>
+<p>即重复使用 <span class="math">\(3:1\)</span> 的 KDA/全局 MLA 比例。</p>
+<p>KDA 层承担高效的长序列状态建模与位置信息编码；少量 Full MLA 层保留全局 token-to-token 检索能力。论文在 Full MLA 层中使用 NoPE，把位置与近因偏置主要交给 KDA 的数据依赖衰减机制。</p>
+<p>相对于每层都使用 Full MLA，<span class="math">\(3:1\)</span> 配比使需要维护全局 KV cache 的层数直观上减少约 <span class="math">\(75\%\)</span>；实际显存收益还取决于 MLA 潜变量维度、层配置、batch size 与实现。</p>
+<p>需要特别区分：</p>
+<ul>
+<li><strong>线性注意力/KDA</strong>：通过固定大小的循环状态避免随 <span class="math">\(N\)</span> 增长的 KV cache。</li>
+<li><strong>MLA</strong>：通过低秩潜变量压缩 KV cache，但全局注意力本身仍包含 token 两两交互。</li>
+<li><strong>Kimi Linear</strong>：用大多数 KDA 层获得效率，再用少数 MLA 层补足精确全局检索。</li>
+</ul>
+<p>因此，MLA 不是线性注意力；二者在 Kimi Linear 中是互补组件。</p>
+<h2>6. 复杂度与内存总结</h2>
+<p>设单头状态为 <span class="math">\(d_k\times d_v\)</span>，忽略 batch、层数和头数等公共因子：</p>
+<table>
+<thead>
+<tr>
+<th>结构与阶段</th>
+<th>时间复杂度</th>
+<th>持久状态/缓存</th>
+<th>关于 <span class="math">\(N\)</span></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>标准注意力训练</td>
+<td><span class="math">\(O(N^2d_k)\)</span></td>
+<td>显式实现为 <span class="math">\(O(N^2)\)</span>；FlashAttention 可降低</td>
+<td>二次</td>
+</tr>
+<tr>
+<td>标准注意力单步生成</td>
+<td><span class="math">\(O(Nd_k)\)</span></td>
+<td>KV cache <span class="math">\(O(N(d_k+d_v))\)</span></td>
+<td>线性</td>
+</tr>
+<tr>
+<td>核线性注意力训练</td>
+<td><span class="math">\(O(Nd_kd_v)\)</span></td>
+<td>分块实现相关</td>
+<td>线性</td>
+</tr>
+<tr>
+<td>核线性注意力单步生成</td>
+<td><span class="math">\(O(d_kd_v)\)</span></td>
+<td><span class="math">\(O(d_kd_v+d_k)\)</span></td>
+<td>常数</td>
+</tr>
+<tr>
+<td>KDA 训练</td>
+<td>典型为 <span class="math">\(O(Nd_kd_v)\)</span></td>
+<td>分块临时量 + 状态</td>
+<td>线性</td>
+</tr>
+<tr>
+<td>KDA 单步生成</td>
+<td><span class="math">\(O(d_kd_v)\)</span></td>
+<td><span class="math">\(O(d_kd_v)\)</span></td>
+<td>常数</td>
+</tr>
+<tr>
+<td>Kimi Linear</td>
+<td>KDA 与少量 Full MLA 的加权组合</td>
+<td>KDA 状态 + MLA cache</td>
+<td>由混合比例决定</td>
+</tr>
+</tbody>
+</table>
+<p>这里的“常数”均指不随上下文长度 <span class="math">\(N\)</span> 增长，而不是与模型维度无关。对于完整模型，还需乘上 batch size、层数和头数。</p>
+<h2>7. 演进脉络与关键结论</h2>
+<p>可以用一条清晰的记忆更新主线总结全文：</p>
+<div class="math">$$
+\begin{aligned}
+\text{线性注意力：}\quad
+&amp;\mathbf{S}_t
+=
+\mathbf{S}_{t-1}
++\mathbf{k}_t\mathbf{v}_t^\top,
+\\[2mm]
+\text{Mamba-2：}\quad
+&amp;\mathbf{S}_t
+=
+\alpha_t\mathbf{S}_{t-1}
++\mathbf{k}_t\mathbf{v}_t^\top,
+\\[2mm]
+\text{DeltaNet：}\quad
+&amp;\mathbf{S}_t
+=
+\left(\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^\top\right)
+\mathbf{S}_{t-1}
++\beta_t\mathbf{k}_t\mathbf{v}_t^\top,
+\\[2mm]
+\text{Gated DeltaNet：}\quad
+&amp;\mathbf{S}_t
+=
+\alpha_t
+\left(\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^\top\right)
+\mathbf{S}_{t-1}
++\beta_t\mathbf{k}_t\mathbf{v}_t^\top,
+\\[2mm]
+\text{KDA：}\quad
+&amp;\mathbf{S}_t
+=
+\left(\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^\top\right)
+\operatorname{Diag}(\boldsymbol{\alpha}_t)
+\mathbf{S}_{t-1}
++\beta_t\mathbf{k}_t\mathbf{v}_t^\top.
+\end{aligned}
+$$</div>
+<p>核心变化依次是：</p>
+<ol>
+<li>用固定大小的矩阵状态替代显式 token-to-token 注意力矩阵。</li>
+<li>用遗忘门控制旧信息寿命。</li>
+<li>用 Delta 规则定向擦除并覆盖 key 关联。</li>
+<li>用通道级遗忘门让不同记忆通道拥有不同时间尺度。</li>
+<li>用 KDA/MLA 混合架构在效率与精确全局检索之间折中。</li>
+</ol>
+<h2>参考资料</h2>
+<ul>
+<li>Kimi Team. <a href="https://arxiv.org/abs/2510.26692">Kimi Linear: An Expressive, Efficient Attention Architecture</a>, 2025.</li>
+<li><a href="https://zhuanlan.zhihu.com/p/1969545638023767020">Kimi Linear 学习笔记：让 Attention 又快又好</a>.</li>
+<li>Yang, Kautz, Hatamizadeh. <a href="https://arxiv.org/abs/2412.06464">Gated Delta Networks: Improving Mamba2 with Delta Rule</a>, 2024.</li>
+<li>Katharopoulos et al. <a href="https://arxiv.org/abs/2006.16236">Transformers are RNNs: Fast Autoregressive Transformers with Linear Attention</a>, 2020.</li>
+<li><a href="https://www.youtube.com/watch?v=T30jVzehoFc">Linear Attention Explained from First Principles (Transformers to RNNs)</a></li>
+</ul>
+<script type="text/javascript">if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width < 768) ? "left" : align;
+        indent = (screen.width < 768) ? "0em" : indent;
+        linebreak = (screen.width < 768) ? 'true' : linebreak;
+    }
+
+    var mathjaxscript = document.createElement('script');
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript';
+    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-AMS-MML_HTMLorMML';
+
+    var configscript = document.createElement('script');
+    configscript.type = 'text/x-mathjax-config';
+    configscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js'], equationNumbers: { autoNumber: 'none' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    messageStyle: 'normal'," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        availableFonts: ['STIX', 'TeX']," +
+        "        preferredFont: 'STIX'," +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+</script></div>
+    <footer>
+<p class="meta">
+  <span class="byline author vcard">
+    Posted by <span class="fn">
+        <a href="/author/huiming-song.html">Huiming Song</a>
+    </span>
+  </span>
+<time datetime="2026-08-01T00:00:00-05:00" pubdate>Sat 01 August 2026</time>  <span class="categories">
+    <a class='category' href='/category/python.html'>python</a>
+  </span>
+  <span class="categories">
+    <a class="category" href="/tag/python.html">python</a>,    <a class="category" href="/tag/ai.html">AI</a>,    <a class="category" href="/tag/llm.html">LLM</a>,    <a class="category" href="/tag/aigc.html">AIGC</a>,    <a class="category" href="/tag/deepseek.html">DeepSeek</a>  </span>
+</p><div class="sharing">
+</div>    </footer>
+  </article>
+
+</div>
+<aside class="sidebar">
+  <section>
+    <h1>Recent Posts</h1>
+    <ul id="recent_posts">
+      <li class="post">
+          <a href="/pages/2026/08/01/kda-cong-xian-xing-zhu-yi-li-dao-kimi-delta-attention/">KDA - 从线性注意力到 Kimi Delta Attention</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2026/06/30/glm-5-from-vibe-coding-to-agentic-engineering/">GLM-5: From Vibe Coding to Agentic Engineering</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2026/06/19/deepseek-v4-bai-mo-token-context/">DeepSeek-V4: 百万 Token Context</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2026/02/18/deepseek-v32-lightning-indexer/">DeepSeek-V3.2 Lightning Indexer</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2025/04/20/deepseek-expert-parallelism-load-balancer-eplb-code-reading/">DeepSeek Expert Parallelism Load Balancer (EPLB) Code Reading</a>
+      </li>
+    </ul>
+  </section>
+  <section>
+      
+    <h1>Categories</h1>
+    <ul id="recent_posts">
+        <li><a href="/category/career-growth.html">career growth</a></li>
+        <li><a href="/category/linux.html">Linux</a></li>
+        <li><a href="/category/python.html">python</a></li>
+        <li><a href="/category/rthers.html">Rthers</a></li>
+    </ul>
+  </section>
+ 
+
+  <section>
+  <h1>Tags</h1>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aigc.html">AIGC</a>,    <a href="/tag/deepseek.html">DeepSeek</a>,    <a href="/tag/glm.html">GLM</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+
+
+    <section>
+        <h1>Social</h1>
+        <ul>
+            <li><a href="https://www.linkedin.com/pub/huiming-song/24/735/349" target="_blank">Linkedin</a></li>
+        </ul>
+    </section>
+    <section>
+        <h1>Blogroll</h1>
+        <ul>
+            <li><a href="http://easysas.blogspot.com/" target="_blank">my old SAS blog</a></li>
+        </ul>
+    </section>
+
+</aside>    </div>
+  </div>
+  <footer role="contentinfo"><p>
+    Copyright &copy;  2015&ndash;2026  shm &mdash;
+  <span class="credit">Powered by <a href="http://getpelican.com">Pelican</a></span>
+</p></footer>
+  <script src="/theme/js/modernizr-2.0.js"></script>
+  <script src="/theme/js/ender.js"></script>
+  <script src="/theme/js/octopress.js" type="text/javascript"></script>
+    <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-65938411-1']);
+    _gaq.push(['_trackPageview']);
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-65938411-1');
+    ga('send', 'pageview');
+</script>
+  <script type="text/javascript">
+    var disqus_shortname = 'songhuiming';
+    var disqus_identifier = '/pages/2026/08/01/kda-cong-xian-xing-zhu-yi-li-dao-kimi-delta-attention/';
+    var disqus_url = '/pages/2026/08/01/kda-cong-xian-xing-zhu-yi-li-dao-kimi-delta-attention/';
+    var disqus_title = 'KDA - 从线性注意力到 Kimi Delta Attention';
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = "//" + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+     })();
+  </script>
+</body>
+</html>

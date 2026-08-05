@@ -1,5 +1,1032 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata: Huiming's learning notes - python</title><link href="/" rel="alternate"></link><link href="/feeds/python.atom.xml" rel="self"></link><id>/</id><updated>2026-06-30T00:00:00-05:00</updated><subtitle>Keep Looking, Don't Settle</subtitle><entry><title>GLM-5: From Vibe Coding to Agentic Engineering</title><link href="/pages/2026/06/30/glm-5-from-vibe-coding-to-agentic-engineering/" rel="alternate"></link><published>2026-06-30T00:00:00-05:00</published><updated>2026-06-30T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2026-06-30:/pages/2026/06/30/glm-5-from-vibe-coding-to-agentic-engineering/</id><summary type="html">&lt;h2&gt;背景&lt;/h2&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata: Huiming's learning notes - python</title><link href="/" rel="alternate"></link><link href="/feeds/python.atom.xml" rel="self"></link><id>/</id><updated>2026-08-01T00:00:00-05:00</updated><subtitle>Keep Looking, Don't Settle</subtitle><entry><title>KDA - 从线性注意力到 Kimi Delta Attention</title><link href="/pages/2026/08/01/kda-cong-xian-xing-zhu-yi-li-dao-kimi-delta-attention/" rel="alternate"></link><published>2026-08-01T00:00:00-05:00</published><updated>2026-08-01T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2026-08-01:/pages/2026/08/01/kda-cong-xian-xing-zhu-yi-li-dao-kimi-delta-attention/</id><summary type="html">&lt;p&gt;本文从标准自注意力出发，依次说明核化线性注意力、循环状态、门控与 Delta 规则，并最终落到 Kimi Linear 的核心组件 Kimi Delta Attention（KDA）。重点 …&lt;/p&gt;</summary><content type="html">&lt;p&gt;本文从标准自注意力出发，依次说明核化线性注意力、循环状态、门控与 Delta 规则，并最终落到 Kimi Linear 的核心组件 Kimi Delta Attention（KDA）。重点不是把所有模型强行归为同一种结构，而是追踪一个共同问题：如何用固定大小的状态高效地读写长序列记忆，同时尽量降低信息干扰。&lt;/p&gt;
+&lt;h2&gt;0. 统一符号与维度&lt;/h2&gt;
+&lt;p&gt;全文采用列向量约定。第 &lt;span class="math"&gt;\(t\)&lt;/span&gt; 个 token 的输入表示统一记为&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{x}_t\in\mathbb{R}^{d_{\mathrm{model}}}.
+$$&lt;/div&gt;
+&lt;p&gt;对第 &lt;span class="math"&gt;\(h\)&lt;/span&gt; 个注意力头，投影统一写成&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{q}_t^{h}=\mathbf{W}_{h}^{Q}\mathbf{x}_t,\qquad
+\mathbf{k}_t^{h}=\mathbf{W}_{h}^{K}\mathbf{x}_t,\qquad
+\mathbf{v}_t^{h}=\mathbf{W}_{h}^{V}\mathbf{x}_t,
+$$&lt;/div&gt;
+&lt;p&gt;其中&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{W}_{h}^{Q},\mathbf{W}_{h}^{K}\in
+\mathbb{R}^{d_k\times d_{\mathrm{model}}},\qquad
+\mathbf{W}_{h}^{V}\in
+\mathbb{R}^{d_v\times d_{\mathrm{model}}}.
+$$&lt;/div&gt;
+&lt;p&gt;为简化公式，讨论单头时省略上标 &lt;span class="math"&gt;\(h\)&lt;/span&gt;。其他符号如下：&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;符号&lt;/th&gt;
+&lt;th&gt;含义&lt;/th&gt;
+&lt;th&gt;维度&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(N\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;序列长度&lt;/td&gt;
+&lt;td&gt;标量&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(H\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;注意力头数&lt;/td&gt;
+&lt;td&gt;标量&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\mathbf{Q},\mathbf{K}\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;按行堆叠的 query/key&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(N\times d_k\)&lt;/span&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\mathbf{V},\mathbf{O}\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;按行堆叠的 value/output&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(N\times d_v\)&lt;/span&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\mathbf{S}_t\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;关联记忆状态&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(d_k\times d_v\)&lt;/span&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\mathbf{z}_t\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;归一化状态&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(d_k\)&lt;/span&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\alpha_t,\boldsymbol{\alpha}_t\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;标量/通道级遗忘门&lt;/td&gt;
+&lt;td&gt;标量或 &lt;span class="math"&gt;\(d_k\)&lt;/span&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\beta_t\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;Delta 更新强度&lt;/td&gt;
+&lt;td&gt;标量&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;输出投影统一记为 &lt;span class="math"&gt;\(\mathbf{W}^{O}\)&lt;/span&gt;。矩阵 &lt;span class="math"&gt;\(\operatorname{Diag}(\boldsymbol{\alpha}_t)\)&lt;/span&gt; 以向量 &lt;span class="math"&gt;\(\boldsymbol{\alpha}_t\)&lt;/span&gt; 为对角线。&lt;/p&gt;
+&lt;h2&gt;1. 从标准注意力到线性注意力&lt;/h2&gt;
+&lt;h3&gt;1.1 标准自注意力&lt;/h3&gt;
+&lt;p&gt;单头标准注意力为&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{O}
+=
+\operatorname{softmax}\!\left(
+\frac{\mathbf{Q}\mathbf{K}^{\top}}{\sqrt{d_k}}
++\mathbf{M}
+\right)\mathbf{V},
+$$&lt;/div&gt;
+&lt;p&gt;其中 &lt;span class="math"&gt;\(\mathbf{M}\)&lt;/span&gt; 是因果掩码；不需要因果约束时可省略。多头结果拼接后再经过输出投影。按行堆叠整个序列时：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{Y}
+=
+\operatorname{Concat}\!\left(
+\mathbf{O}^{1},\ldots,\mathbf{O}^{H}
+\right)
+\left(\mathbf{W}^{O}\right)^{\top}.
+$$&lt;/div&gt;
+&lt;p&gt;&lt;span class="math"&gt;\(\mathbf{Q}\mathbf{K}^{\top}\in\mathbb{R}^{N\times N}\)&lt;/span&gt;，因此核心计算量为
+&lt;span class="math"&gt;\(O(N^2d_k)\)&lt;/span&gt;。显式实现的注意力矩阵空间开销为 &lt;span class="math"&gt;\(O(N^2)\)&lt;/span&gt;；FlashAttention 等 IO-aware 实现可以避免把整张矩阵持久写入显存，但不会改变全局注意力的二次算术复杂度。自回归推理虽然不必重新计算整张矩阵，但每个新 query 仍要读取全部历史 key/value，单步代价随上下文长度 &lt;span class="math"&gt;\(N\)&lt;/span&gt; 增长。&lt;/p&gt;
+&lt;h3&gt;1.2 为什么不能直接改变 Softmax 的乘法顺序&lt;/h3&gt;
+&lt;p&gt;如果去掉 Softmax，则矩阵结合律给出&lt;/p&gt;
+&lt;div class="math"&gt;$$
+(\mathbf{Q}\mathbf{K}^{\top})\mathbf{V}
+=
+\mathbf{Q}(\mathbf{K}^{\top}\mathbf{V}).
+$$&lt;/div&gt;
+&lt;p&gt;为什么右侧的复杂度是线性的？设&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{Q},\mathbf{K}\in\mathbb{R}^{N\times d_k},
+\qquad
+\mathbf{V}\in\mathbb{R}^{N\times d_v}.
+$$&lt;/div&gt;
+&lt;p&gt;右侧按两步计算：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;先计算 &lt;span class="math"&gt;\(\mathbf{K}^{\top}\mathbf{V}\)&lt;/span&gt;。其维度变化为
+   &lt;span class="math"&gt;\((d_k\times N)(N\times d_v)\rightarrow d_k\times d_v\)&lt;/span&gt;，因此需要
+   &lt;span class="math"&gt;\(O(Nd_kd_v)\)&lt;/span&gt; 次运算。&lt;/li&gt;
+&lt;li&gt;再计算 &lt;span class="math"&gt;\(\mathbf{Q}(\mathbf{K}^{\top}\mathbf{V})\)&lt;/span&gt;。其维度变化为
+   &lt;span class="math"&gt;\((N\times d_k)(d_k\times d_v)\rightarrow N\times d_v\)&lt;/span&gt;，同样需要
+   &lt;span class="math"&gt;\(O(Nd_kd_v)\)&lt;/span&gt; 次运算。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;两步合计约为 &lt;span class="math"&gt;\(2Nd_kd_v\)&lt;/span&gt;，忽略常数后即&lt;/p&gt;
+&lt;div class="math"&gt;$$
+O(Nd_kd_v).
+$$&lt;/div&gt;
+&lt;p&gt;当 &lt;span class="math"&gt;\(d_k=d_v=d\)&lt;/span&gt; 时，它就是 &lt;span class="math"&gt;\(O(Nd^2)\)&lt;/span&gt;。关键在于中间结果
+&lt;span class="math"&gt;\(\mathbf{K}^{\top}\mathbf{V}\)&lt;/span&gt; 的大小是 &lt;span class="math"&gt;\(d_k\times d_v\)&lt;/span&gt;，整个过程中没有生成
+&lt;span class="math"&gt;\(N\times N\)&lt;/span&gt; 矩阵。相反，若按左侧顺序先计算
+&lt;span class="math"&gt;\(\mathbf{Q}\mathbf{K}^{\top}\)&lt;/span&gt;，就会产生 &lt;span class="math"&gt;\(N\times N\)&lt;/span&gt; 中间矩阵，复杂度回到关于
+&lt;span class="math"&gt;\(N\)&lt;/span&gt; 的二次量级。&lt;/p&gt;
+&lt;p&gt;以上结合律推导适用于没有 Softmax 且没有因果掩码阻断的可结合形式。因果线性注意力需要使用前缀状态或并行扫描，不能直接用整段序列的
+&lt;span class="math"&gt;\(\mathbf{K}^{\top}\mathbf{V}\)&lt;/span&gt;。&lt;/p&gt;
+&lt;p&gt;但标准注意力中的 Softmax 是逐行归一化的非线性算子：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\operatorname{softmax}(\mathbf{Q}\mathbf{K}^{\top})\mathbf{V}
+\neq
+\mathbf{Q}(\mathbf{K}^{\top}\mathbf{V}).
+$$&lt;/div&gt;
+&lt;p&gt;因此，线性注意力不是简单地给原公式“换括号”，而是要把相似度改写为可分解的核。为简化符号，本文将核特征映射吸收到 query/key 的生成过程，映射后的向量仍记为 &lt;span class="math"&gt;\(\mathbf{q}_t,\mathbf{k}_t\)&lt;/span&gt;，不再额外添加函数或波浪号：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\operatorname{sim}(\mathbf{q}_t,\mathbf{k}_j)
+=
+\mathbf{q}_t^{\top}\mathbf{k}_j.
+$$&lt;/div&gt;
+&lt;p&gt;归一化的核注意力输出为&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{o}_t
+=
+\frac{
+\sum_{j=1}^{N}
+\left(\mathbf{q}_t^{\top}\mathbf{k}_j\right)\mathbf{v}_j
+}{
+\sum_{j=1}^{N}
+\mathbf{q}_t^{\top}\mathbf{k}_j+\varepsilon
+}.
+$$&lt;/div&gt;
+&lt;p&gt;将只依赖 &lt;span class="math"&gt;\(t\)&lt;/span&gt; 的 query 移到求和外：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{o}_t
+=
+\frac{
+\left(\sum_{j=1}^{N}\mathbf{k}_j\mathbf{v}_j^{\top}\right)^{\top}
+\mathbf{q}_t
+}{
+\left(\sum_{j=1}^{N}\mathbf{k}_j\right)^{\top}
+\mathbf{q}_t+\varepsilon
+}.
+$$&lt;/div&gt;
+&lt;p&gt;这里不再生成 &lt;span class="math"&gt;\(N\times N\)&lt;/span&gt; 的中间矩阵，而是先形成固定大小的
+&lt;span class="math"&gt;\(d_k\times d_v\)&lt;/span&gt; 统计量。&lt;/p&gt;
+&lt;h3&gt;1.3 复杂度为什么对 &lt;span class="math"&gt;\(N\)&lt;/span&gt; 是线性的&lt;/h3&gt;
+&lt;p&gt;设&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{A}=\mathbf{K}^{\top}\mathbf{V}
+\in\mathbb{R}^{d_k\times d_v}.
+$$&lt;/div&gt;
+&lt;p&gt;矩阵 &lt;span class="math"&gt;\(\mathbf{A}\)&lt;/span&gt; 有 &lt;span class="math"&gt;\(d_kd_v\)&lt;/span&gt; 个元素，每个元素需要沿序列维度做长度为 &lt;span class="math"&gt;\(N\)&lt;/span&gt; 的内积，因此计算量是&lt;/p&gt;
+&lt;div class="math"&gt;$$
+O(Nd_kd_v).
+$$&lt;/div&gt;
+&lt;p&gt;当 &lt;span class="math"&gt;\(d_k\sim d_v\sim d\)&lt;/span&gt; 时，通常简写为 &lt;span class="math"&gt;\(O(Nd^2)\)&lt;/span&gt;。相比之下，标准注意力先生成 &lt;span class="math"&gt;\(N\times N\)&lt;/span&gt; 分数矩阵，计算量是 &lt;span class="math"&gt;\(O(N^2d)\)&lt;/span&gt;。&lt;/p&gt;
+&lt;p&gt;“线性”只表示复杂度关于 &lt;span class="math"&gt;\(N\)&lt;/span&gt; 线性，并不表示关于隐藏维度也是线性。实际性能还取决于头维度、特征映射、分块算法、内存访问和硬件利用率。&lt;/p&gt;
+&lt;h3&gt;1.4 因果场景需要逐时间步的前缀聚合&lt;/h3&gt;
+&lt;p&gt;上一节的全局聚合&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{K}^{\top}\mathbf{V}
+=
+\sum_{j=1}^{N}\mathbf{k}_j\mathbf{v}_j^{\top}
+$$&lt;/div&gt;
+&lt;p&gt;包含整段序列的全部 token。如果时间步 &lt;span class="math"&gt;\(t\)&lt;/span&gt; 直接使用这个全局状态，求和中就会包含
+&lt;span class="math"&gt;\(j&amp;gt;t\)&lt;/span&gt; 的 key/value，即模型会提前看到未来信息。因果注意力要求时间步 &lt;span class="math"&gt;\(t\)&lt;/span&gt; 只能使用
+&lt;span class="math"&gt;\(j\le t\)&lt;/span&gt; 的前缀，因此每个时间步需要不同的聚合状态。&lt;/p&gt;
+&lt;p&gt;先从多头分解形式看这一点。对第 &lt;span class="math"&gt;\(h\)&lt;/span&gt; 个头，仍采用全文统一的列向量约定：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{q}_t^h=\mathbf{W}_h^Q\mathbf{x}_t,\qquad
+\mathbf{k}_j^h=\mathbf{W}_h^K\mathbf{x}_j,\qquad
+\mathbf{v}_j^h=\mathbf{W}_h^V\mathbf{x}_j.
+$$&lt;/div&gt;
+&lt;p&gt;原稿的“分块/分解形式”可更严谨地改写为下面的未归一化多头线性注意力：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{y}_t
+=
+\sum_{h=1}^{H}
+\mathbf{W}_h^O
+\left[
+\sum_{j=1}^{t}
+\frac{(\mathbf{q}_t^h)^{\top}\mathbf{k}_j^h}{\sqrt{d_k}}
+\mathbf{v}_j^h
+\right]
+\tag{2}
+$$&lt;/div&gt;
+&lt;p&gt;其中 &lt;span class="math"&gt;\(\mathbf{W}_h^O\in\mathbb{R}^{d_{\mathrm{model}}\times d_v}\)&lt;/span&gt; 是总输出投影 &lt;span class="math"&gt;\(\mathbf{W}^O\)&lt;/span&gt; 中对应第 &lt;span class="math"&gt;\(h\)&lt;/span&gt; 个头的分块。这里的上限是 &lt;span class="math"&gt;\(t\)&lt;/span&gt; 而不是 &lt;span class="math"&gt;\(N\)&lt;/span&gt;，正是因果约束。原稿使用的索引 &lt;span class="math"&gt;\(c\)&lt;/span&gt; 容易与后文的序列分块混淆，因此这里改用头索引 &lt;span class="math"&gt;\(h\)&lt;/span&gt;。若采用归一化核注意力，还需要将每个头的结果除以对应的权重和；上式只保留与状态递推最相关的未归一化部分。&lt;/p&gt;
+&lt;p&gt;进一步把同一头中的 Q/K 投影与 V/O 投影分别合并。定义&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{W}_h^{QK}
+=
+(\mathbf{W}_h^Q)^{\top}\mathbf{W}_h^K
+\in\mathbb{R}^{d_{\mathrm{model}}\times d_{\mathrm{model}}},
+\qquad
+\mathbf{W}_h^{OV}
+=
+\mathbf{W}_h^O\mathbf{W}_h^V
+\in\mathbb{R}^{d_{\mathrm{model}}\times d_{\mathrm{model}}}.
+$$&lt;/div&gt;
+&lt;p&gt;由于&lt;/p&gt;
+&lt;div class="math"&gt;$$
+(\mathbf{q}_t^h)^{\top}\mathbf{k}_j^h
+=
+\mathbf{x}_t^{\top}\mathbf{W}_h^{QK}\mathbf{x}_j,
+\qquad
+\mathbf{W}_h^O\mathbf{v}_j^h
+=
+\mathbf{W}_h^{OV}\mathbf{x}_j,
+$$&lt;/div&gt;
+&lt;p&gt;公式 (2) 可写成下面的合并权重形式：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{y}_t
+=
+\sum_{h=1}^{H}
+\sum_{j=1}^{t}
+\frac{
+\mathbf{x}_t^{\top}\mathbf{W}_h^{QK}\mathbf{x}_j
+}{\sqrt{d_k}}
+\mathbf{W}_h^{OV}\mathbf{x}_j
+\tag{3}
+$$&lt;/div&gt;
+&lt;p&gt;公式 (3) 主要用于说明代数结构：相关性是关于 &lt;span class="math"&gt;\(\mathbf{x}_t\)&lt;/span&gt; 与 &lt;span class="math"&gt;\(\mathbf{x}_j\)&lt;/span&gt; 的双线性形式，value 与输出投影也可以合并。这一步依赖 &lt;span class="math"&gt;\(\mathbf{q}_t^h,\mathbf{k}_j^h\)&lt;/span&gt; 是上面定义的线性投影；如果 query/key 的生成中还包含不可合并的非线性特征映射，就不能把它们压缩成单个 &lt;span class="math"&gt;\(\mathbf{W}_h^{QK}\)&lt;/span&gt;，但后面的前缀状态递推仍然成立。&lt;/p&gt;
+&lt;p&gt;实际实现通常仍保留低秩分解后的
+&lt;span class="math"&gt;\(\mathbf{W}_h^Q,\mathbf{W}_h^K,\mathbf{W}_h^V,\mathbf{W}_h^O\)&lt;/span&gt;，避免显式构造较大的
+&lt;span class="math"&gt;\(\mathbf{W}_h^{QK}\)&lt;/span&gt; 与 &lt;span class="math"&gt;\(\mathbf{W}_h^{OV}\)&lt;/span&gt;。&lt;/p&gt;
+&lt;p&gt;对因果计算而言，更关键的改写是为每个头定义前缀状态：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{S}_t^h
+=
+\sum_{j=1}^{t}\mathbf{k}_j^h(\mathbf{v}_j^h)^{\top},
+\qquad
+\mathbf{o}_t^h
+=
+(\mathbf{S}_t^h)^{\top}\mathbf{q}_t^h.
+$$&lt;/div&gt;
+&lt;p&gt;这个状态随时间步递推：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{S}_t^h
+=
+\mathbf{S}_{t-1}^h
++
+\mathbf{k}_t^h(\mathbf{v}_t^h)^{\top}.
+$$&lt;/div&gt;
+&lt;p&gt;因此，因果线性注意力仍然具有关于序列长度的线性复杂度，但不能让所有时间步共享同一个全局
+&lt;span class="math"&gt;\(\mathbf{K}^{\top}\mathbf{V}\)&lt;/span&gt;。推理时应逐 token 更新前缀状态；训练时则可以用并行前缀扫描或分块算法同时计算各时间步对应的前缀状态。下一节将在加入归一化项后完整推导这一 RNN 形式。&lt;/p&gt;
+&lt;h2&gt;2. 因果线性注意力的 RNN 形式&lt;/h2&gt;
+&lt;h3&gt;2.1 从前缀和到循环状态&lt;/h3&gt;
+&lt;p&gt;因果核注意力为&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{o}_t
+=
+\frac{
+\sum_{j=1}^{t}
+\left(\mathbf{q}_t^{\top}\mathbf{k}_j\right)\mathbf{v}_j
+}{
+\sum_{j=1}^{t}
+\mathbf{q}_t^{\top}\mathbf{k}_j+\varepsilon
+}.
+$$&lt;/div&gt;
+&lt;p&gt;定义矩阵状态和归一化状态&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{S}_t
+=
+\sum_{j=1}^{t}\mathbf{k}_j\mathbf{v}_j^{\top},
+\qquad
+\mathbf{z}_t
+=
+\sum_{j=1}^{t}\mathbf{k}_j.
+$$&lt;/div&gt;
+&lt;p&gt;于是&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{o}_t
+=
+\frac{
+\mathbf{S}_t^{\top}\mathbf{q}_t
+}{
+\mathbf{z}_t^{\top}\mathbf{q}_t+\varepsilon
+}.
+$$&lt;/div&gt;
+&lt;p&gt;两个状态都可递推：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\begin{aligned}
+\mathbf{S}_0&amp;amp;=\mathbf{0},&amp;amp;
+\mathbf{S}_t&amp;amp;=\mathbf{S}_{t-1}
++\mathbf{k}_t\mathbf{v}_t^{\top},\\
+\mathbf{z}_0&amp;amp;=\mathbf{0},&amp;amp;
+\mathbf{z}_t&amp;amp;=\mathbf{z}_{t-1}
++\mathbf{k}_t.
+\end{aligned}
+$$&lt;/div&gt;
+&lt;p&gt;若加入残差与层变换，可写为&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{y}_t
+=
+f_{\mathrm{layer}}\!\left(
+\mathbf{x}_t+\mathbf{W}^{O}\mathbf{o}_t
+\right).
+$$&lt;/div&gt;
+&lt;h3&gt;2.2 这种等价带来什么&lt;/h3&gt;
+&lt;p&gt;训练时，整段长度为 &lt;span class="math"&gt;\(N\)&lt;/span&gt; 的序列可以通过分块矩阵乘法或并行扫描计算，线性注意力核心的总时间复杂度为 &lt;span class="math"&gt;\(O(Nd_kd_v)\)&lt;/span&gt;；当 &lt;span class="math"&gt;\(d_k=d_v=d\)&lt;/span&gt; 时，可简写为 &lt;span class="math"&gt;\(O(Nd^2)\)&lt;/span&gt;。推理时，每生成一个 token，只需更新并读取 &lt;span class="math"&gt;\(\mathbf{S}_{t-1}\)&lt;/span&gt; 与 &lt;span class="math"&gt;\(\mathbf{z}_{t-1}\)&lt;/span&gt;，单步时间复杂度为 &lt;span class="math"&gt;\(O(d_kd_v)\)&lt;/span&gt;；生成完整的 &lt;span class="math"&gt;\(N\)&lt;/span&gt; 个 token 总计仍为 &lt;span class="math"&gt;\(O(Nd_kd_v)\)&lt;/span&gt;。&lt;/p&gt;
+&lt;p&gt;推理时不再保存随 &lt;span class="math"&gt;\(N\)&lt;/span&gt; 增长的 KV cache，只需维护 &lt;span class="math"&gt;\(\mathbf{S}_{t-1}\)&lt;/span&gt; 与 &lt;span class="math"&gt;\(\mathbf{z}_{t-1}\)&lt;/span&gt;，状态空间复杂度为 &lt;span class="math"&gt;\(O(d_kd_v+d_k)\)&lt;/span&gt;。在模型维度固定时，单步时间和状态空间都不随上下文长度增长，所以常被口语化地称为“单步 &lt;span class="math"&gt;\(O(1)\)&lt;/span&gt;”；更严谨的写法是“关于 &lt;span class="math"&gt;\(N\)&lt;/span&gt; 为 &lt;span class="math"&gt;\(O(1)\)&lt;/span&gt;”。&lt;/p&gt;
+&lt;p&gt;固定状态也有代价：所有历史被压入有限容量的关联记忆，不能保证无损保存。序列变长后，不同 key/value 可能发生干扰或碰撞，这正是后续门控与 Delta 规则要解决的问题。&lt;/p&gt;
+&lt;h2&gt;3. 从纯累加到可选择的状态更新&lt;/h2&gt;
+&lt;h3&gt;3.1 纯累加的局限&lt;/h3&gt;
+&lt;p&gt;省略核映射与归一化后，最简单的线性注意力状态为&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{S}_t
+=
+\mathbf{S}_{t-1}
++\mathbf{k}_t\mathbf{v}_t^{\top},
+\qquad
+\mathbf{o}_t=\mathbf{S}_t^{\top}\mathbf{q}_t.
+$$&lt;/div&gt;
+&lt;p&gt;它把每个关联永久写入状态，没有显式遗忘机制。有限状态在长序列中会逐渐混入过时信息，降低精确检索能力。&lt;/p&gt;
+&lt;h3&gt;3.2 Mamba-2：标量衰减&lt;/h3&gt;
+&lt;p&gt;用与本文一致的状态方向，Mamba-2 的核心递推可概括为&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{S}_t
+=
+\alpha_t\mathbf{S}_{t-1}
++\mathbf{k}_t\mathbf{v}_t^{\top},
+\qquad
+\alpha_t\in(0,1].
+$$&lt;/div&gt;
+&lt;p&gt;&lt;span class="math"&gt;\(\alpha_t\)&lt;/span&gt; 可以快速清除旧记忆，但同一状态头的所有通道共享一个衰减率，遗忘较粗粒度。&lt;/p&gt;
+&lt;p&gt;若定义累计衰减&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\gamma_t=\prod_{i=1}^{t}\alpha_i,
+$$&lt;/div&gt;
+&lt;p&gt;则时刻 &lt;span class="math"&gt;\(j\)&lt;/span&gt; 写入的记忆在时刻 &lt;span class="math"&gt;\(t\)&lt;/span&gt; 的权重为 &lt;span class="math"&gt;\(\gamma_t/\gamma_j\)&lt;/span&gt;。这揭示了递推形式与带衰减因果掩码之间的对应关系。&lt;/p&gt;
+&lt;h3&gt;3.3 DeltaNet：定向覆盖&lt;/h3&gt;
+&lt;p&gt;纯累加更新&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{S}_t
+=
+\mathbf{S}_{t-1}
++\mathbf{k}_t\mathbf{v}_t^\top
+$$&lt;/div&gt;
+&lt;p&gt;只负责把新关联叠加到状态中，却没有回答一个重要问题：如果同一个 key
+再次出现，应该把新 value 继续累加，还是用新 value 修正旧关联？把状态看成一个从
+key 空间到 value 空间的线性映射后，当前 key 在写入前读出的旧值为&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\widehat{\mathbf{v}}_t
+=
+\mathbf{S}_{t-1}^{\top}\mathbf{k}_t.
+$$&lt;/div&gt;
+&lt;p&gt;若仍采用加法写入，则写入后在同一 key 上读到&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\left(
+\mathbf{S}_{t-1}
++\beta_t\mathbf{k}_t\mathbf{v}_t^\top
+\right)^\top\mathbf{k}_t
+=
+\widehat{\mathbf{v}}_t
++\beta_t\|\mathbf{k}_t\|_2^2\mathbf{v}_t.
+$$&lt;/div&gt;
+&lt;p&gt;旧值 &lt;span class="math"&gt;\(\widehat{\mathbf{v}}_t\)&lt;/span&gt; 并没有被消除；同一关联被反复写入时，状态会不断累加，
+而不是趋近于最新目标。DeltaNet 的设计动机正是把“写入完整的新 value”改成“只写入
+预测误差”。先定义读写残差&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{e}_t
+=
+\mathbf{v}_t-\widehat{\mathbf{v}}_t
+=
+\mathbf{v}_t-\mathbf{S}_{t-1}^{\top}\mathbf{k}_t.
+$$&lt;/div&gt;
+&lt;p&gt;我们希望寻找一个状态修正 &lt;span class="math"&gt;\(\Delta\mathbf{S}_t\)&lt;/span&gt;，使它在当前 key 上产生
+&lt;span class="math"&gt;\(\mathbf{e}_t\)&lt;/span&gt;：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\Delta\mathbf{S}_t^\top\mathbf{k}_t
+=
+\mathbf{e}_t.
+$$&lt;/div&gt;
+&lt;p&gt;满足这一约束的最小 Frobenius 范数秩一修正为&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\Delta\mathbf{S}_t
+=
+\frac{\mathbf{k}_t\mathbf{e}_t^\top}
+{\|\mathbf{k}_t\|_2^2}.
+$$&lt;/div&gt;
+&lt;p&gt;当 key 已做 L2 归一化时，分母为 &lt;span class="math"&gt;\(1\)&lt;/span&gt;。再引入更新强度
+&lt;span class="math"&gt;\(\beta_t\)&lt;/span&gt;，便得到 DeltaNet 更新：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{S}_t
+=
+\mathbf{S}_{t-1}
++\beta_t\mathbf{k}_t
+\left(
+\mathbf{v}_t-\mathbf{S}_{t-1}^{\top}\mathbf{k}_t
+\right)^{\top}.
+$$&lt;/div&gt;
+&lt;p&gt;这一步可以直接验证。更新后在当前 key 上的读出为&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\begin{aligned}
+\mathbf{S}_t^\top\mathbf{k}_t
+&amp;amp;=
+\widehat{\mathbf{v}}_t
++\beta_t\|\mathbf{k}_t\|_2^2
+\left(
+\mathbf{v}_t-\widehat{\mathbf{v}}_t
+\right).
+\end{aligned}
+$$&lt;/div&gt;
+&lt;p&gt;若 &lt;span class="math"&gt;\(\|\mathbf{k}_t\|_2=1\)&lt;/span&gt;，则&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{S}_t^\top\mathbf{k}_t
+=
+(1-\beta_t)\widehat{\mathbf{v}}_t
++\beta_t\mathbf{v}_t.
+$$&lt;/div&gt;
+&lt;p&gt;因此 &lt;span class="math"&gt;\(\beta_t=0\)&lt;/span&gt; 表示保留旧关联，&lt;span class="math"&gt;\(0&amp;lt;\beta_t&amp;lt;1\)&lt;/span&gt; 表示向新 value
+做部分修正，&lt;span class="math"&gt;\(\beta_t=1\)&lt;/span&gt; 则在当前 key 方向上完成精确覆盖。对任意其他
+query &lt;span class="math"&gt;\(\mathbf{q}\)&lt;/span&gt;，更新引起的读出变化为&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{S}_t^\top\mathbf{q}
+-
+\mathbf{S}_{t-1}^\top\mathbf{q}
+=
+\beta_t
+\left(
+\mathbf{k}_t^\top\mathbf{q}
+\right)\mathbf{e}_t.
+$$&lt;/div&gt;
+&lt;p&gt;也就是说，修正强度由 &lt;span class="math"&gt;\(\mathbf{q}\)&lt;/span&gt; 与当前 key 的相似度控制：与
+&lt;span class="math"&gt;\(\mathbf{k}_t\)&lt;/span&gt; 正交的方向不受影响，相似方向共享这次误差修正。这就是“定向覆盖”
+而不是“全局遗忘”。&lt;/p&gt;
+&lt;p&gt;将残差形式展开，可以进一步看出一次更新由“擦除旧关联”和“写入新关联”组成：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\begin{aligned}
+\mathbf{S}_t
+&amp;amp;=
+\mathbf{S}_{t-1}
+-\beta_t\mathbf{k}_t\mathbf{k}_t^\top\mathbf{S}_{t-1}
++\beta_t\mathbf{k}_t\mathbf{v}_t^\top\\
+&amp;amp;=
+\left(
+\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^{\top}
+\right)\mathbf{S}_{t-1}
++\beta_t\mathbf{k}_t\mathbf{v}_t^{\top}.
+\end{aligned}
+$$&lt;/div&gt;
+&lt;p&gt;其中
+&lt;span class="math"&gt;\(-\beta_t\mathbf{k}_t\mathbf{k}_t^\top\mathbf{S}_{t-1}\)&lt;/span&gt;
+只擦除旧状态在 &lt;span class="math"&gt;\(\mathbf{k}_t\)&lt;/span&gt; 方向上的分量，而
+&lt;span class="math"&gt;\(\beta_t\mathbf{k}_t\mathbf{v}_t^\top\)&lt;/span&gt; 随后写入新关联。&lt;/p&gt;
+&lt;p&gt;Delta 规则还可以从在线学习角度得到。定义当前样本的重建损失：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathcal{L}_t(\mathbf{S})
+=
+\frac{1}{2}
+\left\|
+\mathbf{S}^{\top}\mathbf{k}_t-\mathbf{v}_t
+\right\|_2^2
+$$&lt;/div&gt;
+&lt;p&gt;其关于状态的梯度为&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\nabla_{\mathbf{S}}\mathcal{L}_t
+=
+\mathbf{k}_t
+\left(
+\mathbf{S}^{\top}\mathbf{k}_t-\mathbf{v}_t
+\right)^\top.
+$$&lt;/div&gt;
+&lt;p&gt;从 &lt;span class="math"&gt;\(\mathbf{S}_{t-1}\)&lt;/span&gt; 出发执行一步学习率为 &lt;span class="math"&gt;\(\beta_t\)&lt;/span&gt; 的在线梯度下降：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\begin{aligned}
+\mathbf{S}_t
+&amp;amp;=
+\mathbf{S}_{t-1}
+-\beta_t
+\nabla_{\mathbf{S}}\mathcal{L}_t
+\big|_{\mathbf{S}=\mathbf{S}_{t-1}}\\
+&amp;amp;=
+\mathbf{S}_{t-1}
++\beta_t\mathbf{k}_t
+\left(
+\mathbf{v}_t-\mathbf{S}_{t-1}^\top\mathbf{k}_t
+\right)^\top.
+\end{aligned}
+$$&lt;/div&gt;
+&lt;p&gt;因此，DeltaNet 不是额外附加的一条启发式擦除规则，而是在固定大小的关联记忆上，
+用当前 key/value 对执行一步数据依赖的在线误差校正。它能精确修改被当前 key
+访问到的方向，但不会主动清理长期未再次出现的旧方向；这正是下一节加入遗忘门的原因。&lt;/p&gt;
+&lt;h3&gt;3.4 Gated DeltaNet：全局遗忘与定向编辑&lt;/h3&gt;
+&lt;p&gt;DeltaNet 解决了“如何覆盖当前 key 对应的旧值”，但它的擦除矩阵&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^\top
+$$&lt;/div&gt;
+&lt;p&gt;只作用于当前 key 方向。若某些旧记忆长期不再被相似 key 访问，它们仍会保留在有限状态
+中并持续占用容量。反过来，Mamba-2 式标量门
+&lt;span class="math"&gt;\(\alpha_t\mathbf{S}_{t-1}\)&lt;/span&gt; 可以快速衰减全部历史，却无法只修改某一个具体关联。
+Gated DeltaNet（GDN）把这两种互补机制组合起来：&lt;span class="math"&gt;\(\alpha_t\)&lt;/span&gt; 决定旧状态整体保留多少，
+&lt;span class="math"&gt;\(\beta_t\)&lt;/span&gt; 决定当前 key 方向修改多少。&lt;/p&gt;
+&lt;p&gt;这个公式可以从两个连续步骤推导。第一步只对旧记忆施加标量遗忘门：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\overline{\mathbf{S}}_{t-1}
+=
+\alpha_t\mathbf{S}_{t-1},
+\qquad
+\alpha_t\in(0,1].
+$$&lt;/div&gt;
+&lt;p&gt;此时在当前 key 上读出的、经过遗忘后的旧值为&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\widehat{\mathbf{v}}_t^{\,\mathrm{g}}
+=
+\overline{\mathbf{S}}_{t-1}^{\top}\mathbf{k}_t
+=
+\alpha_t\mathbf{S}_{t-1}^{\top}\mathbf{k}_t.
+$$&lt;/div&gt;
+&lt;p&gt;第二步以衰减后的状态为起点，执行一次 Delta 误差校正：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\begin{aligned}
+\mathbf{S}_t
+&amp;amp;=
+\overline{\mathbf{S}}_{t-1}
++\beta_t\mathbf{k}_t
+\left(
+\mathbf{v}_t-\widehat{\mathbf{v}}_t^{\,\mathrm{g}}
+\right)^\top\\
+&amp;amp;=
+\overline{\mathbf{S}}_{t-1}
++\beta_t\mathbf{k}_t
+\left(
+\mathbf{v}_t-\overline{\mathbf{S}}_{t-1}^{\top}\mathbf{k}_t
+\right)^\top.
+\end{aligned}
+$$&lt;/div&gt;
+&lt;p&gt;将 &lt;span class="math"&gt;\(\overline{\mathbf{S}}_{t-1}=\alpha_t\mathbf{S}_{t-1}\)&lt;/span&gt; 代入并展开：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\begin{aligned}
+\mathbf{S}_t
+&amp;amp;=
+\alpha_t\mathbf{S}_{t-1}
+-\alpha_t\beta_t
+\mathbf{k}_t\mathbf{k}_t^\top\mathbf{S}_{t-1}
++\beta_t\mathbf{k}_t\mathbf{v}_t^\top\\
+&amp;amp;=
+\alpha_t
+\left(
+\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^{\top}
+\right)\mathbf{S}_{t-1}
++\beta_t\mathbf{k}_t\mathbf{v}_t^{\top}.
+\end{aligned}
+$$&lt;/div&gt;
+&lt;p&gt;这里 &lt;span class="math"&gt;\(\alpha_t\)&lt;/span&gt; 只乘在旧状态的转移项上，不乘新写入的
+&lt;span class="math"&gt;\(\beta_t\mathbf{k}_t\mathbf{v}_t^\top\)&lt;/span&gt;。这样，新 value 不会在刚写入时就被遗忘门
+再次缩小。由于 &lt;span class="math"&gt;\(\alpha_t\)&lt;/span&gt; 是标量，它与擦除矩阵可交换；但它不能跨过加号作用到新写入项。&lt;/p&gt;
+&lt;p&gt;在 &lt;span class="math"&gt;\(\|\mathbf{k}_t\|_2=1\)&lt;/span&gt; 时，GDN 对当前 key 的读出为&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{S}_t^\top\mathbf{k}_t
+=
+(1-\beta_t)\alpha_t
+\mathbf{S}_{t-1}^\top\mathbf{k}_t
++\beta_t\mathbf{v}_t.
+$$&lt;/div&gt;
+&lt;p&gt;这个式子把两个门的职责分开得很清楚：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(\alpha_t\)&lt;/span&gt; 先决定旧读出还能保留多少，较小的 &lt;span class="math"&gt;\(\alpha_t\)&lt;/span&gt; 可以在边界变化或上下文切换时快速重置整头记忆。&lt;/li&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(\beta_t\)&lt;/span&gt; 再在当前 key 方向上混合旧读出与新目标；当 &lt;span class="math"&gt;\(\beta_t=1\)&lt;/span&gt; 时，无论 &lt;span class="math"&gt;\(\alpha_t\)&lt;/span&gt; 取何值，当前关联都被新 value 覆盖。&lt;/li&gt;
+&lt;li&gt;对与当前 key 不相似的方向，Delta 项影响很小，但它们仍会受到 &lt;span class="math"&gt;\(\alpha_t\)&lt;/span&gt; 的全局衰减。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;对任意 query &lt;span class="math"&gt;\(\mathbf{q}\)&lt;/span&gt;，同样可以写出&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{S}_t^\top\mathbf{q}
+=
+\alpha_t\mathbf{S}_{t-1}^\top\mathbf{q}
++\beta_t
+\left(
+\mathbf{k}_t^\top\mathbf{q}
+\right)
+\left(
+\mathbf{v}_t
+-\alpha_t\mathbf{S}_{t-1}^\top\mathbf{k}_t
+\right).
+$$&lt;/div&gt;
+&lt;p&gt;第一项是全局保留的历史，第二项是按 key 相似度路由的局部误差修正。因此 GDN
+同时具备可学习的时间尺度与关联级编辑能力：它比纯累加更能抑制状态污染，比单独使用
+标量衰减更擅长精确更新，也补上了 DeltaNet 无法主动清理未访问旧方向的缺口。不过，
+同一个状态头仍共享单个 &lt;span class="math"&gt;\(\alpha_t\)&lt;/span&gt;，所有 key 通道只能同步遗忘；第 4 节的 KDA
+将进一步把这个标量门提升为通道级向量门。&lt;/p&gt;
+&lt;h3&gt;3.5 与状态空间模型的关系&lt;/h3&gt;
+&lt;p&gt;经典离散线性时不变状态空间模型（LTI SSM）为&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{h}_t=\mathbf{A}\mathbf{h}_{t-1}+\mathbf{B}\mathbf{x}_t,
+\qquad
+\mathbf{y}_t=\mathbf{C}\mathbf{h}_t.
+$$&lt;/div&gt;
+&lt;p&gt;当 &lt;span class="math"&gt;\(\mathbf{A},\mathbf{B},\mathbf{C}\)&lt;/span&gt; 固定时，它可展开为卷积核&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\overline{\mathbf{K}}
+=
+\left(
+\mathbf{C}\mathbf{B},
+\mathbf{C}\mathbf{A}\mathbf{B},
+\mathbf{C}\mathbf{A}^2\mathbf{B},
+\ldots
+\right).
+$$&lt;/div&gt;
+&lt;p&gt;线性注意力、Mamba-2、GDN 与 KDA 都可视为“输入驱动的线性状态更新”，并可借用递推、分块和扫描算法。但 KDA 的转移矩阵依赖当前输入，因此不是固定的 LTI 系统，也不能简单化为一个数据无关的全局卷积核。二者是相关的状态序列模型，而不是完全相同的数学对象。&lt;/p&gt;
+&lt;h2&gt;4. Kimi Delta Attention&lt;/h2&gt;
+&lt;h3&gt;4.1 GDN 的剩余瓶颈&lt;/h3&gt;
+&lt;p&gt;GDN 的 &lt;span class="math"&gt;\(\alpha_t\)&lt;/span&gt; 是头级标量。若不同记忆通道需要不同时间尺度，一个标量只能让整头状态同步遗忘，限制了记忆控制的粒度。&lt;/p&gt;
+&lt;p&gt;KDA 将它改为通道级向量&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\boldsymbol{\alpha}_t\in(0,1]^{d_k},
+\qquad
+\mathbf{D}_t=\operatorname{Diag}(\boldsymbol{\alpha}_t).
+$$&lt;/div&gt;
+&lt;p&gt;每个 key 通道因此拥有独立衰减率。&lt;/p&gt;
+&lt;h3&gt;4.2 KDA 的核心递推&lt;/h3&gt;
+&lt;p&gt;KDA 的状态更新与读取为&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{S}_t
+=
+\left(
+\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^{\top}
+\right)
+\mathbf{D}_t\mathbf{S}_{t-1}
++\beta_t\mathbf{k}_t\mathbf{v}_t^{\top}
+$$&lt;/div&gt;
+&lt;div class="math"&gt;$$
+\mathbf{o}_t=\mathbf{S}_t^{\top}\mathbf{q}_t
+$$&lt;/div&gt;
+&lt;p&gt;其中&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{S}_t\in\mathbb{R}^{d_k\times d_v},\quad
+\mathbf{k}_t,\mathbf{q}_t\in\mathbb{R}^{d_k},\quad
+\mathbf{v}_t,\mathbf{o}_t\in\mathbb{R}^{d_v}.
+$$&lt;/div&gt;
+&lt;p&gt;可以把 &lt;span class="math"&gt;\(\mathbf{S}_{t-1}\)&lt;/span&gt; 理解为一个固定大小的“压缩记忆”：它不是逐条保存历史
+key/value，而是把历史关联压入一个从 key 空间到 value 空间的线性映射。于是
+&lt;span class="math"&gt;\(\mathbf{k}_t\)&lt;/span&gt; 决定当前信息写到哪个方向，&lt;span class="math"&gt;\(\mathbf{v}_t\)&lt;/span&gt; 决定写入什么内容，
+&lt;span class="math"&gt;\(\mathbf{q}_t\)&lt;/span&gt; 则在更新完成后决定从哪个方向读取。为了把更新公式与“选择性遗忘、
+修正与调整、写入新信息”三步对应起来，可以引入两个中间状态。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;第一步：选择性遗忘。&lt;/strong&gt; 先对旧状态应用通道级门：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\widetilde{\mathbf{S}}_{t-1}
+=
+\mathbf{D}_t\mathbf{S}_{t-1}.
+$$&lt;/div&gt;
+&lt;p&gt;因为 &lt;span class="math"&gt;\(\mathbf{D}_t\)&lt;/span&gt; 是对角矩阵，第 &lt;span class="math"&gt;\(i\)&lt;/span&gt; 个 key 通道满足&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\left[
+\widetilde{\mathbf{S}}_{t-1}
+\right]_{i,:}
+=
+\alpha_{t,i}
+\left[
+\mathbf{S}_{t-1}
+\right]_{i,:}.
+$$&lt;/div&gt;
+&lt;p&gt;当 &lt;span class="math"&gt;\(\alpha_{t,i}\)&lt;/span&gt; 接近 &lt;span class="math"&gt;\(1\)&lt;/span&gt; 时，该通道中的旧信息基本保留；接近 &lt;span class="math"&gt;\(0\)&lt;/span&gt;
+时，该通道被快速衰减。这里的“选择性”不是从历史 token 列表中删除某一条记录，
+而是当前输入为每个 key 特征通道生成不同的保留率。不同通道因此可以学习不同的
+记忆时间尺度：有些通道长期积累信息，有些通道快速响应局部变化。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;第二步：修正与调整。&lt;/strong&gt; 在写入新 value 之前，先擦除衰减后状态在当前 key
+方向上的旧关联。定义经过遗忘后的旧读出&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\widehat{\mathbf{v}}_t^{\,\mathrm{old}}
+=
+\widetilde{\mathbf{S}}_{t-1}^{\top}\mathbf{k}_t,
+$$&lt;/div&gt;
+&lt;p&gt;再令&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\begin{aligned}
+\overline{\mathbf{S}}_{t-1}
+&amp;amp;=
+\left(
+\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^\top
+\right)
+\widetilde{\mathbf{S}}_{t-1}\\
+&amp;amp;=
+\widetilde{\mathbf{S}}_{t-1}
+-\beta_t\mathbf{k}_t
+\left(
+\widehat{\mathbf{v}}_t^{\,\mathrm{old}}
+\right)^\top.
+\end{aligned}
+$$&lt;/div&gt;
+&lt;p&gt;第二行说明，这一步实际减去的是“当前 key 方向 &lt;span class="math"&gt;\(\mathbf{k}_t\)&lt;/span&gt;”与“该方向原来
+读出的 value”所形成的秩一关联。若
+&lt;span class="math"&gt;\(\|\mathbf{k}_t\|_2=1\)&lt;/span&gt;，则修正后在同一 key 上的读出变为&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\overline{\mathbf{S}}_{t-1}^{\top}\mathbf{k}_t
+=
+(1-\beta_t)
+\widehat{\mathbf{v}}_t^{\,\mathrm{old}}.
+$$&lt;/div&gt;
+&lt;p&gt;因此 &lt;span class="math"&gt;\(\beta_t=1\)&lt;/span&gt; 会完全清空当前 key 方向上的旧值，
+&lt;span class="math"&gt;\(0&amp;lt;\beta_t&amp;lt;1\)&lt;/span&gt; 则只做部分调整。对任意其他 query &lt;span class="math"&gt;\(\mathbf{q}\)&lt;/span&gt;，这一步引起的变化为&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\overline{\mathbf{S}}_{t-1}^{\top}\mathbf{q}
+-
+\widetilde{\mathbf{S}}_{t-1}^{\top}\mathbf{q}
+=
+-\beta_t
+\left(
+\mathbf{k}_t^\top\mathbf{q}
+\right)
+\widehat{\mathbf{v}}_t^{\,\mathrm{old}}.
+$$&lt;/div&gt;
+&lt;p&gt;只有与 &lt;span class="math"&gt;\(\mathbf{k}_t\)&lt;/span&gt; 内积绝对值较大的读取方向会受到明显影响，所以这种“修正”不同于第一步
+对所有旧记忆通道施加的遗忘：第一步按通道控制时间尺度，第二步按当前 key
+定位需要覆盖的关联。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;第三步：写入新信息。&lt;/strong&gt; 最后把当前 key/value 关联加入修正后的状态：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{S}_t
+=
+\overline{\mathbf{S}}_{t-1}
++\beta_t\mathbf{k}_t\mathbf{v}_t^\top.
+$$&lt;/div&gt;
+&lt;p&gt;把第二步与第三步合并，可以重新得到更直观的残差校正形式：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\begin{aligned}
+\mathbf{S}_t
+&amp;amp;=
+\widetilde{\mathbf{S}}_{t-1}
++\beta_t\mathbf{k}_t
+\left(
+\mathbf{v}_t
+-\widetilde{\mathbf{S}}_{t-1}^{\top}\mathbf{k}_t
+\right)^\top\\
+&amp;amp;=
+\widetilde{\mathbf{S}}_{t-1}
++\beta_t\mathbf{k}_t
+\left(
+\mathbf{v}_t-\widehat{\mathbf{v}}_t^{\,\mathrm{old}}
+\right)^\top.
+\end{aligned}
+$$&lt;/div&gt;
+&lt;p&gt;这表明“修正”与“写入”不是两次无关操作：二者共同把当前 key
+上的旧读出推向新目标 &lt;span class="math"&gt;\(\mathbf{v}_t\)&lt;/span&gt;。当
+&lt;span class="math"&gt;\(\|\mathbf{k}_t\|_2=1\)&lt;/span&gt; 时，&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{S}_t^\top\mathbf{k}_t
+=
+(1-\beta_t)\widehat{\mathbf{v}}_t^{\,\mathrm{old}}
++\beta_t\mathbf{v}_t.
+$$&lt;/div&gt;
+&lt;p&gt;&lt;span class="math"&gt;\(\beta_t\)&lt;/span&gt; 同时控制擦除强度和写入强度，使旧值减少多少与新值增加多少保持匹配；
+当 &lt;span class="math"&gt;\(\beta_t=1\)&lt;/span&gt; 时，新 value 精确覆盖经过选择性遗忘后的旧关联。&lt;/p&gt;
+&lt;p&gt;完成这三步后，
+&lt;span class="math"&gt;\(\mathbf{o}_t=\mathbf{S}_t^\top\mathbf{q}_t\)&lt;/span&gt; 使用 query 从新状态中提取输出。
+在线性映射的意义下，可以把 &lt;span class="math"&gt;\(\mathbf{k}_t\)&lt;/span&gt; 看作写入地址、&lt;span class="math"&gt;\(\mathbf{v}_t\)&lt;/span&gt;
+看作写入内容、&lt;span class="math"&gt;\(\mathbf{q}_t\)&lt;/span&gt; 看作读取地址；但这些“地址”是连续向量方向，
+相似方向之间会共享和干扰记忆，并不是离散存储槽。&lt;/p&gt;
+&lt;p&gt;对角门的位置不能随意移动。一般情况下，&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\left(\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^\top\right)\mathbf{D}_t
+\neq
+\mathbf{D}_t\left(\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^\top\right),
+$$&lt;/div&gt;
+&lt;p&gt;因为矩阵乘法不可交换。KDA 采用前一种次序，并围绕该结构设计了稳定的分块 WY/UT 算法。&lt;/p&gt;
+&lt;h3&gt;4.3 KDA 的神经参数化&lt;/h3&gt;
+&lt;p&gt;对第 &lt;span class="math"&gt;\(h\)&lt;/span&gt; 个头，Kimi Linear 使用&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\begin{aligned}
+\mathbf{q}_t^h
+&amp;amp;=
+\operatorname{L2Norm}\!\left(
+\operatorname{Swish}\!\left(
+\operatorname{ShortConv}(\mathbf{W}_h^Q\mathbf{x}_t)
+\right)\right),\\
+\mathbf{k}_t^h
+&amp;amp;=
+\operatorname{L2Norm}\!\left(
+\operatorname{Swish}\!\left(
+\operatorname{ShortConv}(\mathbf{W}_h^K\mathbf{x}_t)
+\right)\right),\\
+\mathbf{v}_t^h
+&amp;amp;=
+\operatorname{Swish}\!\left(
+\operatorname{ShortConv}(\mathbf{W}_h^V\mathbf{x}_t)
+\right),\\
+\boldsymbol{\alpha}_t^h
+&amp;amp;=
+f\!\left(
+\mathbf{W}_{\uparrow}^{\alpha}
+\mathbf{W}_{\downarrow}^{\alpha}
+\mathbf{x}_t
+\right),\\
+\beta_t^h
+&amp;amp;=
+\operatorname{sigmoid}\!\left(
+\mathbf{W}_h^{\beta}\mathbf{x}_t
+\right).
+\end{aligned}
+$$&lt;/div&gt;
+&lt;p&gt;&lt;span class="math"&gt;\(\mathbf{W}_{\downarrow}^{\alpha}\)&lt;/span&gt; 与
+&lt;span class="math"&gt;\(\mathbf{W}_{\uparrow}^{\alpha}\)&lt;/span&gt; 构成低秩瓶颈，在控制参数量的同时生成
+&lt;span class="math"&gt;\(d_k\)&lt;/span&gt; 维通道级遗忘门。query 与 key 的 L2 归一化用于改善状态转移的数值稳定性。&lt;/p&gt;
+&lt;p&gt;多头 KDA 的结果经过逐头 RMSNorm、数据依赖输出门和输出投影：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{y}_t
+=
+\mathbf{W}^{O}
+\left[
+\operatorname{sigmoid}\!\left(
+\mathbf{W}_{\uparrow}^{G}
+\mathbf{W}_{\downarrow}^{G}\mathbf{x}_t
+\right)
+\odot
+\operatorname{RMSNorm}\!\left(
+\operatorname{Concat}(\mathbf{o}_t^1,\ldots,\mathbf{o}_t^H)
+\right)
+\right].
+$$&lt;/div&gt;
+&lt;h3&gt;4.4 为什么仍能高效训练&lt;/h3&gt;
+&lt;p&gt;逐 token 递推适合推理，但会限制训练并行度。KDA 将序列切成长度为 &lt;span class="math"&gt;\(C\)&lt;/span&gt; 的块：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;块之间递推传递固定大小的状态；&lt;/li&gt;
+&lt;li&gt;块内部把连续的秩一更新压缩为 WY 表示；&lt;/li&gt;
+&lt;li&gt;使用 UT 变换减少非矩阵乘法操作；&lt;/li&gt;
+&lt;li&gt;通过 Tensor Core 友好的矩阵乘法并行计算输出。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;因此 KDA 同时保留了循环推理的固定状态和训练阶段的块内并行能力。它的优势并非只来自渐近复杂度，也来自对 GPU 计算路径的专门设计。&lt;/p&gt;
+&lt;h2&gt;5. Kimi Linear 的混合架构&lt;/h2&gt;
+&lt;p&gt;纯线性状态模型在精确长程检索上仍可能受有限状态容量约束。Kimi Linear 因此没有把全部层都替换成 KDA，而是采用层级混合：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\underbrace{\mathrm{KDA}\rightarrow\mathrm{KDA}\rightarrow\mathrm{KDA}}_{3\ \text{层}}
+\rightarrow
+\underbrace{\mathrm{Full\ MLA}}_{1\ \text{层}},
+$$&lt;/div&gt;
+&lt;p&gt;即重复使用 &lt;span class="math"&gt;\(3:1\)&lt;/span&gt; 的 KDA/全局 MLA 比例。&lt;/p&gt;
+&lt;p&gt;KDA 层承担高效的长序列状态建模与位置信息编码；少量 Full MLA 层保留全局 token-to-token 检索能力。论文在 Full MLA 层中使用 NoPE，把位置与近因偏置主要交给 KDA 的数据依赖衰减机制。&lt;/p&gt;
+&lt;p&gt;相对于每层都使用 Full MLA，&lt;span class="math"&gt;\(3:1\)&lt;/span&gt; 配比使需要维护全局 KV cache 的层数直观上减少约 &lt;span class="math"&gt;\(75\%\)&lt;/span&gt;；实际显存收益还取决于 MLA 潜变量维度、层配置、batch size 与实现。&lt;/p&gt;
+&lt;p&gt;需要特别区分：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;线性注意力/KDA&lt;/strong&gt;：通过固定大小的循环状态避免随 &lt;span class="math"&gt;\(N\)&lt;/span&gt; 增长的 KV cache。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;MLA&lt;/strong&gt;：通过低秩潜变量压缩 KV cache，但全局注意力本身仍包含 token 两两交互。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Kimi Linear&lt;/strong&gt;：用大多数 KDA 层获得效率，再用少数 MLA 层补足精确全局检索。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;因此，MLA 不是线性注意力；二者在 Kimi Linear 中是互补组件。&lt;/p&gt;
+&lt;h2&gt;6. 复杂度与内存总结&lt;/h2&gt;
+&lt;p&gt;设单头状态为 &lt;span class="math"&gt;\(d_k\times d_v\)&lt;/span&gt;，忽略 batch、层数和头数等公共因子：&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;结构与阶段&lt;/th&gt;
+&lt;th&gt;时间复杂度&lt;/th&gt;
+&lt;th&gt;持久状态/缓存&lt;/th&gt;
+&lt;th&gt;关于 &lt;span class="math"&gt;\(N\)&lt;/span&gt;&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;标准注意力训练&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(O(N^2d_k)\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;显式实现为 &lt;span class="math"&gt;\(O(N^2)\)&lt;/span&gt;；FlashAttention 可降低&lt;/td&gt;
+&lt;td&gt;二次&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;标准注意力单步生成&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(O(Nd_k)\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;KV cache &lt;span class="math"&gt;\(O(N(d_k+d_v))\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;线性&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;核线性注意力训练&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(O(Nd_kd_v)\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;分块实现相关&lt;/td&gt;
+&lt;td&gt;线性&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;核线性注意力单步生成&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(O(d_kd_v)\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(O(d_kd_v+d_k)\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;常数&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;KDA 训练&lt;/td&gt;
+&lt;td&gt;典型为 &lt;span class="math"&gt;\(O(Nd_kd_v)\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;分块临时量 + 状态&lt;/td&gt;
+&lt;td&gt;线性&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;KDA 单步生成&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(O(d_kd_v)\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(O(d_kd_v)\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;常数&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Kimi Linear&lt;/td&gt;
+&lt;td&gt;KDA 与少量 Full MLA 的加权组合&lt;/td&gt;
+&lt;td&gt;KDA 状态 + MLA cache&lt;/td&gt;
+&lt;td&gt;由混合比例决定&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;这里的“常数”均指不随上下文长度 &lt;span class="math"&gt;\(N\)&lt;/span&gt; 增长，而不是与模型维度无关。对于完整模型，还需乘上 batch size、层数和头数。&lt;/p&gt;
+&lt;h2&gt;7. 演进脉络与关键结论&lt;/h2&gt;
+&lt;p&gt;可以用一条清晰的记忆更新主线总结全文：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\begin{aligned}
+\text{线性注意力：}\quad
+&amp;amp;\mathbf{S}_t
+=
+\mathbf{S}_{t-1}
++\mathbf{k}_t\mathbf{v}_t^\top,
+\\[2mm]
+\text{Mamba-2：}\quad
+&amp;amp;\mathbf{S}_t
+=
+\alpha_t\mathbf{S}_{t-1}
++\mathbf{k}_t\mathbf{v}_t^\top,
+\\[2mm]
+\text{DeltaNet：}\quad
+&amp;amp;\mathbf{S}_t
+=
+\left(\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^\top\right)
+\mathbf{S}_{t-1}
++\beta_t\mathbf{k}_t\mathbf{v}_t^\top,
+\\[2mm]
+\text{Gated DeltaNet：}\quad
+&amp;amp;\mathbf{S}_t
+=
+\alpha_t
+\left(\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^\top\right)
+\mathbf{S}_{t-1}
++\beta_t\mathbf{k}_t\mathbf{v}_t^\top,
+\\[2mm]
+\text{KDA：}\quad
+&amp;amp;\mathbf{S}_t
+=
+\left(\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^\top\right)
+\operatorname{Diag}(\boldsymbol{\alpha}_t)
+\mathbf{S}_{t-1}
++\beta_t\mathbf{k}_t\mathbf{v}_t^\top.
+\end{aligned}
+$$&lt;/div&gt;
+&lt;p&gt;核心变化依次是：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;用固定大小的矩阵状态替代显式 token-to-token 注意力矩阵。&lt;/li&gt;
+&lt;li&gt;用遗忘门控制旧信息寿命。&lt;/li&gt;
+&lt;li&gt;用 Delta 规则定向擦除并覆盖 key 关联。&lt;/li&gt;
+&lt;li&gt;用通道级遗忘门让不同记忆通道拥有不同时间尺度。&lt;/li&gt;
+&lt;li&gt;用 KDA/MLA 混合架构在效率与精确全局检索之间折中。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2&gt;参考资料&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;Kimi Team. &lt;a href="https://arxiv.org/abs/2510.26692"&gt;Kimi Linear: An Expressive, Efficient Attention Architecture&lt;/a&gt;, 2025.&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://zhuanlan.zhihu.com/p/1969545638023767020"&gt;Kimi Linear 学习笔记：让 Attention 又快又好&lt;/a&gt;.&lt;/li&gt;
+&lt;li&gt;Yang, Kautz, Hatamizadeh. &lt;a href="https://arxiv.org/abs/2412.06464"&gt;Gated Delta Networks: Improving Mamba2 with Delta Rule&lt;/a&gt;, 2024.&lt;/li&gt;
+&lt;li&gt;Katharopoulos et al. &lt;a href="https://arxiv.org/abs/2006.16236"&gt;Transformers are RNNs: Fast Autoregressive Transformers with Linear Attention&lt;/a&gt;, 2020.&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://www.youtube.com/watch?v=T30jVzehoFc"&gt;Linear Attention Explained from First Principles (Transformers to RNNs)&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;script type="text/javascript"&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width &lt; 768) ? "left" : align;
+        indent = (screen.width &lt; 768) ? "0em" : indent;
+        linebreak = (screen.width &lt; 768) ? 'true' : linebreak;
+    }
+
+    var mathjaxscript = document.createElement('script');
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript';
+    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-AMS-MML_HTMLorMML';
+
+    var configscript = document.createElement('script');
+    configscript.type = 'text/x-mathjax-config';
+    configscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js'], equationNumbers: { autoNumber: 'none' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    messageStyle: 'normal'," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        availableFonts: ['STIX', 'TeX']," +
+        "        preferredFont: 'STIX'," +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+&lt;/script&gt;</content><category term="python"></category><category term="python"></category><category term="AI"></category><category term="LLM"></category><category term="AIGC"></category><category term="DeepSeek"></category></entry><entry><title>GLM-5: From Vibe Coding to Agentic Engineering</title><link href="/pages/2026/06/30/glm-5-from-vibe-coding-to-agentic-engineering/" rel="alternate"></link><published>2026-06-30T00:00:00-05:00</published><updated>2026-06-30T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2026-06-30:/pages/2026/06/30/glm-5-from-vibe-coding-to-agentic-engineering/</id><summary type="html">&lt;h2&gt;背景&lt;/h2&gt;
 &lt;p&gt;在之前的文章 &lt;a href="https://songhuiming.github.io/pages/2026/02/18/deepseek-v32-lightning-indexer/"&gt;DeepSeek-V3.2 Lightning Indexer&lt;/a&gt; 中，我们详细介绍了 DeepSeek Sparse Attention (DSA) 的 Lightning Indexer 如何通过 top-k 选择实现 token 级别的稀疏注意力。GLM-5 作为智谱 …&lt;/p&gt;</summary><content type="html">&lt;h2&gt;背景&lt;/h2&gt;
 &lt;p&gt;在之前的文章 &lt;a href="https://songhuiming.github.io/pages/2026/02/18/deepseek-v32-lightning-indexer/"&gt;DeepSeek-V3.2 Lightning Indexer&lt;/a&gt; 中，我们详细介绍了 DeepSeek Sparse Attention (DSA) 的 Lightning Indexer 如何通过 top-k 选择实现 token 级别的稀疏注意力。GLM-5 作为智谱的下一代基础模型，同样采用了 DSA 来降低长上下文场景的计算和推理成本，同时在 MLA 架构和 RL 训练流程上做了重要创新。&lt;/p&gt;
 &lt;p&gt;本文基于 &lt;a href="https://arxiv.org/abs/2602.15763"&gt;GLM-5 技术报告&lt;/a&gt; 和 &lt;a href="https://z.ai/blog/glm-5.2"&gt;Z.ai 博客&lt;/a&gt;，总结 GLM-5 的核心架构设计和训练方法。&lt;/p&gt;
@@ -16814,147 +17841,4 @@ y = tf.matmul(x, W) + b
 &lt;h3&gt;Reference&lt;/h3&gt;
 &lt;ol&gt;
 &lt;li&gt;&lt;a href="https://medium.com/all-of-us-are-belong-to-machines/gentlest-intro-to-tensorflow-part-3-matrices-multi-feature-linear-regression-30a81ebaaa6c#.r0w6hcjn2"&gt;Gentlest Intro to TensorFlow #3: Matrices &amp;amp; Multi-feature Linear Regression&lt;/a&gt;&lt;/li&gt;
-&lt;/ol&gt;</content><category term="Python"></category><category term="python"></category><category term="tensorflow"></category><category term="deep learning"></category></entry><entry><title>tensorflow简介--02</title><link href="/pages/2017/02/26/tensorflowjian-jie-02/" rel="alternate"></link><published>2017-02-26T21:30:00-06:00</published><updated>2017-02-26T21:30:00-06:00</updated><author><name>Huiming Song</name></author><id>tag:None,2017-02-26:/pages/2017/02/26/tensorflowjian-jie-02/</id><summary type="html">&lt;p&gt;上一章讨论了怎么在TF里面训练机器学习模型，以及基本的tensorflow代码。这为接下来讨论各种训练变化比如stochastic/mini-batch/batch, 以及adaptive learning rate gradient descent预铺了道路.&lt;/p&gt;</summary><content type="html">&lt;p&gt;上一篇文章，我们使用tensorflow(TF)来建立了一个单feature的线性回归模型。给定feature的值（house size），我们可以预测出房屋价格。&lt;/p&gt;
-&lt;p&gt;我们回顾一下上一章怎么做的：&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;
-&lt;p&gt;我们有房屋面积和房屋价格的数据（图中灰色原点）&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;用线性回归来建模（红色虚线）&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;通过最小化损失函数（图中蓝线的长度的平方和）来找出最优的模型的&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;给定房屋面积，应用建立的线性模型来预测房屋价格（图中蓝色虚线对应的点）&lt;/p&gt;
-&lt;/li&gt;
-&lt;/ol&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p2_01.png"&gt;&lt;/p&gt;
-&lt;p&gt;在机器学习的论文中，我们经常会遇到‘training’这个词。我们首先来看看在TF中它的含义。&lt;/p&gt;
-&lt;h2&gt;线性回归模型&lt;/h2&gt;
-&lt;pre&gt;&lt;code&gt;Linear Model (in TF notation): y = tf.matmul(x,W) + b
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;线性回归的目的是找出&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;,对给定的feature值(x),当我们把&lt;code&gt;W&lt;/code&gt;,&lt;code&gt;b&lt;/code&gt;和&lt;code&gt;x&lt;/code&gt;带入模型，我们可以得到&lt;strong&gt;prediction&lt;/strong&gt;(y)。&lt;/p&gt;
-&lt;p&gt;要得到&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;，我们需要用给定的数据(真实的feature值x和真实的结果y_， 注意y_的下划线)来训练(&lt;strong&gt;train&lt;/strong&gt;)模型。&lt;/p&gt;
-&lt;h2&gt;Training Illustrated&lt;/h2&gt;
-&lt;p&gt;要找到最优的&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;，我们需要定义一个损失函数用来衡量对&lt;strong&gt;某一个给定的feature（x）值&lt;/strong&gt;，预测值（y）和真实值(y_)之间的差异。为了简化，我们用最小平方差的和(MSE)作为损失函数。&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;Cost function (in TF notation): tf.reduce_mean(tf.square(y_ - y))
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;通过最小化损失函数，我们可以得到好的&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;的值。&lt;/p&gt;
-&lt;p&gt;用来做训练的程序代码非常简单，我们用[A,B,C,D]来标记各个部分。下面将会用到。&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;# ... (snip) Variable/Constants declarations (snip) ...
-# [A] TF.Graph
-y = tf.matmul(x,W) + b
-cost = tf.reduce_mean(tf.square(y_-y))
-# [B] Train with fixed 'learn_rate'
-learn_rate = 0.1
-train_step =
-    tf.train.GradientDescentOptimizer(learn_rate).minimize(cost)
-for i in range(steps):
-  # [C] Prepare datapoints
-  # ... (snip) Code to prepare datapoint as xs, and ys (snip) ...
-  # [D] Feed Data at each step/epoch into 'train_step'
-  feed = { x: xs, y_: ys }
-  sess.run(train_step, feed_dict=feed)
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;A当中的线性模型和损失函数可以被表示成下面的TF流程图&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p2_02.png"&gt;&lt;/p&gt;
-&lt;p&gt;下一步，我们要选择一个C当中的数据(x, y_)，输入到D当中来得到预测值(y)和损失函数。TF流程图如下：&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p2_03.png"&gt;&lt;/p&gt;
-&lt;p&gt;要得到更好的&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;，我们在B中通过&lt;em&gt;tf.train.GradientDescentOptimizer&lt;/em&gt;做梯度下降来得到损失函数。更简易的说法是：给定当前的损失值，根据图中别的变量（&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;）所得到的损失函数的值，优化器会对&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;做一个小变化（增加/减少），从而使得对那一个数据点的预测值更好。&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p2_04.png"&gt;&lt;/p&gt;
-&lt;p&gt;最后一步就是更新调整过的&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;的值。注意这一个周期(cycle)在机器学习的文档中也叫&lt;strong&gt;epoch&lt;/strong&gt;。&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p2_05.png"&gt;&lt;/p&gt;
-&lt;p&gt;在下一个&lt;strong&gt;epoch&lt;/strong&gt;，重复以上步骤，但是用一个&lt;strong&gt;不同的数据点(x, y_)&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p2_06.png"&gt;&lt;/p&gt;
-&lt;p&gt;使用不同的数据点来建模，所得到的&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;就可以用来预测任意的feature。注意&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;
-&lt;p&gt;大部分时候，更多的数据点得到的模型会更好&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;如果你的epochs比你的数据点还多，你可以重复利用数据点，这是没有问题的。梯度下降的优化器总是使用数据点和损失函数(从相应的epoch中的&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;和数据点计算出来)来调整&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;。优化器可能已经用过这个数据点，但是因为损失函数不同，所以它仍然会得到新的信息，也会得到新的调整过的&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;。&lt;/p&gt;
-&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;你可以训练你的模型给定次数的epoch，或者直到损失函数低于某个给定的值。&lt;/p&gt;
-&lt;h2&gt;Training variation&lt;/h2&gt;
-&lt;h3&gt;stochastic，mini-batch, batch&lt;/h3&gt;
-&lt;p&gt;在上面的模型训练中，我们每次输入一个数据点。这叫做随机梯度下降(&lt;em&gt;stochastic gradient descent&lt;/em&gt;)。我们也可以在每个epoch中输入一批数据点，这叫做&lt;em&gt;mini-batch gradient descent&lt;/em&gt;。甚至我们可以在每个epoch中输入所有的数据点，这叫做&lt;em&gt;batch gradient descent&lt;/em&gt;。请看下面的比较图示。注意这三个图有两个不同&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;每个epoch中输入到TF.Graph的数据点(右上角的数据点)不同&lt;/li&gt;
-&lt;li&gt;用来调整&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;的梯度下降优化器所用到的数据点（右下角）也不相同&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p2_07.png"&gt;
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p2_08.png"&gt;
-&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p2_09.png"&gt;&lt;/p&gt;
-&lt;p&gt;在每个epoch中使用到的数据点有两层含义。如果每个epoch使用更多的数据点：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;计算损失函数和梯度下降的计算资源(加减乘)会减少&lt;/li&gt;
-&lt;li&gt;模型学习的速度会提高&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;使用stochastic, mini-batch, batch gradient descent 的优缺点见下图&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p2_10.png"&gt;&lt;/p&gt;
-&lt;p&gt;要在stochastic, mini-batch, batch gradient descent这三个办法中切换，我们只需要在下面的[C]当中设置不同的batch大小，然后根据batch大小把对应的batch的数据点输入到模型训练[D]中。&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;# * all_xs: All the feature values
-# * all_ys: All the outcome values
-# datapoint_size: Number of points/entries in all_xs/all_ys
-# batch_size: Configure this to:
-#             1: stochastic mode
-#             integer &amp;lt; datapoint_size: mini-batch mode
-#             datapoint_size: batch mode
-# i: Current epoch number
-if datapoint_size == batch_size:
-  # Batch mode so select all points starting from index 0
-  batch_start_idx = 0
-elif datapoint_size &amp;lt; batch_size:
-  # Not possible
-  raise ValueError(“datapoint_size: %d, must be greater than         
-                    batch_size: %d” % (datapoint_size, batch_size))
-else:
-  # stochastic/mini-batch mode: Select datapoints in batches
-  #                             from all possible datapoints
-  batch_start_idx = (i * batch_size) % (datapoint_size — batch_size)
-  batch_end_idx = batch_start_idx + batch_size
-  batch_xs = all_xs[batch_start_idx:batch_end_idx]
-  batch_ys = all_ys[batch_start_idx:batch_end_idx]
-
-
-# Get batched datapoints into xs, ys, which is fed into
-# 'train_step'
-xs = np.array(batch_xs)
-ys = np.array(batch_ys)
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;Learn Rate的变化&lt;/h3&gt;
-&lt;p&gt;学习速度(Learn Rate)指的是梯度下降来调整&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;的这时候，每次增加或者减小的大小。当learn rate比较小的时候，前进速度会很慢，但是会渐渐收敛到最小损失函数值。当learn rate比较大的时候，达到最小损失函数的速度会比较快，但是有可能会走过头，导致找不到最小值。&lt;/p&gt;
-&lt;p&gt;要克服这一点，肯多ML的实际操作是开始的时候用比较大的learn rate（假设初始的损失函数离最小值比较远），然后每个epoch渐渐减小learn rate以防止走过头。&lt;/p&gt;
-&lt;p&gt;TF提供了两个办法。这个&lt;a href="http://stackoverflow.com/questions/33919948/how-to-set-adaptive-learning-rate-for-gradientdescentoptimizer"&gt;StackOverflow thread&lt;/a&gt;讲的非常棒。总结如下:&lt;/p&gt;
-&lt;h3&gt;使用变化的learn rate的梯度下降优化器&lt;/h3&gt;
-&lt;p&gt;TF提供了不同的支持learn rate变化的梯度下降优化器，比如&lt;a href="https://www.tensorflow.org/api_guides/python/train#AdagradOptimizer"&gt;tf.train.AdagradientOptimizer&lt;/a&gt;和&lt;a href="https://www.tensorflow.org/api_guides/python/train#AdamOptimizer"&gt;tf.train.AdamOptimizer&lt;/a&gt;.&lt;/p&gt;
-&lt;h3&gt;使用tf.placeholder建Learn Rate&lt;/h3&gt;
-&lt;p&gt;如前所述，我们在&lt;em&gt;tf.train.GradientDescentOptimizer&lt;/em&gt;当中用&lt;em&gt;tf.placeholder&lt;/em&gt;来申明&lt;em&gt;Learn Rate&lt;/em&gt;的时候，我们可以在每个epoch中输入不同的值。这类似于在每个epoch中我们用&lt;em&gt;tf.placeholders&lt;/em&gt;来输入不同的数据点到x, y_。&lt;/p&gt;
-&lt;p&gt;这样做需要两个小的改动:&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;# Modify [B] to make 'learn_rate' a 'tf.placeholder'
-# and supply it to the 'learning_rate' parameter name of
-# tf.train.GradientDescentOptimizer
-learn_rate = tf.placeholder(tf.float32, shape=[])
-train_step = tf.train.GradientDescentOptimizer(
-    learning_rate=learn_rate).minimize(cost)
-# Modify [D] to include feed a 'learn_rate' value,
-# which is the 'initial_learn_rate' divided by
-# 'i' (current epoch number)
-# NOTE: Oversimplified. For example only.
-feed = { x: xs, y_: ys, learn_rate: initial_learn_rate/i }
-sess.run(train_step, feed_dict=feed)
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h2&gt;总结&lt;/h2&gt;
-&lt;p&gt;我们演示了机器学习的训练是什么意思，以及在Tensorflow中怎么定义模型和损失函数。然后通过输入数据点到梯度下降优化器，进行循环来得到&lt;code&gt;W&lt;/code&gt;和&lt;code&gt;b&lt;/code&gt;的值。我们还讨论了训练过程中两个常见的变化：每个epoch中使用不同的数据集的大小，以及使用不同的learn rate。&lt;/p&gt;
-&lt;h3&gt;下一章&lt;/h3&gt;
-&lt;ul&gt;
-&lt;li&gt;设置Tensor Board来可视化TF的执行，这样可以检测到我们模型，损失函数和梯度下降的问题&lt;/li&gt;
-&lt;li&gt;展示一个多特征(features)的线性回归模型&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h3&gt;Reference&lt;/h3&gt;
-&lt;ol&gt;
-&lt;li&gt;&lt;a href="https://medium.com/all-of-us-are-belong-to-machines/gentlest-introduction-to-tensorflow-part-2-ed2a0a7a624f#.9cxp5xvf0"&gt;Gentlest Introduction to Tensorflow #2&lt;/a&gt;&lt;/li&gt;
 &lt;/ol&gt;</content><category term="Python"></category><category term="python"></category><category term="tensorflow"></category><category term="deep learning"></category></entry></feed>

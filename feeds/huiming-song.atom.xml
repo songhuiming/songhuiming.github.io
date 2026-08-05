@@ -1,5 +1,1032 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata: Huiming's learning notes - Huiming Song</title><link href="/" rel="alternate"></link><link href="/feeds/huiming-song.atom.xml" rel="self"></link><id>/</id><updated>2026-06-30T00:00:00-05:00</updated><subtitle>Keep Looking, Don't Settle</subtitle><entry><title>GLM-5: From Vibe Coding to Agentic Engineering</title><link href="/pages/2026/06/30/glm-5-from-vibe-coding-to-agentic-engineering/" rel="alternate"></link><published>2026-06-30T00:00:00-05:00</published><updated>2026-06-30T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2026-06-30:/pages/2026/06/30/glm-5-from-vibe-coding-to-agentic-engineering/</id><summary type="html">&lt;h2&gt;背景&lt;/h2&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>pydata: Huiming's learning notes - Huiming Song</title><link href="/" rel="alternate"></link><link href="/feeds/huiming-song.atom.xml" rel="self"></link><id>/</id><updated>2026-08-01T00:00:00-05:00</updated><subtitle>Keep Looking, Don't Settle</subtitle><entry><title>KDA - 从线性注意力到 Kimi Delta Attention</title><link href="/pages/2026/08/01/kda-cong-xian-xing-zhu-yi-li-dao-kimi-delta-attention/" rel="alternate"></link><published>2026-08-01T00:00:00-05:00</published><updated>2026-08-01T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2026-08-01:/pages/2026/08/01/kda-cong-xian-xing-zhu-yi-li-dao-kimi-delta-attention/</id><summary type="html">&lt;p&gt;本文从标准自注意力出发，依次说明核化线性注意力、循环状态、门控与 Delta 规则，并最终落到 Kimi Linear 的核心组件 Kimi Delta Attention（KDA）。重点 …&lt;/p&gt;</summary><content type="html">&lt;p&gt;本文从标准自注意力出发，依次说明核化线性注意力、循环状态、门控与 Delta 规则，并最终落到 Kimi Linear 的核心组件 Kimi Delta Attention（KDA）。重点不是把所有模型强行归为同一种结构，而是追踪一个共同问题：如何用固定大小的状态高效地读写长序列记忆，同时尽量降低信息干扰。&lt;/p&gt;
+&lt;h2&gt;0. 统一符号与维度&lt;/h2&gt;
+&lt;p&gt;全文采用列向量约定。第 &lt;span class="math"&gt;\(t\)&lt;/span&gt; 个 token 的输入表示统一记为&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{x}_t\in\mathbb{R}^{d_{\mathrm{model}}}.
+$$&lt;/div&gt;
+&lt;p&gt;对第 &lt;span class="math"&gt;\(h\)&lt;/span&gt; 个注意力头，投影统一写成&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{q}_t^{h}=\mathbf{W}_{h}^{Q}\mathbf{x}_t,\qquad
+\mathbf{k}_t^{h}=\mathbf{W}_{h}^{K}\mathbf{x}_t,\qquad
+\mathbf{v}_t^{h}=\mathbf{W}_{h}^{V}\mathbf{x}_t,
+$$&lt;/div&gt;
+&lt;p&gt;其中&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{W}_{h}^{Q},\mathbf{W}_{h}^{K}\in
+\mathbb{R}^{d_k\times d_{\mathrm{model}}},\qquad
+\mathbf{W}_{h}^{V}\in
+\mathbb{R}^{d_v\times d_{\mathrm{model}}}.
+$$&lt;/div&gt;
+&lt;p&gt;为简化公式，讨论单头时省略上标 &lt;span class="math"&gt;\(h\)&lt;/span&gt;。其他符号如下：&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;符号&lt;/th&gt;
+&lt;th&gt;含义&lt;/th&gt;
+&lt;th&gt;维度&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(N\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;序列长度&lt;/td&gt;
+&lt;td&gt;标量&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(H\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;注意力头数&lt;/td&gt;
+&lt;td&gt;标量&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\mathbf{Q},\mathbf{K}\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;按行堆叠的 query/key&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(N\times d_k\)&lt;/span&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\mathbf{V},\mathbf{O}\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;按行堆叠的 value/output&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(N\times d_v\)&lt;/span&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\mathbf{S}_t\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;关联记忆状态&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(d_k\times d_v\)&lt;/span&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\mathbf{z}_t\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;归一化状态&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(d_k\)&lt;/span&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\alpha_t,\boldsymbol{\alpha}_t\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;标量/通道级遗忘门&lt;/td&gt;
+&lt;td&gt;标量或 &lt;span class="math"&gt;\(d_k\)&lt;/span&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(\beta_t\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;Delta 更新强度&lt;/td&gt;
+&lt;td&gt;标量&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;输出投影统一记为 &lt;span class="math"&gt;\(\mathbf{W}^{O}\)&lt;/span&gt;。矩阵 &lt;span class="math"&gt;\(\operatorname{Diag}(\boldsymbol{\alpha}_t)\)&lt;/span&gt; 以向量 &lt;span class="math"&gt;\(\boldsymbol{\alpha}_t\)&lt;/span&gt; 为对角线。&lt;/p&gt;
+&lt;h2&gt;1. 从标准注意力到线性注意力&lt;/h2&gt;
+&lt;h3&gt;1.1 标准自注意力&lt;/h3&gt;
+&lt;p&gt;单头标准注意力为&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{O}
+=
+\operatorname{softmax}\!\left(
+\frac{\mathbf{Q}\mathbf{K}^{\top}}{\sqrt{d_k}}
++\mathbf{M}
+\right)\mathbf{V},
+$$&lt;/div&gt;
+&lt;p&gt;其中 &lt;span class="math"&gt;\(\mathbf{M}\)&lt;/span&gt; 是因果掩码；不需要因果约束时可省略。多头结果拼接后再经过输出投影。按行堆叠整个序列时：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{Y}
+=
+\operatorname{Concat}\!\left(
+\mathbf{O}^{1},\ldots,\mathbf{O}^{H}
+\right)
+\left(\mathbf{W}^{O}\right)^{\top}.
+$$&lt;/div&gt;
+&lt;p&gt;&lt;span class="math"&gt;\(\mathbf{Q}\mathbf{K}^{\top}\in\mathbb{R}^{N\times N}\)&lt;/span&gt;，因此核心计算量为
+&lt;span class="math"&gt;\(O(N^2d_k)\)&lt;/span&gt;。显式实现的注意力矩阵空间开销为 &lt;span class="math"&gt;\(O(N^2)\)&lt;/span&gt;；FlashAttention 等 IO-aware 实现可以避免把整张矩阵持久写入显存，但不会改变全局注意力的二次算术复杂度。自回归推理虽然不必重新计算整张矩阵，但每个新 query 仍要读取全部历史 key/value，单步代价随上下文长度 &lt;span class="math"&gt;\(N\)&lt;/span&gt; 增长。&lt;/p&gt;
+&lt;h3&gt;1.2 为什么不能直接改变 Softmax 的乘法顺序&lt;/h3&gt;
+&lt;p&gt;如果去掉 Softmax，则矩阵结合律给出&lt;/p&gt;
+&lt;div class="math"&gt;$$
+(\mathbf{Q}\mathbf{K}^{\top})\mathbf{V}
+=
+\mathbf{Q}(\mathbf{K}^{\top}\mathbf{V}).
+$$&lt;/div&gt;
+&lt;p&gt;为什么右侧的复杂度是线性的？设&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{Q},\mathbf{K}\in\mathbb{R}^{N\times d_k},
+\qquad
+\mathbf{V}\in\mathbb{R}^{N\times d_v}.
+$$&lt;/div&gt;
+&lt;p&gt;右侧按两步计算：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;先计算 &lt;span class="math"&gt;\(\mathbf{K}^{\top}\mathbf{V}\)&lt;/span&gt;。其维度变化为
+   &lt;span class="math"&gt;\((d_k\times N)(N\times d_v)\rightarrow d_k\times d_v\)&lt;/span&gt;，因此需要
+   &lt;span class="math"&gt;\(O(Nd_kd_v)\)&lt;/span&gt; 次运算。&lt;/li&gt;
+&lt;li&gt;再计算 &lt;span class="math"&gt;\(\mathbf{Q}(\mathbf{K}^{\top}\mathbf{V})\)&lt;/span&gt;。其维度变化为
+   &lt;span class="math"&gt;\((N\times d_k)(d_k\times d_v)\rightarrow N\times d_v\)&lt;/span&gt;，同样需要
+   &lt;span class="math"&gt;\(O(Nd_kd_v)\)&lt;/span&gt; 次运算。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;两步合计约为 &lt;span class="math"&gt;\(2Nd_kd_v\)&lt;/span&gt;，忽略常数后即&lt;/p&gt;
+&lt;div class="math"&gt;$$
+O(Nd_kd_v).
+$$&lt;/div&gt;
+&lt;p&gt;当 &lt;span class="math"&gt;\(d_k=d_v=d\)&lt;/span&gt; 时，它就是 &lt;span class="math"&gt;\(O(Nd^2)\)&lt;/span&gt;。关键在于中间结果
+&lt;span class="math"&gt;\(\mathbf{K}^{\top}\mathbf{V}\)&lt;/span&gt; 的大小是 &lt;span class="math"&gt;\(d_k\times d_v\)&lt;/span&gt;，整个过程中没有生成
+&lt;span class="math"&gt;\(N\times N\)&lt;/span&gt; 矩阵。相反，若按左侧顺序先计算
+&lt;span class="math"&gt;\(\mathbf{Q}\mathbf{K}^{\top}\)&lt;/span&gt;，就会产生 &lt;span class="math"&gt;\(N\times N\)&lt;/span&gt; 中间矩阵，复杂度回到关于
+&lt;span class="math"&gt;\(N\)&lt;/span&gt; 的二次量级。&lt;/p&gt;
+&lt;p&gt;以上结合律推导适用于没有 Softmax 且没有因果掩码阻断的可结合形式。因果线性注意力需要使用前缀状态或并行扫描，不能直接用整段序列的
+&lt;span class="math"&gt;\(\mathbf{K}^{\top}\mathbf{V}\)&lt;/span&gt;。&lt;/p&gt;
+&lt;p&gt;但标准注意力中的 Softmax 是逐行归一化的非线性算子：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\operatorname{softmax}(\mathbf{Q}\mathbf{K}^{\top})\mathbf{V}
+\neq
+\mathbf{Q}(\mathbf{K}^{\top}\mathbf{V}).
+$$&lt;/div&gt;
+&lt;p&gt;因此，线性注意力不是简单地给原公式“换括号”，而是要把相似度改写为可分解的核。为简化符号，本文将核特征映射吸收到 query/key 的生成过程，映射后的向量仍记为 &lt;span class="math"&gt;\(\mathbf{q}_t,\mathbf{k}_t\)&lt;/span&gt;，不再额外添加函数或波浪号：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\operatorname{sim}(\mathbf{q}_t,\mathbf{k}_j)
+=
+\mathbf{q}_t^{\top}\mathbf{k}_j.
+$$&lt;/div&gt;
+&lt;p&gt;归一化的核注意力输出为&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{o}_t
+=
+\frac{
+\sum_{j=1}^{N}
+\left(\mathbf{q}_t^{\top}\mathbf{k}_j\right)\mathbf{v}_j
+}{
+\sum_{j=1}^{N}
+\mathbf{q}_t^{\top}\mathbf{k}_j+\varepsilon
+}.
+$$&lt;/div&gt;
+&lt;p&gt;将只依赖 &lt;span class="math"&gt;\(t\)&lt;/span&gt; 的 query 移到求和外：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{o}_t
+=
+\frac{
+\left(\sum_{j=1}^{N}\mathbf{k}_j\mathbf{v}_j^{\top}\right)^{\top}
+\mathbf{q}_t
+}{
+\left(\sum_{j=1}^{N}\mathbf{k}_j\right)^{\top}
+\mathbf{q}_t+\varepsilon
+}.
+$$&lt;/div&gt;
+&lt;p&gt;这里不再生成 &lt;span class="math"&gt;\(N\times N\)&lt;/span&gt; 的中间矩阵，而是先形成固定大小的
+&lt;span class="math"&gt;\(d_k\times d_v\)&lt;/span&gt; 统计量。&lt;/p&gt;
+&lt;h3&gt;1.3 复杂度为什么对 &lt;span class="math"&gt;\(N\)&lt;/span&gt; 是线性的&lt;/h3&gt;
+&lt;p&gt;设&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{A}=\mathbf{K}^{\top}\mathbf{V}
+\in\mathbb{R}^{d_k\times d_v}.
+$$&lt;/div&gt;
+&lt;p&gt;矩阵 &lt;span class="math"&gt;\(\mathbf{A}\)&lt;/span&gt; 有 &lt;span class="math"&gt;\(d_kd_v\)&lt;/span&gt; 个元素，每个元素需要沿序列维度做长度为 &lt;span class="math"&gt;\(N\)&lt;/span&gt; 的内积，因此计算量是&lt;/p&gt;
+&lt;div class="math"&gt;$$
+O(Nd_kd_v).
+$$&lt;/div&gt;
+&lt;p&gt;当 &lt;span class="math"&gt;\(d_k\sim d_v\sim d\)&lt;/span&gt; 时，通常简写为 &lt;span class="math"&gt;\(O(Nd^2)\)&lt;/span&gt;。相比之下，标准注意力先生成 &lt;span class="math"&gt;\(N\times N\)&lt;/span&gt; 分数矩阵，计算量是 &lt;span class="math"&gt;\(O(N^2d)\)&lt;/span&gt;。&lt;/p&gt;
+&lt;p&gt;“线性”只表示复杂度关于 &lt;span class="math"&gt;\(N\)&lt;/span&gt; 线性，并不表示关于隐藏维度也是线性。实际性能还取决于头维度、特征映射、分块算法、内存访问和硬件利用率。&lt;/p&gt;
+&lt;h3&gt;1.4 因果场景需要逐时间步的前缀聚合&lt;/h3&gt;
+&lt;p&gt;上一节的全局聚合&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{K}^{\top}\mathbf{V}
+=
+\sum_{j=1}^{N}\mathbf{k}_j\mathbf{v}_j^{\top}
+$$&lt;/div&gt;
+&lt;p&gt;包含整段序列的全部 token。如果时间步 &lt;span class="math"&gt;\(t\)&lt;/span&gt; 直接使用这个全局状态，求和中就会包含
+&lt;span class="math"&gt;\(j&amp;gt;t\)&lt;/span&gt; 的 key/value，即模型会提前看到未来信息。因果注意力要求时间步 &lt;span class="math"&gt;\(t\)&lt;/span&gt; 只能使用
+&lt;span class="math"&gt;\(j\le t\)&lt;/span&gt; 的前缀，因此每个时间步需要不同的聚合状态。&lt;/p&gt;
+&lt;p&gt;先从多头分解形式看这一点。对第 &lt;span class="math"&gt;\(h\)&lt;/span&gt; 个头，仍采用全文统一的列向量约定：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{q}_t^h=\mathbf{W}_h^Q\mathbf{x}_t,\qquad
+\mathbf{k}_j^h=\mathbf{W}_h^K\mathbf{x}_j,\qquad
+\mathbf{v}_j^h=\mathbf{W}_h^V\mathbf{x}_j.
+$$&lt;/div&gt;
+&lt;p&gt;原稿的“分块/分解形式”可更严谨地改写为下面的未归一化多头线性注意力：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{y}_t
+=
+\sum_{h=1}^{H}
+\mathbf{W}_h^O
+\left[
+\sum_{j=1}^{t}
+\frac{(\mathbf{q}_t^h)^{\top}\mathbf{k}_j^h}{\sqrt{d_k}}
+\mathbf{v}_j^h
+\right]
+\tag{2}
+$$&lt;/div&gt;
+&lt;p&gt;其中 &lt;span class="math"&gt;\(\mathbf{W}_h^O\in\mathbb{R}^{d_{\mathrm{model}}\times d_v}\)&lt;/span&gt; 是总输出投影 &lt;span class="math"&gt;\(\mathbf{W}^O\)&lt;/span&gt; 中对应第 &lt;span class="math"&gt;\(h\)&lt;/span&gt; 个头的分块。这里的上限是 &lt;span class="math"&gt;\(t\)&lt;/span&gt; 而不是 &lt;span class="math"&gt;\(N\)&lt;/span&gt;，正是因果约束。原稿使用的索引 &lt;span class="math"&gt;\(c\)&lt;/span&gt; 容易与后文的序列分块混淆，因此这里改用头索引 &lt;span class="math"&gt;\(h\)&lt;/span&gt;。若采用归一化核注意力，还需要将每个头的结果除以对应的权重和；上式只保留与状态递推最相关的未归一化部分。&lt;/p&gt;
+&lt;p&gt;进一步把同一头中的 Q/K 投影与 V/O 投影分别合并。定义&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{W}_h^{QK}
+=
+(\mathbf{W}_h^Q)^{\top}\mathbf{W}_h^K
+\in\mathbb{R}^{d_{\mathrm{model}}\times d_{\mathrm{model}}},
+\qquad
+\mathbf{W}_h^{OV}
+=
+\mathbf{W}_h^O\mathbf{W}_h^V
+\in\mathbb{R}^{d_{\mathrm{model}}\times d_{\mathrm{model}}}.
+$$&lt;/div&gt;
+&lt;p&gt;由于&lt;/p&gt;
+&lt;div class="math"&gt;$$
+(\mathbf{q}_t^h)^{\top}\mathbf{k}_j^h
+=
+\mathbf{x}_t^{\top}\mathbf{W}_h^{QK}\mathbf{x}_j,
+\qquad
+\mathbf{W}_h^O\mathbf{v}_j^h
+=
+\mathbf{W}_h^{OV}\mathbf{x}_j,
+$$&lt;/div&gt;
+&lt;p&gt;公式 (2) 可写成下面的合并权重形式：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{y}_t
+=
+\sum_{h=1}^{H}
+\sum_{j=1}^{t}
+\frac{
+\mathbf{x}_t^{\top}\mathbf{W}_h^{QK}\mathbf{x}_j
+}{\sqrt{d_k}}
+\mathbf{W}_h^{OV}\mathbf{x}_j
+\tag{3}
+$$&lt;/div&gt;
+&lt;p&gt;公式 (3) 主要用于说明代数结构：相关性是关于 &lt;span class="math"&gt;\(\mathbf{x}_t\)&lt;/span&gt; 与 &lt;span class="math"&gt;\(\mathbf{x}_j\)&lt;/span&gt; 的双线性形式，value 与输出投影也可以合并。这一步依赖 &lt;span class="math"&gt;\(\mathbf{q}_t^h,\mathbf{k}_j^h\)&lt;/span&gt; 是上面定义的线性投影；如果 query/key 的生成中还包含不可合并的非线性特征映射，就不能把它们压缩成单个 &lt;span class="math"&gt;\(\mathbf{W}_h^{QK}\)&lt;/span&gt;，但后面的前缀状态递推仍然成立。&lt;/p&gt;
+&lt;p&gt;实际实现通常仍保留低秩分解后的
+&lt;span class="math"&gt;\(\mathbf{W}_h^Q,\mathbf{W}_h^K,\mathbf{W}_h^V,\mathbf{W}_h^O\)&lt;/span&gt;，避免显式构造较大的
+&lt;span class="math"&gt;\(\mathbf{W}_h^{QK}\)&lt;/span&gt; 与 &lt;span class="math"&gt;\(\mathbf{W}_h^{OV}\)&lt;/span&gt;。&lt;/p&gt;
+&lt;p&gt;对因果计算而言，更关键的改写是为每个头定义前缀状态：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{S}_t^h
+=
+\sum_{j=1}^{t}\mathbf{k}_j^h(\mathbf{v}_j^h)^{\top},
+\qquad
+\mathbf{o}_t^h
+=
+(\mathbf{S}_t^h)^{\top}\mathbf{q}_t^h.
+$$&lt;/div&gt;
+&lt;p&gt;这个状态随时间步递推：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{S}_t^h
+=
+\mathbf{S}_{t-1}^h
++
+\mathbf{k}_t^h(\mathbf{v}_t^h)^{\top}.
+$$&lt;/div&gt;
+&lt;p&gt;因此，因果线性注意力仍然具有关于序列长度的线性复杂度，但不能让所有时间步共享同一个全局
+&lt;span class="math"&gt;\(\mathbf{K}^{\top}\mathbf{V}\)&lt;/span&gt;。推理时应逐 token 更新前缀状态；训练时则可以用并行前缀扫描或分块算法同时计算各时间步对应的前缀状态。下一节将在加入归一化项后完整推导这一 RNN 形式。&lt;/p&gt;
+&lt;h2&gt;2. 因果线性注意力的 RNN 形式&lt;/h2&gt;
+&lt;h3&gt;2.1 从前缀和到循环状态&lt;/h3&gt;
+&lt;p&gt;因果核注意力为&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{o}_t
+=
+\frac{
+\sum_{j=1}^{t}
+\left(\mathbf{q}_t^{\top}\mathbf{k}_j\right)\mathbf{v}_j
+}{
+\sum_{j=1}^{t}
+\mathbf{q}_t^{\top}\mathbf{k}_j+\varepsilon
+}.
+$$&lt;/div&gt;
+&lt;p&gt;定义矩阵状态和归一化状态&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{S}_t
+=
+\sum_{j=1}^{t}\mathbf{k}_j\mathbf{v}_j^{\top},
+\qquad
+\mathbf{z}_t
+=
+\sum_{j=1}^{t}\mathbf{k}_j.
+$$&lt;/div&gt;
+&lt;p&gt;于是&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{o}_t
+=
+\frac{
+\mathbf{S}_t^{\top}\mathbf{q}_t
+}{
+\mathbf{z}_t^{\top}\mathbf{q}_t+\varepsilon
+}.
+$$&lt;/div&gt;
+&lt;p&gt;两个状态都可递推：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\begin{aligned}
+\mathbf{S}_0&amp;amp;=\mathbf{0},&amp;amp;
+\mathbf{S}_t&amp;amp;=\mathbf{S}_{t-1}
++\mathbf{k}_t\mathbf{v}_t^{\top},\\
+\mathbf{z}_0&amp;amp;=\mathbf{0},&amp;amp;
+\mathbf{z}_t&amp;amp;=\mathbf{z}_{t-1}
++\mathbf{k}_t.
+\end{aligned}
+$$&lt;/div&gt;
+&lt;p&gt;若加入残差与层变换，可写为&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{y}_t
+=
+f_{\mathrm{layer}}\!\left(
+\mathbf{x}_t+\mathbf{W}^{O}\mathbf{o}_t
+\right).
+$$&lt;/div&gt;
+&lt;h3&gt;2.2 这种等价带来什么&lt;/h3&gt;
+&lt;p&gt;训练时，整段长度为 &lt;span class="math"&gt;\(N\)&lt;/span&gt; 的序列可以通过分块矩阵乘法或并行扫描计算，线性注意力核心的总时间复杂度为 &lt;span class="math"&gt;\(O(Nd_kd_v)\)&lt;/span&gt;；当 &lt;span class="math"&gt;\(d_k=d_v=d\)&lt;/span&gt; 时，可简写为 &lt;span class="math"&gt;\(O(Nd^2)\)&lt;/span&gt;。推理时，每生成一个 token，只需更新并读取 &lt;span class="math"&gt;\(\mathbf{S}_{t-1}\)&lt;/span&gt; 与 &lt;span class="math"&gt;\(\mathbf{z}_{t-1}\)&lt;/span&gt;，单步时间复杂度为 &lt;span class="math"&gt;\(O(d_kd_v)\)&lt;/span&gt;；生成完整的 &lt;span class="math"&gt;\(N\)&lt;/span&gt; 个 token 总计仍为 &lt;span class="math"&gt;\(O(Nd_kd_v)\)&lt;/span&gt;。&lt;/p&gt;
+&lt;p&gt;推理时不再保存随 &lt;span class="math"&gt;\(N\)&lt;/span&gt; 增长的 KV cache，只需维护 &lt;span class="math"&gt;\(\mathbf{S}_{t-1}\)&lt;/span&gt; 与 &lt;span class="math"&gt;\(\mathbf{z}_{t-1}\)&lt;/span&gt;，状态空间复杂度为 &lt;span class="math"&gt;\(O(d_kd_v+d_k)\)&lt;/span&gt;。在模型维度固定时，单步时间和状态空间都不随上下文长度增长，所以常被口语化地称为“单步 &lt;span class="math"&gt;\(O(1)\)&lt;/span&gt;”；更严谨的写法是“关于 &lt;span class="math"&gt;\(N\)&lt;/span&gt; 为 &lt;span class="math"&gt;\(O(1)\)&lt;/span&gt;”。&lt;/p&gt;
+&lt;p&gt;固定状态也有代价：所有历史被压入有限容量的关联记忆，不能保证无损保存。序列变长后，不同 key/value 可能发生干扰或碰撞，这正是后续门控与 Delta 规则要解决的问题。&lt;/p&gt;
+&lt;h2&gt;3. 从纯累加到可选择的状态更新&lt;/h2&gt;
+&lt;h3&gt;3.1 纯累加的局限&lt;/h3&gt;
+&lt;p&gt;省略核映射与归一化后，最简单的线性注意力状态为&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{S}_t
+=
+\mathbf{S}_{t-1}
++\mathbf{k}_t\mathbf{v}_t^{\top},
+\qquad
+\mathbf{o}_t=\mathbf{S}_t^{\top}\mathbf{q}_t.
+$$&lt;/div&gt;
+&lt;p&gt;它把每个关联永久写入状态，没有显式遗忘机制。有限状态在长序列中会逐渐混入过时信息，降低精确检索能力。&lt;/p&gt;
+&lt;h3&gt;3.2 Mamba-2：标量衰减&lt;/h3&gt;
+&lt;p&gt;用与本文一致的状态方向，Mamba-2 的核心递推可概括为&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{S}_t
+=
+\alpha_t\mathbf{S}_{t-1}
++\mathbf{k}_t\mathbf{v}_t^{\top},
+\qquad
+\alpha_t\in(0,1].
+$$&lt;/div&gt;
+&lt;p&gt;&lt;span class="math"&gt;\(\alpha_t\)&lt;/span&gt; 可以快速清除旧记忆，但同一状态头的所有通道共享一个衰减率，遗忘较粗粒度。&lt;/p&gt;
+&lt;p&gt;若定义累计衰减&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\gamma_t=\prod_{i=1}^{t}\alpha_i,
+$$&lt;/div&gt;
+&lt;p&gt;则时刻 &lt;span class="math"&gt;\(j\)&lt;/span&gt; 写入的记忆在时刻 &lt;span class="math"&gt;\(t\)&lt;/span&gt; 的权重为 &lt;span class="math"&gt;\(\gamma_t/\gamma_j\)&lt;/span&gt;。这揭示了递推形式与带衰减因果掩码之间的对应关系。&lt;/p&gt;
+&lt;h3&gt;3.3 DeltaNet：定向覆盖&lt;/h3&gt;
+&lt;p&gt;纯累加更新&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{S}_t
+=
+\mathbf{S}_{t-1}
++\mathbf{k}_t\mathbf{v}_t^\top
+$$&lt;/div&gt;
+&lt;p&gt;只负责把新关联叠加到状态中，却没有回答一个重要问题：如果同一个 key
+再次出现，应该把新 value 继续累加，还是用新 value 修正旧关联？把状态看成一个从
+key 空间到 value 空间的线性映射后，当前 key 在写入前读出的旧值为&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\widehat{\mathbf{v}}_t
+=
+\mathbf{S}_{t-1}^{\top}\mathbf{k}_t.
+$$&lt;/div&gt;
+&lt;p&gt;若仍采用加法写入，则写入后在同一 key 上读到&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\left(
+\mathbf{S}_{t-1}
++\beta_t\mathbf{k}_t\mathbf{v}_t^\top
+\right)^\top\mathbf{k}_t
+=
+\widehat{\mathbf{v}}_t
++\beta_t\|\mathbf{k}_t\|_2^2\mathbf{v}_t.
+$$&lt;/div&gt;
+&lt;p&gt;旧值 &lt;span class="math"&gt;\(\widehat{\mathbf{v}}_t\)&lt;/span&gt; 并没有被消除；同一关联被反复写入时，状态会不断累加，
+而不是趋近于最新目标。DeltaNet 的设计动机正是把“写入完整的新 value”改成“只写入
+预测误差”。先定义读写残差&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{e}_t
+=
+\mathbf{v}_t-\widehat{\mathbf{v}}_t
+=
+\mathbf{v}_t-\mathbf{S}_{t-1}^{\top}\mathbf{k}_t.
+$$&lt;/div&gt;
+&lt;p&gt;我们希望寻找一个状态修正 &lt;span class="math"&gt;\(\Delta\mathbf{S}_t\)&lt;/span&gt;，使它在当前 key 上产生
+&lt;span class="math"&gt;\(\mathbf{e}_t\)&lt;/span&gt;：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\Delta\mathbf{S}_t^\top\mathbf{k}_t
+=
+\mathbf{e}_t.
+$$&lt;/div&gt;
+&lt;p&gt;满足这一约束的最小 Frobenius 范数秩一修正为&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\Delta\mathbf{S}_t
+=
+\frac{\mathbf{k}_t\mathbf{e}_t^\top}
+{\|\mathbf{k}_t\|_2^2}.
+$$&lt;/div&gt;
+&lt;p&gt;当 key 已做 L2 归一化时，分母为 &lt;span class="math"&gt;\(1\)&lt;/span&gt;。再引入更新强度
+&lt;span class="math"&gt;\(\beta_t\)&lt;/span&gt;，便得到 DeltaNet 更新：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{S}_t
+=
+\mathbf{S}_{t-1}
++\beta_t\mathbf{k}_t
+\left(
+\mathbf{v}_t-\mathbf{S}_{t-1}^{\top}\mathbf{k}_t
+\right)^{\top}.
+$$&lt;/div&gt;
+&lt;p&gt;这一步可以直接验证。更新后在当前 key 上的读出为&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\begin{aligned}
+\mathbf{S}_t^\top\mathbf{k}_t
+&amp;amp;=
+\widehat{\mathbf{v}}_t
++\beta_t\|\mathbf{k}_t\|_2^2
+\left(
+\mathbf{v}_t-\widehat{\mathbf{v}}_t
+\right).
+\end{aligned}
+$$&lt;/div&gt;
+&lt;p&gt;若 &lt;span class="math"&gt;\(\|\mathbf{k}_t\|_2=1\)&lt;/span&gt;，则&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{S}_t^\top\mathbf{k}_t
+=
+(1-\beta_t)\widehat{\mathbf{v}}_t
++\beta_t\mathbf{v}_t.
+$$&lt;/div&gt;
+&lt;p&gt;因此 &lt;span class="math"&gt;\(\beta_t=0\)&lt;/span&gt; 表示保留旧关联，&lt;span class="math"&gt;\(0&amp;lt;\beta_t&amp;lt;1\)&lt;/span&gt; 表示向新 value
+做部分修正，&lt;span class="math"&gt;\(\beta_t=1\)&lt;/span&gt; 则在当前 key 方向上完成精确覆盖。对任意其他
+query &lt;span class="math"&gt;\(\mathbf{q}\)&lt;/span&gt;，更新引起的读出变化为&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{S}_t^\top\mathbf{q}
+-
+\mathbf{S}_{t-1}^\top\mathbf{q}
+=
+\beta_t
+\left(
+\mathbf{k}_t^\top\mathbf{q}
+\right)\mathbf{e}_t.
+$$&lt;/div&gt;
+&lt;p&gt;也就是说，修正强度由 &lt;span class="math"&gt;\(\mathbf{q}\)&lt;/span&gt; 与当前 key 的相似度控制：与
+&lt;span class="math"&gt;\(\mathbf{k}_t\)&lt;/span&gt; 正交的方向不受影响，相似方向共享这次误差修正。这就是“定向覆盖”
+而不是“全局遗忘”。&lt;/p&gt;
+&lt;p&gt;将残差形式展开，可以进一步看出一次更新由“擦除旧关联”和“写入新关联”组成：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\begin{aligned}
+\mathbf{S}_t
+&amp;amp;=
+\mathbf{S}_{t-1}
+-\beta_t\mathbf{k}_t\mathbf{k}_t^\top\mathbf{S}_{t-1}
++\beta_t\mathbf{k}_t\mathbf{v}_t^\top\\
+&amp;amp;=
+\left(
+\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^{\top}
+\right)\mathbf{S}_{t-1}
++\beta_t\mathbf{k}_t\mathbf{v}_t^{\top}.
+\end{aligned}
+$$&lt;/div&gt;
+&lt;p&gt;其中
+&lt;span class="math"&gt;\(-\beta_t\mathbf{k}_t\mathbf{k}_t^\top\mathbf{S}_{t-1}\)&lt;/span&gt;
+只擦除旧状态在 &lt;span class="math"&gt;\(\mathbf{k}_t\)&lt;/span&gt; 方向上的分量，而
+&lt;span class="math"&gt;\(\beta_t\mathbf{k}_t\mathbf{v}_t^\top\)&lt;/span&gt; 随后写入新关联。&lt;/p&gt;
+&lt;p&gt;Delta 规则还可以从在线学习角度得到。定义当前样本的重建损失：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathcal{L}_t(\mathbf{S})
+=
+\frac{1}{2}
+\left\|
+\mathbf{S}^{\top}\mathbf{k}_t-\mathbf{v}_t
+\right\|_2^2
+$$&lt;/div&gt;
+&lt;p&gt;其关于状态的梯度为&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\nabla_{\mathbf{S}}\mathcal{L}_t
+=
+\mathbf{k}_t
+\left(
+\mathbf{S}^{\top}\mathbf{k}_t-\mathbf{v}_t
+\right)^\top.
+$$&lt;/div&gt;
+&lt;p&gt;从 &lt;span class="math"&gt;\(\mathbf{S}_{t-1}\)&lt;/span&gt; 出发执行一步学习率为 &lt;span class="math"&gt;\(\beta_t\)&lt;/span&gt; 的在线梯度下降：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\begin{aligned}
+\mathbf{S}_t
+&amp;amp;=
+\mathbf{S}_{t-1}
+-\beta_t
+\nabla_{\mathbf{S}}\mathcal{L}_t
+\big|_{\mathbf{S}=\mathbf{S}_{t-1}}\\
+&amp;amp;=
+\mathbf{S}_{t-1}
++\beta_t\mathbf{k}_t
+\left(
+\mathbf{v}_t-\mathbf{S}_{t-1}^\top\mathbf{k}_t
+\right)^\top.
+\end{aligned}
+$$&lt;/div&gt;
+&lt;p&gt;因此，DeltaNet 不是额外附加的一条启发式擦除规则，而是在固定大小的关联记忆上，
+用当前 key/value 对执行一步数据依赖的在线误差校正。它能精确修改被当前 key
+访问到的方向，但不会主动清理长期未再次出现的旧方向；这正是下一节加入遗忘门的原因。&lt;/p&gt;
+&lt;h3&gt;3.4 Gated DeltaNet：全局遗忘与定向编辑&lt;/h3&gt;
+&lt;p&gt;DeltaNet 解决了“如何覆盖当前 key 对应的旧值”，但它的擦除矩阵&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^\top
+$$&lt;/div&gt;
+&lt;p&gt;只作用于当前 key 方向。若某些旧记忆长期不再被相似 key 访问，它们仍会保留在有限状态
+中并持续占用容量。反过来，Mamba-2 式标量门
+&lt;span class="math"&gt;\(\alpha_t\mathbf{S}_{t-1}\)&lt;/span&gt; 可以快速衰减全部历史，却无法只修改某一个具体关联。
+Gated DeltaNet（GDN）把这两种互补机制组合起来：&lt;span class="math"&gt;\(\alpha_t\)&lt;/span&gt; 决定旧状态整体保留多少，
+&lt;span class="math"&gt;\(\beta_t\)&lt;/span&gt; 决定当前 key 方向修改多少。&lt;/p&gt;
+&lt;p&gt;这个公式可以从两个连续步骤推导。第一步只对旧记忆施加标量遗忘门：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\overline{\mathbf{S}}_{t-1}
+=
+\alpha_t\mathbf{S}_{t-1},
+\qquad
+\alpha_t\in(0,1].
+$$&lt;/div&gt;
+&lt;p&gt;此时在当前 key 上读出的、经过遗忘后的旧值为&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\widehat{\mathbf{v}}_t^{\,\mathrm{g}}
+=
+\overline{\mathbf{S}}_{t-1}^{\top}\mathbf{k}_t
+=
+\alpha_t\mathbf{S}_{t-1}^{\top}\mathbf{k}_t.
+$$&lt;/div&gt;
+&lt;p&gt;第二步以衰减后的状态为起点，执行一次 Delta 误差校正：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\begin{aligned}
+\mathbf{S}_t
+&amp;amp;=
+\overline{\mathbf{S}}_{t-1}
++\beta_t\mathbf{k}_t
+\left(
+\mathbf{v}_t-\widehat{\mathbf{v}}_t^{\,\mathrm{g}}
+\right)^\top\\
+&amp;amp;=
+\overline{\mathbf{S}}_{t-1}
++\beta_t\mathbf{k}_t
+\left(
+\mathbf{v}_t-\overline{\mathbf{S}}_{t-1}^{\top}\mathbf{k}_t
+\right)^\top.
+\end{aligned}
+$$&lt;/div&gt;
+&lt;p&gt;将 &lt;span class="math"&gt;\(\overline{\mathbf{S}}_{t-1}=\alpha_t\mathbf{S}_{t-1}\)&lt;/span&gt; 代入并展开：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\begin{aligned}
+\mathbf{S}_t
+&amp;amp;=
+\alpha_t\mathbf{S}_{t-1}
+-\alpha_t\beta_t
+\mathbf{k}_t\mathbf{k}_t^\top\mathbf{S}_{t-1}
++\beta_t\mathbf{k}_t\mathbf{v}_t^\top\\
+&amp;amp;=
+\alpha_t
+\left(
+\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^{\top}
+\right)\mathbf{S}_{t-1}
++\beta_t\mathbf{k}_t\mathbf{v}_t^{\top}.
+\end{aligned}
+$$&lt;/div&gt;
+&lt;p&gt;这里 &lt;span class="math"&gt;\(\alpha_t\)&lt;/span&gt; 只乘在旧状态的转移项上，不乘新写入的
+&lt;span class="math"&gt;\(\beta_t\mathbf{k}_t\mathbf{v}_t^\top\)&lt;/span&gt;。这样，新 value 不会在刚写入时就被遗忘门
+再次缩小。由于 &lt;span class="math"&gt;\(\alpha_t\)&lt;/span&gt; 是标量，它与擦除矩阵可交换；但它不能跨过加号作用到新写入项。&lt;/p&gt;
+&lt;p&gt;在 &lt;span class="math"&gt;\(\|\mathbf{k}_t\|_2=1\)&lt;/span&gt; 时，GDN 对当前 key 的读出为&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{S}_t^\top\mathbf{k}_t
+=
+(1-\beta_t)\alpha_t
+\mathbf{S}_{t-1}^\top\mathbf{k}_t
++\beta_t\mathbf{v}_t.
+$$&lt;/div&gt;
+&lt;p&gt;这个式子把两个门的职责分开得很清楚：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(\alpha_t\)&lt;/span&gt; 先决定旧读出还能保留多少，较小的 &lt;span class="math"&gt;\(\alpha_t\)&lt;/span&gt; 可以在边界变化或上下文切换时快速重置整头记忆。&lt;/li&gt;
+&lt;li&gt;&lt;span class="math"&gt;\(\beta_t\)&lt;/span&gt; 再在当前 key 方向上混合旧读出与新目标；当 &lt;span class="math"&gt;\(\beta_t=1\)&lt;/span&gt; 时，无论 &lt;span class="math"&gt;\(\alpha_t\)&lt;/span&gt; 取何值，当前关联都被新 value 覆盖。&lt;/li&gt;
+&lt;li&gt;对与当前 key 不相似的方向，Delta 项影响很小，但它们仍会受到 &lt;span class="math"&gt;\(\alpha_t\)&lt;/span&gt; 的全局衰减。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;对任意 query &lt;span class="math"&gt;\(\mathbf{q}\)&lt;/span&gt;，同样可以写出&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{S}_t^\top\mathbf{q}
+=
+\alpha_t\mathbf{S}_{t-1}^\top\mathbf{q}
++\beta_t
+\left(
+\mathbf{k}_t^\top\mathbf{q}
+\right)
+\left(
+\mathbf{v}_t
+-\alpha_t\mathbf{S}_{t-1}^\top\mathbf{k}_t
+\right).
+$$&lt;/div&gt;
+&lt;p&gt;第一项是全局保留的历史，第二项是按 key 相似度路由的局部误差修正。因此 GDN
+同时具备可学习的时间尺度与关联级编辑能力：它比纯累加更能抑制状态污染，比单独使用
+标量衰减更擅长精确更新，也补上了 DeltaNet 无法主动清理未访问旧方向的缺口。不过，
+同一个状态头仍共享单个 &lt;span class="math"&gt;\(\alpha_t\)&lt;/span&gt;，所有 key 通道只能同步遗忘；第 4 节的 KDA
+将进一步把这个标量门提升为通道级向量门。&lt;/p&gt;
+&lt;h3&gt;3.5 与状态空间模型的关系&lt;/h3&gt;
+&lt;p&gt;经典离散线性时不变状态空间模型（LTI SSM）为&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{h}_t=\mathbf{A}\mathbf{h}_{t-1}+\mathbf{B}\mathbf{x}_t,
+\qquad
+\mathbf{y}_t=\mathbf{C}\mathbf{h}_t.
+$$&lt;/div&gt;
+&lt;p&gt;当 &lt;span class="math"&gt;\(\mathbf{A},\mathbf{B},\mathbf{C}\)&lt;/span&gt; 固定时，它可展开为卷积核&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\overline{\mathbf{K}}
+=
+\left(
+\mathbf{C}\mathbf{B},
+\mathbf{C}\mathbf{A}\mathbf{B},
+\mathbf{C}\mathbf{A}^2\mathbf{B},
+\ldots
+\right).
+$$&lt;/div&gt;
+&lt;p&gt;线性注意力、Mamba-2、GDN 与 KDA 都可视为“输入驱动的线性状态更新”，并可借用递推、分块和扫描算法。但 KDA 的转移矩阵依赖当前输入，因此不是固定的 LTI 系统，也不能简单化为一个数据无关的全局卷积核。二者是相关的状态序列模型，而不是完全相同的数学对象。&lt;/p&gt;
+&lt;h2&gt;4. Kimi Delta Attention&lt;/h2&gt;
+&lt;h3&gt;4.1 GDN 的剩余瓶颈&lt;/h3&gt;
+&lt;p&gt;GDN 的 &lt;span class="math"&gt;\(\alpha_t\)&lt;/span&gt; 是头级标量。若不同记忆通道需要不同时间尺度，一个标量只能让整头状态同步遗忘，限制了记忆控制的粒度。&lt;/p&gt;
+&lt;p&gt;KDA 将它改为通道级向量&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\boldsymbol{\alpha}_t\in(0,1]^{d_k},
+\qquad
+\mathbf{D}_t=\operatorname{Diag}(\boldsymbol{\alpha}_t).
+$$&lt;/div&gt;
+&lt;p&gt;每个 key 通道因此拥有独立衰减率。&lt;/p&gt;
+&lt;h3&gt;4.2 KDA 的核心递推&lt;/h3&gt;
+&lt;p&gt;KDA 的状态更新与读取为&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{S}_t
+=
+\left(
+\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^{\top}
+\right)
+\mathbf{D}_t\mathbf{S}_{t-1}
++\beta_t\mathbf{k}_t\mathbf{v}_t^{\top}
+$$&lt;/div&gt;
+&lt;div class="math"&gt;$$
+\mathbf{o}_t=\mathbf{S}_t^{\top}\mathbf{q}_t
+$$&lt;/div&gt;
+&lt;p&gt;其中&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{S}_t\in\mathbb{R}^{d_k\times d_v},\quad
+\mathbf{k}_t,\mathbf{q}_t\in\mathbb{R}^{d_k},\quad
+\mathbf{v}_t,\mathbf{o}_t\in\mathbb{R}^{d_v}.
+$$&lt;/div&gt;
+&lt;p&gt;可以把 &lt;span class="math"&gt;\(\mathbf{S}_{t-1}\)&lt;/span&gt; 理解为一个固定大小的“压缩记忆”：它不是逐条保存历史
+key/value，而是把历史关联压入一个从 key 空间到 value 空间的线性映射。于是
+&lt;span class="math"&gt;\(\mathbf{k}_t\)&lt;/span&gt; 决定当前信息写到哪个方向，&lt;span class="math"&gt;\(\mathbf{v}_t\)&lt;/span&gt; 决定写入什么内容，
+&lt;span class="math"&gt;\(\mathbf{q}_t\)&lt;/span&gt; 则在更新完成后决定从哪个方向读取。为了把更新公式与“选择性遗忘、
+修正与调整、写入新信息”三步对应起来，可以引入两个中间状态。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;第一步：选择性遗忘。&lt;/strong&gt; 先对旧状态应用通道级门：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\widetilde{\mathbf{S}}_{t-1}
+=
+\mathbf{D}_t\mathbf{S}_{t-1}.
+$$&lt;/div&gt;
+&lt;p&gt;因为 &lt;span class="math"&gt;\(\mathbf{D}_t\)&lt;/span&gt; 是对角矩阵，第 &lt;span class="math"&gt;\(i\)&lt;/span&gt; 个 key 通道满足&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\left[
+\widetilde{\mathbf{S}}_{t-1}
+\right]_{i,:}
+=
+\alpha_{t,i}
+\left[
+\mathbf{S}_{t-1}
+\right]_{i,:}.
+$$&lt;/div&gt;
+&lt;p&gt;当 &lt;span class="math"&gt;\(\alpha_{t,i}\)&lt;/span&gt; 接近 &lt;span class="math"&gt;\(1\)&lt;/span&gt; 时，该通道中的旧信息基本保留；接近 &lt;span class="math"&gt;\(0\)&lt;/span&gt;
+时，该通道被快速衰减。这里的“选择性”不是从历史 token 列表中删除某一条记录，
+而是当前输入为每个 key 特征通道生成不同的保留率。不同通道因此可以学习不同的
+记忆时间尺度：有些通道长期积累信息，有些通道快速响应局部变化。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;第二步：修正与调整。&lt;/strong&gt; 在写入新 value 之前，先擦除衰减后状态在当前 key
+方向上的旧关联。定义经过遗忘后的旧读出&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\widehat{\mathbf{v}}_t^{\,\mathrm{old}}
+=
+\widetilde{\mathbf{S}}_{t-1}^{\top}\mathbf{k}_t,
+$$&lt;/div&gt;
+&lt;p&gt;再令&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\begin{aligned}
+\overline{\mathbf{S}}_{t-1}
+&amp;amp;=
+\left(
+\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^\top
+\right)
+\widetilde{\mathbf{S}}_{t-1}\\
+&amp;amp;=
+\widetilde{\mathbf{S}}_{t-1}
+-\beta_t\mathbf{k}_t
+\left(
+\widehat{\mathbf{v}}_t^{\,\mathrm{old}}
+\right)^\top.
+\end{aligned}
+$$&lt;/div&gt;
+&lt;p&gt;第二行说明，这一步实际减去的是“当前 key 方向 &lt;span class="math"&gt;\(\mathbf{k}_t\)&lt;/span&gt;”与“该方向原来
+读出的 value”所形成的秩一关联。若
+&lt;span class="math"&gt;\(\|\mathbf{k}_t\|_2=1\)&lt;/span&gt;，则修正后在同一 key 上的读出变为&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\overline{\mathbf{S}}_{t-1}^{\top}\mathbf{k}_t
+=
+(1-\beta_t)
+\widehat{\mathbf{v}}_t^{\,\mathrm{old}}.
+$$&lt;/div&gt;
+&lt;p&gt;因此 &lt;span class="math"&gt;\(\beta_t=1\)&lt;/span&gt; 会完全清空当前 key 方向上的旧值，
+&lt;span class="math"&gt;\(0&amp;lt;\beta_t&amp;lt;1\)&lt;/span&gt; 则只做部分调整。对任意其他 query &lt;span class="math"&gt;\(\mathbf{q}\)&lt;/span&gt;，这一步引起的变化为&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\overline{\mathbf{S}}_{t-1}^{\top}\mathbf{q}
+-
+\widetilde{\mathbf{S}}_{t-1}^{\top}\mathbf{q}
+=
+-\beta_t
+\left(
+\mathbf{k}_t^\top\mathbf{q}
+\right)
+\widehat{\mathbf{v}}_t^{\,\mathrm{old}}.
+$$&lt;/div&gt;
+&lt;p&gt;只有与 &lt;span class="math"&gt;\(\mathbf{k}_t\)&lt;/span&gt; 内积绝对值较大的读取方向会受到明显影响，所以这种“修正”不同于第一步
+对所有旧记忆通道施加的遗忘：第一步按通道控制时间尺度，第二步按当前 key
+定位需要覆盖的关联。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;第三步：写入新信息。&lt;/strong&gt; 最后把当前 key/value 关联加入修正后的状态：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{S}_t
+=
+\overline{\mathbf{S}}_{t-1}
++\beta_t\mathbf{k}_t\mathbf{v}_t^\top.
+$$&lt;/div&gt;
+&lt;p&gt;把第二步与第三步合并，可以重新得到更直观的残差校正形式：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\begin{aligned}
+\mathbf{S}_t
+&amp;amp;=
+\widetilde{\mathbf{S}}_{t-1}
++\beta_t\mathbf{k}_t
+\left(
+\mathbf{v}_t
+-\widetilde{\mathbf{S}}_{t-1}^{\top}\mathbf{k}_t
+\right)^\top\\
+&amp;amp;=
+\widetilde{\mathbf{S}}_{t-1}
++\beta_t\mathbf{k}_t
+\left(
+\mathbf{v}_t-\widehat{\mathbf{v}}_t^{\,\mathrm{old}}
+\right)^\top.
+\end{aligned}
+$$&lt;/div&gt;
+&lt;p&gt;这表明“修正”与“写入”不是两次无关操作：二者共同把当前 key
+上的旧读出推向新目标 &lt;span class="math"&gt;\(\mathbf{v}_t\)&lt;/span&gt;。当
+&lt;span class="math"&gt;\(\|\mathbf{k}_t\|_2=1\)&lt;/span&gt; 时，&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{S}_t^\top\mathbf{k}_t
+=
+(1-\beta_t)\widehat{\mathbf{v}}_t^{\,\mathrm{old}}
++\beta_t\mathbf{v}_t.
+$$&lt;/div&gt;
+&lt;p&gt;&lt;span class="math"&gt;\(\beta_t\)&lt;/span&gt; 同时控制擦除强度和写入强度，使旧值减少多少与新值增加多少保持匹配；
+当 &lt;span class="math"&gt;\(\beta_t=1\)&lt;/span&gt; 时，新 value 精确覆盖经过选择性遗忘后的旧关联。&lt;/p&gt;
+&lt;p&gt;完成这三步后，
+&lt;span class="math"&gt;\(\mathbf{o}_t=\mathbf{S}_t^\top\mathbf{q}_t\)&lt;/span&gt; 使用 query 从新状态中提取输出。
+在线性映射的意义下，可以把 &lt;span class="math"&gt;\(\mathbf{k}_t\)&lt;/span&gt; 看作写入地址、&lt;span class="math"&gt;\(\mathbf{v}_t\)&lt;/span&gt;
+看作写入内容、&lt;span class="math"&gt;\(\mathbf{q}_t\)&lt;/span&gt; 看作读取地址；但这些“地址”是连续向量方向，
+相似方向之间会共享和干扰记忆，并不是离散存储槽。&lt;/p&gt;
+&lt;p&gt;对角门的位置不能随意移动。一般情况下，&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\left(\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^\top\right)\mathbf{D}_t
+\neq
+\mathbf{D}_t\left(\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^\top\right),
+$$&lt;/div&gt;
+&lt;p&gt;因为矩阵乘法不可交换。KDA 采用前一种次序，并围绕该结构设计了稳定的分块 WY/UT 算法。&lt;/p&gt;
+&lt;h3&gt;4.3 KDA 的神经参数化&lt;/h3&gt;
+&lt;p&gt;对第 &lt;span class="math"&gt;\(h\)&lt;/span&gt; 个头，Kimi Linear 使用&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\begin{aligned}
+\mathbf{q}_t^h
+&amp;amp;=
+\operatorname{L2Norm}\!\left(
+\operatorname{Swish}\!\left(
+\operatorname{ShortConv}(\mathbf{W}_h^Q\mathbf{x}_t)
+\right)\right),\\
+\mathbf{k}_t^h
+&amp;amp;=
+\operatorname{L2Norm}\!\left(
+\operatorname{Swish}\!\left(
+\operatorname{ShortConv}(\mathbf{W}_h^K\mathbf{x}_t)
+\right)\right),\\
+\mathbf{v}_t^h
+&amp;amp;=
+\operatorname{Swish}\!\left(
+\operatorname{ShortConv}(\mathbf{W}_h^V\mathbf{x}_t)
+\right),\\
+\boldsymbol{\alpha}_t^h
+&amp;amp;=
+f\!\left(
+\mathbf{W}_{\uparrow}^{\alpha}
+\mathbf{W}_{\downarrow}^{\alpha}
+\mathbf{x}_t
+\right),\\
+\beta_t^h
+&amp;amp;=
+\operatorname{sigmoid}\!\left(
+\mathbf{W}_h^{\beta}\mathbf{x}_t
+\right).
+\end{aligned}
+$$&lt;/div&gt;
+&lt;p&gt;&lt;span class="math"&gt;\(\mathbf{W}_{\downarrow}^{\alpha}\)&lt;/span&gt; 与
+&lt;span class="math"&gt;\(\mathbf{W}_{\uparrow}^{\alpha}\)&lt;/span&gt; 构成低秩瓶颈，在控制参数量的同时生成
+&lt;span class="math"&gt;\(d_k\)&lt;/span&gt; 维通道级遗忘门。query 与 key 的 L2 归一化用于改善状态转移的数值稳定性。&lt;/p&gt;
+&lt;p&gt;多头 KDA 的结果经过逐头 RMSNorm、数据依赖输出门和输出投影：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\mathbf{y}_t
+=
+\mathbf{W}^{O}
+\left[
+\operatorname{sigmoid}\!\left(
+\mathbf{W}_{\uparrow}^{G}
+\mathbf{W}_{\downarrow}^{G}\mathbf{x}_t
+\right)
+\odot
+\operatorname{RMSNorm}\!\left(
+\operatorname{Concat}(\mathbf{o}_t^1,\ldots,\mathbf{o}_t^H)
+\right)
+\right].
+$$&lt;/div&gt;
+&lt;h3&gt;4.4 为什么仍能高效训练&lt;/h3&gt;
+&lt;p&gt;逐 token 递推适合推理，但会限制训练并行度。KDA 将序列切成长度为 &lt;span class="math"&gt;\(C\)&lt;/span&gt; 的块：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;块之间递推传递固定大小的状态；&lt;/li&gt;
+&lt;li&gt;块内部把连续的秩一更新压缩为 WY 表示；&lt;/li&gt;
+&lt;li&gt;使用 UT 变换减少非矩阵乘法操作；&lt;/li&gt;
+&lt;li&gt;通过 Tensor Core 友好的矩阵乘法并行计算输出。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;因此 KDA 同时保留了循环推理的固定状态和训练阶段的块内并行能力。它的优势并非只来自渐近复杂度，也来自对 GPU 计算路径的专门设计。&lt;/p&gt;
+&lt;h2&gt;5. Kimi Linear 的混合架构&lt;/h2&gt;
+&lt;p&gt;纯线性状态模型在精确长程检索上仍可能受有限状态容量约束。Kimi Linear 因此没有把全部层都替换成 KDA，而是采用层级混合：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\underbrace{\mathrm{KDA}\rightarrow\mathrm{KDA}\rightarrow\mathrm{KDA}}_{3\ \text{层}}
+\rightarrow
+\underbrace{\mathrm{Full\ MLA}}_{1\ \text{层}},
+$$&lt;/div&gt;
+&lt;p&gt;即重复使用 &lt;span class="math"&gt;\(3:1\)&lt;/span&gt; 的 KDA/全局 MLA 比例。&lt;/p&gt;
+&lt;p&gt;KDA 层承担高效的长序列状态建模与位置信息编码；少量 Full MLA 层保留全局 token-to-token 检索能力。论文在 Full MLA 层中使用 NoPE，把位置与近因偏置主要交给 KDA 的数据依赖衰减机制。&lt;/p&gt;
+&lt;p&gt;相对于每层都使用 Full MLA，&lt;span class="math"&gt;\(3:1\)&lt;/span&gt; 配比使需要维护全局 KV cache 的层数直观上减少约 &lt;span class="math"&gt;\(75\%\)&lt;/span&gt;；实际显存收益还取决于 MLA 潜变量维度、层配置、batch size 与实现。&lt;/p&gt;
+&lt;p&gt;需要特别区分：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;线性注意力/KDA&lt;/strong&gt;：通过固定大小的循环状态避免随 &lt;span class="math"&gt;\(N\)&lt;/span&gt; 增长的 KV cache。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;MLA&lt;/strong&gt;：通过低秩潜变量压缩 KV cache，但全局注意力本身仍包含 token 两两交互。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Kimi Linear&lt;/strong&gt;：用大多数 KDA 层获得效率，再用少数 MLA 层补足精确全局检索。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;因此，MLA 不是线性注意力；二者在 Kimi Linear 中是互补组件。&lt;/p&gt;
+&lt;h2&gt;6. 复杂度与内存总结&lt;/h2&gt;
+&lt;p&gt;设单头状态为 &lt;span class="math"&gt;\(d_k\times d_v\)&lt;/span&gt;，忽略 batch、层数和头数等公共因子：&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;结构与阶段&lt;/th&gt;
+&lt;th&gt;时间复杂度&lt;/th&gt;
+&lt;th&gt;持久状态/缓存&lt;/th&gt;
+&lt;th&gt;关于 &lt;span class="math"&gt;\(N\)&lt;/span&gt;&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;标准注意力训练&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(O(N^2d_k)\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;显式实现为 &lt;span class="math"&gt;\(O(N^2)\)&lt;/span&gt;；FlashAttention 可降低&lt;/td&gt;
+&lt;td&gt;二次&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;标准注意力单步生成&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(O(Nd_k)\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;KV cache &lt;span class="math"&gt;\(O(N(d_k+d_v))\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;线性&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;核线性注意力训练&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(O(Nd_kd_v)\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;分块实现相关&lt;/td&gt;
+&lt;td&gt;线性&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;核线性注意力单步生成&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(O(d_kd_v)\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(O(d_kd_v+d_k)\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;常数&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;KDA 训练&lt;/td&gt;
+&lt;td&gt;典型为 &lt;span class="math"&gt;\(O(Nd_kd_v)\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;分块临时量 + 状态&lt;/td&gt;
+&lt;td&gt;线性&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;KDA 单步生成&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(O(d_kd_v)\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;&lt;span class="math"&gt;\(O(d_kd_v)\)&lt;/span&gt;&lt;/td&gt;
+&lt;td&gt;常数&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Kimi Linear&lt;/td&gt;
+&lt;td&gt;KDA 与少量 Full MLA 的加权组合&lt;/td&gt;
+&lt;td&gt;KDA 状态 + MLA cache&lt;/td&gt;
+&lt;td&gt;由混合比例决定&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;这里的“常数”均指不随上下文长度 &lt;span class="math"&gt;\(N\)&lt;/span&gt; 增长，而不是与模型维度无关。对于完整模型，还需乘上 batch size、层数和头数。&lt;/p&gt;
+&lt;h2&gt;7. 演进脉络与关键结论&lt;/h2&gt;
+&lt;p&gt;可以用一条清晰的记忆更新主线总结全文：&lt;/p&gt;
+&lt;div class="math"&gt;$$
+\begin{aligned}
+\text{线性注意力：}\quad
+&amp;amp;\mathbf{S}_t
+=
+\mathbf{S}_{t-1}
++\mathbf{k}_t\mathbf{v}_t^\top,
+\\[2mm]
+\text{Mamba-2：}\quad
+&amp;amp;\mathbf{S}_t
+=
+\alpha_t\mathbf{S}_{t-1}
++\mathbf{k}_t\mathbf{v}_t^\top,
+\\[2mm]
+\text{DeltaNet：}\quad
+&amp;amp;\mathbf{S}_t
+=
+\left(\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^\top\right)
+\mathbf{S}_{t-1}
++\beta_t\mathbf{k}_t\mathbf{v}_t^\top,
+\\[2mm]
+\text{Gated DeltaNet：}\quad
+&amp;amp;\mathbf{S}_t
+=
+\alpha_t
+\left(\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^\top\right)
+\mathbf{S}_{t-1}
++\beta_t\mathbf{k}_t\mathbf{v}_t^\top,
+\\[2mm]
+\text{KDA：}\quad
+&amp;amp;\mathbf{S}_t
+=
+\left(\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^\top\right)
+\operatorname{Diag}(\boldsymbol{\alpha}_t)
+\mathbf{S}_{t-1}
++\beta_t\mathbf{k}_t\mathbf{v}_t^\top.
+\end{aligned}
+$$&lt;/div&gt;
+&lt;p&gt;核心变化依次是：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;用固定大小的矩阵状态替代显式 token-to-token 注意力矩阵。&lt;/li&gt;
+&lt;li&gt;用遗忘门控制旧信息寿命。&lt;/li&gt;
+&lt;li&gt;用 Delta 规则定向擦除并覆盖 key 关联。&lt;/li&gt;
+&lt;li&gt;用通道级遗忘门让不同记忆通道拥有不同时间尺度。&lt;/li&gt;
+&lt;li&gt;用 KDA/MLA 混合架构在效率与精确全局检索之间折中。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2&gt;参考资料&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;Kimi Team. &lt;a href="https://arxiv.org/abs/2510.26692"&gt;Kimi Linear: An Expressive, Efficient Attention Architecture&lt;/a&gt;, 2025.&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://zhuanlan.zhihu.com/p/1969545638023767020"&gt;Kimi Linear 学习笔记：让 Attention 又快又好&lt;/a&gt;.&lt;/li&gt;
+&lt;li&gt;Yang, Kautz, Hatamizadeh. &lt;a href="https://arxiv.org/abs/2412.06464"&gt;Gated Delta Networks: Improving Mamba2 with Delta Rule&lt;/a&gt;, 2024.&lt;/li&gt;
+&lt;li&gt;Katharopoulos et al. &lt;a href="https://arxiv.org/abs/2006.16236"&gt;Transformers are RNNs: Fast Autoregressive Transformers with Linear Attention&lt;/a&gt;, 2020.&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://www.youtube.com/watch?v=T30jVzehoFc"&gt;Linear Attention Explained from First Principles (Transformers to RNNs)&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;script type="text/javascript"&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width &lt; 768) ? "left" : align;
+        indent = (screen.width &lt; 768) ? "0em" : indent;
+        linebreak = (screen.width &lt; 768) ? 'true' : linebreak;
+    }
+
+    var mathjaxscript = document.createElement('script');
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript';
+    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-AMS-MML_HTMLorMML';
+
+    var configscript = document.createElement('script');
+    configscript.type = 'text/x-mathjax-config';
+    configscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js'], equationNumbers: { autoNumber: 'none' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    messageStyle: 'normal'," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        availableFonts: ['STIX', 'TeX']," +
+        "        preferredFont: 'STIX'," +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+&lt;/script&gt;</content><category term="python"></category><category term="python"></category><category term="AI"></category><category term="LLM"></category><category term="AIGC"></category><category term="DeepSeek"></category></entry><entry><title>GLM-5: From Vibe Coding to Agentic Engineering</title><link href="/pages/2026/06/30/glm-5-from-vibe-coding-to-agentic-engineering/" rel="alternate"></link><published>2026-06-30T00:00:00-05:00</published><updated>2026-06-30T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2026-06-30:/pages/2026/06/30/glm-5-from-vibe-coding-to-agentic-engineering/</id><summary type="html">&lt;h2&gt;背景&lt;/h2&gt;
 &lt;p&gt;在之前的文章 &lt;a href="https://songhuiming.github.io/pages/2026/02/18/deepseek-v32-lightning-indexer/"&gt;DeepSeek-V3.2 Lightning Indexer&lt;/a&gt; 中，我们详细介绍了 DeepSeek Sparse Attention (DSA) 的 Lightning Indexer 如何通过 top-k 选择实现 token 级别的稀疏注意力。GLM-5 作为智谱 …&lt;/p&gt;</summary><content type="html">&lt;h2&gt;背景&lt;/h2&gt;
 &lt;p&gt;在之前的文章 &lt;a href="https://songhuiming.github.io/pages/2026/02/18/deepseek-v32-lightning-indexer/"&gt;DeepSeek-V3.2 Lightning Indexer&lt;/a&gt; 中，我们详细介绍了 DeepSeek Sparse Attention (DSA) 的 Lightning Indexer 如何通过 top-k 选择实现 token 级别的稀疏注意力。GLM-5 作为智谱的下一代基础模型，同样采用了 DSA 来降低长上下文场景的计算和推理成本，同时在 MLA 架构和 RL 训练流程上做了重要创新。&lt;/p&gt;
 &lt;p&gt;本文基于 &lt;a href="https://arxiv.org/abs/2602.15763"&gt;GLM-5 技术报告&lt;/a&gt; 和 &lt;a href="https://z.ai/blog/glm-5.2"&gt;Z.ai 博客&lt;/a&gt;，总结 GLM-5 的核心架构设计和训练方法。&lt;/p&gt;
@@ -15207,1037 +16234,4 @@ fig.show()
     (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
     (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
 }
-&lt;/script&gt;</content><category term="python"></category><category term="python"></category><category term="numpy"></category></entry><entry><title>variable selection in linear regression: 2</title><link href="/pages/2017/04/15/variable-selection-in-linear-regression-2/" rel="alternate"></link><published>2017-04-15T22:03:00-05:00</published><updated>2017-04-15T22:03:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2017-04-15:/pages/2017/04/15/variable-selection-in-linear-regression-2/</id><summary type="html">&lt;p&gt;This is an example of variable selection in linear regression(and it can be easily applied in logistic regression). It has two steps:&lt;/p&gt;</summary><content type="html">&lt;h2&gt;summary&lt;/h2&gt;
-&lt;p&gt;This is an example of variable selection in linear regression(and it can be easily applied in logistic regression). It has two steps:&lt;/p&gt;
-&lt;p&gt;The first step is univariate analysis. It checks the pearson correlation between each x and y. This is helpful to reduce the candidate predictors by only selecting the variables has significant correlation. The cutoff point is set p-value no more than 10%. Also the correlation coefficient sign is tested to make sure the correlation should make sense.&lt;/p&gt;
-&lt;p&gt;The second step is multi-variate analysis. For the variables selected in step 1(say there are n variables left), all possible variables combinations will be run in the linear regression. Like all 2 variables combination(C(n, 2) combinations), 3 variables combination(C(n, 3) combinations)... will be tested in the linear regression. If there are duplicated variables(like GDP annual change and GDP quarterly change) in the model, it will de droped. The regression sign of each variable will be checked again. If any sign does not make sense, then the model will be droped. If there is any variable is not significant, then the model will be droped. If there is multicollinearity(checked by VIF), the model will be droped. &lt;/p&gt;
-&lt;p&gt;The output will list the variables in the model, the regression coefficient, the p-value, vif, R2 and RMSE on training data and validation data set.&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;import pandas as pd
-import numpy as np
-from itertools import chain, combinations
-
-import statsmodels.formula.api as smf
-import scipy.stats as scipystats
-from scipy.stats import norm
-from scipy.stats.stats import pearsonr
-import statsmodels.api as sm
-import statsmodels.stats.stattools as stools
-import statsmodels.stats as stats 
-from patsy import dmatrices
-from statsmodels.stats.outliers_influence import variance_inflation_factor
-from statsmodels.graphics.regressionplots import *
-import matplotlib.pyplot as plt
-import math
-mypath =  r'F:\Dropbox\ipynb_notes\ipynb_blog\\'
-
-indata = pd.read_pickle(mypath + &amp;quot;data.pkl&amp;quot;)
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;set up display options&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;pd.options.display.max_rows
-pd.set_option('display.max_colwidth', -1)
-
-from IPython.display import display, HTML
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;step 1. univariate variable selection&lt;/h3&gt;
-&lt;h4&gt;1.1. pearson calculation&lt;/h4&gt;
-&lt;ol&gt;
-&lt;li&gt;set up the variable sign &lt;/li&gt;
-&lt;li&gt;calculate the pearson correlation&lt;/li&gt;
-&lt;li&gt;keep only significant variables by p-value &amp;lt; 0.1&lt;/li&gt;
-&lt;/ol&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;def pearson_corr(indata, xvar, yvar):
-    outdf = pd.DataFrame()
-    for i in range(len(xvar)):
-        pcorr = pearsonr(indata[xvar[i]], indata[yvar])
-        corrdf = pd.DataFrame({&amp;quot;var_name&amp;quot;: xvar[i], &amp;quot;pearson_corr&amp;quot;:pcorr[0], &amp;quot;p_value&amp;quot;:pcorr[1]}, index = [0])
-        outdf = pd.concat([outdf, corrdf], axis = 0)
-        outdf.sort_values('p_value')
-    outdf.columns = corrdf.columns
-    return outdf
-
-def pearson_calc(indata, xvar, yvar):
-    pearsoncorr = pearson_corr(indata, xvar, yvar)
-    pearsoncorr = pearsoncorr.sort_values(by = ['p_value'])
-    pearsoncorr = pearsoncorr.query('p_value &amp;lt;= 0.1')
-    pearsoncorr = pearsoncorr.reset_index(drop = True)
-    return pearsoncorr
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;xvarcol = indata.columns[1:-3]
-yvarcol = indata.columns[0]
-pearsoncorr = pearson_calc(indata, xvarcol, yvarcol)
-pearsoncorr.head()
-&lt;/code&gt;&lt;/pre&gt;
-&lt;div&gt;
-&lt;table border="1" class="dataframe"&gt;
-  &lt;thead&gt;
-    &lt;tr style="text-align: right;"&gt;
-      &lt;th&gt;&lt;/th&gt;
-      &lt;th&gt;p_value&lt;/th&gt;
-      &lt;th&gt;pearson_corr&lt;/th&gt;
-      &lt;th&gt;var_name&lt;/th&gt;
-    &lt;/tr&gt;
-  &lt;/thead&gt;
-  &lt;tbody&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;1.617254e-09&lt;/td&gt;
-      &lt;td&gt;0.498257&lt;/td&gt;
-      &lt;td&gt;cap_rate_p0&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;1&lt;/th&gt;
-      &lt;td&gt;2.287193e-08&lt;/td&gt;
-      &lt;td&gt;-0.466109&lt;/td&gt;
-      &lt;td&gt;realgpd_yoy_p1&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;2&lt;/th&gt;
-      &lt;td&gt;2.615205e-08&lt;/td&gt;
-      &lt;td&gt;0.464391&lt;/td&gt;
-      &lt;td&gt;ted_spread_p4&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;3&lt;/th&gt;
-      &lt;td&gt;8.876455e-08&lt;/td&gt;
-      &lt;td&gt;-0.448275&lt;/td&gt;
-      &lt;td&gt;realgpd_yoy_p0&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;4&lt;/th&gt;
-      &lt;td&gt;2.407472e-07&lt;/td&gt;
-      &lt;td&gt;0.434471&lt;/td&gt;
-      &lt;td&gt;cap_rate_p1&lt;/td&gt;
-    &lt;/tr&gt;
-  &lt;/tbody&gt;
-&lt;/table&gt;
-&lt;/div&gt;
-
-&lt;h4&gt;1.2. check the sign of pearson correlation&lt;/h4&gt;
-&lt;p&gt;only the correlation that makes sense will be kept. For example, gdp growth should have negative correlation with default rate. If the data shows positive sign, we will drop that data.&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;varsign = {'bbb_spread_p': 1, 'ted_spread_p': 1, 'unemp_p': 1, 'realgpd_yoy_p': -1, 'cap_rate_p': 1, 'crea_hp_yoy_p': -1,    \
-    'corp_profit_p': -1, 'com_price_index_yoy_p': -1, 'spindex_yoy_p': -1}
-
-def check_sign(indata, varsign):
-    varsign = pd.DataFrame.from_dict(varsign, orient = &amp;quot;index&amp;quot;).reset_index()
-    varsign.columns = [&amp;quot;var_name_abb&amp;quot;, &amp;quot;sign&amp;quot;]
-    indata['var_name_abb'] = indata.var_name.map(lambda x: x[:-1])
-    indata = pd.merge(indata, varsign, how = &amp;quot;left&amp;quot;, on = ['var_name_abb'])
-    indata['sign_true'] = np.where(indata.pearson_corr &amp;gt; 0, 1, -1) * indata.sign
-    return indata.query('sign_true == 1')
-
-output = check_sign(pearsoncorr, varsign)
-output.sort_values('var_name')
-output.head()
-&lt;/code&gt;&lt;/pre&gt;
-&lt;div&gt;
-&lt;table border="1" class="dataframe"&gt;
-  &lt;thead&gt;
-    &lt;tr style="text-align: right;"&gt;
-      &lt;th&gt;&lt;/th&gt;
-      &lt;th&gt;p_value&lt;/th&gt;
-      &lt;th&gt;pearson_corr&lt;/th&gt;
-      &lt;th&gt;var_name&lt;/th&gt;
-      &lt;th&gt;var_name_abb&lt;/th&gt;
-      &lt;th&gt;sign&lt;/th&gt;
-      &lt;th&gt;sign_true&lt;/th&gt;
-    &lt;/tr&gt;
-  &lt;/thead&gt;
-  &lt;tbody&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;1.617254e-09&lt;/td&gt;
-      &lt;td&gt;0.498257&lt;/td&gt;
-      &lt;td&gt;cap_rate_p0&lt;/td&gt;
-      &lt;td&gt;cap_rate_p&lt;/td&gt;
-      &lt;td&gt;1&lt;/td&gt;
-      &lt;td&gt;1&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;1&lt;/th&gt;
-      &lt;td&gt;2.287193e-08&lt;/td&gt;
-      &lt;td&gt;-0.466109&lt;/td&gt;
-      &lt;td&gt;realgpd_yoy_p1&lt;/td&gt;
-      &lt;td&gt;realgpd_yoy_p&lt;/td&gt;
-      &lt;td&gt;-1&lt;/td&gt;
-      &lt;td&gt;1&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;2&lt;/th&gt;
-      &lt;td&gt;2.615205e-08&lt;/td&gt;
-      &lt;td&gt;0.464391&lt;/td&gt;
-      &lt;td&gt;ted_spread_p4&lt;/td&gt;
-      &lt;td&gt;ted_spread_p&lt;/td&gt;
-      &lt;td&gt;1&lt;/td&gt;
-      &lt;td&gt;1&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;3&lt;/th&gt;
-      &lt;td&gt;8.876455e-08&lt;/td&gt;
-      &lt;td&gt;-0.448275&lt;/td&gt;
-      &lt;td&gt;realgpd_yoy_p0&lt;/td&gt;
-      &lt;td&gt;realgpd_yoy_p&lt;/td&gt;
-      &lt;td&gt;-1&lt;/td&gt;
-      &lt;td&gt;1&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;4&lt;/th&gt;
-      &lt;td&gt;2.407472e-07&lt;/td&gt;
-      &lt;td&gt;0.434471&lt;/td&gt;
-      &lt;td&gt;cap_rate_p1&lt;/td&gt;
-      &lt;td&gt;cap_rate_p&lt;/td&gt;
-      &lt;td&gt;1&lt;/td&gt;
-      &lt;td&gt;1&lt;/td&gt;
-    &lt;/tr&gt;
-  &lt;/tbody&gt;
-&lt;/table&gt;
-&lt;/div&gt;
-
-&lt;h3&gt;2. Multi-variate variable selection&lt;/h3&gt;
-&lt;p&gt;In this step, we will try all the combinations of the X variables in the data and run the multi-variable regression. &lt;/p&gt;
-&lt;h4&gt;2.1 Prepare data&lt;/h4&gt;
-&lt;p&gt;From the univariate analysis, we will get the list of X variables(pearson p-vaule is significant, and correlation sign is correct) that should be tested on the multi-variable analysis.&lt;/p&gt;
-&lt;p&gt;We will consider both the training data and the validation data. So the data will be prepared into training and validation.&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;xvar = output.var_name
-cniX = indata.ix[:, xvar]
-cniY = indata.ix[:, &amp;quot;cum_pd_num&amp;quot;]    
-train_flag = indata.train_flag
-
-xtrain, xtest = cniX[train_flag], cniX[~train_flag] 
-ytrain, ytest = cniY[train_flag], cniY[~train_flag] 
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;print xtrain.shape
-print xtest.shape
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;(91, 28)
-(39, 28)
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h4&gt;2.2. multi-variable analysis&lt;/h4&gt;
-&lt;ol&gt;
-&lt;li&gt;for all 2/3/4 ... variable combination, run the linear regression&lt;/li&gt;
-&lt;li&gt;calculate the vif and vif_max for the X combination &lt;/li&gt;
-&lt;li&gt;run linear regression&lt;/li&gt;
-&lt;li&gt;if there is variables duplicated, then drop it, otherwise go to next step&lt;/li&gt;
-&lt;li&gt;if the any variables coefficient sign is not intuitive, drop it; otherwise go to next step&lt;/li&gt;
-&lt;li&gt;if new model score is better than the previous model, keep it; otherwise drop it&lt;/li&gt;
-&lt;/ol&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;def verify_sign(params):
-    setsign = varsign
-    setsign = pd.DataFrame.from_dict(setsign, orient = &amp;quot;index&amp;quot;).reset_index()
-    setsign.columns = ['vars', 'coefsign']
-    params = params.reset_index()
-    params.columns = ['vars', 'coefd']
-    params['vars'] = params.vars.map(lambda x: x[:-1])
-    combinedata = pd.merge(setsign, params, how = 'inner', on = 'vars')
-    combinedata['coefd_'] = combinedata.coefsign * np.sign(combinedata.coefd)
-    if sum(combinedata['coefd_'] &amp;gt; 0) == combinedata.shape[0]:
-        return True
-    else:
-        return False
-
-
-def check_dup_vars(xvar):
-    xx = xvar
-    xxx = set([x[:-1] for x in xx])
-    if len(xxx) == len(xx):
-        return True
-    else:
-        return False
-
-def all_combination_withsign2(xtrain, ytrain, xtest, ytest, k_features = [1]):
-    outdf = pd.DataFrame()
-    features = xtrain.columns.tolist()
-    n_features = xtrain.shape[1]
-    subsets = chain.from_iterable(combinations(xrange(n_features), k) for k in k_features)
-    best_score = -np.inf
-    all_combination = None
-    for subset in subsets:
-        newxtrain = xtrain.iloc[:, subset]
-        newxtrain = sm.add_constant(newxtrain)
-        vif = dict(zip(newxtrain.columns, [variance_inflation_factor(newxtrain.values, i) for i in range(newxtrain.shape[1])])) 
-        del vif['const']
-        vif_max = max(vif.itervalues())
-        newxtest = xtest.iloc[:, subset]
-        newxtest = sm.add_constant(newxtest)        
-        lin_reg = sm.OLS(ytrain, newxtrain).fit()       
-        #lin_reg = sm.OLS(ytrain, newxtrain).fit(cov_type='HAC',cov_kwds={'maxlags':1})
-        if check_dup_vars(lin_reg.params.index.tolist()):        
-            r2train = lin_reg.rsquared
-            r2test1 = np.sum((lin_reg.predict(newxtest) - np.mean(ytest))**2) / np.sum((ytest - np.mean(ytest))**2)
-            r2test = 1 - np.sum((lin_reg.predict(newxtest) -  ytest)**2) / np.sum((ytest - np.mean(ytest))**2)            
-            r2test2 = 1 - np.var(ytest - lin_reg.predict(newxtest)) / np.var(ytest)       
-            rmse_train = math.sqrt(sum((lin_reg.predict(newxtrain) - ytrain)**2) / (len(ytrain) - len(lin_reg.params)))
-            rmse_train2 = math.sqrt(lin_reg.mse_resid)
-            pred = lin_reg.predict(newxtest)        
-            rmse_test = math.sqrt(sum((pred - ytest)**2)/(len(ytest) - len(lin_reg.params)))
-            if (verify_sign(lin_reg.params)):
-                sss = &amp;quot; &amp;quot;.join([features[i] for i in subset])
-                pvalues = lin_reg.pvalues.drop('const').to_dict(); pvalues_max = max(pvalues.itervalues())
-                dd = {'vars':sss, 'r2train':r2train, 'r2test':r2test, 'rmse_train':rmse_train,  'rmse_test':rmse_test, 'pvalues': [pvalues], \
-                    'pvalues_max': pvalues_max, &amp;quot;reg_coef&amp;quot;: [dict(lin_reg.params)], &amp;quot;vif&amp;quot;:[vif], &amp;quot;vif_max&amp;quot;:vif_max}
-                df_i = pd.DataFrame(dd, index = [0], columns = dd.keys())  
-                outdf = pd.concat([df_i, outdf], axis = 0)
-                score = lin_reg.rsquared
-                if (score &amp;gt; best_score) &amp;amp; (vif_max &amp;lt; 5) &amp;amp; (pvalues_max &amp;lt; 0.1):                  
-                    best_score, all_combination = score, subset
-                    best_reg_result = lin_reg
-
-    outdf = outdf[[&amp;quot;vars&amp;quot;, &amp;quot;reg_coef&amp;quot;, &amp;quot;pvalues&amp;quot;, &amp;quot;pvalues_max&amp;quot;, &amp;quot;vif&amp;quot;, &amp;quot;vif_max&amp;quot;, &amp;quot;r2train&amp;quot;, &amp;quot;r2test&amp;quot;, &amp;quot;rmse_train&amp;quot;, &amp;quot;rmse_test&amp;quot;]]                                       
-    return all_combination, best_score, best_reg_result, outdf
-
-all_combination, best_score, best_reg_result, outdf  = all_combination_withsign2(xtrain, ytrain, xtest, ytest, k_features = [3])
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;List all the candidate models and sort them by the R2 on training data. &lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;outdf.sort_values('r2train', ascending = False).query('r2train &amp;gt; 0.5')
-&lt;/code&gt;&lt;/pre&gt;
-&lt;div&gt;
-&lt;table border="1" class="dataframe"&gt;
-  &lt;thead&gt;
-    &lt;tr style="text-align: right;"&gt;
-      &lt;th&gt;&lt;/th&gt;
-      &lt;th&gt;vars&lt;/th&gt;
-      &lt;th&gt;reg_coef&lt;/th&gt;
-      &lt;th&gt;pvalues&lt;/th&gt;
-      &lt;th&gt;pvalues_max&lt;/th&gt;
-      &lt;th&gt;vif&lt;/th&gt;
-      &lt;th&gt;vif_max&lt;/th&gt;
-      &lt;th&gt;r2train&lt;/th&gt;
-      &lt;th&gt;r2test&lt;/th&gt;
-      &lt;th&gt;rmse_train&lt;/th&gt;
-      &lt;th&gt;rmse_test&lt;/th&gt;
-    &lt;/tr&gt;
-  &lt;/thead&gt;
-  &lt;tbody&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;ted_spread_p0 cap_rate_p3 crea_hp_yoy_p3&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p3': 0.844407825413, u'crea_hp_yoy_p3': -9.75552407688, u'const': -5.82475185843, u'ted_spread_p0': 2.9978370395}&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p3': 3.94306563611e-10, u'crea_hp_yoy_p3': 1.24108359437e-13, u'ted_spread_p0': 1.12453478033e-13}&lt;/td&gt;
-      &lt;td&gt;3.943066e-10&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p3': 1.0291090023, u'crea_hp_yoy_p3': 1.26682457883, u'ted_spread_p0': 1.29763514744}&lt;/td&gt;
-      &lt;td&gt;1.297635&lt;/td&gt;
-      &lt;td&gt;0.614574&lt;/td&gt;
-      &lt;td&gt;0.478290&lt;/td&gt;
-      &lt;td&gt;0.633015&lt;/td&gt;
-      &lt;td&gt;0.767676&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;ted_spread_p0 cap_rate_p2 crea_hp_yoy_p3&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p2': 0.811141476444, u'crea_hp_yoy_p3': -8.88100839499, u'const': -5.58527727789, u'ted_spread_p0': 2.83870388981}&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p2': 5.84092070233e-10, u'crea_hp_yoy_p3': 5.64924235802e-12, u'ted_spread_p0': 8.5084006685e-13}&lt;/td&gt;
-      &lt;td&gt;5.840921e-10&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p2': 1.02146127586, u'crea_hp_yoy_p3': 1.26361213133, u'ted_spread_p0': 1.27468501164}&lt;/td&gt;
-      &lt;td&gt;1.274685&lt;/td&gt;
-      &lt;td&gt;0.611142&lt;/td&gt;
-      &lt;td&gt;0.509502&lt;/td&gt;
-      &lt;td&gt;0.635827&lt;/td&gt;
-      &lt;td&gt;0.744358&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;ted_spread_p0 cap_rate_p3 corp_profit_p1&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p3': 1.02088758198, u'corp_profit_p1': -0.0194663514096, u'const': -7.15607863379, u'ted_spread_p0': 2.49614318727}&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p3': 1.48967861708e-12, u'corp_profit_p1': 2.36587341489e-13, u'ted_spread_p0': 1.39564236076e-11}&lt;/td&gt;
-      &lt;td&gt;1.395642e-11&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p3': 1.08231697692, u'corp_profit_p1': 1.14482598717, u'ted_spread_p0': 1.13625413757}&lt;/td&gt;
-      &lt;td&gt;1.144826&lt;/td&gt;
-      &lt;td&gt;0.608887&lt;/td&gt;
-      &lt;td&gt;0.414865&lt;/td&gt;
-      &lt;td&gt;0.637668&lt;/td&gt;
-      &lt;td&gt;0.813001&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;cap_rate_p1 ted_spread_p0 crea_hp_yoy_p3&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p1': 0.789251206651, u'const': -5.40588738423, u'crea_hp_yoy_p3': -8.3294013128, u'ted_spread_p0': 2.69331735652}&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p1': 1.01807994814e-09, u'crea_hp_yoy_p3': 8.57212928459e-11, u'ted_spread_p0': 6.79453180355e-12}&lt;/td&gt;
-      &lt;td&gt;1.018080e-09&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p1': 1.02530776004, u'crea_hp_yoy_p3': 1.27841193373, u'ted_spread_p0': 1.26335700212}&lt;/td&gt;
-      &lt;td&gt;1.278412&lt;/td&gt;
-      &lt;td&gt;0.606241&lt;/td&gt;
-      &lt;td&gt;0.549077&lt;/td&gt;
-      &lt;td&gt;0.639821&lt;/td&gt;
-      &lt;td&gt;0.713698&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;ted_spread_p0 crea_hp_yoy_p3 cap_rate_p4&lt;/td&gt;
-      &lt;td&gt;{u'crea_hp_yoy_p3': -10.9366916932, u'cap_rate_p4': 0.873672209208, u'const': -5.99301833528, u'ted_spread_p0': 3.0785031203}&lt;/td&gt;
-      &lt;td&gt;{u'crea_hp_yoy_p3': 4.03277792628e-15, u'cap_rate_p4': 1.21300198442e-09, u'ted_spread_p0': 8.47813573869e-14}&lt;/td&gt;
-      &lt;td&gt;1.213002e-09&lt;/td&gt;
-      &lt;td&gt;{u'crea_hp_yoy_p3': 1.32415796614, u'cap_rate_p4': 1.06453290377, u'ted_spread_p0': 1.31619929247}&lt;/td&gt;
-      &lt;td&gt;1.324158&lt;/td&gt;
-      &lt;td&gt;0.604684&lt;/td&gt;
-      &lt;td&gt;0.434813&lt;/td&gt;
-      &lt;td&gt;0.641085&lt;/td&gt;
-      &lt;td&gt;0.799023&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;ted_spread_p0 cap_rate_p2 corp_profit_p1&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p2': 0.961038613195, u'corp_profit_p1': -0.0172934378291, u'const': -6.71919753298, u'ted_spread_p0': 2.35603497118}&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p2': 2.71762604741e-12, u'corp_profit_p1': 1.33144749492e-11, u'ted_spread_p0': 9.53692120781e-11}&lt;/td&gt;
-      &lt;td&gt;9.536921e-11&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p2': 1.03374482226, u'corp_profit_p1': 1.09884169943, u'ted_spread_p0': 1.11410042186}&lt;/td&gt;
-      &lt;td&gt;1.114100&lt;/td&gt;
-      &lt;td&gt;0.603520&lt;/td&gt;
-      &lt;td&gt;0.423553&lt;/td&gt;
-      &lt;td&gt;0.642028&lt;/td&gt;
-      &lt;td&gt;0.806943&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;cap_rate_p1 ted_spread_p0 corp_profit_p1&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p1': 0.920991926182, u'corp_profit_p1': -0.0158660128406, u'const': -6.4030489504, u'ted_spread_p0': 2.21313727996}&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p1': 7.0585880264e-12, u'corp_profit_p1': 3.02949988624e-10, u'ted_spread_p0': 8.21215334728e-10}&lt;/td&gt;
-      &lt;td&gt;8.212153e-10&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p1': 1.01298762173, u'corp_profit_p1': 1.08530202926, u'ted_spread_p0': 1.09761360937}&lt;/td&gt;
-      &lt;td&gt;1.097614&lt;/td&gt;
-      &lt;td&gt;0.594854&lt;/td&gt;
-      &lt;td&gt;0.457804&lt;/td&gt;
-      &lt;td&gt;0.649007&lt;/td&gt;
-      &lt;td&gt;0.782603&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;ted_spread_p0 corp_profit_p1 cap_rate_p4&lt;/td&gt;
-      &lt;td&gt;{u'corp_profit_p1': -0.0223204781179, u'const': -7.56469914659, u'cap_rate_p4': 1.08379220206, u'ted_spread_p0': 2.51812630047}&lt;/td&gt;
-      &lt;td&gt;{u'corp_profit_p1': 1.1949152689e-14, u'cap_rate_p4': 7.10244169808e-12, u'ted_spread_p0': 2.14516288708e-11}&lt;/td&gt;
-      &lt;td&gt;2.145163e-11&lt;/td&gt;
-      &lt;td&gt;{u'corp_profit_p1': 1.2612989854, u'cap_rate_p4': 1.18006908653, u'ted_spread_p0': 1.1431268946}&lt;/td&gt;
-      &lt;td&gt;1.261299&lt;/td&gt;
-      &lt;td&gt;0.594797&lt;/td&gt;
-      &lt;td&gt;0.388572&lt;/td&gt;
-      &lt;td&gt;0.649052&lt;/td&gt;
-      &lt;td&gt;0.831067&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;cap_rate_p0 ted_spread_p0 crea_hp_yoy_p3&lt;/td&gt;
-      &lt;td&gt;{u'crea_hp_yoy_p3': -7.8525157607, u'cap_rate_p0': 0.737744628637, u'const': -4.98396736099, u'ted_spread_p0': 2.38727745306}&lt;/td&gt;
-      &lt;td&gt;{u'crea_hp_yoy_p3': 1.75576444313e-09, u'cap_rate_p0': 8.69348819727e-09, u'ted_spread_p0': 1.05148081701e-09}&lt;/td&gt;
-      &lt;td&gt;8.693488e-09&lt;/td&gt;
-      &lt;td&gt;{u'crea_hp_yoy_p3': 1.30577823981, u'cap_rate_p0': 1.03552221083, u'ted_spread_p0': 1.27216361003}&lt;/td&gt;
-      &lt;td&gt;1.305778&lt;/td&gt;
-      &lt;td&gt;0.586771&lt;/td&gt;
-      &lt;td&gt;0.550868&lt;/td&gt;
-      &lt;td&gt;0.655449&lt;/td&gt;
-      &lt;td&gt;0.712279&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;cap_rate_p0 ted_spread_p0 corp_profit_p1&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p0': 0.872842905445, u'const': -5.97367379688, u'corp_profit_p1': -0.0149625516801, u'ted_spread_p0': 1.89650848195}&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p0': 2.90085948633e-11, u'corp_profit_p1': 3.02326631849e-09, u'ted_spread_p0': 8.42420292381e-08}&lt;/td&gt;
-      &lt;td&gt;8.424203e-08&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p0': 1.00022202315, u'corp_profit_p1': 1.08376800619, u'ted_spread_p0': 1.08376614561}&lt;/td&gt;
-      &lt;td&gt;1.083768&lt;/td&gt;
-      &lt;td&gt;0.581685&lt;/td&gt;
-      &lt;td&gt;0.465779&lt;/td&gt;
-      &lt;td&gt;0.659471&lt;/td&gt;
-      &lt;td&gt;0.776826&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;realgpd_yoy_p1 ted_spread_p0 cap_rate_p4&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p4': 0.459310529281, u'const': -3.19209503322, u'realgpd_yoy_p1': -0.317694979609, u'ted_spread_p0': 2.24499133704}&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p4': 0.000880252388483, u'realgpd_yoy_p1': 4.64502170524e-13, u'ted_spread_p0': 1.71481655757e-09}&lt;/td&gt;
-      &lt;td&gt;8.802524e-04&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p4': 1.03139580039, u'realgpd_yoy_p1': 1.10223254627, u'ted_spread_p0': 1.08994866485}&lt;/td&gt;
-      &lt;td&gt;1.102233&lt;/td&gt;
-      &lt;td&gt;0.559669&lt;/td&gt;
-      &lt;td&gt;0.461177&lt;/td&gt;
-      &lt;td&gt;0.676602&lt;/td&gt;
-      &lt;td&gt;0.780165&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;realgpd_yoy_p1 ted_spread_p0 cap_rate_p3&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p3': 0.441726138975, u'const': -3.10473119229, u'realgpd_yoy_p1': -0.292255362611, u'ted_spread_p0': 2.22392026902}&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p3': 0.0016672139689, u'realgpd_yoy_p1': 8.08991799692e-11, u'ted_spread_p0': 2.71002168046e-09}&lt;/td&gt;
-      &lt;td&gt;1.667214e-03&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p3': 1.14924858178, u'realgpd_yoy_p1': 1.21544761004, u'ted_spread_p0': 1.08765234604}&lt;/td&gt;
-      &lt;td&gt;1.215448&lt;/td&gt;
-      &lt;td&gt;0.553622&lt;/td&gt;
-      &lt;td&gt;0.462181&lt;/td&gt;
-      &lt;td&gt;0.681231&lt;/td&gt;
-      &lt;td&gt;0.779438&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;realgpd_yoy_p1 ted_spread_p0 cap_rate_p2&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p2': 0.43466635192, u'const': -3.05451545084, u'realgpd_yoy_p1': -0.275385243575, u'ted_spread_p0': 2.16541214241}&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p2': 0.00266629601475, u'realgpd_yoy_p1': 3.95110812196e-09, u'ted_spread_p0': 6.47022044576e-09}&lt;/td&gt;
-      &lt;td&gt;2.666296e-03&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p2': 1.28453682239, u'realgpd_yoy_p1': 1.36522930468, u'ted_spread_p0': 1.08353965769}&lt;/td&gt;
-      &lt;td&gt;1.365229&lt;/td&gt;
-      &lt;td&gt;0.549157&lt;/td&gt;
-      &lt;td&gt;0.458911&lt;/td&gt;
-      &lt;td&gt;0.684631&lt;/td&gt;
-      &lt;td&gt;0.781804&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;cap_rate_p0 ted_spread_p0 corp_profit_p2&lt;/td&gt;
-      &lt;td&gt;{u'corp_profit_p2': -0.013387541678, u'cap_rate_p0': 0.866163613446, u'const': -5.84769476189, u'ted_spread_p0': 1.66498201142}&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p0': 1.4478538301e-10, u'corp_profit_p2': 9.61024512588e-08, u'ted_spread_p0': 2.40214450834e-06}&lt;/td&gt;
-      &lt;td&gt;2.402145e-06&lt;/td&gt;
-      &lt;td&gt;{u'corp_profit_p2': 1.03765625407, u'cap_rate_p0': 1.00059373935, u'ted_spread_p0': 1.03729905889}&lt;/td&gt;
-      &lt;td&gt;1.037656&lt;/td&gt;
-      &lt;td&gt;0.547915&lt;/td&gt;
-      &lt;td&gt;0.428487&lt;/td&gt;
-      &lt;td&gt;0.685573&lt;/td&gt;
-      &lt;td&gt;0.803482&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;realgpd_yoy_p1 cap_rate_p1 ted_spread_p0&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p1': 0.42522657551, u'const': -2.97879289237, u'realgpd_yoy_p1': -0.264924269333, u'ted_spread_p0': 2.10282371324}&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p1': 0.00449937414885, u'realgpd_yoy_p1': 5.72394243797e-08, u'ted_spread_p0': 1.78714604679e-08}&lt;/td&gt;
-      &lt;td&gt;4.499374e-03&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p1': 1.41658994804, u'realgpd_yoy_p1': 1.51749717529, u'ted_spread_p0': 1.08664051545}&lt;/td&gt;
-      &lt;td&gt;1.517497&lt;/td&gt;
-      &lt;td&gt;0.544166&lt;/td&gt;
-      &lt;td&gt;0.475067&lt;/td&gt;
-      &lt;td&gt;0.688410&lt;/td&gt;
-      &lt;td&gt;0.770043&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;ted_spread_p0 bbb_spread_p3 corp_profit_p1&lt;/td&gt;
-      &lt;td&gt;{u'bbb_spread_p3': 0.554595648355, u'corp_profit_p1': -0.0076010199434, u'const': -2.38704628717, u'ted_spread_p0': 2.85607944113}&lt;/td&gt;
-      &lt;td&gt;{u'bbb_spread_p3': 1.8523928591e-09, u'corp_profit_p1': 0.00482637840243, u'ted_spread_p0': 1.3484537929e-11}&lt;/td&gt;
-      &lt;td&gt;4.826378e-03&lt;/td&gt;
-      &lt;td&gt;{u'bbb_spread_p3': 1.54114854916, u'corp_profit_p1': 1.32791416339, u'ted_spread_p0': 1.26387542399}&lt;/td&gt;
-      &lt;td&gt;1.541149&lt;/td&gt;
-      &lt;td&gt;0.540536&lt;/td&gt;
-      &lt;td&gt;0.425760&lt;/td&gt;
-      &lt;td&gt;0.691145&lt;/td&gt;
-      &lt;td&gt;0.805397&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;cap_rate_p1 ted_spread_p0 corp_profit_p2&lt;/td&gt;
-      &lt;td&gt;{u'corp_profit_p2': -0.0135243557809, u'cap_rate_p1': 0.877749475261, u'const': -6.03948102864, u'ted_spread_p0': 1.93705865732}&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p1': 3.44329193716e-10, u'corp_profit_p2': 9.48169185403e-08, u'ted_spread_p0': 1.09945034371e-07}&lt;/td&gt;
-      &lt;td&gt;1.099450e-07&lt;/td&gt;
-      &lt;td&gt;{u'corp_profit_p2': 1.03734814056, u'cap_rate_p1': 1.01163126479, u'ted_spread_p0': 1.04793790581}&lt;/td&gt;
-      &lt;td&gt;1.047938&lt;/td&gt;
-      &lt;td&gt;0.538986&lt;/td&gt;
-      &lt;td&gt;0.407210&lt;/td&gt;
-      &lt;td&gt;0.692310&lt;/td&gt;
-      &lt;td&gt;0.818302&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;cap_rate_p0 realgpd_yoy_p1 ted_spread_p0&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p0': 0.399969892292, u'const': -2.76856127445, u'realgpd_yoy_p1': -0.261163454589, u'ted_spread_p0': 1.96391841957}&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p0': 0.00823171721478, u'realgpd_yoy_p1': 2.44100020902e-07, u'ted_spread_p0': 2.02057150048e-07}&lt;/td&gt;
-      &lt;td&gt;8.231717e-03&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p0': 1.51138715628, u'realgpd_yoy_p1': 1.63739288792, u'ted_spread_p0': 1.13076824898}&lt;/td&gt;
-      &lt;td&gt;1.637393&lt;/td&gt;
-      &lt;td&gt;0.538396&lt;/td&gt;
-      &lt;td&gt;0.479249&lt;/td&gt;
-      &lt;td&gt;0.692753&lt;/td&gt;
-      &lt;td&gt;0.766970&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;cap_rate_p1 ted_spread_p0 spindex_yoy_p3&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p1': 0.65706188261, u'spindex_yoy_p3': -0.0278317743804, u'const': -4.80448757293, u'ted_spread_p0': 2.33803685851}&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p1': 2.74601006446e-06, u'spindex_yoy_p3': 1.52047871931e-07, u'ted_spread_p0': 3.75314669611e-09}&lt;/td&gt;
-      &lt;td&gt;2.746010e-06&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p1': 1.11830677895, u'spindex_yoy_p3': 1.30113118522, u'ted_spread_p0': 1.17735336332}&lt;/td&gt;
-      &lt;td&gt;1.301131&lt;/td&gt;
-      &lt;td&gt;0.534091&lt;/td&gt;
-      &lt;td&gt;0.467292&lt;/td&gt;
-      &lt;td&gt;0.695975&lt;/td&gt;
-      &lt;td&gt;0.775725&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;ted_spread_p0 bbb_spread_p3 crea_hp_yoy_p3&lt;/td&gt;
-      &lt;td&gt;{u'bbb_spread_p3': 0.496427591994, u'crea_hp_yoy_p3': -4.04408099734, u'const': -2.11272790298, u'ted_spread_p0': 2.98218905816}&lt;/td&gt;
-      &lt;td&gt;{u'bbb_spread_p3': 2.53868889258e-06, u'crea_hp_yoy_p3': 0.013182986019, u'ted_spread_p0': 8.44964879018e-12}&lt;/td&gt;
-      &lt;td&gt;1.318299e-02&lt;/td&gt;
-      &lt;td&gt;{u'bbb_spread_p3': 2.14915809275, u'crea_hp_yoy_p3': 2.15508279604, u'ted_spread_p0': 1.31551155593}&lt;/td&gt;
-      &lt;td&gt;2.155083&lt;/td&gt;
-      &lt;td&gt;0.530881&lt;/td&gt;
-      &lt;td&gt;0.487799&lt;/td&gt;
-      &lt;td&gt;0.698369&lt;/td&gt;
-      &lt;td&gt;0.760648&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;cap_rate_p0 ted_spread_p0 spindex_yoy_p3&lt;/td&gt;
-      &lt;td&gt;{u'spindex_yoy_p3': -0.0268613344048, u'cap_rate_p0': 0.637203038203, u'const': -4.58585413988, u'ted_spread_p0': 2.10847588993}&lt;/td&gt;
-      &lt;td&gt;{u'spindex_yoy_p3': 5.48924336311e-07, u'cap_rate_p0': 4.08336221776e-06, u'ted_spread_p0': 9.57175247542e-08}&lt;/td&gt;
-      &lt;td&gt;4.083362e-06&lt;/td&gt;
-      &lt;td&gt;{u'spindex_yoy_p3': 1.34011381199, u'cap_rate_p0': 1.13890662152, u'ted_spread_p0': 1.20436511897}&lt;/td&gt;
-      &lt;td&gt;1.340114&lt;/td&gt;
-      &lt;td&gt;0.529975&lt;/td&gt;
-      &lt;td&gt;0.481577&lt;/td&gt;
-      &lt;td&gt;0.699043&lt;/td&gt;
-      &lt;td&gt;0.765254&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;ted_spread_p0 realgpd_yoy_p2 crea_hp_yoy_p2&lt;/td&gt;
-      &lt;td&gt;{u'crea_hp_yoy_p2': -5.23054020025, u'const': -0.213910926506, u'realgpd_yoy_p2': -0.300526775383, u'ted_spread_p0': 2.54263066825}&lt;/td&gt;
-      &lt;td&gt;{u'crea_hp_yoy_p2': 4.73746805923e-05, u'realgpd_yoy_p2': 2.90405468424e-11, u'ted_spread_p0': 4.65498962823e-10}&lt;/td&gt;
-      &lt;td&gt;4.737468e-05&lt;/td&gt;
-      &lt;td&gt;{u'crea_hp_yoy_p2': 1.14885263493, u'realgpd_yoy_p2': 1.07915752568, u'ted_spread_p0': 1.20209011854}&lt;/td&gt;
-      &lt;td&gt;1.202090&lt;/td&gt;
-      &lt;td&gt;0.528894&lt;/td&gt;
-      &lt;td&gt;0.490617&lt;/td&gt;
-      &lt;td&gt;0.699847&lt;/td&gt;
-      &lt;td&gt;0.758552&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;realgpd_yoy_p1 ted_spread_p0 bbb_spread_p3&lt;/td&gt;
-      &lt;td&gt;{u'bbb_spread_p3': 0.3392041554, u'const': -1.48765136041, u'realgpd_yoy_p1': -0.183029785519, u'ted_spread_p0': 2.53186775198}&lt;/td&gt;
-      &lt;td&gt;{u'bbb_spread_p3': 0.0371576508071, u'realgpd_yoy_p1': 0.0268215589596, u'ted_spread_p0': 4.5194564047e-09}&lt;/td&gt;
-      &lt;td&gt;3.715765e-02&lt;/td&gt;
-      &lt;td&gt;{u'bbb_spread_p3': 5.6016017398, u'realgpd_yoy_p1': 4.82586299937, u'ted_spread_p0': 1.36892246555}&lt;/td&gt;
-      &lt;td&gt;5.601602&lt;/td&gt;
-      &lt;td&gt;0.524097&lt;/td&gt;
-      &lt;td&gt;0.448446&lt;/td&gt;
-      &lt;td&gt;0.703401&lt;/td&gt;
-      &lt;td&gt;0.789328&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;ted_spread_p0 corp_profit_p1 bbb_spread_p4&lt;/td&gt;
-      &lt;td&gt;{u'corp_profit_p1': -0.0137172688584, u'const': -2.37417449176, u'bbb_spread_p4': 0.524233697796, u'ted_spread_p0': 3.14985768412}&lt;/td&gt;
-      &lt;td&gt;{u'corp_profit_p1': 2.02303842995e-07, u'bbb_spread_p4': 9.78700091729e-09, u'ted_spread_p0': 6.29018807036e-12}&lt;/td&gt;
-      &lt;td&gt;2.023038e-07&lt;/td&gt;
-      &lt;td&gt;{u'corp_profit_p1': 1.09331461883, u'bbb_spread_p4': 1.37836343887, u'ted_spread_p0': 1.42051444169}&lt;/td&gt;
-      &lt;td&gt;1.420514&lt;/td&gt;
-      &lt;td&gt;0.523007&lt;/td&gt;
-      &lt;td&gt;0.343924&lt;/td&gt;
-      &lt;td&gt;0.704206&lt;/td&gt;
-      &lt;td&gt;0.860876&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;ted_spread_p0 cap_rate_p2 corp_profit_p2&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p2': 0.861897957176, u'corp_profit_p2': -0.0139592553872, u'const': -5.98901672449, u'ted_spread_p0': 2.01153180982}&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p2': 2.3561392043e-09, u'corp_profit_p2': 7.3640978496e-08, u'ted_spread_p0': 8.20990655485e-08}&lt;/td&gt;
-      &lt;td&gt;8.209907e-08&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p2': 1.01956965532, u'corp_profit_p2': 1.03727640573, u'ted_spread_p0': 1.05720340499}&lt;/td&gt;
-      &lt;td&gt;1.057203&lt;/td&gt;
-      &lt;td&gt;0.518564&lt;/td&gt;
-      &lt;td&gt;0.346343&lt;/td&gt;
-      &lt;td&gt;0.707478&lt;/td&gt;
-      &lt;td&gt;0.859287&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;ted_spread_p0 cap_rate_p2 spindex_yoy_p3&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p2': 0.623635734378, u'spindex_yoy_p3': -0.0288247874575, u'const': -4.63667583576, u'ted_spread_p0': 2.40681253901}&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p2': 1.38801807046e-05, u'spindex_yoy_p3': 8.44057937049e-08, u'ted_spread_p0': 2.69534162048e-09}&lt;/td&gt;
-      &lt;td&gt;1.388018e-05&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p2': 1.11243360337, u'spindex_yoy_p3': 1.28413160743, u'ted_spread_p0': 1.17710523955}&lt;/td&gt;
-      &lt;td&gt;1.284132&lt;/td&gt;
-      &lt;td&gt;0.517091&lt;/td&gt;
-      &lt;td&gt;0.428256&lt;/td&gt;
-      &lt;td&gt;0.708559&lt;/td&gt;
-      &lt;td&gt;0.803645&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;ted_spread_p0 bbb_spread_p3 crea_hp_yoy_p2&lt;/td&gt;
-      &lt;td&gt;{u'bbb_spread_p3': 0.60361226282, u'crea_hp_yoy_p2': -2.36021166288, u'const': -2.44208114633, u'ted_spread_p0': 2.90459106331}&lt;/td&gt;
-      &lt;td&gt;{u'bbb_spread_p3': 1.15389476089e-10, u'crea_hp_yoy_p2': 0.0792156318557, u'ted_spread_p0': 3.35277155454e-11}&lt;/td&gt;
-      &lt;td&gt;7.921563e-02&lt;/td&gt;
-      &lt;td&gt;{u'bbb_spread_p3': 1.45111260067, u'crea_hp_yoy_p2': 1.31847516127, u'ted_spread_p0': 1.30031898369}&lt;/td&gt;
-      &lt;td&gt;1.451113&lt;/td&gt;
-      &lt;td&gt;0.513970&lt;/td&gt;
-      &lt;td&gt;0.494352&lt;/td&gt;
-      &lt;td&gt;0.710845&lt;/td&gt;
-      &lt;td&gt;0.755766&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;ted_spread_p0 bbb_spread_p3 corp_profit_p2&lt;/td&gt;
-      &lt;td&gt;{u'bbb_spread_p3': 0.582278194028, u'corp_profit_p2': -0.00457269604228, u'const': -2.42447060517, u'ted_spread_p0': 2.73939873183}&lt;/td&gt;
-      &lt;td&gt;{u'bbb_spread_p3': 4.46517244848e-09, u'corp_profit_p2': 0.103032476656, u'ted_spread_p0': 1.65472591821e-10}&lt;/td&gt;
-      &lt;td&gt;1.030325e-01&lt;/td&gt;
-      &lt;td&gt;{u'bbb_spread_p3': 1.69554846895, u'corp_profit_p2': 1.39827155759, u'ted_spread_p0': 1.26336327403}&lt;/td&gt;
-      &lt;td&gt;1.695548&lt;/td&gt;
-      &lt;td&gt;0.511588&lt;/td&gt;
-      &lt;td&gt;0.404442&lt;/td&gt;
-      &lt;td&gt;0.712585&lt;/td&gt;
-      &lt;td&gt;0.820210&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;ted_spread_p0 crea_hp_yoy_p2 bbb_spread_p4&lt;/td&gt;
-      &lt;td&gt;{u'crea_hp_yoy_p2': -6.70808022288, u'const': -2.42877868756, u'bbb_spread_p4': 0.607734054772, u'ted_spread_p0': 3.4961201786}&lt;/td&gt;
-      &lt;td&gt;{u'crea_hp_yoy_p2': 6.05151670014e-07, u'bbb_spread_p4': 1.48369689826e-10, u'ted_spread_p0': 1.03002090634e-12}&lt;/td&gt;
-      &lt;td&gt;6.051517e-07&lt;/td&gt;
-      &lt;td&gt;{u'crea_hp_yoy_p2': 1.15154216378, u'bbb_spread_p4': 1.37674369466, u'ted_spread_p0': 1.55319251249}&lt;/td&gt;
-      &lt;td&gt;1.553193&lt;/td&gt;
-      &lt;td&gt;0.511203&lt;/td&gt;
-      &lt;td&gt;0.561489&lt;/td&gt;
-      &lt;td&gt;0.712866&lt;/td&gt;
-      &lt;td&gt;0.703807&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;realgpd_yoy_p1 ted_spread_p0 crea_hp_yoy_p3&lt;/td&gt;
-      &lt;td&gt;{u'crea_hp_yoy_p3': -2.69122158056, u'const': -0.311597133369, u'realgpd_yoy_p1': -0.271003198186, u'ted_spread_p0': 2.36903437474}&lt;/td&gt;
-      &lt;td&gt;{u'crea_hp_yoy_p3': 0.160540939231, u'realgpd_yoy_p1': 1.68115665371e-05, u'ted_spread_p0': 1.73940931661e-08}&lt;/td&gt;
-      &lt;td&gt;1.605409e-01&lt;/td&gt;
-      &lt;td&gt;{u'crea_hp_yoy_p3': 2.92635266698, u'realgpd_yoy_p1': 2.51416529656, u'ted_spread_p0': 1.28272242148}&lt;/td&gt;
-      &lt;td&gt;2.926353&lt;/td&gt;
-      &lt;td&gt;0.510855&lt;/td&gt;
-      &lt;td&gt;0.496386&lt;/td&gt;
-      &lt;td&gt;0.713120&lt;/td&gt;
-      &lt;td&gt;0.754245&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;realgpd_yoy_p1 ted_spread_p0 bbb_spread_p4&lt;/td&gt;
-      &lt;td&gt;{u'const': -0.833411322829, u'realgpd_yoy_p1': -0.284642070828, u'bbb_spread_p4': 0.157377817458, u'ted_spread_p0': 2.41688117752}&lt;/td&gt;
-      &lt;td&gt;{u'realgpd_yoy_p1': 6.46698989093e-07, u'bbb_spread_p4': 0.167778133568, u'ted_spread_p0': 3.11105712134e-08}&lt;/td&gt;
-      &lt;td&gt;1.677781e-01&lt;/td&gt;
-      &lt;td&gt;{u'realgpd_yoy_p1': 1.99595132113, u'bbb_spread_p4': 2.51669899622, u'ted_spread_p0': 1.392766576}&lt;/td&gt;
-      &lt;td&gt;2.516699&lt;/td&gt;
-      &lt;td&gt;0.510479&lt;/td&gt;
-      &lt;td&gt;0.431894&lt;/td&gt;
-      &lt;td&gt;0.713393&lt;/td&gt;
-      &lt;td&gt;0.801084&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;cap_rate_p1 ted_spread_p0 bbb_spread_p3&lt;/td&gt;
-      &lt;td&gt;{u'bbb_spread_p3': 0.544850450153, u'cap_rate_p1': 0.272985200716, u'const': -3.98664801529, u'ted_spread_p0': 2.60924536243}&lt;/td&gt;
-      &lt;td&gt;{u'bbb_spread_p3': 1.44198483922e-06, u'cap_rate_p1': 0.121325501399, u'ted_spread_p0': 2.7102689375e-09}&lt;/td&gt;
-      &lt;td&gt;1.213255e-01&lt;/td&gt;
-      &lt;td&gt;{u'bbb_spread_p3': 2.34776209124, u'cap_rate_p1': 1.88813529519, u'ted_spread_p0': 1.36428733329}&lt;/td&gt;
-      &lt;td&gt;2.347762&lt;/td&gt;
-      &lt;td&gt;0.510130&lt;/td&gt;
-      &lt;td&gt;0.428608&lt;/td&gt;
-      &lt;td&gt;0.713648&lt;/td&gt;
-      &lt;td&gt;0.803397&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;ted_spread_p0 realgpd_yoy_p2 crea_hp_yoy_p3&lt;/td&gt;
-      &lt;td&gt;{u'crea_hp_yoy_p3': -5.59792480702, u'const': -0.330017028638, u'realgpd_yoy_p2': -0.215888553711, u'ted_spread_p0': 2.58561014684}&lt;/td&gt;
-      &lt;td&gt;{u'crea_hp_yoy_p3': 0.000296441873851, u'realgpd_yoy_p2': 1.87381427588e-05, u'ted_spread_p0': 1.09664873088e-09}&lt;/td&gt;
-      &lt;td&gt;2.964419e-04&lt;/td&gt;
-      &lt;td&gt;{u'crea_hp_yoy_p3': 1.77986311362, u'realgpd_yoy_p2': 1.51489441528, u'ted_spread_p0': 1.26112101248}&lt;/td&gt;
-      &lt;td&gt;1.779863&lt;/td&gt;
-      &lt;td&gt;0.509685&lt;/td&gt;
-      &lt;td&gt;0.447184&lt;/td&gt;
-      &lt;td&gt;0.713972&lt;/td&gt;
-      &lt;td&gt;0.790230&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;cap_rate_p0 ted_spread_p0 bbb_spread_p3&lt;/td&gt;
-      &lt;td&gt;{u'bbb_spread_p3': 0.538791932676, u'cap_rate_p0': 0.269149311217, u'const': -3.90589431381, u'ted_spread_p0': 2.51233917448}&lt;/td&gt;
-      &lt;td&gt;{u'bbb_spread_p3': 3.69381353544e-06, u'cap_rate_p0': 0.128373725201, u'ted_spread_p0': 3.88957741361e-08}&lt;/td&gt;
-      &lt;td&gt;1.283737e-01&lt;/td&gt;
-      &lt;td&gt;{u'bbb_spread_p3': 2.51413269277, u'cap_rate_p0': 1.99928074526, u'ted_spread_p0': 1.52794519095}&lt;/td&gt;
-      &lt;td&gt;2.514133&lt;/td&gt;
-      &lt;td&gt;0.509631&lt;/td&gt;
-      &lt;td&gt;0.434051&lt;/td&gt;
-      &lt;td&gt;0.714011&lt;/td&gt;
-      &lt;td&gt;0.799561&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;ted_spread_p0 crea_hp_yoy_p3 bbb_spread_p4&lt;/td&gt;
-      &lt;td&gt;{u'crea_hp_yoy_p3': -7.124071928, u'const': -1.81674640673, u'bbb_spread_p4': 0.402048103596, u'ted_spread_p0': 3.28772335045}&lt;/td&gt;
-      &lt;td&gt;{u'crea_hp_yoy_p3': 7.40618262123e-07, u'bbb_spread_p4': 1.99672792352e-05, u'ted_spread_p0': 4.0450297686e-12}&lt;/td&gt;
-      &lt;td&gt;1.996728e-05&lt;/td&gt;
-      &lt;td&gt;{u'crea_hp_yoy_p3': 1.43640456697, u'bbb_spread_p4': 1.55605617691, u'ted_spread_p0': 1.46835089361}&lt;/td&gt;
-      &lt;td&gt;1.556056&lt;/td&gt;
-      &lt;td&gt;0.508998&lt;/td&gt;
-      &lt;td&gt;0.470157&lt;/td&gt;
-      &lt;td&gt;0.714472&lt;/td&gt;
-      &lt;td&gt;0.773637&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;ted_spread_p0 crea_hp_yoy_p2 realgpd_yoy_p3&lt;/td&gt;
-      &lt;td&gt;{u'realgpd_yoy_p3': -0.311113715762, u'crea_hp_yoy_p2': -9.309071086, u'const': -0.103457190105, u'ted_spread_p0': 2.84913168832}&lt;/td&gt;
-      &lt;td&gt;{u'realgpd_yoy_p3': 1.92976213253e-10, u'crea_hp_yoy_p2': 5.13571840644e-10, u'ted_spread_p0': 6.5891420931e-11}&lt;/td&gt;
-      &lt;td&gt;5.135718e-10&lt;/td&gt;
-      &lt;td&gt;{u'realgpd_yoy_p3': 1.19851914035, u'crea_hp_yoy_p2': 1.30632930877, u'ted_spread_p0': 1.28561708211}&lt;/td&gt;
-      &lt;td&gt;1.306329&lt;/td&gt;
-      &lt;td&gt;0.508293&lt;/td&gt;
-      &lt;td&gt;0.518727&lt;/td&gt;
-      &lt;td&gt;0.714985&lt;/td&gt;
-      &lt;td&gt;0.737325&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;ted_spread_p0 bbb_spread_p3 spindex_yoy_p3&lt;/td&gt;
-      &lt;td&gt;{u'bbb_spread_p3': 0.525123157535, u'spindex_yoy_p3': -0.0106469798442, u'const': -2.29476615365, u'ted_spread_p0': 2.80601709969}&lt;/td&gt;
-      &lt;td&gt;{u'bbb_spread_p3': 3.20465565732e-05, u'spindex_yoy_p3': 0.152675572385, u'ted_spread_p0': 7.93900361033e-11}&lt;/td&gt;
-      &lt;td&gt;1.526756e-01&lt;/td&gt;
-      &lt;td&gt;{u'bbb_spread_p3': 3.02253841133, u'spindex_yoy_p3': 2.82820562708, u'ted_spread_p0': 1.26016903124}&lt;/td&gt;
-      &lt;td&gt;3.022538&lt;/td&gt;
-      &lt;td&gt;0.508117&lt;/td&gt;
-      &lt;td&gt;0.429300&lt;/td&gt;
-      &lt;td&gt;0.715113&lt;/td&gt;
-      &lt;td&gt;0.802911&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;realgpd_yoy_p0 ted_spread_p0 bbb_spread_p3&lt;/td&gt;
-      &lt;td&gt;{u'realgpd_yoy_p0': -0.0822791822097, u'const': -2.17908597925, u'bbb_spread_p3': 0.540487885674, u'ted_spread_p0': 2.63164243642}&lt;/td&gt;
-      &lt;td&gt;{u'bbb_spread_p3': 5.73922047576e-06, u'realgpd_yoy_p0': 0.153193960743, u'ted_spread_p0': 1.95668256146e-09}&lt;/td&gt;
-      &lt;td&gt;1.531940e-01&lt;/td&gt;
-      &lt;td&gt;{u'realgpd_yoy_p0': 2.14853765757, u'bbb_spread_p3': 2.63888992404, u'ted_spread_p0': 1.35238585586}&lt;/td&gt;
-      &lt;td&gt;2.638890&lt;/td&gt;
-      &lt;td&gt;0.508087&lt;/td&gt;
-      &lt;td&gt;0.458403&lt;/td&gt;
-      &lt;td&gt;0.715134&lt;/td&gt;
-      &lt;td&gt;0.782170&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;ted_spread_p0 bbb_spread_p3 cap_rate_p4&lt;/td&gt;
-      &lt;td&gt;{u'bbb_spread_p3': 0.615821291858, u'cap_rate_p4': 0.208708505931, u'const': -3.8335303104, u'ted_spread_p0': 2.74915454136}&lt;/td&gt;
-      &lt;td&gt;{u'bbb_spread_p3': 6.60288226921e-11, u'cap_rate_p4': 0.166847470536, u'ted_spread_p0': 1.67384077652e-10}&lt;/td&gt;
-      &lt;td&gt;1.668475e-01&lt;/td&gt;
-      &lt;td&gt;{u'bbb_spread_p3': 1.44211057025, u'cap_rate_p4': 1.16255484012, u'ted_spread_p0': 1.26230863366}&lt;/td&gt;
-      &lt;td&gt;1.442111&lt;/td&gt;
-      &lt;td&gt;0.507353&lt;/td&gt;
-      &lt;td&gt;0.402521&lt;/td&gt;
-      &lt;td&gt;0.715668&lt;/td&gt;
-      &lt;td&gt;0.821532&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;ted_spread_p0 crea_hp_yoy_p3 realgpd_yoy_p3&lt;/td&gt;
-      &lt;td&gt;{u'crea_hp_yoy_p3': -8.76409349446, u'realgpd_yoy_p3': -0.180879352626, u'const': -0.318947340435, u'ted_spread_p0': 2.86354149694}&lt;/td&gt;
-      &lt;td&gt;{u'crea_hp_yoy_p3': 5.84134461416e-10, u'realgpd_yoy_p3': 2.43206207395e-05, u'ted_spread_p0': 6.41362452225e-11}&lt;/td&gt;
-      &lt;td&gt;2.432062e-05&lt;/td&gt;
-      &lt;td&gt;{u'crea_hp_yoy_p3': 1.26977569699, u'realgpd_yoy_p3': 1.05558827276, u'ted_spread_p0': 1.29286084071}&lt;/td&gt;
-      &lt;td&gt;1.292861&lt;/td&gt;
-      &lt;td&gt;0.506863&lt;/td&gt;
-      &lt;td&gt;0.458546&lt;/td&gt;
-      &lt;td&gt;0.716024&lt;/td&gt;
-      &lt;td&gt;0.782067&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;ted_spread_p0 cap_rate_p2 bbb_spread_p3&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p2': 0.225756509972, u'const': -3.78840359933, u'bbb_spread_p3': 0.570654122306, u'ted_spread_p0': 2.67079906481}&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p2': 0.193180231382, u'bbb_spread_p3': 2.30746281702e-07, u'ted_spread_p0': 9.08484906408e-10}&lt;/td&gt;
-      &lt;td&gt;1.931802e-01&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p2': 1.75920678376, u'bbb_spread_p3': 2.17026703782, u'ted_spread_p0': 1.31977926124}&lt;/td&gt;
-      &lt;td&gt;2.170267&lt;/td&gt;
-      &lt;td&gt;0.506110&lt;/td&gt;
-      &lt;td&gt;0.411367&lt;/td&gt;
-      &lt;td&gt;0.716570&lt;/td&gt;
-      &lt;td&gt;0.815428&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;ted_spread_p0 realgpd_yoy_p2 corp_profit_p1&lt;/td&gt;
-      &lt;td&gt;{u'corp_profit_p1': -0.00960849919163, u'const': -0.407772979121, u'realgpd_yoy_p2': -0.257333465025, u'ted_spread_p0': 2.29032216488}&lt;/td&gt;
-      &lt;td&gt;{u'corp_profit_p1': 0.000448333783238, u'realgpd_yoy_p2': 4.97703208541e-08, u'ted_spread_p0': 7.49817339718e-09}&lt;/td&gt;
-      &lt;td&gt;4.483338e-04&lt;/td&gt;
-      &lt;td&gt;{u'corp_profit_p1': 1.23841713376, u'realgpd_yoy_p2': 1.22668430577, u'ted_spread_p0': 1.11609747523}&lt;/td&gt;
-      &lt;td&gt;1.238417&lt;/td&gt;
-      &lt;td&gt;0.505281&lt;/td&gt;
-      &lt;td&gt;0.321448&lt;/td&gt;
-      &lt;td&gt;0.717171&lt;/td&gt;
-      &lt;td&gt;0.875497&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;ted_spread_p0 bbb_spread_p3 cap_rate_p3&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p3': 0.201637275061, u'bbb_spread_p3': 0.593429505205, u'const': -3.71870866222, u'ted_spread_p0': 2.71903806154}&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p3': 0.217238393496, u'bbb_spread_p3': 7.84889309862e-09, u'ted_spread_p0': 3.23824482993e-10}&lt;/td&gt;
-      &lt;td&gt;2.172384e-01&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p3': 1.4724277304, u'bbb_spread_p3': 1.80756321736, u'ted_spread_p0': 1.27957899111}&lt;/td&gt;
-      &lt;td&gt;1.807563&lt;/td&gt;
-      &lt;td&gt;0.505135&lt;/td&gt;
-      &lt;td&gt;0.405297&lt;/td&gt;
-      &lt;td&gt;0.717277&lt;/td&gt;
-      &lt;td&gt;0.819622&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;ted_spread_p0 spindex_yoy_p3 cap_rate_p3&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p3': 0.594228769802, u'spindex_yoy_p3': -0.031124114991, u'const': -4.49069384587, u'ted_spread_p0': 2.48354562619}&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p3': 4.50370245447e-05, u'spindex_yoy_p3': 8.36225082073e-09, u'ted_spread_p0': 1.64539790007e-09}&lt;/td&gt;
-      &lt;td&gt;4.503702e-05&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p3': 1.06865169504, u'spindex_yoy_p3': 1.22753770126, u'ted_spread_p0': 1.18199596216}&lt;/td&gt;
-      &lt;td&gt;1.227538&lt;/td&gt;
-      &lt;td&gt;0.504430&lt;/td&gt;
-      &lt;td&gt;0.408088&lt;/td&gt;
-      &lt;td&gt;0.717788&lt;/td&gt;
-      &lt;td&gt;0.817696&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;ted_spread_p0 realgpd_yoy_p2 bbb_spread_p3&lt;/td&gt;
-      &lt;td&gt;{u'bbb_spread_p3': 0.517442462306, u'const': -2.1307227209, u'realgpd_yoy_p2': -0.0864549354609, u'ted_spread_p0': 2.66817475933}&lt;/td&gt;
-      &lt;td&gt;{u'bbb_spread_p3': 0.000504611426207, u'realgpd_yoy_p2': 0.249265257706, u'ted_spread_p0': 1.27380241683e-09}&lt;/td&gt;
-      &lt;td&gt;2.492653e-01&lt;/td&gt;
-      &lt;td&gt;{u'bbb_spread_p3': 4.29026413402, u'realgpd_yoy_p2': 3.6616378528, u'ted_spread_p0': 1.34053982558}&lt;/td&gt;
-      &lt;td&gt;4.290264&lt;/td&gt;
-      &lt;td&gt;0.504018&lt;/td&gt;
-      &lt;td&gt;0.388464&lt;/td&gt;
-      &lt;td&gt;0.718086&lt;/td&gt;
-      &lt;td&gt;0.831140&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;realgpd_yoy_p1 ted_spread_p0 spindex_yoy_p3&lt;/td&gt;
-      &lt;td&gt;{u'spindex_yoy_p3': -0.00697418929236, u'const': -0.358295064272, u'realgpd_yoy_p1': -0.287950006036, u'ted_spread_p0': 2.24832163495}&lt;/td&gt;
-      &lt;td&gt;{u'spindex_yoy_p3': 0.396355057686, u'realgpd_yoy_p1': 4.80031372299e-05, u'ted_spread_p0': 2.97028063227e-08}&lt;/td&gt;
-      &lt;td&gt;3.963551e-01&lt;/td&gt;
-      &lt;td&gt;{u'spindex_yoy_p3': 3.44623710801, u'realgpd_yoy_p1': 3.17299042455, u'ted_spread_p0': 1.18476784624}&lt;/td&gt;
-      &lt;td&gt;3.446237&lt;/td&gt;
-      &lt;td&gt;0.503737&lt;/td&gt;
-      &lt;td&gt;0.457973&lt;/td&gt;
-      &lt;td&gt;0.718290&lt;/td&gt;
-      &lt;td&gt;0.782481&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;realgpd_yoy_p1 ted_spread_p0 crea_hp_yoy_p2&lt;/td&gt;
-      &lt;td&gt;{u'crea_hp_yoy_p2': -1.0795826604, u'const': -0.272715216966, u'realgpd_yoy_p1': -0.318271064261, u'ted_spread_p0': 2.22651917837}&lt;/td&gt;
-      &lt;td&gt;{u'crea_hp_yoy_p2': 0.450477095771, u'realgpd_yoy_p1': 3.13546780517e-10, u'ted_spread_p0': 2.90322487555e-08}&lt;/td&gt;
-      &lt;td&gt;4.504771e-01&lt;/td&gt;
-      &lt;td&gt;{u'crea_hp_yoy_p2': 1.48055472983, u'realgpd_yoy_p1': 1.40383603833, u'ted_spread_p0': 1.15790564414}&lt;/td&gt;
-      &lt;td&gt;1.480555&lt;/td&gt;
-      &lt;td&gt;0.502876&lt;/td&gt;
-      &lt;td&gt;0.479863&lt;/td&gt;
-      &lt;td&gt;0.718912&lt;/td&gt;
-      &lt;td&gt;0.766517&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;realgpd_yoy_p1 ted_spread_p0 spindex_yoy_p4&lt;/td&gt;
-      &lt;td&gt;{u'spindex_yoy_p4': -0.00287623611266, u'const': -0.307424934206, u'realgpd_yoy_p1': -0.319272637088, u'ted_spread_p0': 2.2027800319}&lt;/td&gt;
-      &lt;td&gt;{u'spindex_yoy_p4': 0.630438613957, u'realgpd_yoy_p1': 1.06155602716e-08, u'ted_spread_p0': 4.3262669625e-08}&lt;/td&gt;
-      &lt;td&gt;6.304386e-01&lt;/td&gt;
-      &lt;td&gt;{u'spindex_yoy_p4': 1.90330721432, u'realgpd_yoy_p1': 1.77597233856, u'ted_spread_p0': 1.16353394534}&lt;/td&gt;
-      &lt;td&gt;1.903307&lt;/td&gt;
-      &lt;td&gt;0.500930&lt;/td&gt;
-      &lt;td&gt;0.450725&lt;/td&gt;
-      &lt;td&gt;0.720318&lt;/td&gt;
-      &lt;td&gt;0.787695&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;ted_spread_p0 bbb_spread_p3 spindex_yoy_p2&lt;/td&gt;
-      &lt;td&gt;{u'bbb_spread_p3': 0.601012948771, u'spindex_yoy_p2': -0.00542467267777, u'const': -2.49819167847, u'ted_spread_p0': 2.8074946861}&lt;/td&gt;
-      &lt;td&gt;{u'bbb_spread_p3': 5.53590432482e-08, u'spindex_yoy_p2': 0.387126006585, u'ted_spread_p0': 1.07989092515e-10}&lt;/td&gt;
-      &lt;td&gt;3.871260e-01&lt;/td&gt;
-      &lt;td&gt;{u'bbb_spread_p3': 2.12232941161, u'spindex_yoy_p2': 1.94673426734, u'ted_spread_p0': 1.26539793559}&lt;/td&gt;
-      &lt;td&gt;2.122329&lt;/td&gt;
-      &lt;td&gt;0.500684&lt;/td&gt;
-      &lt;td&gt;0.429745&lt;/td&gt;
-      &lt;td&gt;0.720496&lt;/td&gt;
-      &lt;td&gt;0.802598&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;realgpd_yoy_p1 ted_spread_p0 corp_profit_p1&lt;/td&gt;
-      &lt;td&gt;{u'corp_profit_p1': -0.00111510712547, u'const': -0.295544468835, u'realgpd_yoy_p1': -0.322134804647, u'ted_spread_p0': 2.16984747298}&lt;/td&gt;
-      &lt;td&gt;{u'corp_profit_p1': 0.746943635339, u'realgpd_yoy_p1': 7.85857215941e-08, u'ted_spread_p0': 3.07526883363e-08}&lt;/td&gt;
-      &lt;td&gt;7.469436e-01&lt;/td&gt;
-      &lt;td&gt;{u'corp_profit_p1': 2.09799265347, u'realgpd_yoy_p1': 2.09768958589, u'ted_spread_p0': 1.09854672985}&lt;/td&gt;
-      &lt;td&gt;2.097993&lt;/td&gt;
-      &lt;td&gt;0.500194&lt;/td&gt;
-      &lt;td&gt;0.446912&lt;/td&gt;
-      &lt;td&gt;0.720849&lt;/td&gt;
-      &lt;td&gt;0.790424&lt;/td&gt;
-    &lt;/tr&gt;
-    &lt;tr&gt;
-      &lt;th&gt;0&lt;/th&gt;
-      &lt;td&gt;realgpd_yoy_p0 ted_spread_p0 cap_rate_p3&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p3': 0.639727648052, u'realgpd_yoy_p0': -0.253032450789, u'const': -4.28034401961, u'ted_spread_p0': 1.90847482334}&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p3': 1.18825887769e-05, u'realgpd_yoy_p0': 1.23019019096e-08, u'ted_spread_p0': 3.86554982571e-07}&lt;/td&gt;
-      &lt;td&gt;1.188259e-05&lt;/td&gt;
-      &lt;td&gt;{u'cap_rate_p3': 1.04954092806, u'realgpd_yoy_p0': 1.04901230219, u'ted_spread_p0': 1.04189905245}&lt;/td&gt;
-      &lt;td&gt;1.049541&lt;/td&gt;
-      &lt;td&gt;0.500114&lt;/td&gt;
-      &lt;td&gt;0.505297&lt;/td&gt;
-      &lt;td&gt;0.720907&lt;/td&gt;
-      &lt;td&gt;0.747542&lt;/td&gt;
-    &lt;/tr&gt;
-  &lt;/tbody&gt;
-&lt;/table&gt;
-&lt;/div&gt;
-
-&lt;pre&gt;&lt;code class="language-python"&gt;all_combination
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;(5, 14, 18)
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;best_reg_result.summary()
-&lt;/code&gt;&lt;/pre&gt;
-&lt;table class="simpletable"&gt;
-&lt;caption&gt;OLS Regression Results&lt;/caption&gt;
-&lt;tr&gt;
-  &lt;th&gt;Dep. Variable:&lt;/th&gt;       &lt;td&gt;cum_pd_num&lt;/td&gt;    &lt;th&gt;  R-squared:         &lt;/th&gt; &lt;td&gt;   0.615&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-  &lt;th&gt;Model:&lt;/th&gt;                   &lt;td&gt;OLS&lt;/td&gt;       &lt;th&gt;  Adj. R-squared:    &lt;/th&gt; &lt;td&gt;   0.601&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-  &lt;th&gt;Method:&lt;/th&gt;             &lt;td&gt;Least Squares&lt;/td&gt;  &lt;th&gt;  F-statistic:       &lt;/th&gt; &lt;td&gt;   46.24&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-  &lt;th&gt;Date:&lt;/th&gt;             &lt;td&gt;Mon, 17 Apr 2017&lt;/td&gt; &lt;th&gt;  Prob (F-statistic):&lt;/th&gt; &lt;td&gt;5.77e-18&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-  &lt;th&gt;Time:&lt;/th&gt;                 &lt;td&gt;21:56:19&lt;/td&gt;     &lt;th&gt;  Log-Likelihood:    &lt;/th&gt; &lt;td&gt; -85.467&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-  &lt;th&gt;No. Observations:&lt;/th&gt;      &lt;td&gt;    91&lt;/td&gt;      &lt;th&gt;  AIC:               &lt;/th&gt; &lt;td&gt;   178.9&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-  &lt;th&gt;Df Residuals:&lt;/th&gt;          &lt;td&gt;    87&lt;/td&gt;      &lt;th&gt;  BIC:               &lt;/th&gt; &lt;td&gt;   189.0&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-  &lt;th&gt;Df Model:&lt;/th&gt;              &lt;td&gt;     3&lt;/td&gt;      &lt;th&gt;                     &lt;/th&gt;     &lt;td&gt; &lt;/td&gt;   
-&lt;/tr&gt;
-&lt;tr&gt;
-  &lt;th&gt;Covariance Type:&lt;/th&gt;      &lt;td&gt;nonrobust&lt;/td&gt;    &lt;th&gt;                     &lt;/th&gt;     &lt;td&gt; &lt;/td&gt;   
-&lt;/tr&gt;
-&lt;/table&gt;
-&lt;table class="simpletable"&gt;
-&lt;tr&gt;
-         &lt;td&gt;&lt;/td&gt;           &lt;th&gt;coef&lt;/th&gt;     &lt;th&gt;std err&lt;/th&gt;      &lt;th&gt;t&lt;/th&gt;      &lt;th&gt;P&gt;|t|&lt;/th&gt; &lt;th&gt;[95.0% Conf. Int.]&lt;/th&gt; 
-&lt;/tr&gt;
-&lt;tr&gt;
-  &lt;th&gt;const&lt;/th&gt;          &lt;td&gt;   -5.8248&lt;/td&gt; &lt;td&gt;    0.770&lt;/td&gt; &lt;td&gt;   -7.569&lt;/td&gt; &lt;td&gt; 0.000&lt;/td&gt; &lt;td&gt;   -7.354    -4.295&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-  &lt;th&gt;ted_spread_p0&lt;/th&gt;  &lt;td&gt;    2.9978&lt;/td&gt; &lt;td&gt;    0.340&lt;/td&gt; &lt;td&gt;    8.805&lt;/td&gt; &lt;td&gt; 0.000&lt;/td&gt; &lt;td&gt;    2.321     3.675&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-  &lt;th&gt;cap_rate_p3&lt;/th&gt;    &lt;td&gt;    0.8444&lt;/td&gt; &lt;td&gt;    0.120&lt;/td&gt; &lt;td&gt;    7.055&lt;/td&gt; &lt;td&gt; 0.000&lt;/td&gt; &lt;td&gt;    0.607     1.082&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-  &lt;th&gt;crea_hp_yoy_p3&lt;/th&gt; &lt;td&gt;   -9.7555&lt;/td&gt; &lt;td&gt;    1.111&lt;/td&gt; &lt;td&gt;   -8.784&lt;/td&gt; &lt;td&gt; 0.000&lt;/td&gt; &lt;td&gt;  -11.963    -7.548&lt;/td&gt;
-&lt;/tr&gt;
-&lt;/table&gt;
-&lt;table class="simpletable"&gt;
-&lt;tr&gt;
-  &lt;th&gt;Omnibus:&lt;/th&gt;       &lt;td&gt; 3.899&lt;/td&gt; &lt;th&gt;  Durbin-Watson:     &lt;/th&gt; &lt;td&gt;   2.125&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-  &lt;th&gt;Prob(Omnibus):&lt;/th&gt; &lt;td&gt; 0.142&lt;/td&gt; &lt;th&gt;  Jarque-Bera (JB):  &lt;/th&gt; &lt;td&gt;   3.893&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-  &lt;th&gt;Skew:&lt;/th&gt;          &lt;td&gt; 0.210&lt;/td&gt; &lt;th&gt;  Prob(JB):          &lt;/th&gt; &lt;td&gt;   0.143&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-  &lt;th&gt;Kurtosis:&lt;/th&gt;      &lt;td&gt; 3.922&lt;/td&gt; &lt;th&gt;  Cond. No.          &lt;/th&gt; &lt;td&gt;    107.&lt;/td&gt;
-&lt;/tr&gt;
-&lt;/table&gt;</content><category term="python"></category><category term="python"></category><category term="statsmodels"></category></entry></feed>
+&lt;/script&gt;</content><category term="python"></category><category term="python"></category><category term="numpy"></category></entry></feed>
