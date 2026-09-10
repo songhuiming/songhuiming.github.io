@@ -2934,6 +2934,292 @@ output = einsum(&amp;quot;bsht,btc-&amp;gt;bshc&amp;quot;, scores, kv_cache[:bsz
     (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
     (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
 }
+&lt;/script&gt;</content><category term="python"></category><category term="python"></category><category term="AI"></category><category term="LLM"></category><category term="AIGC"></category><category term="DeepSeek"></category></entry><entry><title>MHA和MLA的KV cache比较</title><link href="/pages/2025/08/01/mhahe-mlade-kv-cachebi-jiao/" rel="alternate"></link><published>2025-08-01T00:00:00-05:00</published><updated>2025-08-01T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2025-08-01:/pages/2025/08/01/mhahe-mlade-kv-cachebi-jiao/</id><summary type="html">&lt;p&gt;&lt;img alt="KV cache 比较" src="/figures/20250801_kv_cache_compare.svg"&gt;&lt;/p&gt;
+&lt;h2&gt;Setup&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;Model: L layers, hidden dimension &lt;span class="math"&gt;\(d\)&lt;/span&gt; = 7168, num_heads &lt;span class="math"&gt;\(h\)&lt;/span&gt; = 128, head_dim &lt;span class="math"&gt;\(d_h\)&lt;/span&gt; = 128 (so &lt;span class="math"&gt;\(d = h × d_h\)&lt;/span&gt;, for deepseek V3 like setting)&lt;/li&gt;
+&lt;li&gt;MLA latent dimension: &lt;span class="math"&gt;\(d_c\)&lt;/span&gt; = 512 (compressed KV latent)&lt;/li&gt;
+&lt;li&gt;Sequence: tokens t₁, t₂, ..., t₁₀₀&lt;/li&gt;
+&lt;li&gt;Assume t₁ to t₉₉ are already cached (prefill done). Now we process t₁₀₀ (decode …&lt;/li&gt;&lt;/ul&gt;&lt;script type='text/javascript'&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width &lt; 768) ? "left" : align;
+        indent = (screen.width &lt; 768) ? "0em" : indent;
+        linebreak = (screen.width &lt; 768) ? 'true' : linebreak;
+    }
+
+    var mathjaxscript = document.createElement('script');
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript';
+    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-AMS-MML_HTMLorMML';
+
+    var configscript = document.createElement('script');
+    configscript.type = 'text/x-mathjax-config';
+    configscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js'], equationNumbers: { autoNumber: 'none' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    messageStyle: 'normal'," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        availableFonts: ['STIX', 'TeX']," +
+        "        preferredFont: 'STIX'," +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+&lt;/script&gt;</summary><content type="html">&lt;p&gt;&lt;img alt="KV cache 比较" src="/figures/20250801_kv_cache_compare.svg"&gt;&lt;/p&gt;
+&lt;h2&gt;Setup&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;Model: L layers, hidden dimension &lt;span class="math"&gt;\(d\)&lt;/span&gt; = 7168, num_heads &lt;span class="math"&gt;\(h\)&lt;/span&gt; = 128, head_dim &lt;span class="math"&gt;\(d_h\)&lt;/span&gt; = 128 (so &lt;span class="math"&gt;\(d = h × d_h\)&lt;/span&gt;, for deepseek V3 like setting)&lt;/li&gt;
+&lt;li&gt;MLA latent dimension: &lt;span class="math"&gt;\(d_c\)&lt;/span&gt; = 512 (compressed KV latent)&lt;/li&gt;
+&lt;li&gt;Sequence: tokens t₁, t₂, ..., t₁₀₀&lt;/li&gt;
+&lt;li&gt;Assume t₁ to t₉₉ are already cached (prefill done). Now we process t₁₀₀ (decode step).&lt;/li&gt;
+&lt;/ul&gt;
+&lt;hr&gt;
+&lt;h2&gt;Standard MHA: Step-by-step for t₁₀₀&lt;/h2&gt;
+&lt;h3&gt;Step 1: Embedding&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;x₁₀₀ = Embedding(t₁₀₀)    # shape: (d,) = (7168,)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Step 2: Layer 1&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;Compute Q, K, V for the new token:&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;q₁₀₀⁽¹⁾ = x₁₀₀ · W_Q⁽¹⁾     # (7168,) × (7168, 7168) → (7168,) i.e. (h × d_h)
+k₁₀₀⁽¹⁾ = x₁₀₀ · W_K⁽¹⁾     # (7168,) × (7168, 7168) → (7168,)
+v₁₀₀⁽¹⁾ = x₁₀₀ · W_V⁽¹⁾     # (7168,) × (7168, 7168) → (7168,)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;Concat with cached K, V from tokens 1~99:&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;K⁽¹⁾ = concat(KV_Cache_K⁽¹⁾, k₁₀₀⁽¹⁾)   # (99, 7168) + (1, 7168) → (100, 7168)
+V⁽¹⁾ = concat(KV_Cache_V⁽¹⁾, v₁₀₀⁽¹⁾)   # (99, 7168) + (1, 7168) → (100, 7168)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;Update cache:&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;KV_Cache_K⁽¹⁾ ← K⁽¹⁾    # now stores (100, 7168)
+KV_Cache_V⁽¹⁾ ← V⁽¹⁾    # now stores (100, 7168)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;Compute attention (per head, d_h = 128):&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;# Reshape to heads: Q → (h, 1, d_h), K → (h, 100, d_h), V → (h, 100, d_h)
+attn_weights = softmax(q₁₀₀⁽¹⁾ · K⁽¹⁾ᵀ / √d_h)   # (h, 1, 100)
+attn_output = attn_weights · V⁽¹⁾                     # (h, 1, d_h) → concat → (7168,)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;FFN:&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;h₁₀₀⁽¹⁾ = FFN(LayerNorm(attn_output + x₁₀₀))   # (7168,)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Step 3: Layer 2&lt;/h3&gt;
+&lt;p&gt;Same as Layer 1, but input is h₁₀₀⁽¹⁾:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;q₁₀₀⁽²⁾ = h₁₀₀⁽¹⁾ · W_Q⁽²⁾
+k₁₀₀⁽²⁾ = h₁₀₀⁽¹⁾ · W_K⁽²⁾
+v₁₀₀⁽²⁾ = h₁₀₀⁽¹⁾ · W_V⁽²⁾
+
+K⁽²⁾ = concat(KV_Cache_K⁽²⁾, k₁₀₀⁽²⁾)   # (100, 7168)
+V⁽²⁾ = concat(KV_Cache_V⁽²⁾, v₁₀₀⁽²⁾)   # (100, 7168)
+... (same attention + FFN) ...
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Step 4: Repeat for Layers 3 ~ L&lt;/h3&gt;
+&lt;p&gt;Each layer independently caches its own K and V.&lt;/p&gt;
+&lt;h3&gt;Step 5: Output&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;logits = h₁₀₀⁽ᴸ⁾ · W_head    # → vocabulary distribution
+t₁₀₁ = argmax(logits)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Cache Size (MHA)&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;Total cache = L × n × 2 × d
+            = L × 99 × 2 × 7168
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;For L=60, n=99:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;= 60 × 99 × 2 × 7168 = 85,155,840 parameters (per sequence)
+≈ 85M × 2 bytes (FP16) ≈ 162 MB
+&lt;/code&gt;&lt;/pre&gt;
+&lt;hr&gt;
+&lt;h2&gt;MLA (Multi-head Latent Attention): Step-by-step for t₁₀₀&lt;/h2&gt;
+&lt;h3&gt;Step 1: Embedding&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;x₁₀₀ = Embedding(t₁₀₀)    # shape: (d,) = (7168,)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Step 2: Layer 1&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;Down-project to compressed latent (for KV):&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;c₁₀₀⁽¹⁾ = x₁₀₀ · W_DKV⁽¹⁾    # (7168,) × (7168, 512) → (512,)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;Compute Q separately:&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;q₁₀₀⁽¹⁾ = x₁₀₀ · W_Q⁽¹⁾      # (7168,) × (7168, 7168) → (7168,)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;Update latent cache (only store c, NOT full K,V):&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;Latent_Cache⁽¹⁾ ← concat(Latent_Cache⁽¹⁾, c₁₀₀⁽¹⁾)   # (99, 512) + (1, 512) → (100, 512)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;Up-project ALL cached latents to K, V (on-the-fly):&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;K⁽¹⁾ = Latent_Cache⁽¹⁾ · W_UK⁽¹⁾    # (100, 512) × (512, 7168) → (100, 7168)
+V⁽¹⁾ = Latent_Cache⁽¹⁾ · W_UV⁽¹⁾    # (100, 512) × (512, 7168) → (100, 7168)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;Compute attention (same as MHA from here):&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;attn_weights = softmax(q₁₀₀⁽¹⁾ · K⁽¹⁾ᵀ / √d_h)   # (h, 1, 100)
+attn_output = attn_weights · V⁽¹⁾                     # → (7168,)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;FFN:&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;h₁₀₀⁽¹⁾ = FFN(LayerNorm(attn_output + x₁₀₀))   # (7168,)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Step 3: Layer 2&lt;/h3&gt;
+&lt;p&gt;Same structure, input is h₁₀₀⁽¹⁾:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;c₁₀₀⁽²⁾ = h₁₀₀⁽¹⁾ · W_DKV⁽²⁾    # → (512,)
+q₁₀₀⁽²⁾ = h₁₀₀⁽¹⁾ · W_Q⁽²⁾      # → (7168,)
+
+Latent_Cache⁽²⁾ ← concat(Latent_Cache⁽²⁾, c₁₀₀⁽²⁾)  # (100, 512)
+
+K⁽²⁾ = Latent_Cache⁽²⁾ · W_UK⁽²⁾    # (100, 7168)
+V⁽²⁾ = Latent_Cache⁽²⁾ · W_UV⁽²⁾    # (100, 7168)
+... (attention + FFN) ...
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Step 4: Repeat for Layers 3 ~ L&lt;/h3&gt;
+&lt;h3&gt;Step 5: Output&lt;/h3&gt;
+&lt;p&gt;Same as MHA.&lt;/p&gt;
+&lt;h3&gt;Cache Size (MLA)&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;Total cache = L × n × d_c
+            = L × 99 × 512
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;For L=60, n=99:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;= 60 × 99 × 512 = 3,041,280 parameters (per sequence)
+≈ 3M × 2 bytes (FP16) ≈ 5.8 MB
+&lt;/code&gt;&lt;/pre&gt;
+&lt;hr&gt;
+&lt;h2&gt;Side-by-side Comparison&lt;/h2&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;&lt;/th&gt;
+&lt;th&gt;&lt;strong&gt;Standard MHA&lt;/strong&gt;&lt;/th&gt;
+&lt;th&gt;&lt;strong&gt;MLA&lt;/strong&gt;&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;What is cached per token per layer&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;k (7168) + v (7168) = 14,336&lt;/td&gt;
+&lt;td&gt;c (512)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Cache size per token per layer&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;2 × d = 14,336&lt;/td&gt;
+&lt;td&gt;d_c = 512&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Compression ratio&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;1× (baseline)&lt;/td&gt;
+&lt;td&gt;d_c / (2d) = 512/14336 ≈ &lt;strong&gt;1/28&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Total cache (L=60, n=99)&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;~162 MB&lt;/td&gt;
+&lt;td&gt;~5.8 MB&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Extra compute at decode&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;None&lt;/td&gt;
+&lt;td&gt;Up-project c → K, V per step&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Accuracy trade-off&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;Full rank&lt;/td&gt;
+&lt;td&gt;Low-rank approximation (minimal loss in practice)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;hr&gt;
+&lt;h2&gt;Key Insight&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;MHA&lt;/strong&gt; caches the full K and V vectors for every token at every layer. This grows linearly with sequence length and is the main memory bottleneck for long-context inference.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;MLA&lt;/strong&gt; compresses the KV information into a much smaller latent vector c via a learned down-projection &lt;span class="math"&gt;\(W_{DKV}\)&lt;/span&gt; (see &lt;a href="https://songhuiming.github.io/pages/2025/03/20/deepseek-v3-multi-head-latent-attention-mla/"&gt;blog before&lt;/a&gt;). At attention time, it reconstructs K and V by up-projecting c with &lt;span class="math"&gt;\(W_{UK}\)&lt;/span&gt; and &lt;span class="math"&gt;\(W_{UV}\)&lt;/span&gt;. The trade-off is a small amount of extra compute (matrix multiply for up-projection) in exchange for &lt;strong&gt;~28× less cache memory&lt;/strong&gt;.&lt;/p&gt;
+&lt;p&gt;This is why DeepSeek V3 can handle much longer contexts with the same GPU memory budget.&lt;/p&gt;
+&lt;hr&gt;
+&lt;h2&gt;Note on Actual Implementation&lt;/h2&gt;
+&lt;p&gt;In practice, DeepSeek V3's MLA also handles the Q side with compression (down-project then up-project for Q as well), and uses RoPE (Rotary Position Embedding) on a separate small portion of the key. The above is simplified to show the core KV cache difference.&lt;/p&gt;
+&lt;script type="text/javascript"&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width &lt; 768) ? "left" : align;
+        indent = (screen.width &lt; 768) ? "0em" : indent;
+        linebreak = (screen.width &lt; 768) ? 'true' : linebreak;
+    }
+
+    var mathjaxscript = document.createElement('script');
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript';
+    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-AMS-MML_HTMLorMML';
+
+    var configscript = document.createElement('script');
+    configscript.type = 'text/x-mathjax-config';
+    configscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js'], equationNumbers: { autoNumber: 'none' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    messageStyle: 'normal'," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        availableFonts: ['STIX', 'TeX']," +
+        "        preferredFont: 'STIX'," +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
 &lt;/script&gt;</content><category term="python"></category><category term="python"></category><category term="AI"></category><category term="LLM"></category><category term="AIGC"></category><category term="DeepSeek"></category></entry><entry><title>DeepSeek Expert Parallelism Load Balancer (EPLB) Code Reading</title><link href="/pages/2025/04/20/deepseek-expert-parallelism-load-balancer-eplb-code-reading/" rel="alternate"></link><published>2025-04-20T00:00:00-05:00</published><updated>2025-04-20T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2025-04-20:/pages/2025/04/20/deepseek-expert-parallelism-load-balancer-eplb-code-reading/</id><summary type="html">&lt;h2&gt;Introduction&lt;/h2&gt;
 &lt;p&gt;In the previous &lt;a href="https://songhuiming.github.io/pages/2025/02/16/deepseek-v3/"&gt;Introduction to DeepSeek-V3&lt;/a&gt;, a crucial component highlighted was the use of DeepSeekMoE. When employing Expert Parallelism, different Experts are assigned to different GPUs. Since the load on different Experts may vary depending on the current workload, maintaining load balance across GPUs is critical. DeepSeek-MoE addresses this …&lt;/p&gt;</summary><content type="html">&lt;h2&gt;Introduction&lt;/h2&gt;
 &lt;p&gt;In the previous &lt;a href="https://songhuiming.github.io/pages/2025/02/16/deepseek-v3/"&gt;Introduction to DeepSeek-V3&lt;/a&gt;, a crucial component highlighted was the use of DeepSeekMoE. When employing Expert Parallelism, different Experts are assigned to different GPUs. Since the load on different Experts may vary depending on the current workload, maintaining load balance across GPUs is critical. DeepSeek-MoE addresses this by replicating high-load Experts and optimizing load distribution to ensure that the load across GPUs/nodes is as balanced as possible. Replicated Experts are packed into GPUs to ensure load balancing between them. Additionally, as DeepSeek-V3 uses Node-limited routing, Experts from the same group are deployed on the same node whenever possible to minimize inter-node data communication.&lt;/p&gt;
@@ -17758,89 +18044,4 @@ Where:
 &lt;h3&gt;Reference&lt;/h3&gt;
 &lt;ol&gt;
 &lt;li&gt;&lt;a href="https://medium.com/all-of-us-are-belong-to-machines/gentlest-intro-to-tensorflow-4-logistic-regression-2afd0cabc54#.6erqpbxxl"&gt;Gentlest Intro to Tensorflow #4: Logistic Regression&lt;/a&gt;&lt;/li&gt;
-&lt;/ol&gt;</content><category term="Python"></category><category term="python"></category><category term="tensorflow"></category><category term="deep learning"></category></entry><entry><title>tensorflow简介--03</title><link href="/pages/2017/02/26/tensorflowjian-jie-03/" rel="alternate"></link><published>2017-02-26T22:03:00-06:00</published><updated>2017-02-26T22:03:00-06:00</updated><author><name>Huiming Song</name></author><id>tag:None,2017-02-26:/pages/2017/02/26/tensorflowjian-jie-03/</id><summary type="html">&lt;p&gt;经过前面介绍的单feature的线性模型，损失函数，梯度下降（part 1），epoch， learn-rate, 可变梯度下降(part 2)，我们可以继续介绍TF下面多特征(&lt;em&gt;multi-feature&lt;/em&gt;)的线性回归。&lt;/p&gt;</summary><content type="html">&lt;h2&gt;快速回顾&lt;/h2&gt;
-&lt;p&gt;前面两章的前提是：给定房屋面积作为feature，我们想预测房屋价格:&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;
-&lt;p&gt;我们找到一条直线(线性回归)来最好的拟合数据点。最好的线性回归拟合的意思是：真实值(灰色点)和预测值(灰色点在回归直线上的插值)的距离最小化。也就是那些蓝色线的值最小化。&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;用这条回归直线，对给定的房屋面积，我们可以预测对应的价格&lt;/p&gt;
-&lt;/li&gt;
-&lt;/ol&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p3_01.png"&gt;&lt;/p&gt;
-&lt;h2&gt;多特征(multi-feature)线性回归回顾&lt;/h2&gt;
-&lt;p&gt;实际当中，预测通常依赖于多个特征。所以我们要从单特征模型拓展到多特征模型。不失一般性，我们选择两个特征模型来可视化。这样既能保持简单，又可以推广到更多特征的情形。&lt;/p&gt;
-&lt;p&gt;我们引入一个新的特征，房间的数目(房屋里面房间的数目)。在收集数据的时候，我们需要新的特征房间数目，以及已经存在的特征，房屋面积，还有相应的房屋价格。&lt;/p&gt;
-&lt;p&gt;图形就是3-维的：&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p3_02.png"&gt;&lt;/p&gt;
-&lt;p&gt;我们的目标是给定房间数目，房屋面积，来预测房屋价格。&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p3_03.png"&gt;&lt;/p&gt;
-&lt;p&gt;在单特征假设下，我们要用线性回归来产生一条直线来预测房屋面积的结果。在2-维的情形下，我们同样可以做线性回归，只不过变成一个平面（而不是一条直线）。&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p3_04.png"&gt;&lt;/p&gt;
-&lt;h2&gt;多特征线性回归模型&lt;/h2&gt;
-&lt;p&gt;回忆一下单特征模型（下图左图），线性模型的结果(y)有一个系数(W),一个叫房屋面积的特征的placeholder(x)，以及截距b。&lt;/p&gt;
-&lt;p&gt;对一个2个特征的模型（下图右图），我们有一个新的系数(W2)，以及另外一个placeholder叫x2，用来表示房间的数量这个特征。&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p3_05.png"&gt;&lt;/p&gt;
-&lt;p&gt;当我们进行线性回归的时候，梯度下降帮助我们知道W2的值。&lt;/p&gt;
-&lt;h2&gt;TF实现多特征线性回归模型&lt;/h2&gt;
-&lt;h3&gt;快速回顾&lt;/h3&gt;
-&lt;p&gt;单特征的TF代码包含三个部分（见下图）：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;建立模型（蓝色部分）&lt;/li&gt;
-&lt;li&gt;构建基于模型的损失函数（红色部分）&lt;/li&gt;
-&lt;li&gt;用梯度下降来最小化损失函数（绿色部分）&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p3_06.png"&gt;&lt;/p&gt;
-&lt;h3&gt;TF求解两个特征的线性模型&lt;/h3&gt;
-&lt;p&gt;上面解释的两个特征的线性模型的TF代码表示成红色的颜色：&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p3_07.png"&gt;&lt;/p&gt;
-&lt;p&gt;请注意用这种办法来添加新的feature比较低效。随着特征的数量的增长，变量的数量（W）和placeholder的数量也相应的增长。现实当中的模型会有很多features，导致问题更加严重。我们怎么才能更高效的表示特征？&lt;/p&gt;
-&lt;h2&gt;使用矩阵来表示&lt;/h2&gt;
-&lt;p&gt;首先，我们推广一下从两个feature到n个feature的表示：&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p3_08.png"&gt;&lt;/p&gt;
-&lt;p&gt;用矩阵可以简化n个feature的表达式，TF内嵌了矩阵：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;数据可以表达成多维，这正好是我们需要的：把一个数据点用n个feature（下图左）和一个有n个系数（下图右，系数矩阵）的模型表达出来。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p3_09.png"&gt;&lt;/p&gt;
-&lt;p&gt;TF中，它们可以写为&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;x = tf.placeholder(tf.float, [1,n])
-W = tf.Variable(tf.zeros[n,1])
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;注意，我们用&lt;em&gt;tf.zeros&lt;/em&gt;来表示W，也就是说把W=(W1, W2, ..., Wn)全部初始化为0.&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;数学上矩阵相乘是对应的向量点的乘积的和。所以自然的，特征（下图中间）和系数（下图右边）的矩阵相乘就是我们想要的结果（下图左边）。这也就是上面描述的n个特征的线性回归表达式的第一部分（缺少了截距）.&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p3_10.png"&gt;&lt;/p&gt;
-&lt;p&gt;TF当中，这个相乘可以表示为&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;y = tf.matmul(x, W)
-&lt;/code&gt;&lt;/pre&gt;
-&lt;ul&gt;
-&lt;li&gt;一个多行的feature矩阵(每一行表示一个数据点的n个feature)乘以系数矩阵就得到多行的结果(每行表示一个数据点的结果)。所以通过矩阵相乘我们可以把线性回归模型表达成数据点的矩阵乘以系数矩阵。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;注意： feature矩阵的x的表达式会更加复杂，比如我们用x11，x12而不是x1 x2，这是因为feature矩阵(下图中间)已经从一个数据点的n个feature(1行乘以n列)的变成了m个数据点的n个feature(m行乘以n列)。&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p3_11.png"&gt;&lt;/p&gt;
-&lt;p&gt;TF中的表达形式为&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;x = tf.placeholder(tf.float, [m, n])
-W = tf.Variable(tf.zeros[n,1])
-y = tf.matmul(x, W)
-&lt;/code&gt;&lt;/pre&gt;
-&lt;ul&gt;
-&lt;li&gt;最后，在矩阵的每一行加一个常数项，就会在结果矩阵中加入常数项&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;在TF中，x和W已经表达成矩阵，不管有多少个feature或者多少个数据点，都可以简化为&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;b = tf.Variable(tf.zeros[1])
-y = tf.matmul(x, W) + b
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h2&gt;Tensorflow多特征备忘录&lt;/h2&gt;
-&lt;p&gt;我们做了一个比较的表格来总结从单feature到多feature的线性回归模型的变化&lt;/p&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/20170225_tensorflow_intro_p3_12.png"&gt;&lt;/p&gt;
-&lt;h2&gt;总结&lt;/h2&gt;
-&lt;p&gt;我们演示了多feature线性回归的概念，以及从单feature到多feature的TF代码。最后用一个速查表做了总结来展示怎么在TF中做多feature回归。&lt;/p&gt;
-&lt;h3&gt;下一步&lt;/h3&gt;
-&lt;p&gt;下一章会讨论logtistic回归，交叉熵(cross-entropy)，softmax，这样我们就能更好的明白Tensorflow关于MNIST的&lt;a href="https://www.tensorflow.org/versions/r0.11/tutorials/mnist/beginners/"&gt;官方初级教程&lt;/a&gt;。&lt;/p&gt;
-&lt;h3&gt;Reference&lt;/h3&gt;
-&lt;ol&gt;
-&lt;li&gt;&lt;a href="https://medium.com/all-of-us-are-belong-to-machines/gentlest-intro-to-tensorflow-part-3-matrices-multi-feature-linear-regression-30a81ebaaa6c#.r0w6hcjn2"&gt;Gentlest Intro to TensorFlow #3: Matrices &amp;amp; Multi-feature Linear Regression&lt;/a&gt;&lt;/li&gt;
 &lt;/ol&gt;</content><category term="Python"></category><category term="python"></category><category term="tensorflow"></category><category term="deep learning"></category></entry></feed>

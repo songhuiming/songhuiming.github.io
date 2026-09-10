@@ -2934,6 +2934,292 @@ output = einsum(&amp;quot;bsht,btc-&amp;gt;bshc&amp;quot;, scores, kv_cache[:bsz
     (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
     (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
 }
+&lt;/script&gt;</content><category term="python"></category><category term="python"></category><category term="AI"></category><category term="LLM"></category><category term="AIGC"></category><category term="DeepSeek"></category></entry><entry><title>MHA和MLA的KV cache比较</title><link href="/pages/2025/08/01/mhahe-mlade-kv-cachebi-jiao/" rel="alternate"></link><published>2025-08-01T00:00:00-05:00</published><updated>2025-08-01T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2025-08-01:/pages/2025/08/01/mhahe-mlade-kv-cachebi-jiao/</id><summary type="html">&lt;p&gt;&lt;img alt="KV cache 比较" src="/figures/20250801_kv_cache_compare.svg"&gt;&lt;/p&gt;
+&lt;h2&gt;Setup&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;Model: L layers, hidden dimension &lt;span class="math"&gt;\(d\)&lt;/span&gt; = 7168, num_heads &lt;span class="math"&gt;\(h\)&lt;/span&gt; = 128, head_dim &lt;span class="math"&gt;\(d_h\)&lt;/span&gt; = 128 (so &lt;span class="math"&gt;\(d = h × d_h\)&lt;/span&gt;, for deepseek V3 like setting)&lt;/li&gt;
+&lt;li&gt;MLA latent dimension: &lt;span class="math"&gt;\(d_c\)&lt;/span&gt; = 512 (compressed KV latent)&lt;/li&gt;
+&lt;li&gt;Sequence: tokens t₁, t₂, ..., t₁₀₀&lt;/li&gt;
+&lt;li&gt;Assume t₁ to t₉₉ are already cached (prefill done). Now we process t₁₀₀ (decode …&lt;/li&gt;&lt;/ul&gt;&lt;script type='text/javascript'&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width &lt; 768) ? "left" : align;
+        indent = (screen.width &lt; 768) ? "0em" : indent;
+        linebreak = (screen.width &lt; 768) ? 'true' : linebreak;
+    }
+
+    var mathjaxscript = document.createElement('script');
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript';
+    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-AMS-MML_HTMLorMML';
+
+    var configscript = document.createElement('script');
+    configscript.type = 'text/x-mathjax-config';
+    configscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js'], equationNumbers: { autoNumber: 'none' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    messageStyle: 'normal'," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        availableFonts: ['STIX', 'TeX']," +
+        "        preferredFont: 'STIX'," +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+&lt;/script&gt;</summary><content type="html">&lt;p&gt;&lt;img alt="KV cache 比较" src="/figures/20250801_kv_cache_compare.svg"&gt;&lt;/p&gt;
+&lt;h2&gt;Setup&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;Model: L layers, hidden dimension &lt;span class="math"&gt;\(d\)&lt;/span&gt; = 7168, num_heads &lt;span class="math"&gt;\(h\)&lt;/span&gt; = 128, head_dim &lt;span class="math"&gt;\(d_h\)&lt;/span&gt; = 128 (so &lt;span class="math"&gt;\(d = h × d_h\)&lt;/span&gt;, for deepseek V3 like setting)&lt;/li&gt;
+&lt;li&gt;MLA latent dimension: &lt;span class="math"&gt;\(d_c\)&lt;/span&gt; = 512 (compressed KV latent)&lt;/li&gt;
+&lt;li&gt;Sequence: tokens t₁, t₂, ..., t₁₀₀&lt;/li&gt;
+&lt;li&gt;Assume t₁ to t₉₉ are already cached (prefill done). Now we process t₁₀₀ (decode step).&lt;/li&gt;
+&lt;/ul&gt;
+&lt;hr&gt;
+&lt;h2&gt;Standard MHA: Step-by-step for t₁₀₀&lt;/h2&gt;
+&lt;h3&gt;Step 1: Embedding&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;x₁₀₀ = Embedding(t₁₀₀)    # shape: (d,) = (7168,)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Step 2: Layer 1&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;Compute Q, K, V for the new token:&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;q₁₀₀⁽¹⁾ = x₁₀₀ · W_Q⁽¹⁾     # (7168,) × (7168, 7168) → (7168,) i.e. (h × d_h)
+k₁₀₀⁽¹⁾ = x₁₀₀ · W_K⁽¹⁾     # (7168,) × (7168, 7168) → (7168,)
+v₁₀₀⁽¹⁾ = x₁₀₀ · W_V⁽¹⁾     # (7168,) × (7168, 7168) → (7168,)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;Concat with cached K, V from tokens 1~99:&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;K⁽¹⁾ = concat(KV_Cache_K⁽¹⁾, k₁₀₀⁽¹⁾)   # (99, 7168) + (1, 7168) → (100, 7168)
+V⁽¹⁾ = concat(KV_Cache_V⁽¹⁾, v₁₀₀⁽¹⁾)   # (99, 7168) + (1, 7168) → (100, 7168)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;Update cache:&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;KV_Cache_K⁽¹⁾ ← K⁽¹⁾    # now stores (100, 7168)
+KV_Cache_V⁽¹⁾ ← V⁽¹⁾    # now stores (100, 7168)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;Compute attention (per head, d_h = 128):&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;# Reshape to heads: Q → (h, 1, d_h), K → (h, 100, d_h), V → (h, 100, d_h)
+attn_weights = softmax(q₁₀₀⁽¹⁾ · K⁽¹⁾ᵀ / √d_h)   # (h, 1, 100)
+attn_output = attn_weights · V⁽¹⁾                     # (h, 1, d_h) → concat → (7168,)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;FFN:&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;h₁₀₀⁽¹⁾ = FFN(LayerNorm(attn_output + x₁₀₀))   # (7168,)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Step 3: Layer 2&lt;/h3&gt;
+&lt;p&gt;Same as Layer 1, but input is h₁₀₀⁽¹⁾:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;q₁₀₀⁽²⁾ = h₁₀₀⁽¹⁾ · W_Q⁽²⁾
+k₁₀₀⁽²⁾ = h₁₀₀⁽¹⁾ · W_K⁽²⁾
+v₁₀₀⁽²⁾ = h₁₀₀⁽¹⁾ · W_V⁽²⁾
+
+K⁽²⁾ = concat(KV_Cache_K⁽²⁾, k₁₀₀⁽²⁾)   # (100, 7168)
+V⁽²⁾ = concat(KV_Cache_V⁽²⁾, v₁₀₀⁽²⁾)   # (100, 7168)
+... (same attention + FFN) ...
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Step 4: Repeat for Layers 3 ~ L&lt;/h3&gt;
+&lt;p&gt;Each layer independently caches its own K and V.&lt;/p&gt;
+&lt;h3&gt;Step 5: Output&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;logits = h₁₀₀⁽ᴸ⁾ · W_head    # → vocabulary distribution
+t₁₀₁ = argmax(logits)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Cache Size (MHA)&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;Total cache = L × n × 2 × d
+            = L × 99 × 2 × 7168
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;For L=60, n=99:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;= 60 × 99 × 2 × 7168 = 85,155,840 parameters (per sequence)
+≈ 85M × 2 bytes (FP16) ≈ 162 MB
+&lt;/code&gt;&lt;/pre&gt;
+&lt;hr&gt;
+&lt;h2&gt;MLA (Multi-head Latent Attention): Step-by-step for t₁₀₀&lt;/h2&gt;
+&lt;h3&gt;Step 1: Embedding&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;x₁₀₀ = Embedding(t₁₀₀)    # shape: (d,) = (7168,)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Step 2: Layer 1&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;Down-project to compressed latent (for KV):&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;c₁₀₀⁽¹⁾ = x₁₀₀ · W_DKV⁽¹⁾    # (7168,) × (7168, 512) → (512,)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;Compute Q separately:&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;q₁₀₀⁽¹⁾ = x₁₀₀ · W_Q⁽¹⁾      # (7168,) × (7168, 7168) → (7168,)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;Update latent cache (only store c, NOT full K,V):&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;Latent_Cache⁽¹⁾ ← concat(Latent_Cache⁽¹⁾, c₁₀₀⁽¹⁾)   # (99, 512) + (1, 512) → (100, 512)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;Up-project ALL cached latents to K, V (on-the-fly):&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;K⁽¹⁾ = Latent_Cache⁽¹⁾ · W_UK⁽¹⁾    # (100, 512) × (512, 7168) → (100, 7168)
+V⁽¹⁾ = Latent_Cache⁽¹⁾ · W_UV⁽¹⁾    # (100, 512) × (512, 7168) → (100, 7168)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;Compute attention (same as MHA from here):&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;attn_weights = softmax(q₁₀₀⁽¹⁾ · K⁽¹⁾ᵀ / √d_h)   # (h, 1, 100)
+attn_output = attn_weights · V⁽¹⁾                     # → (7168,)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;FFN:&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;h₁₀₀⁽¹⁾ = FFN(LayerNorm(attn_output + x₁₀₀))   # (7168,)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Step 3: Layer 2&lt;/h3&gt;
+&lt;p&gt;Same structure, input is h₁₀₀⁽¹⁾:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;c₁₀₀⁽²⁾ = h₁₀₀⁽¹⁾ · W_DKV⁽²⁾    # → (512,)
+q₁₀₀⁽²⁾ = h₁₀₀⁽¹⁾ · W_Q⁽²⁾      # → (7168,)
+
+Latent_Cache⁽²⁾ ← concat(Latent_Cache⁽²⁾, c₁₀₀⁽²⁾)  # (100, 512)
+
+K⁽²⁾ = Latent_Cache⁽²⁾ · W_UK⁽²⁾    # (100, 7168)
+V⁽²⁾ = Latent_Cache⁽²⁾ · W_UV⁽²⁾    # (100, 7168)
+... (attention + FFN) ...
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Step 4: Repeat for Layers 3 ~ L&lt;/h3&gt;
+&lt;h3&gt;Step 5: Output&lt;/h3&gt;
+&lt;p&gt;Same as MHA.&lt;/p&gt;
+&lt;h3&gt;Cache Size (MLA)&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;Total cache = L × n × d_c
+            = L × 99 × 512
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;For L=60, n=99:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;= 60 × 99 × 512 = 3,041,280 parameters (per sequence)
+≈ 3M × 2 bytes (FP16) ≈ 5.8 MB
+&lt;/code&gt;&lt;/pre&gt;
+&lt;hr&gt;
+&lt;h2&gt;Side-by-side Comparison&lt;/h2&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;&lt;/th&gt;
+&lt;th&gt;&lt;strong&gt;Standard MHA&lt;/strong&gt;&lt;/th&gt;
+&lt;th&gt;&lt;strong&gt;MLA&lt;/strong&gt;&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;What is cached per token per layer&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;k (7168) + v (7168) = 14,336&lt;/td&gt;
+&lt;td&gt;c (512)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Cache size per token per layer&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;2 × d = 14,336&lt;/td&gt;
+&lt;td&gt;d_c = 512&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Compression ratio&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;1× (baseline)&lt;/td&gt;
+&lt;td&gt;d_c / (2d) = 512/14336 ≈ &lt;strong&gt;1/28&lt;/strong&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Total cache (L=60, n=99)&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;~162 MB&lt;/td&gt;
+&lt;td&gt;~5.8 MB&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Extra compute at decode&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;None&lt;/td&gt;
+&lt;td&gt;Up-project c → K, V per step&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;strong&gt;Accuracy trade-off&lt;/strong&gt;&lt;/td&gt;
+&lt;td&gt;Full rank&lt;/td&gt;
+&lt;td&gt;Low-rank approximation (minimal loss in practice)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;hr&gt;
+&lt;h2&gt;Key Insight&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;MHA&lt;/strong&gt; caches the full K and V vectors for every token at every layer. This grows linearly with sequence length and is the main memory bottleneck for long-context inference.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;MLA&lt;/strong&gt; compresses the KV information into a much smaller latent vector c via a learned down-projection &lt;span class="math"&gt;\(W_{DKV}\)&lt;/span&gt; (see &lt;a href="https://songhuiming.github.io/pages/2025/03/20/deepseek-v3-multi-head-latent-attention-mla/"&gt;blog before&lt;/a&gt;). At attention time, it reconstructs K and V by up-projecting c with &lt;span class="math"&gt;\(W_{UK}\)&lt;/span&gt; and &lt;span class="math"&gt;\(W_{UV}\)&lt;/span&gt;. The trade-off is a small amount of extra compute (matrix multiply for up-projection) in exchange for &lt;strong&gt;~28× less cache memory&lt;/strong&gt;.&lt;/p&gt;
+&lt;p&gt;This is why DeepSeek V3 can handle much longer contexts with the same GPU memory budget.&lt;/p&gt;
+&lt;hr&gt;
+&lt;h2&gt;Note on Actual Implementation&lt;/h2&gt;
+&lt;p&gt;In practice, DeepSeek V3's MLA also handles the Q side with compression (down-project then up-project for Q as well), and uses RoPE (Rotary Position Embedding) on a separate small portion of the key. The above is simplified to show the core KV cache difference.&lt;/p&gt;
+&lt;script type="text/javascript"&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width &lt; 768) ? "left" : align;
+        indent = (screen.width &lt; 768) ? "0em" : indent;
+        linebreak = (screen.width &lt; 768) ? 'true' : linebreak;
+    }
+
+    var mathjaxscript = document.createElement('script');
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript';
+    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-AMS-MML_HTMLorMML';
+
+    var configscript = document.createElement('script');
+    configscript.type = 'text/x-mathjax-config';
+    configscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js'], equationNumbers: { autoNumber: 'none' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    messageStyle: 'normal'," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        availableFonts: ['STIX', 'TeX']," +
+        "        preferredFont: 'STIX'," +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
 &lt;/script&gt;</content><category term="python"></category><category term="python"></category><category term="AI"></category><category term="LLM"></category><category term="AIGC"></category><category term="DeepSeek"></category></entry><entry><title>DeepSeek Expert Parallelism Load Balancer (EPLB) Code Reading</title><link href="/pages/2025/04/20/deepseek-expert-parallelism-load-balancer-eplb-code-reading/" rel="alternate"></link><published>2025-04-20T00:00:00-05:00</published><updated>2025-04-20T00:00:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2025-04-20:/pages/2025/04/20/deepseek-expert-parallelism-load-balancer-eplb-code-reading/</id><summary type="html">&lt;h2&gt;Introduction&lt;/h2&gt;
 &lt;p&gt;In the previous &lt;a href="https://songhuiming.github.io/pages/2025/02/16/deepseek-v3/"&gt;Introduction to DeepSeek-V3&lt;/a&gt;, a crucial component highlighted was the use of DeepSeekMoE. When employing Expert Parallelism, different Experts are assigned to different GPUs. Since the load on different Experts may vary depending on the current workload, maintaining load balance across GPUs is critical. DeepSeek-MoE addresses this …&lt;/p&gt;</summary><content type="html">&lt;h2&gt;Introduction&lt;/h2&gt;
 &lt;p&gt;In the previous &lt;a href="https://songhuiming.github.io/pages/2025/02/16/deepseek-v3/"&gt;Introduction to DeepSeek-V3&lt;/a&gt;, a crucial component highlighted was the use of DeepSeekMoE. When employing Expert Parallelism, different Experts are assigned to different GPUs. Since the load on different Experts may vary depending on the current workload, maintaining load balance across GPUs is critical. DeepSeek-MoE addresses this by replicating high-load Experts and optimizing load distribution to ensure that the load across GPUs/nodes is as balanced as possible. Replicated Experts are packed into GPUs to ensure load balancing between them. Additionally, as DeepSeek-V3 uses Node-limited routing, Experts from the same group are deployed on the same node whenever possible to minimize inter-node data communication.&lt;/p&gt;
@@ -15863,377 +16149,4 @@ $$&lt;/div&gt;
     (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
     (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
 }
-&lt;/script&gt;</content><category term="Python"></category><category term="python"></category></entry><entry><title>convolve, correlate and image process in numpy</title><link href="/pages/2017/04/16/convolve-correlate-and-image-process-in-numpy/" rel="alternate"></link><published>2017-04-16T22:03:00-05:00</published><updated>2017-04-16T22:03:00-05:00</updated><author><name>Huiming Song</name></author><id>tag:None,2017-04-16:/pages/2017/04/16/convolve-correlate-and-image-process-in-numpy/</id><summary type="html">&lt;p&gt;convolution matrix is the most import conception in cnn. Here is a simple introduction of convolve, correlate and some image processing basic techs in numpy.&lt;/p&gt;</summary><content type="html">&lt;pre&gt;&lt;code class="language-python"&gt;%matplotlib inline
-import math,sys,os,numpy as np, pandas as pd
-from numpy.linalg import norm
-from PIL import Image
-from matplotlib import pyplot as plt, rcParams, rc
-from scipy.ndimage import imread
-from skimage.measure import block_reduce
-import cPickle as pickle
-from scipy.ndimage.filters import correlate, convolve
-from ipywidgets import interact, interactive, fixed
-from ipywidgets.widgets import *
-rc('animation', html='html5')
-rcParams['figure.figsize'] = 3, 6
-%precision 4
-np.set_printoptions(precision=4, linewidth=100)
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h2&gt;1. convolve and correlate in numpy&lt;/h2&gt;
-&lt;h3&gt;1.1. convolve of two vectors&lt;/h3&gt;
-&lt;p&gt;The convolution of two vectors, u and v, represents the area of overlap under the points as v slides across u. Algebraically, convolution is the same operation as multiplying polynomials whose coefficients are the elements of u and v.&lt;/p&gt;
-&lt;p&gt;Let m = length(u) and n = length(v) . Then w is the vector of length m+n-1 whose kth element is
-&lt;span class="math"&gt;\(w(k)=\sum_j u(j)v(k−j+1)\)&lt;/span&gt;.&lt;/p&gt;
-&lt;p&gt;The sum is over all the values of j that lead to legal subscripts for u(j) and v(k-j+1), specifically j = max(1,k+1-n):1:min(k,m). When m = n, this gives&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;w(1) = u(1)*v(1)
-w(2) = u(1)*v(2)+u(2)*v(1)
-w(3) = u(1)*v(3)+u(2)*v(2)+u(3)*v(1)
-...
-w(n) = u(1)*v(n)+u(2)*v(n-1)+ ... +u(n)*v(1)
-...
-w(2*n-1) = u(n)*v(n)
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;np.convolve([1,2], [3,4,5])
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;array([ 3, 10, 13, 10])
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;3 = 1 * 3
-10 = 1 * 4 + 2 * 3
-13 = 1 * 5 + 2 * 4
-10 = 2 * 5
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;convolve([1,2], [3,4,5])
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;array([15, 19])
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;1.2. correlate of two vectors&lt;/h3&gt;
-&lt;pre&gt;&lt;code&gt;c_{av}[k] = sum_n a[n+k] * conj(v[n])
-
-The definition of correlation above is not unique and sometimes correlation may be defined differently. Another common definition is:
-
-c'_{av}[k] = sum_n a[n] conj(v[n+k])
-which is related to c_{av}[k] by c'_{av}[k] = c_{av}[-k].
-
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;code&gt;numpy.correlate(a, v, mode='valid', old_behavior=False)[source]&lt;/code&gt;&lt;/p&gt;
-&lt;p&gt;Cross-correlation of two 1-dimensional sequences.&lt;/p&gt;
-&lt;p&gt;This function computes the correlation as generally defined in signal processing texts:
-     &lt;code&gt;z[k] = sum_n a[n] * conj(v[n+k])&lt;/code&gt;
-  with a and v sequences being zero-padded where necessary and conj being the conjugate.&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;np.correlate([1,2,3], [4,5,6], mode = 'full')
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;array([ 6, 17, 32, 23, 12])
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt; 0 lag: 32 = 1 * 4 + 2 * 5 + 3 * 6
- 1 lag: 23 = 2 * 4 + 3 * 5
- 2 lag: 12 = 3 * 4
--1 lag: 17 = 1 * 5 + 2 * 6
--2 lag: 6 = 1 * 6
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;correlate([1,2,3], [4,5,6])
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;array([21, 32, 41])
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;np.correlate([1,2], [3,4,5], mode = 'full')
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;array([ 5, 14, 11,  6])
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt; 0 lag: not same length, not available
- 1 lag: 11 = 1 *3 + 2 * 4
- 2 lag:  6 = 2 * 3
--1 lag: 14 = 1 * 4 + 2 * 5
--2 lag:  5 = 1 * 5
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h2&gt;2. read and plot image in matplotlib&lt;/h2&gt;
-&lt;h3&gt;2.1. Color image&lt;/h3&gt;
-&lt;p&gt;&lt;a href="https://en.wikipedia.org/wiki/Channel_(digital_image)"&gt;An image from a standard digital camera will have a red, green and blue channel(RGB)&lt;/a&gt;. A &lt;a href="https://en.wikipedia.org/wiki/Grayscale"&gt;grayscale&lt;/a&gt; image has just one channel.&lt;/p&gt;
-&lt;p&gt;So if a color image is read in, the data will have three dimensions: width, height and chanels. And number of chanels(the 3rd dimension) all the time is three. For a grayscale image, the number of chanels will be one.&lt;/p&gt;
-&lt;p&gt;For example, the following Cherry blossom will have dimension of (, , ) and the third dimension is 3.&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;# read in an image and show the image inline
-im = plt.imread(&amp;quot;heben.jpg&amp;quot;)#r&amp;quot;Vd-Orig.png&amp;quot;) 
-print im.shape
-plt.imshow(im)
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;(213L, 237L, 3L)
-
-
-
-
-
-&amp;lt;matplotlib.image.AxesImage at 0x13775860&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/output_12_2.png"&gt;&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;im[:10, :10, 1]
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;array([[247, 247, 247, 247, 247, 247, 247, 247, 249, 249],
-       [247, 247, 247, 247, 247, 247, 247, 247, 249, 249],
-       [248, 248, 248, 248, 248, 248, 248, 248, 249, 249],
-       [248, 248, 248, 248, 248, 248, 248, 248, 249, 249],
-       [249, 249, 249, 249, 249, 249, 249, 249, 249, 249],
-       [249, 249, 249, 249, 249, 249, 249, 249, 249, 249],
-       [249, 249, 249, 249, 249, 249, 249, 249, 249, 249],
-       [250, 250, 250, 250, 250, 250, 250, 250, 249, 249],
-       [248, 248, 248, 248, 248, 248, 248, 248, 248, 248],
-       [248, 248, 248, 248, 248, 248, 248, 248, 248, 248]], dtype=uint8)
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;We can also only show one chanel of the image. For example, the following is only the 3rd chanel of the image.&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;# only show the third chanel (index 2)
-plt.imshow(im[:, :, [0,0,0]].astype(dtype=&amp;quot;uint8&amp;quot;))
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;&amp;lt;matplotlib.image.AxesImage at 0x1971e898&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/output_15_1.png"&gt;&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;plt.imshow(im[:, :, 2].astype(dtype=&amp;quot;uint8&amp;quot;))
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;&amp;lt;matplotlib.image.AxesImage at 0x163bca58&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/output_16_1.png"&gt;&lt;/p&gt;
-&lt;p&gt;Another useful method is to plot the red(or green, blue) chanel only in the graph. To do that, we will keep only that chanel data, and set the rest of the chanel as 0.&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;tmp_im = np.zeros(im.shape)
-tmp_im[:, :, 0] = im[:, :, 0]
-plt.imshow(tmp_im)
-tmp_im[:3, :3, :]
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;array([[[ 247.,    0.,    0.],
-        [ 247.,    0.,    0.],
-        [ 247.,    0.,    0.]],
-
-       [[ 247.,    0.,    0.],
-        [ 247.,    0.,    0.],
-        [ 247.,    0.,    0.]],
-
-       [[ 248.,    0.,    0.],
-        [ 248.,    0.,    0.],
-        [ 248.,    0.,    0.]]])
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/output_18_1.png"&gt;&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;def plti(im, **kwargs):
-    plt.imshow(im, interpolation=&amp;quot;none&amp;quot;, **kwargs)
-    plt.axis('off') # turn off axis
-    plt.show()  
-
-im = im[:, :, :]  # slice
-plti(im)
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/output_19_0.png"&gt;&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(15,5)) 
-
-for c, ax in zi//figures/[png](/figures/range(3), axs):  
-    tmp_im = np.zeros(im.shape) 
-    tmp_im[:,:,c] = im[:,:,c] 
-    one_channel = im[:,:,c].flatte//figures/[png](/figures/) 
-    print(&amp;quot;channel&amp;quot;, c, &amp;quot; max = &amp;quot;, max(one_channel), &amp;quot;min = &amp;quot;, mi//figures/[png](/figures/one_channel))  
-    ax.imshow(tmp_im)  
-    ax.set_axis_off() 
-plt.show()
-
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;('channel', 0, ' max = ', 255, 'min = ', 15)
-('channel', 1, ' max = ', 255, 'min = ', 1)
-('channel', 2, ' max = ', 255, 'min = ', 0)
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/output_20_1.png"&gt;&lt;/p&gt;
-&lt;h3&gt;2.2. Grayscale image&lt;/h3&gt;
-&lt;p&gt;To convert a color image to grayscale, the 3 chanels data of RGB will be weighted sumed to one dimension. The weights is the average of the 3 chanels data by &lt;code&gt;np.mea//figures/[png](/figures/im, axis = (0, 1))&lt;/code&gt;. &lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;im_mean = np.mea//figures/[png](/figures/im, axis = (0, 1))
-print im_mean / sum(im_mean)
-
-def to_grayscale(im, weights = np.c_[0.3445, 0.3081, 0.3474]):
-    &amp;quot;&amp;quot;&amp;quot;
-    Transforms a colour image to a greyscale image by
-    taking the mean of the RGB values, weighted
-    by the matrix weights
-    &amp;quot;&amp;quot;&amp;quot;
-    tile = np.tile(weights, reps=(im.shape[0], im.shape[1], 1))
-    return np.sum(tile * im, axis=2)
-
-img = to_grayscale(im, np.c_[0.3957, 0.325, 0.2793])
-
-plti(img, cmap='Greys')
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;[ 0.4002  0.3167  0.2831]
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/output_22_1.png"&gt;&lt;/p&gt;
-&lt;h2&gt;3. Convolve over image&lt;/h2&gt;
-&lt;p&gt;In image processing, &lt;a href="https://en.wikipedia.org/wiki/Kernel_(image_processing)"&gt;convolution matrix&lt;/a&gt; is a matrix that each element will be multiplied by the part of the matrix that is been convolved. &lt;/p&gt;
-&lt;p&gt;For example, matrix A is of dimension 10*10,  matrix B which is the conversion matrix of dimension 3 * 3. The convolution of B over A means for each 3 * 3 subset in A(or maybe zero padding of A), do the elementwise multiply between the subset and B, then the sum of the multiply will be the corresponding element in the output matrix. More details will be introduced later.&lt;/p&gt;
-&lt;p&gt;There will be some corresponding question when we do the above calculation: 1. how to pick the dimension of B? 2. How many stride shall we skip when selecting the subset? 3. what kind of zero-padding shall be used? These questions will be answered later.&lt;/p&gt;
-&lt;p&gt;The following is an example of convolution matrix called window with shape 5 * 5, with all elements equal and the sum is 1.Since its weights are all the same, this will mask the image.  &lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;### convolve to mask the image
-
-from scipy.signal import convolve2d
-from scipy.ndimage.interpolation import zoom
-
-im_small = zoom(im, (0.1, 0.1, 1))
-
-def convolve_all_colours(im, window):
-    &amp;quot;&amp;quot;&amp;quot;
-    Convolves im with window, over all three colour channels
-    &amp;quot;&amp;quot;&amp;quot;
-    ims = []
-    for d in range(3):
-        im_conv_d = convolve2d(im[:,:,d], window, mode=&amp;quot;same&amp;quot;, boundary=&amp;quot;symm&amp;quot;)
-        ims.append(im_conv_d)
-
-    im_conv = np.stack(ims, axis=2).astype(&amp;quot;uint8&amp;quot;)
-
-    return im_conv
-
-n = 5
-window = np.ones((n,n))
-window /= np.sum(window)
-plti(convolve_all_colours(im_small, window))
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/output_24_0.png"&gt;&lt;/p&gt;
-&lt;p&gt;Some more interesting convolution matrix: edge detection&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;from numpy import *
-import scipy
-from scipy import misc, ndimage
-
-def detect_edges(image,masks):
-    edges=zeros(image.shape)
-    for mask in masks:
-        edges=maximum(scipy.ndimage.convolve(image, mask), edges)
-    return edges
-
-image=plt.imread(&amp;quot;lenna.png&amp;quot;)
-
-Faler=[ [[-1,0,1],[-1,0,1],[-1,0,1]], 
-        [[1,1,1],[0,0,0],[-1,-1,-1]],
-    [[-1,-1,-1],[-1,8,-1],[-1,-1,-1]],
-    [[0,1,0],[-1,0,1],[0,-1,0]] ]
-
-edges=detect_edges(image, Faler)
-plt.imshow(edges)
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;&amp;lt;matplotlib.image.AxesImage at 0x1be16f28&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/output_26_1.png"&gt;&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;plt.imshow(correlate(im[:, :, 0], [[1, 0, -1], [0,0,0], [-1,0,1]]))
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;&amp;lt;matplotlib.image.AxesImage at 0x1b7a9908&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/output_27_1.png"&gt;&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;plt.imshow(correlate(im[:, :, 0], [[-1, -1, -1], [1,1,1], [0,0,0]]))
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;&amp;lt;matplotlib.image.AxesImage at 0x132a69e8&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/output_28_1.png"&gt;&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;plt.imshow(correlate(im[:, :, 0], [[-1, -1, -1], [-1,8,-1], [-1,-1,-1]]))
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;&amp;lt;matplotlib.image.AxesImage at 0x1233a320&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/output_29_1.png"&gt;&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;im1 = correlate(im[:, :, 2], [[1, 1, 0], [1,0,1], [0, -1, -1]])
-im2 = convolve(im[:, :, 2], np.rot90([[1, 1, 0], [1,0,1], [0, -1, -1]],2))
-
-print np.allclose(im1, im2)
-
-plt.imshow(im1) 
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;True
-
-
-
-
-
-&amp;lt;matplotlib.image.AxesImage at 0xf6fa860&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/output_30_2.png"&gt;&lt;/p&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;plt.imshow(im2)   
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;&amp;lt;matplotlib.image.AxesImage at 0x10505470&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/output_31_1.png"&gt;&lt;/p&gt;
-&lt;h3&gt;Reference&lt;/h3&gt;
-&lt;ol&gt;
-&lt;li&gt;&lt;a href="http://www.degeneratestate.org/posts/2016/Oct/23/image-processing-with-numpy/"&gt;image processing with numpy&lt;/a&gt;&lt;/li&gt;
-&lt;/ol&gt;
-&lt;pre&gt;&lt;code class="language-python"&gt;from scipy import signal
-from scipy import misc
-print ascent.shape
-scharr = np.array([[ -3-3j, 0-10j,  +3 -3j],
-                   [-10+0j, 0+ 0j, +10 +0j],
-                   [ -3+3j, 0+10j,  +3 +3j]]) # Gx + j*Gy
-grad = signal.convolve2d(ascent, scharr, boundary='symm', mode='same')
-
-
-
-import matplotlib.pyplot as plt
-fig, (ax_orig, ax_mag, ax_ang) = plt.subplots(3, 1, figsize=(6, 15))
-ax_orig.imshow(ascent, cmap='gray')
-ax_orig.set_title('Original')
-ax_orig.set_axis_off()
-ax_mag.imshow(np.absolute(grad), cmap='gray')
-ax_mag.set_title('Gradient magnitude')
-ax_mag.set_axis_off()
-ax_ang.imshow(np.angle(grad), cmap='hsv') # hsv is cyclic, like angles
-ax_ang.set_title('Gradient orientation')
-ax_ang.set_axis_off()
-fig.show()
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;(512L, 512L)
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img alt="png" src="/figures/output_33_1.png"&gt;&lt;/p&gt;
-&lt;script type="text/javascript"&gt;if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
-    var align = "center",
-        indent = "0em",
-        linebreak = "false";
-
-    if (false) {
-        align = (screen.width &lt; 768) ? "left" : align;
-        indent = (screen.width &lt; 768) ? "0em" : indent;
-        linebreak = (screen.width &lt; 768) ? 'true' : linebreak;
-    }
-
-    var mathjaxscript = document.createElement('script');
-    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
-    mathjaxscript.type = 'text/javascript';
-    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-AMS-MML_HTMLorMML';
-
-    var configscript = document.createElement('script');
-    configscript.type = 'text/x-mathjax-config';
-    configscript[(window.opera ? "innerHTML" : "text")] =
-        "MathJax.Hub.Config({" +
-        "    config: ['MMLorHTML.js']," +
-        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js'], equationNumbers: { autoNumber: 'none' } }," +
-        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
-        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
-        "    displayAlign: '"+ align +"'," +
-        "    displayIndent: '"+ indent +"'," +
-        "    showMathMenu: true," +
-        "    messageStyle: 'normal'," +
-        "    tex2jax: { " +
-        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
-        "        displayMath: [ ['$$','$$'] ]," +
-        "        processEscapes: true," +
-        "        preview: 'TeX'," +
-        "    }, " +
-        "    'HTML-CSS': { " +
-        "        availableFonts: ['STIX', 'TeX']," +
-        "        preferredFont: 'STIX'," +
-        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
-        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
-        "    }, " +
-        "}); " +
-        "if ('default' !== 'default') {" +
-            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
-                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
-                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
-                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
-                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
-                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
-            "});" +
-            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
-                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
-                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
-                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
-                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
-                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
-            "});" +
-        "}";
-
-    (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
-    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
-}
-&lt;/script&gt;</content><category term="python"></category><category term="python"></category><category term="numpy"></category></entry></feed>
+&lt;/script&gt;</content><category term="Python"></category><category term="python"></category></entry></feed>
