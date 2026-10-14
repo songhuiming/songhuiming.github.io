@@ -1,0 +1,2382 @@
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>开源大语言模型的长上下文注意力机制综述：从 Softmax Attention 到稀疏、压缩与线性记忆 &mdash; pydata: Huiming's learning notes</title>
+  <meta name="author" content="shm">
+
+
+
+
+
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+    <link href="/favicon.png" rel="icon">
+
+  <link href="/theme/css/main.css" media="screen, projection"
+        rel="stylesheet" type="text/css">
+
+  <link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic"
+        rel="stylesheet" type="text/css">
+  <link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic"
+        rel="stylesheet" type="text/css">
+</head>
+
+<body>
+  <header role="banner"><header>
+  <h1><a href="/">pydata: Huiming's learning notes</a></h1>
+    <h2>Keep Looking, Don't Settle</h2>
+</header>
+
+<script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],  // 允许 $...$ 和 \( ... \) 作为行内公式
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],  // 允许 $$...$$ 和 \[ ... \] 作为块级公式
+    processEscapes: true,  // 允许在公式中使用转义符，如 \$ 表示美元符号
+    processEnvironments: true  // 允许解析 \begin{equation} ... \end{equation} 等数学环境
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre'],  // 跳过某些 HTML 标签，防止错误解析
+    renderActions: {
+      addMenu: []  // 移除右键菜单
+    }
+  }
+};
+
+window.addEventListener('load', () => {
+  document.querySelectorAll("mjx-container").forEach(x => {
+    x.parentElement.classList.add('has-jax');  // 使用 classList.add() 避免字符串拼接错误
+  });
+});
+</script>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script></header>
+  <nav role="navigation">
+
+<form action="https://www.google.com/search" method="get">
+    <fieldset role="search">
+       <input type="hidden" name="q" value="site:songhuiming.github.io" />
+       <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+    </fieldset>
+</form>
+
+
+<ul class="main-navigation">
+    <li><a href="/functions/archives.html">Archives</a></li>
+      <li >
+        <a href="/category/career-growth.html">Career growth</a>
+      </li>
+      <li >
+        <a href="/category/linux.html">Linux</a>
+      </li>
+      <li class="active">
+        <a href="/category/python.html">Python</a>
+      </li>
+      <li >
+        <a href="/category/rthers.html">Rthers</a>
+      </li>
+</ul></nav>
+  <div id="main">
+    <div id="content">
+<div>
+  <article class="hentry" role="article">
+<header>
+      <h1 class="entry-title">开源大语言模型的长上下文注意力机制综述：从 Softmax Attention 到稀疏、压缩与线性记忆</h1>
+    <p class="meta">
+<time datetime="2026-10-10T00:00:00-05:00" pubdate>Sat 10 October 2026</time>    </p>
+</header>
+
+  <div class="entry-content"><p><img alt="roadmap" src="/figures/20261010_survey_attention__taxonomy.svg"></p>
+<blockquote>
+<p><strong>摘要.</strong> 2023 年开源大语言模型（LLM）的上下文窗口普遍为 4K–8K tokens，2024 年进入 128K，到 2025–2026 年，DeepSeek-V4、MiniMax-M3、Kimi Linear、Qwen3.5 等模型已经把原生或可用上下文推到 1M tokens 量级。推动这一变化的主要是 agentic 工作负载：长工具调用轨迹、仓库级代码理解、多轮强化学习 rollout 都需要模型在数十万到上百万 token 上进行推理。标准 softmax attention 在这个尺度上有三个根本问题：<strong>预填充计算随 <span class="math">\(N^2\)</span> 增长</strong>，<strong>解码时的 KV cache 显存与带宽随 <span class="math">\(N\)</span> 线性增长</strong>，以及<strong>训练长度之外的位置泛化和注意力稀释</strong>。本文用一套统一的数学符号，从原始 attention 出发推导这些问题，再按“问题 → 解法”梳理开源模型采用的八个技术方向：(A) IO 感知的精确注意力；(B) 位置编码与长度外推；(C) 沿<strong>宽度</strong>压缩 KV（MQA/GQA/MLA）；(D) 静态稀疏与局部-全局交错（SWA、attention sink、chunked attention）；(E) 内容相关的动态稀疏（MoBA、NSA、DSA、MSA）；(F) 沿<strong>序列长度</strong>压缩 KV（NSA 压缩分支、DeepSeek-V4 的 CSA/HCA）；(G) 线性注意力与状态空间记忆（Linear Attention → Mamba-2/GLA → DeltaNet → Gated DeltaNet → KDA）；(H) 层间混合架构。我们提出一个“记忆写入—读取”统一框架，把所有方法写成同一个公式的不同特例，并给出复杂度、KV cache、代表模型与训练配方的横向比较。</p>
+</blockquote>
+<hr>
+<h2>目录</h2>
+<ol>
+<li>引言</li>
+<li>统一符号与预备知识</li>
+<li>长上下文下标准注意力的问题</li>
+<li>方向 A：IO 感知的精确注意力</li>
+<li>方向 B：位置编码与长度外推</li>
+<li>方向 C：降低每个 token 的 KV 大小——MQA、GQA 与 MLA</li>
+<li>方向 D：静态稀疏与局部-全局交错注意力</li>
+<li>方向 E：内容相关的动态稀疏注意力</li>
+<li>方向 F：序列维 KV 压缩——DeepSeek-V4 的 CSA 与 HCA</li>
+<li>方向 G：线性注意力与固定大小记忆</li>
+<li>方向 H：混合架构</li>
+<li>数值稳定性与训练技术</li>
+<li>长上下文训练配方</li>
+<li>对比</li>
+<li>讨论与展望</li>
+<li>参考文献</li>
+</ol>
+<hr>
+<h2>1 引言</h2>
+<h3>1.1 背景</h3>
+<p>Transformer [Vaswani et al., 2017] 的自注意力让每个 token 和所有历史 token 直接两两交互，因此能做精确的长程检索；这一点与可并行训练一起，是它取代 RNN 的主要原因。但两两交互意味着两件事：</p>
+<ol>
+<li><strong>训练/预填充（prefill）</strong>：长度为 <span class="math">\(N\)</span> 的序列要计算 <span class="math">\(N\times N\)</span> 的打分矩阵，计算量为 <span class="math">\(O(N^2)\)</span>。</li>
+<li><strong>自回归解码（decode）</strong>：每生成一个 token，都要读取全部历史 key/value。KV cache 的大小和单步读取量都是 <span class="math">\(O(N)\)</span>。</li>
+</ol>
+<p>上下文从 4K 增长到 1M（<span class="math">\(250\times\)</span>）时，第 1 项的代价增长 <span class="math">\(62{,}500\times\)</span>，第 2 项增长 <span class="math">\(250\times\)</span>。在 1M 量级，即使模型只有几十 B 激活参数，注意力也会成为计算、显存和延迟的主导项（第 3 节给出定量分析）。</p>
+<p>开源社区的应对没有统一到某一种 attention。2026 年 1 月底到 2 月中旬的三周内，四家主要实验室发布的旗舰模型分别使用了<strong>四种不同的注意力</strong>：GLM-5 用 MLA + DSA（稀疏），Qwen3.5 用 Gated DeltaNet 与 Gated Attention 的 3:1 混合（线性 + 全注意力），Kimi K2.5 用 MLA（全注意力），MiniMax-M2.5 用标准全注意力。几个月后，DeepSeek-V4 用 CSA/HCA（序列压缩 + 稀疏）把上下文推到 1M，MiniMax-M3 则从全注意力转向了块稀疏的 MSA。这种分化正是本文要梳理的对象。</p>
+<h3>1.2 主要贡献</h3>
+<ul>
+<li><strong>统一符号</strong>：所有方法共用一套记号（第 2.1 节），避免不同论文中 <span class="math">\(c\)</span>、<span class="math">\(k\)</span>、<span class="math">\(m\)</span>、<span class="math">\(G\)</span> 等符号含义冲突。</li>
+<li><strong>统一框架</strong>：把每一层 attention 看作一个“记忆”<span class="math">\(\mathcal{M}_t\)</span> 的写入与读取，用四个设计维度（可见集合、KV 条目表示、KV 条目数量、读出函数）给所有方法定位（第 2.4 节）。</li>
+<li><strong>问题驱动</strong>：先定量分析标准 attention 在长上下文下的六类问题（第 3 节），再说明每个方向分别解决哪个问题、引入了什么新问题，以及这些新问题如何引出下一个方向。</li>
+<li><strong>完整推导</strong>：给出 online softmax 合并、RoPE 外推、MLA 权重吸收、NSA/DSA/MSA 的两阶段选择与 KL 蒸馏、CSA 的重叠压缩与输出端 RoPE、Delta 规则的在线学习解释与 chunkwise（WY/UT）并行算法、线性记忆容量的串扰分析等。</li>
+<li><strong>模型对照</strong>：整理 DeepSeek、Qwen、Kimi、GLM、MiniMax、Llama、Gemma、gpt-oss 等开源模型的注意力配置、上下文长度与训练配方。</li>
+</ul>
+<h3>1.3 分类体系与路线图</h3>
+<p>图 1 把本文涉及的方法整理成一个分类体系；下表按方向总结了核心思想、解决的问题，以及遗留或引入的问题。</p>
+<p><img alt="图 1. 开源 LLM 长上下文注意力机制的分类体系。每个方向（A–H）再细分为子类，并列出代表方法和采用它们的开源模型。" src="/figures/20261010_survey_attention__taxonomy.svg"></p>
+<p><em>图 1. 开源 LLM 长上下文注意力机制的分类体系。每个方向（A–H）再细分为子类，并列出代表方法和采用它们的开源模型。</em></p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">方向</th>
+<th style="text-align: left;">核心思想</th>
+<th style="text-align: left;">代表方法（模型）</th>
+<th style="text-align: left;">解决</th>
+<th style="text-align: left;">遗留 / 引入的问题</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">A. IO 感知的精确注意力</td>
+<td style="text-align: left;">数学不变，用 online softmax 分块计算</td>
+<td style="text-align: left;">FlashAttention-1/2/3、Flash-Decoding、Ring Attention / CP、PagedAttention</td>
+<td style="text-align: left;"><span class="math">\(O(N^2)\)</span> 显存与 HBM 访存；KV 碎片</td>
+<td style="text-align: left;"><span class="math">\(O(N^2)\)</span> FLOPs；<span class="math">\(O(N)\)</span> KV cache</td>
+</tr>
+<tr>
+<td style="text-align: left;">B. 位置编码与长度外推</td>
+<td style="text-align: left;">重映射 RoPE 频率 / 位置；长度相关温度</td>
+<td style="text-align: left;">PI、NTK-aware、YaRN、Llama 3 缩放、ABF、NoPE / iRoPE、DCA</td>
+<td style="text-align: left;">训练长度之外的位置 OOD</td>
+<td style="text-align: left;">计算与显存不变</td>
+</tr>
+<tr>
+<td style="text-align: left;">C. 降低每 token 的 KV</td>
+<td style="text-align: left;">共享 KV 头，或缓存低秩潜变量</td>
+<td style="text-align: left;">MQA、GQA（Llama 3、Qwen3、gpt-oss）、MLA（DeepSeek-V3、Kimi K2、GLM-5）</td>
+<td style="text-align: left;">每 token KV 大小、decode 带宽</td>
+<td style="text-align: left;">KV cache 仍为 <span class="math">\(O(N)\)</span>；prefill 仍为 <span class="math">\(O(N^2)\)</span></td>
+</tr>
+<tr>
+<td style="text-align: left;">D. 静态稀疏注意力</td>
+<td style="text-align: left;">与内容无关的可见集合</td>
+<td style="text-align: left;">SWA、attention sink、chunked attention；局部:全局交错（Gemma 3、gpt-oss、Llama 4）</td>
+<td style="text-align: left;">局部层的计算与 cache 降为 <span class="math">\(O(w)\)</span></td>
+<td style="text-align: left;">远程检索弱；全局层仍是稠密的</td>
+</tr>
+<tr>
+<td style="text-align: left;">E. 动态稀疏注意力</td>
+<td style="text-align: left;">廉价打分，再在 top-<span class="math">\(k\)</span> 上做精确注意力</td>
+<td style="text-align: left;">MoBA、NSA、DSA（DeepSeek-V3.2、GLM-5）、MSA（MiniMax-M3）</td>
+<td style="text-align: left;">注意力 FLOPs 与读取量；检索近乎无损</td>
+<td style="text-align: left;">选择不可导；KV 存储仍为 <span class="math">\(O(N)\)</span>；索引器 <span class="math">\(O(N^2)\)</span></td>
+</tr>
+<tr>
+<td style="text-align: left;">F. 序列维 KV 压缩</td>
+<td style="text-align: left;">每 <span class="math">\(m\)</span> 个 token 压成一个 KV 条目</td>
+<td style="text-align: left;">NSA 压缩分支、CSA / HCA（DeepSeek-V4）</td>
+<td style="text-align: left;">计算、存储、索引都降为 <span class="math">\(1/m\)</span></td>
+<td style="text-align: left;">块内细节有损；仍随 <span class="math">\(N\)</span> 增长</td>
+</tr>
+<tr>
+<td style="text-align: left;">G. 线性注意力 / 固定大小状态</td>
+<td style="text-align: left;">矩阵状态的递推，带门控或 delta 规则更新</td>
+<td style="text-align: left;">RetNet、Lightning Attention、Mamba-2、GLA、DeltaNet、Gated DeltaNet、KDA</td>
+<td style="text-align: left;"><span class="math">\(O(N)\)</span> 训练、<span class="math">\(O(1)\)</span> decode 状态</td>
+<td style="text-align: left;">记忆容量有限；精确检索弱</td>
+</tr>
+<tr>
+<td style="text-align: left;">H. 混合架构</td>
+<td style="text-align: left;">高效层与少量全注意力层混合</td>
+<td style="text-align: left;">MiniMax-01（7:1）、Qwen3-Next / Qwen3.5（3:1）、Kimi Linear（3:1）、Gemma 3（5:1）、DeepSeek-V4（CSA/HCA）</td>
+<td style="text-align: left;">省掉全注意力的大部分开销</td>
+<td style="text-align: left;">全注意力层仍为 <span class="math">\(O(N^2)\)</span>；工程复杂度</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>2 统一符号与预备知识</h2>
+<h3>2.1 符号约定</h3>
+<p>全文采用<strong>列向量</strong>约定：粗体小写为向量，粗体大写为矩阵；把序列按<strong>行</strong>堆叠的矩阵写作 <span class="math">\(\mathbf{Q}\in\mathbb{R}^{N\times d_h}\)</span>，其第 <span class="math">\(t\)</span> 行是 <span class="math">\(\mathbf{q}_t^\top\)</span>。记 <span class="math">\([t]=\{1,2,\dots,t\}\)</span>。</p>
+<table>
+<thead>
+<tr>
+<th>符号</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="math">\(N\)</span>, <span class="math">\(N_{\text{train}}\)</span></td>
+<td>上下文长度；训练时的最大长度</td>
+</tr>
+<tr>
+<td><span class="math">\(t\)</span>, <span class="math">\(s\)</span></td>
+<td>query 位置；key/value 位置（因果约束 <span class="math">\(s\le t\)</span>）</td>
+</tr>
+<tr>
+<td><span class="math">\(d\)</span>, <span class="math">\(L\)</span></td>
+<td>模型隐藏维度；层数</td>
+</tr>
+<tr>
+<td><span class="math">\(H\)</span>, <span class="math">\(H_{kv}\)</span>, <span class="math">\(g\)</span></td>
+<td>query 头数；KV 头数；组大小 <span class="math">\(g=H/H_{kv}\)</span></td>
+</tr>
+<tr>
+<td><span class="math">\(d_h\)</span>, <span class="math">\(d_v\)</span></td>
+<td>query/key 头维度；value 头维度（通常 <span class="math">\(d_v=d_h\)</span>）</td>
+</tr>
+<tr>
+<td><span class="math">\(\mathbf{x}_t\in\mathbb{R}^{d}\)</span></td>
+<td>第 <span class="math">\(t\)</span> 个 token 在当前层的输入隐状态</td>
+</tr>
+<tr>
+<td><span class="math">\(\mathbf{q}_{t,h},\mathbf{k}_{s,h},\mathbf{v}_{s,h}\)</span></td>
+<td>第 <span class="math">\(h\)</span> 个头的 query/key/value</td>
+</tr>
+<tr>
+<td><span class="math">\(\ell_{t,s,h}\)</span>, <span class="math">\(a_{t,s,h}\)</span></td>
+<td>注意力 logit；softmax 后的注意力权重</td>
+</tr>
+<tr>
+<td><span class="math">\(\mathbf{o}_{t,h}\)</span>, <span class="math">\(\mathbf{y}_t\)</span></td>
+<td>头输出；层输出</td>
+</tr>
+<tr>
+<td><span class="math">\(\mathcal{V}_t\subseteq[t]\)</span></td>
+<td>query <span class="math">\(t\)</span> 的<strong>可见集合</strong></td>
+</tr>
+<tr>
+<td><span class="math">\(\mathcal{M}_t\)</span></td>
+<td>位置 <span class="math">\(t\)</span> 处该层的“记忆”</td>
+</tr>
+<tr>
+<td><span class="math">\(e\)</span></td>
+<td>每个元素的字节数（BF16 为 2，FP8 为 1）</td>
+</tr>
+<tr>
+<td><span class="math">\(w\)</span></td>
+<td>滑动窗口大小</td>
+</tr>
+<tr>
+<td><span class="math">\(B\)</span>, <span class="math">\(n_B\)</span></td>
+<td>块大小；块数 <span class="math">\(n_B=\lceil N/B\rceil\)</span></td>
+</tr>
+<tr>
+<td><span class="math">\(\mathcal{G}_j\)</span></td>
+<td>第 <span class="math">\(j\)</span> 个块（或压缩组）包含的 token 下标集合</td>
+</tr>
+<tr>
+<td><span class="math">\(k_{\text{top}}\)</span></td>
+<td>稀疏注意力中选中的 token 数或块数</td>
+</tr>
+<tr>
+<td><span class="math">\(m\)</span>, <span class="math">\(m'\)</span></td>
+<td>序列压缩率（每 <span class="math">\(m\)</span> 个 token 压成 1 个KV 条目）</td>
+</tr>
+<tr>
+<td><span class="math">\(d_c\)</span>, <span class="math">\(d_q\)</span>, <span class="math">\(d_R\)</span></td>
+<td>MLA 的 KV 潜变量维度；query 潜变量维度；解耦 RoPE 维度</td>
+</tr>
+<tr>
+<td><span class="math">\(d_e\)</span></td>
+<td>DeepSeek-V4 中共享 KV 条目的维度</td>
+</tr>
+<tr>
+<td><span class="math">\(I_{t,j}\)</span>, <span class="math">\(H_I\)</span>, <span class="math">\(d_I\)</span></td>
+<td>索引器（indexer）分数；索引器头数；索引器头维度</td>
+</tr>
+<tr>
+<td><span class="math">\(\mathbf{S}_t\in\mathbb{R}^{d_k\times d_v}\)</span></td>
+<td>线性注意力的矩阵状态（<span class="math">\(d_k=d_h\)</span>）</td>
+</tr>
+<tr>
+<td><span class="math">\(\alpha_t\)</span>, <span class="math">\(\boldsymbol{\alpha}_t\)</span>, <span class="math">\(\beta_t\)</span></td>
+<td>标量遗忘门；通道级遗忘门；Delta 写入强度</td>
+</tr>
+<tr>
+<td><span class="math">\(C\)</span></td>
+<td>chunkwise 算法的块长度</td>
+</tr>
+<tr>
+<td><span class="math">\(\mathbf{R}_t\)</span>, <span class="math">\(\theta_i\)</span>, <span class="math">\(b\)</span></td>
+<td>RoPE 旋转矩阵；第 <span class="math">\(i\)</span> 个频率；RoPE base</td>
+</tr>
+<tr>
+<td><span class="math">\(\rho\)</span></td>
+<td>上下文扩展倍数 <span class="math">\(\rho=N_{\text{target}}/N_{\text{train}}\)</span></td>
+</tr>
+<tr>
+<td><span class="math">\(\sigma(\cdot)\)</span>, <span class="math">\(\odot\)</span></td>
+<td>sigmoid；逐元素乘</td>
+</tr>
+</tbody>
+</table>
+<p>为避免歧义，“top-k”中的个数统一记作 <span class="math">\(k_{\text{top}}\)</span>，不与 key 向量 <span class="math">\(\mathbf{k}\)</span> 混淆；不同论文中的压缩率（DeepSeek-V4 原文的 <span class="math">\(m\)</span>、<span class="math">\(c\)</span>）统一记作 <span class="math">\(m\)</span>；KV 条目维度（V4 原文的 <span class="math">\(c\)</span>）统一记作 <span class="math">\(d_e\)</span>。</p>
+<h3>2.2 标准多头注意力（MHA）</h3>
+<p>对第 <span class="math">\(h\)</span> 个头：</p>
+<div class="math">$$
+\mathbf{q}_{t,h}=\mathbf{W}^{Q}_{h}\mathbf{x}_t,\qquad
+\mathbf{k}_{s,h}=\mathbf{W}^{K}_{h}\mathbf{x}_s,\qquad
+\mathbf{v}_{s,h}=\mathbf{W}^{V}_{h}\mathbf{x}_s,
+\qquad
+\mathbf{W}^{Q}_{h},\mathbf{W}^{K}_{h}\in\mathbb{R}^{d_h\times d},\;
+\mathbf{W}^{V}_{h}\in\mathbb{R}^{d_v\times d}.
+\tag{2.1}
+$$</div>
+<p>注意力 logit、权重与输出为</p>
+<div class="math">$$
+\ell_{t,s,h}=\frac{\mathbf{q}_{t,h}^{\top}\mathbf{k}_{s,h}}{\sqrt{d_h}},\qquad
+a_{t,s,h}=\frac{\exp(\ell_{t,s,h})}{\sum_{s'\in\mathcal{V}_t}\exp(\ell_{t,s',h})},\qquad
+\mathbf{o}_{t,h}=\sum_{s\in\mathcal{V}_t}a_{t,s,h}\,\mathbf{v}_{s,h},
+\tag{2.2}
+$$</div>
+<div class="math">$$
+\mathbf{y}_t=\sum_{h=1}^{H}\mathbf{W}^{O}_{h}\mathbf{o}_{t,h},\qquad \mathbf{W}^{O}_{h}\in\mathbb{R}^{d\times d_v}.
+\tag{2.3}
+$$</div>
+<p>因果语言模型取 <span class="math">\(\mathcal{V}_t=[t]\)</span>。矩阵形式为</p>
+<div class="math">$$
+\mathbf{O}_h=\operatorname{softmax}\!\left(\frac{\mathbf{Q}_h\mathbf{K}_h^{\top}}{\sqrt{d_h}}+\mathbf{M}\right)\mathbf{V}_h,
+\qquad
+M_{t,s}=\begin{cases}0,&amp; s\in\mathcal{V}_t\\-\infty,&amp;\text{otherwise}\end{cases}.
+\tag{2.4}
+$$</div>
+<p>后文所有稀疏方法本质上都是在修改 <span class="math">\(\mathcal{V}_t\)</span>（即修改掩码 <span class="math">\(\mathbf{M}\)</span>），所有压缩方法都是在修改 <span class="math">\((\mathbf{k},\mathbf{v})\)</span> 的来源，线性方法则修改 softmax 本身。</p>
+<h3>2.3 Prefill、Decode 与 KV cache</h3>
+<p>自回归推理分两个阶段：</p>
+<ul>
+<li><strong>Prefill</strong>：一次性处理长度为 <span class="math">\(N\)</span> 的 prompt，所有位置并行计算，属于计算密集型（compute-bound）。</li>
+<li><strong>Decode</strong>：每步生成 1 个 token，新 query 要与全部历史 key/value 交互。为避免重复计算，历史的 <span class="math">\(\mathbf{k}_{s,h},\mathbf{v}_{s,h}\)</span> 被缓存，即 <strong>KV cache</strong>。</li>
+</ul>
+<p>KV cache 的总字节数为</p>
+<div class="math">$$
+\mathrm{Mem}_{\text{KV}}=2\cdot L\cdot H_{kv}\cdot d_h\cdot N\cdot e .
+\tag{2.5}
+$$</div>
+<p>单层单步 decode 的注意力计算量与读取量为</p>
+<div class="math">$$
+\text{FLOPs}_{\text{dec}}\approx \underbrace{2Hd_hN}_{\mathbf{q}^\top\mathbf{K}}+\underbrace{2Hd_vN}_{\mathbf{a}^\top\mathbf{V}}\approx 4Hd_hN,
+\qquad
+\text{Bytes}_{\text{dec}}\approx 2H_{kv}d_hN e,
+\tag{2.6}
+$$</div>
+<p>因此算术强度（arithmetic intensity）为</p>
+<div class="math">$$
+\mathcal{I}_{\text{dec}}=\frac{\text{FLOPs}_{\text{dec}}}{\text{Bytes}_{\text{dec}}}\approx\frac{2H}{H_{kv}\,e}=\frac{2g}{e}.
+\tag{2.7}
+$$</div>
+<p>对 BF16 的 MHA（<span class="math">\(g=1,e=2\)</span>），<span class="math">\(\mathcal{I}_{\text{dec}}\approx 1\)</span> FLOP/Byte，而 H100 的计算/带宽比约为 <span class="math">\(989\ \text{TFLOPS}/3.35\ \text{TB/s}\approx 295\)</span> FLOP/Byte。也就是说，<strong>decode 时 GPU 绝大部分时间在等显存</strong>。式 (2.7) 是理解 GQA/MLA 的关键：增大 <span class="math">\(g\)</span> 或让所有头共享同一份 KV，可以直接提高算术强度。</p>
+<h3>2.4 统一框架：注意力是一个记忆的写入与读取</h3>
+<p>把每层、每个头看作维护一个记忆 <span class="math">\(\mathcal{M}_t\)</span>：</p>
+<div class="math">$$
+\mathcal{M}_t=\mathcal{W}\big(\mathcal{M}_{t-1},\mathbf{x}_t\big),\qquad
+\mathbf{o}_t=\mathcal{R}\big(\mathcal{M}_t,\mathbf{q}_t\big).
+\tag{2.8}
+$$</div>
+<p>标准 attention 的写入 <span class="math">\(\mathcal{W}\)</span> 是“追加一条 <span class="math">\((\mathbf{k}_t,\mathbf{v}_t)\)</span>”，读取 <span class="math">\(\mathcal{R}\)</span> 是 softmax 核平滑，记忆大小为 <span class="math">\(|\mathcal{M}_t|=O(t)\)</span>。线性注意力的写入是秩一更新 <span class="math">\(\mathbf{S}_t=\mathbf{S}_{t-1}+\mathbf{k}_t\mathbf{v}_t^\top\)</span>，读取是 <span class="math">\(\mathbf{S}_t^\top\mathbf{q}_t\)</span>，记忆大小为 <span class="math">\(O(d_kd_v)\)</span>，与 <span class="math">\(t\)</span> 无关。其余方法都介于这两个极端之间。</p>
+<p>更具体地，几乎所有 softmax 类方法都可以写成下面的<strong>通用形式</strong>：</p>
+<div class="math">$$
+\boxed{\;
+\mathbf{o}_{t,h}=\sum_{j\in\mathcal{J}_t}
+\frac{\exp\!\big(\ell(\mathbf{q}_{t,h},\tilde{\mathbf{k}}_{j})\big)}
+{\sum_{j'\in\mathcal{J}_t}\exp\!\big(\ell(\mathbf{q}_{t,h},\tilde{\mathbf{k}}_{j'})\big)+\exp(\varsigma_h)}\;
+\tilde{\mathbf{v}}_{j},
+\qquad
+(\tilde{\mathbf{k}}_j,\tilde{\mathbf{v}}_j)=\phi\big(\{\mathbf{x}_s\}_{s\in\mathcal{G}_j}\big)\;}
+\tag{2.9}
+$$</div>
+<p>其中：</p>
+<ul>
+<li><span class="math">\(\mathcal{G}_j\)</span> 是第 <span class="math">\(j\)</span> 个<strong>KV 条目</strong>由哪些 token 生成（标准 attention 中 <span class="math">\(\mathcal{G}_j=\{j\}\)</span>；序列压缩中 <span class="math">\(|\mathcal{G}_j|=m\)</span>）；</li>
+<li><span class="math">\(\phi\)</span> 是KV 条目的<strong>表示方式</strong>（每个头独立的 <span class="math">\(\mathbf{k},\mathbf{v}\)</span>；GQA 中组内共享；MLA 中的低秩潜变量；V4 中 key/value 共享同一个向量）；</li>
+<li><span class="math">\(\mathcal{J}_t\)</span> 是 query <span class="math">\(t\)</span> <strong>可读的KV 条目集合</strong>（全部、窗口、top-k 选择）；</li>
+<li><span class="math">\(\varsigma_h\)</span> 是可选的 <strong>attention sink</strong> logit（取 <span class="math">\(-\infty\)</span> 时退化为标准 softmax）。</li>
+</ul>
+<p>由此得到四个正交的设计维度：</p>
+<table>
+<thead>
+<tr>
+<th>设计维度</th>
+<th>数学对象</th>
+<th>典型选择</th>
+<th>主要影响</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>① 可见集合</td>
+<td><span class="math">\(\mathcal{J}_t\)</span></td>
+<td>全部 / 窗口 / 固定模式 / top-k</td>
+<td>计算量</td>
+</tr>
+<tr>
+<td>② 条目表示</td>
+<td><span class="math">\(\phi\)</span> 的输出维度</td>
+<td>MHA / GQA / MQA / MLA / 共享 KV</td>
+<td>每个条目的 cache 大小、decode 带宽</td>
+</tr>
+<tr>
+<td>③ 条目数量</td>
+<td><span class="math">\(\lvert\{\mathcal{G}_j\}\rvert\)</span></td>
+<td><span class="math">\(N\)</span> / <span class="math">\(N/m\)</span> / <span class="math">\(w\)</span> / 固定状态</td>
+<td>cache 随 <span class="math">\(N\)</span> 的增长速度</td>
+</tr>
+<tr>
+<td>④ 读出函数</td>
+<td>softmax / 线性核 / 门控</td>
+<td>softmax、sink、output gate、linear</td>
+<td>精确检索能力、能否写成递推</td>
+</tr>
+</tbody>
+</table>
+<p>表 1 是主要方法在这四个维度上的位置（细节见对应章节）：</p>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>① <span class="math">\(\mathcal{J}_t\)</span></th>
+<th>② 条目表示</th>
+<th>③ 条目数</th>
+<th>④ 读出</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MHA</td>
+<td><span class="math">\([t]\)</span></td>
+<td>每头独立 <span class="math">\(\mathbf{k},\mathbf{v}\)</span></td>
+<td><span class="math">\(t\)</span></td>
+<td>softmax</td>
+</tr>
+<tr>
+<td>GQA / MQA</td>
+<td><span class="math">\([t]\)</span></td>
+<td>组内共享 / 全部共享</td>
+<td><span class="math">\(t\)</span></td>
+<td>softmax</td>
+</tr>
+<tr>
+<td>MLA</td>
+<td><span class="math">\([t]\)</span></td>
+<td>低秩潜变量 <span class="math">\(\mathbf{c}^{KV}\)</span></td>
+<td><span class="math">\(t\)</span></td>
+<td>softmax</td>
+</tr>
+<tr>
+<td>SWA</td>
+<td><span class="math">\(\{t-w+1,\dots,t\}\)</span></td>
+<td>同底座</td>
+<td><span class="math">\(\min(t,w)\)</span></td>
+<td>softmax</td>
+</tr>
+<tr>
+<td>StreamingLLM</td>
+<td>sink <span class="math">\(\cup\)</span> 窗口</td>
+<td>同底座</td>
+<td><span class="math">\(n_0+w\)</span></td>
+<td>softmax</td>
+</tr>
+<tr>
+<td>MoBA / MSA</td>
+<td>top-<span class="math">\(k_{\text{top}}\)</span> 块 <span class="math">\(\cup\)</span> 局部块</td>
+<td>原始 KV</td>
+<td><span class="math">\(t\)</span>（只读一部分）</td>
+<td>softmax</td>
+</tr>
+<tr>
+<td>DSA</td>
+<td>top-<span class="math">\(k_{\text{top}}\)</span> token</td>
+<td>MLA 潜变量</td>
+<td><span class="math">\(t\)</span>（只读一部分）</td>
+<td>softmax</td>
+</tr>
+<tr>
+<td>NSA</td>
+<td>压缩 <span class="math">\(\cup\)</span> 选择 <span class="math">\(\cup\)</span> 窗口</td>
+<td>原始 + 压缩 KV</td>
+<td><span class="math">\(t+t/\delta\)</span></td>
+<td>门控融合三路 softmax</td>
+</tr>
+<tr>
+<td>CSA (V4)</td>
+<td>top-<span class="math">\(k_{\text{top}}\)</span> 压缩条目 <span class="math">\(\cup\)</span> 窗口 <span class="math">\(\cup\)</span> sink</td>
+<td>共享 KV，<span class="math">\(m\)</span> 个 token 压成 1 个</td>
+<td><span class="math">\(t/m\)</span></td>
+<td>softmax + sink</td>
+</tr>
+<tr>
+<td>HCA (V4)</td>
+<td>全部压缩条目 <span class="math">\(\cup\)</span> 窗口 <span class="math">\(\cup\)</span> sink</td>
+<td>共享 KV，<span class="math">\(m'\)</span> 个 token 压成 1 个</td>
+<td><span class="math">\(t/m'\)</span></td>
+<td>softmax + sink</td>
+</tr>
+<tr>
+<td>线性注意力族</td>
+<td>隐式全部</td>
+<td>矩阵状态 <span class="math">\(\mathbf{S}_t\)</span></td>
+<td>1 个 <span class="math">\(d_k\times d_v\)</span> 状态</td>
+<td>线性读取 <span class="math">\(\mathbf{S}_t^\top\mathbf{q}_t\)</span></td>
+</tr>
+</tbody>
+</table>
+<p><img alt="图 2. 把注意力看作记忆的写入与读取（第 2.4 节）：(a) 完整 KV 列表；(b) 只读取其中一个子集；(c) 沿序列维度压缩；(d) 固定大小的矩阵状态。" src="/figures/20261010_survey_attention__memory_spectrum.svg"></p>
+<p><em>图 2. 把注意力看作记忆的写入与读取（第 2.4 节）：(a) 完整 KV 列表；(b) 只读取其中一个子集；(c) 沿序列维度压缩；(d) 固定大小的矩阵状态。</em></p>
+<hr>
+<h2>3 长上下文下标准注意力的问题</h2>
+<p>本节定量说明标准 attention 在长上下文下的六个问题（P1–P6）。后续每个方向都是针对其中一个或几个问题。</p>
+<h3>3.1 P1：计算量随 <span class="math">\(N^2\)</span> 增长</h3>
+<p>每层每个 token 的线性投影与 FFN 计算量和 <span class="math">\(N\)</span> 无关。以 MHA（<span class="math">\(Hd_h=d\)</span>）加 SwiGLU FFN（<span class="math">\(d_{\text{ff}}=\tfrac{8}{3}d\)</span>）为例：</p>
+<div class="math">$$
+\text{FLOPs}_{\text{proj+FFN}}\approx \underbrace{2\cdot 4d^2}_{QKVO}+\underbrace{2\cdot 3\cdot d\cdot\tfrac{8}{3}d}_{\text{SwiGLU}}=24d^2 .
+$$</div>
+<p>因果注意力对第 <span class="math">\(t\)</span> 个 token 的计算量为 <span class="math">\(4d\,t\)</span>（<span class="math">\(\mathbf{q}^\top\mathbf{K}\)</span> 与 <span class="math">\(\mathbf{a}^\top\mathbf{V}\)</span> 各 <span class="math">\(2dt\)</span>），平均 <span class="math">\(t=N/2\)</span> 时为 <span class="math">\(2dN\)</span>。两者之比为</p>
+<div class="math">$$
+\frac{\text{FLOPs}_{\text{attn}}}{\text{FLOPs}_{\text{proj+FFN}}}\approx\frac{2dN}{24d^2}=\frac{N}{12d}.
+\tag{3.1}
+$$</div>
+<p>当 <span class="math">\(N&gt;12d\)</span> 时注意力开始主导。<span class="math">\(d=4096\)</span> 时临界长度约为 <span class="math">\(49\)</span>K；在 <span class="math">\(N=1\)</span>M 时注意力计算是其余部分的约 <span class="math">\(20\)</span> 倍。对 MoE 模型，FFN 只激活一小部分参数，临界长度更早到来。整段 prefill 的注意力计算量为</p>
+<div class="math">$$
+\text{FLOPs}_{\text{prefill}}^{\text{attn}}\approx 2\,L\,H\,d_h\,N^2 .
+\tag{3.2}
+$$</div>
+<h3>3.2 P2：KV cache 显存与 decode 带宽随 <span class="math">\(N\)</span> 增长</h3>
+<p>把式 (2.5) 代入几种典型配置（BF16，<span class="math">\(e=2\)</span>；<span class="math">\(1\text{M}\approx 2^{20}\)</span>）：</p>
+<table>
+<thead>
+<tr>
+<th>配置</th>
+<th>每 token 每层元素数</th>
+<th>每 token（全模型）</th>
+<th>128K 上下文</th>
+<th>1M 上下文</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MHA, <span class="math">\(L{=}80,H{=}64,d_h{=}128\)</span></td>
+<td><span class="math">\(2Hd_h=16384\)</span></td>
+<td>2.5 MiB</td>
+<td>320 GiB</td>
+<td>2.5 TiB</td>
+</tr>
+<tr>
+<td>GQA-8, <span class="math">\(L{=}80,H_{kv}{=}8,d_h{=}128\)</span></td>
+<td><span class="math">\(2H_{kv}d_h=2048\)</span></td>
+<td>320 KiB</td>
+<td>40 GiB</td>
+<td>320 GiB</td>
+</tr>
+<tr>
+<td>MLA, <span class="math">\(L{=}61,d_c{=}512,d_R{=}64\)</span></td>
+<td><span class="math">\(d_c+d_R=576\)</span></td>
+<td>68.6 KiB</td>
+<td>8.6 GiB</td>
+<td>68.6 GiB</td>
+</tr>
+</tbody>
+</table>
+<p>即使是 GQA，1M 上下文的单条序列 cache 也超过单卡 HBM 容量。另外，由式 (2.6)–(2.7)，decode 每步都要把整个 cache 从 HBM 读一遍，<strong>单步延迟随 <span class="math">\(N\)</span> 线性增长</strong>，batch 越大，带宽压力越大。</p>
+<p><img alt="图 3. 几种典型配置下，单条 1M token 序列的 KV cache 大小（式 2.5；除 FP8 索引器 key 外均为 BF16）。虚线是一张 H100 的 80 GB HBM。" src="/figures/20261010_survey_attention__kvcache.svg"></p>
+<p><em>图 3. 几种典型配置下，单条 1M token 序列的 KV cache 大小（式 2.5；除 FP8 索引器 key 外均为 BF16）。虚线是一张 H100 的 80 GB HBM。</em></p>
+<h3>3.3 P3：位置编码的分布外（OOD）问题</h3>
+<p>主流开源模型使用 RoPE（第 5 节）。其第 <span class="math">\(i\)</span> 个二维子空间以频率 <span class="math">\(\theta_i=b^{-2i/d_h}\)</span> 旋转，波长为 <span class="math">\(\lambda_i=2\pi/\theta_i\)</span>。当 <span class="math">\(\lambda_i&gt;N_{\text{train}}\)</span> 时，这个维度在训练中<strong>从未转完一整圈</strong>，推理时 <span class="math">\(t\theta_i\)</span> 超过训练见过的角度范围，模型对这些相位组合是外推。满足 <span class="math">\(\lambda_i&gt;N_{\text{train}}\)</span> 的维度编号为</p>
+<div class="math">$$
+i&gt;\frac{d_h}{2}\log_b\!\frac{N_{\text{train}}}{2\pi}.
+\tag{3.3}
+$$</div>
+<p>例如 <span class="math">\(b=10^4\)</span>、<span class="math">\(d_h=128\)</span>、<span class="math">\(N_{\text{train}}=4096\)</span> 时，<span class="math">\(i&gt;0.70\times 64\approx 45\)</span>，即 64 个频率对中约 19 个是“未完整训练”的低频维度。直接把这样的模型用在 <span class="math">\(4\times N_{\text{train}}\)</span> 上，困惑度会迅速上升。</p>
+<h3>3.4 P4：注意力稀释</h3>
+<p>softmax 权重之和为 1。设目标 key 的 logit 比其余 <span class="math">\(N-1\)</span> 个干扰 key 高 <span class="math">\(\Delta\)</span>，则目标权重为</p>
+<div class="math">$$
+a_{\text{target}}=\frac{1}{1+(N-1)e^{-\Delta}} .
+\tag{3.4}
+$$</div>
+<p>要让 <span class="math">\(a_{\text{target}}\ge\tfrac12\)</span>，需要 <span class="math">\(\Delta\ge\ln(N-1)\)</span>。也就是说，<strong>同样的检索精度要求 logit 间隔随 <span class="math">\(\ln N\)</span> 增长</strong>。训练在 <span class="math">\(N_{\text{train}}\)</span> 下学到的 logit 尺度，到 <span class="math">\(\rho N_{\text{train}}\)</span> 时不够用，注意力分布变平，熵变大。这解释了 YaRN 的温度缩放、Llama 4 的推理期温度调节和 Scalable-Softmax 的 <span class="math">\(\log N\)</span> 因子（第 5.6 节），也部分解释了“lost in the middle”现象 [Liu et al., 2023]。</p>
+<p><img alt="图 4. 注意力稀释（式 3.4）。logit 间隔固定时，\(N\) 超过约 \(e^{\Delta}\) 后目标权重迅速下降；让间隔随 \(\ln N\) 增长（YaRN 温度、Llama 4 温度、SSMax）可以保持稳定。" src="/figures/20261010_survey_attention__dilution.svg"></p>
+<p><em>图 4. 注意力稀释（式 3.4）。logit 间隔固定时，<span class="math">\(N\)</span> 超过约 <span class="math">\(e^{\Delta}\)</span> 后目标权重迅速下降；让间隔随 <span class="math">\(\ln N\)</span> 增长（YaRN 温度、Llama 4 温度、SSMax）可以保持稳定。</em></p>
+<h3>3.5 P5：Attention sink 与 massive activations</h3>
+<p>softmax 强制 <span class="math">\(\sum_s a_{t,s,h}=1\)</span>，于是一个“当前不需要读取任何信息”的头，必须把权重放到某处。训练中模型会把多余的权重集中在第一个 token（或分隔符）上，形成 <strong>attention sink</strong> [Xiao et al., 2023]，并伴随残差流中的 massive activations [Sun et al., 2024]。这带来两个长上下文问题：(i) 滑动窗口一旦驱逐了 sink token，模型就会崩溃；(ii) 极端激活值与很大的 logit 会损害低精度（FP8/FP4）计算，使训练不稳定。对应的解决方法有可学习 sink、output gate、QK-Norm 等（第 7.2、11.3、12 节）。</p>
+<h3>3.6 P6：训练代价与训练–推理不一致</h3>
+<p>在 <span class="math">\(N\)</span> 长度上训练的代价同样服从式 (3.2)，而高质量长文档数据稀少，因此几乎所有模型都采用“短上下文预训练 + 分阶段扩展”的配方（第 13 节）。另外，稀疏/压缩注意力往往由稠密模型转化而来，引入 top-k 选择后，如何训练不可导的选择器、如何保证 RL 中训练与推理的选择一致，都是新问题（第 8.6 节）。</p>
+<h3>3.7 问题与方向的对应</h3>
+<table>
+<thead>
+<tr>
+<th>问题</th>
+<th>A IO 感知</th>
+<th>B 位置外推</th>
+<th>C 每 token KV</th>
+<th>D 静态稀疏</th>
+<th>E 动态稀疏</th>
+<th>F 序列压缩</th>
+<th>G 线性</th>
+<th>H 混合</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>P1 计算 <span class="math">\(O(N^2)\)</span></td>
+<td>只降 IO</td>
+<td>–</td>
+<td>–</td>
+<td>✔</td>
+<td>✔</td>
+<td>✔</td>
+<td>✔</td>
+<td>✔</td>
+</tr>
+<tr>
+<td>P2 KV cache / 带宽</td>
+<td>分页管理</td>
+<td>–</td>
+<td>✔</td>
+<td>✔</td>
+<td>只降读取量</td>
+<td>✔</td>
+<td>✔</td>
+<td>✔</td>
+</tr>
+<tr>
+<td>P3 位置 OOD</td>
+<td>–</td>
+<td>✔</td>
+<td>–</td>
+<td>局部层天然规避</td>
+<td>–</td>
+<td>–</td>
+<td>递推隐式编码位置</td>
+<td>NoPE 全局层</td>
+</tr>
+<tr>
+<td>P4 注意力稀释</td>
+<td>–</td>
+<td>温度缩放</td>
+<td>–</td>
+<td>–</td>
+<td>只在 top-k 内归一化</td>
+<td>–</td>
+<td>门控遗忘</td>
+<td>–</td>
+</tr>
+<tr>
+<td>P5 sink / 数值</td>
+<td>–</td>
+<td>–</td>
+<td>–</td>
+<td>可学习 sink</td>
+<td>–</td>
+<td>sink + RMSNorm</td>
+<td>无 softmax</td>
+<td>output gate</td>
+</tr>
+<tr>
+<td>P6 训练</td>
+<td>Ring/CP</td>
+<td>分阶段</td>
+<td>–</td>
+<td>–</td>
+<td>KL 蒸馏 warmup</td>
+<td>warmup</td>
+<td>chunkwise 并行</td>
+<td>蒸馏改造</td>
+</tr>
+</tbody>
+</table>
+<p>表中“只降读取量”指动态稀疏（如 DSA）只读取 <span class="math">\(k_{\text{top}}\)</span> 个 KV，但仍需存储全部 KV；这一点正是方向 F 要进一步解决的。</p>
+<p><img alt="图 5. 从标准 softmax attention 到八个方向：六类长上下文问题（P1–P6）以及分别解决它们的方向。" src="/figures/20261010_survey_attention__roadmap.svg"></p>
+<p><em>图 5. 从标准 softmax attention 到八个方向：六类长上下文问题（P1–P6）以及分别解决它们的方向。</em></p>
+<hr>
+<h2>4 方向 A：IO 感知的精确注意力</h2>
+<p>这一方向不改变式 (2.2) 的输出，只改变计算顺序与数据搬运方式。它是其他所有方向的工程基础：后文的稀疏、压缩方法几乎都以 FlashAttention 风格的 kernel 实现。</p>
+<h3>4.1 Online softmax 与 FlashAttention</h3>
+<p>朴素实现会把 <span class="math">\(N\times N\)</span> 的打分矩阵写回 HBM，显存为 <span class="math">\(O(N^2)\)</span>，IO 量巨大。FlashAttention [Dao et al., 2022] 的核心是 <strong>online softmax</strong>：把 key/value 按块 <span class="math">\(\mathcal{G}_1,\mathcal{G}_2,\dots\)</span> 依次读入 SRAM，对每个 query 维护三个运行量——当前最大 logit <span class="math">\(\mu\)</span>、归一化分母 <span class="math">\(\zeta\)</span>、未归一化输出 <span class="math">\(\mathbf{u}\)</span>：</p>
+<div class="math">$$
+\begin{aligned}
+\mu^{(j)}&amp;=\max\!\Big(\mu^{(j-1)},\ \max_{s\in\mathcal{G}_j}\ell_{t,s}\Big),\\
+\zeta^{(j)}&amp;=e^{\mu^{(j-1)}-\mu^{(j)}}\zeta^{(j-1)}+\sum_{s\in\mathcal{G}_j}e^{\ell_{t,s}-\mu^{(j)}},\\
+\mathbf{u}^{(j)}&amp;=e^{\mu^{(j-1)}-\mu^{(j)}}\mathbf{u}^{(j-1)}+\sum_{s\in\mathcal{G}_j}e^{\ell_{t,s}-\mu^{(j)}}\mathbf{v}_s,
+\end{aligned}
+\qquad
+\mathbf{o}_t=\frac{\mathbf{u}^{(n_B)}}{\zeta^{(n_B)}} .
+\tag{4.1}
+$$</div>
+<p>初值取 <span class="math">\(\mu^{(0)}=-\infty,\ \zeta^{(0)}=0,\ \mathbf{u}^{(0)}=\mathbf{0}\)</span>。用归纳法可直接验证 <span class="math">\(\mathbf{u}^{(j)}/\zeta^{(j)}\)</span> 恰好等于只在前 <span class="math">\(j\)</span> 块上做 softmax 的结果，因此最终输出与式 (2.2) <strong>逐位相等（在浮点误差内）</strong>。</p>
+<p>反向传播时，只保存每个 query 的 log-sum-exp</p>
+<div class="math">$$
+\operatorname{LSE}_t=\mu^{(n_B)}+\ln\zeta^{(n_B)},
+\tag{4.2}
+$$</div>
+<p>即可按 <span class="math">\(a_{t,s}=\exp(\ell_{t,s}-\operatorname{LSE}_t)\)</span> 在 SRAM 中重算注意力权重，不需要保存 <span class="math">\(N\times N\)</span> 矩阵。设 SRAM 容量为 <span class="math">\(M_{\text{sram}}\)</span>，FlashAttention 的 HBM 访问量为 <span class="math">\(O\!\big(N^2d_h^2/M_{\text{sram}}\big)\)</span>，而朴素实现为 <span class="math">\(O(N d_h+N^2)\)</span>。额外显存降为 <span class="math">\(O(N)\)</span>。FlashAttention-2/3 [Dao, 2023; Shah et al., 2024] 进一步优化了并行划分、warp 特化、异步拷贝和 FP8。</p>
+<p><strong>结论</strong>：FlashAttention 把注意力的<strong>显存</strong>从 <span class="math">\(O(N^2)\)</span> 降为 <span class="math">\(O(N)\)</span>，但<strong>计算量</strong>仍然是式 (3.2) 的 <span class="math">\(O(N^2)\)</span>，也不改变 KV cache。</p>
+<h3>4.2 Log-Sum-Exp 合并：反复用到的工具</h3>
+<p>式 (4.1) 的一个推论是：如果把可见集合拆成不相交的两部分 <span class="math">\(\mathcal{V}_t=\mathcal{A}\cup\mathcal{B}\)</span>，分别算出局部输出 <span class="math">\(\mathbf{o}^{\mathcal{A}},\mathbf{o}^{\mathcal{B}}\)</span> 和局部 <span class="math">\(\operatorname{LSE}^{\mathcal{A}},\operatorname{LSE}^{\mathcal{B}}\)</span>，那么全局结果可以精确合并：</p>
+<div class="math">$$
+\mathbf{o}_t=\frac{e^{\operatorname{LSE}^{\mathcal{A}}}\mathbf{o}^{\mathcal{A}}+e^{\operatorname{LSE}^{\mathcal{B}}}\mathbf{o}^{\mathcal{B}}}{e^{\operatorname{LSE}^{\mathcal{A}}}+e^{\operatorname{LSE}^{\mathcal{B}}}},
+\qquad
+\operatorname{LSE}_t=\ln\!\big(e^{\operatorname{LSE}^{\mathcal{A}}}+e^{\operatorname{LSE}^{\mathcal{B}}}\big).
+\tag{4.3}
+$$</div>
+<p>式 (4.3) 是以下技术的共同数学基础：</p>
+<ul>
+<li><strong>FlashDecoding / Split-KV</strong>：decode 时只有 1 个 query，按序列维度把 KV 切成 <span class="math">\(P\)</span> 段并行计算，再用式 (4.3) 合并，以提高 GPU 利用率。</li>
+<li><strong>Ring Attention / Context Parallel</strong> [Liu et al., 2023]：<span class="math">\(P\)</span> 张卡各持有 <span class="math">\(N/P\)</span> 个 token，KV 块沿环形拓扑传递，每张卡用式 (4.3) 累积。每卡显存为 <span class="math">\(O(N/P)\)</span>，通信可与计算重叠。这是 128K–1M 长度训练的标准做法。</li>
+<li><strong>Attention sink</strong>：式 (2.9) 中的 <span class="math">\(\exp(\varsigma_h)\)</span> 可以看作只有一个“空值”（<span class="math">\(\mathbf{v}=\mathbf{0}\)</span>）的集合 <span class="math">\(\mathcal{B}\)</span>，合并后只是分母多一项（第 7.2 节）。</li>
+<li><strong>多分支稀疏注意力</strong>：DeepSeek-V4 把压缩 KV 与滑动窗口 KV 放进同一个 softmax，本质上就是式 (4.3)（第 9 节）。</li>
+</ul>
+<h3>4.3 分页 KV cache 管理与 KV cache 量化</h3>
+<p><strong>PagedAttention</strong> [Kwon et al., 2023] 借鉴操作系统虚拟内存：把 KV cache 切成固定大小的物理页，每条序列维护一张逻辑页 → 物理页的映射表。这样可以消除内部碎片，并让共享前缀的多条序列共享物理页（prefix caching），对多轮 agent 和 RL rollout 尤其重要。GLM-5 的 RL 系统用一致性哈希把同一 rollout 固定路由到同一个 DP rank，也是为了最大化前缀 KV 复用。</p>
+<p><strong>KV 量化</strong> 把式 (2.5) 中的 <span class="math">\(e\)</span> 从 2 降到 1（FP8）甚至 0.5（INT4/FP4）。DeepSeek-V3.2 的索引器 key 以 FP8 存储；DeepSeek-V4 对 KV 条目的 RoPE 维度用 BF16、其余维度用 FP8。</p>
+<h3>4.4 小结与遗留问题</h3>
+<p>方向 A 解决了“<span class="math">\(N\times N\)</span> 矩阵放不下”的显存问题，但没有解决 P1（FLOPs 仍为 <span class="math">\(O(N^2)\)</span>）和 P2（KV cache 仍为 <span class="math">\(O(L H_{kv} d_h N)\)</span>），也没有解决 P3（位置外推）。下一节先处理 P3，因为它决定模型在长上下文中“能不能用”；之后的方向 C–H 再处理“用得起”的问题。</p>
+<hr>
+<h2>5 方向 B：位置编码与长度外推</h2>
+<h3>5.1 RoPE</h3>
+<p>旋转位置编码（RoPE）[Su et al., 2021] 把 <span class="math">\(d_h\)</span> 维向量分成 <span class="math">\(d_h/2\)</span> 个二维子空间，第 <span class="math">\(i\)</span> 个子空间以频率</p>
+<div class="math">$$
+\theta_i=b^{-2i/d_h},\qquad i=0,1,\dots,\tfrac{d_h}{2}-1
+\tag{5.1}
+$$</div>
+<p>旋转。位置 <span class="math">\(t\)</span> 的旋转矩阵是块对角矩阵</p>
+<div class="math">$$
+\mathbf{R}_t=\operatorname{diag}\!\Big(\mathbf{R}(t\theta_0),\dots,\mathbf{R}(t\theta_{d_h/2-1})\Big),\qquad
+\mathbf{R}(\varphi)=\begin{pmatrix}\cos\varphi&amp;-\sin\varphi\\ \sin\varphi&amp;\cos\varphi\end{pmatrix}.
+\tag{5.2}
+$$</div>
+<p>query 与 key 分别旋转后再做内积：</p>
+<div class="math">$$
+\ell_{t,s}=\frac{(\mathbf{R}_t\mathbf{q}_t)^\top(\mathbf{R}_s\mathbf{k}_s)}{\sqrt{d_h}}
+=\frac{\mathbf{q}_t^\top\mathbf{R}_{s-t}\,\mathbf{k}_s}{\sqrt{d_h}},
+\tag{5.3}
+$$</div>
+<p>这里用到了 <span class="math">\(\mathbf{R}_t^\top\mathbf{R}_s=\mathbf{R}_{s-t}\)</span>（旋转矩阵正交且同轴旋转可加）。因此 logit <strong>只依赖相对距离</strong> <span class="math">\(t-s\)</span>。把 <span class="math">\(\mathbf{q},\mathbf{k}\)</span> 的第 <span class="math">\(i\)</span> 个子空间写成复数 <span class="math">\(q^{(i)},k^{(i)}\in\mathbb{C}\)</span>，有</p>
+<div class="math">$$
+\ell_{t,s}=\frac{1}{\sqrt{d_h}}\operatorname{Re}\sum_{i}q_t^{(i)}\,\overline{k_s^{(i)}}\,e^{\mathrm{i}(t-s)\theta_i}.
+\tag{5.4}
+$$</div>
+<p>高频维度（<span class="math">\(i\)</span> 小，<span class="math">\(\theta_i\)</span> 大）随距离快速振荡，编码局部位置；低频维度（<span class="math">\(i\)</span> 大）变化缓慢，编码远距离位置。</p>
+<h3>5.2 外推失败的原因</h3>
+<p>由式 (3.3)，低频维度在训练中没有转完一圈。推理到 <span class="math">\(N&gt;N_{\text{train}}\)</span> 时，这些维度出现训练中从未见过的相位 <span class="math">\((t-s)\theta_i\)</span>，logit 分布偏离训练分布，困惑度迅速上升。所有 RoPE 扩展方法都可以写成对频率的重映射</p>
+<div class="math">$$
+\theta_i\ \longmapsto\ \theta_i'=h_i(\theta_i;\rho),\qquad \rho=\frac{N_{\text{target}}}{N_{\text{train}}},
+\tag{5.5}
+$$</div>
+<p>目标是让推理时每个维度的相位范围 <span class="math">\(\{(t-s)\theta_i'\,:\,|t-s|&lt;N_{\text{target}}\}\)</span> 落在训练见过的范围内，同时尽量不破坏高频维度的局部分辨率。</p>
+<h3>5.3 Position Interpolation（PI）与 NTK-aware 缩放</h3>
+<p><strong>Position Interpolation（PI）</strong> [Chen et al., 2023] 把所有维度都等比压缩：</p>
+<div class="math">$$
+\theta_i'=\theta_i/\rho \quad\Longleftrightarrow\quad t\mapsto t/\rho .
+\tag{5.6}
+$$</div>
+<p>所有相位都落在训练范围内，但高频维度的分辨率也被压缩了 <span class="math">\(\rho\)</span> 倍，相邻 token 更难区分，需要微调来恢复。</p>
+<p><strong>NTK-aware 缩放</strong> 改为调整 base，使最高频不变、最低频恰好被压缩 <span class="math">\(\rho\)</span> 倍：</p>
+<div class="math">$$
+b'=b\cdot\rho^{\,d_h/(d_h-2)},\qquad \theta_i'=(b')^{-2i/d_h}.
+\tag{5.7}
+$$</div>
+<p>验证：<span class="math">\(i=0\)</span> 时 <span class="math">\(\theta_0'=1=\theta_0\)</span>；<span class="math">\(i=\tfrac{d_h}{2}-1\)</span> 时 <span class="math">\(\theta_i'=b^{-(d_h-2)/d_h}\rho^{-1}=\theta_i/\rho\)</span>。中间维度按几何级数平滑过渡。NTK-aware 方法不微调也能部分外推。</p>
+<h3>5.4 YaRN 与 Llama 3 缩放：NTK-by-parts 插值</h3>
+<p>更精细的做法是按每个维度的“训练中转了几圈”分别处理。定义第 <span class="math">\(i\)</span> 个维度在训练长度内的圈数</p>
+<div class="math">$$
+r_i=\frac{N_{\text{train}}}{\lambda_i}=\frac{N_{\text{train}}\,\theta_i}{2\pi},
+\tag{5.8}
+$$</div>
+<p>再定义斜坡函数（阈值 <span class="math">\(\alpha_{\text{lo}}&lt;\beta_{\text{hi}}\)</span>）</p>
+<div class="math">$$
+\gamma(r)=\begin{cases}0,&amp; r&lt;\alpha_{\text{lo}}\\[2pt]\dfrac{r-\alpha_{\text{lo}}}{\beta_{\text{hi}}-\alpha_{\text{lo}}},&amp;\alpha_{\text{lo}}\le r\le\beta_{\text{hi}}\\[6pt]1,&amp; r&gt;\beta_{\text{hi}}\end{cases}.
+\tag{5.9}
+$$</div>
+<p><strong>YaRN</strong> [Peng et al., 2023] 的“NTK-by-parts”插值为</p>
+<div class="math">$$
+\theta_i'=\big(1-\gamma(r_i)\big)\frac{\theta_i}{\rho}+\gamma(r_i)\,\theta_i .
+\tag{5.10}
+$$</div>
+<p>含义是：转了很多圈的高频维度（<span class="math">\(r_i&gt;\beta_{\text{hi}}\)</span>）<strong>完全不动</strong>，保留局部分辨率；一圈都没转完的低频维度（<span class="math">\(r_i&lt;\alpha_{\text{lo}}\)</span>）<strong>完全插值</strong>，避免 OOD；中间线性过渡。YaRN 推荐 <span class="math">\(\alpha_{\text{lo}}=1,\beta_{\text{hi}}=32\)</span>。</p>
+<p>为对抗插值后注意力分布变平（P4），YaRN 同时引入<strong>注意力温度</strong>：</p>
+<div class="math">$$
+\ell_{t,s}\ \mapsto\ \frac{\ell_{t,s}}{\tau},\qquad \sqrt{1/\tau}=0.1\ln\rho+1 .
+\tag{5.11}
+$$</div>
+<p>实现时把 <span class="math">\(\mathbf{q}\)</span> 与 <span class="math">\(\mathbf{k}\)</span> 都乘以 <span class="math">\(\sqrt{1/\tau}\)</span>。DeepSeek-V3 用 YaRN（<span class="math">\(\rho=40\)</span>，<span class="math">\(N_{\text{train}}=4\text{K}\)</span>）分两阶段扩展到 32K 和 128K；Qwen2.5/Qwen3 用 YaRN 把 32K 扩展到 128K；Kimi K2 也采用 YaRN。</p>
+<p><strong>Llama-3.1 缩放</strong> 是式 (5.10) 的一个变体：用波长而非圈数设阈值。设 <span class="math">\(N_{\text{orig}}=8192\)</span>，<span class="math">\(\rho=8\)</span>，低/高频因子 <span class="math">\(f_{\text{lo}}=1,f_{\text{hi}}=4\)</span>：</p>
+<div class="math">$$
+\theta_i'=\begin{cases}
+\theta_i,&amp;\lambda_i&lt;N_{\text{orig}}/f_{\text{hi}}\\[2pt]
+\theta_i/\rho,&amp;\lambda_i&gt;N_{\text{orig}}/f_{\text{lo}}\\[2pt]
+(1-\kappa_i)\,\theta_i/\rho+\kappa_i\,\theta_i,&amp;\text{otherwise}
+\end{cases},
+\qquad
+\kappa_i=\frac{N_{\text{orig}}/\lambda_i-f_{\text{lo}}}{f_{\text{hi}}-f_{\text{lo}}}.
+\tag{5.12}
+$$</div>
+<p>注意 <span class="math">\(N_{\text{orig}}/\lambda_i=r_i\)</span>，所以式 (5.12) 正是 <span class="math">\(\alpha_{\text{lo}}=1,\beta_{\text{hi}}=4\)</span> 时的式 (5.10)，只是不带温度项。</p>
+<p><img alt="图 6. PI（式 5.6）、NTK-aware（式 5.7）、YaRN（式 5.10）与 Llama 3.1 缩放（式 5.12）下各维度的频率比 \(\theta'_i/\theta_i\)。阴影区域是在 \(N_{\text{train}}\) 内转不满一圈的维度（式 3.3）。" src="/figures/20261010_survey_attention__rope_scaling.svg"></p>
+<p><em>图 6. PI（式 5.6）、NTK-aware（式 5.7）、YaRN（式 5.10）与 Llama 3.1 缩放（式 5.12）下各维度的频率比 <span class="math">\(\theta'_i/\theta_i\)</span>。阴影区域是在 <span class="math">\(N_{\text{train}}\)</span> 内转不满一圈的维度（式 3.3）。</em></p>
+<h3>5.5 调整基频（ABF）</h3>
+<p>另一种思路是在长上下文继续预训练时直接把 <span class="math">\(b\)</span> 调大（adjusted base frequency, ABF）[Xiong et al., 2023]。由式 (3.3)，增大 <span class="math">\(b\)</span> 等价于让更多维度在训练长度内“转不完一圈”，但这些维度的相位变化很慢，在更长距离上仍处于小角度区域，因此对外推更友好。代表性配置：</p>
+<table>
+<thead>
+<tr>
+<th>模型</th>
+<th>RoPE base</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Llama 2</td>
+<td><span class="math">\(10^4\)</span></td>
+<td>4K</td>
+</tr>
+<tr>
+<td>Code Llama</td>
+<td><span class="math">\(10^6\)</span></td>
+<td>16K 训练，外推到 100K</td>
+</tr>
+<tr>
+<td>Llama 3 / 3.1</td>
+<td><span class="math">\(5\times10^5\)</span></td>
+<td>3.1 另加式 (5.12) 缩放到 128K</td>
+</tr>
+<tr>
+<td>Qwen2.5 / Qwen3</td>
+<td><span class="math">\(10^6\)</span></td>
+<td>再叠加 YaRN</td>
+</tr>
+<tr>
+<td>Gemma 3</td>
+<td>局部层 <span class="math">\(10^4\)</span>；全局层 <span class="math">\(10^6\)</span></td>
+<td>局部层不需要外推</td>
+</tr>
+</tbody>
+</table>
+<p>Gemma 3 的配置说明了一个规律：<strong>只有需要看远处的层才需要处理外推</strong>。滑动窗口层永远只看 <span class="math">\(w\)</span> 以内的距离，用小 base 获得更高的局部分辨率即可。</p>
+<h3>5.6 部分 RoPE、NoPE 与长度相关的注意力温度</h3>
+<p><strong>部分 RoPE</strong>：只对一部分维度施加旋转，其余维度不编码位置。MLA 的解耦 RoPE（第 6.4 节）、DeepSeek-V3.2 的索引器（128 维中 64 维施加 RoPE）、DeepSeek-V4 的 CSA/HCA（最后 64 维施加 RoPE）都是这种形式。不编码位置的维度可以做纯语义匹配，不受外推影响。</p>
+<p><strong>NoPE</strong>：完全不加位置编码。因果掩码本身就泄露了位置信息（第 <span class="math">\(t\)</span> 个 query 恰好看到 <span class="math">\(t\)</span> 个 key），因此 decoder-only 模型在 NoPE 下仍能学到位置。NoPE 层没有 RoPE 的 OOD 问题，但它没有天然的距离衰减，长上下文时 P4 更严重。两个代表：</p>
+<ul>
+<li><strong>Llama 4（iRoPE）</strong>：局部层使用 RoPE 的 chunked attention（块大小 8192），每 4 层有 1 层是 NoPE 全局注意力。推理时对 NoPE 层的 query 施加随位置增长的温度：
+<div class="math">$$
+\mathbf{q}_t\ \mapsto\ \Big(1+\varepsilon_{\tau}\ln\!\Big(\Big\lfloor\frac{t+1}{N_\tau}\Big\rfloor+1\Big)\Big)\,\mathbf{q}_t,
+\tag{5.13}
+$$</div>
+其中 <span class="math">\(N_\tau=8192,\ \varepsilon_\tau=0.1\)</span>（Hugging Face 实现中的 <code>floor_scale</code> 与 <code>attn_scale</code>）。这正是对式 (3.4) 中“所需 logit 间隔随 <span class="math">\(\ln N\)</span> 增长”的直接补偿。</li>
+<li><strong>Kimi Linear</strong>：全注意力的 MLA 层使用 NoPE，位置信息和近因偏置交给 KDA 层的数据相关衰减（第 10 节）。</li>
+</ul>
+<p><strong>Scalable-Softmax（SSMax）</strong> [Nakanishi, 2025] 把同样的思想写进训练：<span class="math">\(\ell_{t,s}\mapsto \varpi\,(\ln|\mathcal{V}_t|)\,\ell_{t,s}\)</span>，其中 <span class="math">\(\varpi\)</span> 为可学习标量。由式 (3.4)，乘以 <span class="math">\(\ln N\)</span> 后，目标权重 <span class="math">\(a_{\text{target}}\)</span> 在不同长度下保持稳定。</p>
+<h3>5.7 Dual Chunk Attention：重映射相对位置</h3>
+<p>Qwen2.5-1M [Yang et al., 2025] 在推理时结合 YaRN 与 <strong>Dual Chunk Attention（DCA）</strong> [An et al., 2024]，免训练地把 256K 训练长度外推到 1M。DCA 把序列按块长 <span class="math">\(B\)</span> 切块，由三部分组成：<strong>块内注意力</strong>（intra-chunk）保留原始相对位置；<strong>块间注意力</strong>（inter-chunk）在 query 关注更早块的 key 时，给 query 赋一个固定的较大位置下标，使所有相对距离都落在预训练范围内；<strong>相邻块注意力</strong>（successive-chunk）对紧邻的前一块使用专门的位置分配，以保持局部连续性。它属于“重映射 <span class="math">\((t-s)\)</span>”，与式 (5.5) 的“重映射 <span class="math">\(\theta_i\)</span>”互补。</p>
+<h3>5.8 小结与遗留问题</h3>
+<p>方向 B 让模型在 <span class="math">\(N\gg N_{\text{train}}\)</span> 时仍“看得懂”位置，但完全没有改变计算量与显存：一个能读 1M token 的 RoPE-YaRN 模型，在 1M 上的 prefill 仍是 <span class="math">\(O(N^2)\)</span>，KV cache 仍按第 3.2 节的表增长。另外，外推只能免训练地扩展有限倍数，可靠的长上下文能力仍需要在目标长度上训练，而这又回到了 P1/P6。接下来的方向 C–H 都在回答：<strong>如何让长上下文在计算和显存上可负担</strong>。</p>
+<hr>
+<h2>6 方向 C：降低每个 token 的 KV 大小——MQA、GQA 与 MLA</h2>
+<p>本方向不改变 <span class="math">\(\mathcal{J}_t=[t]\)</span>，也不改变 softmax，只缩小<strong>每个KV 条目</strong>的大小（框架维度 ②）。它针对 P2：KV cache 显存与 decode 带宽。</p>
+<h3>6.1 MQA 与 GQA</h3>
+<p><strong>多查询注意力（MQA）</strong> [Shazeer, 2019] 让所有 query 头共享一对 key/value 头：<span class="math">\(\mathbf{k}_{s,h}\equiv\mathbf{k}_s,\ \mathbf{v}_{s,h}\equiv\mathbf{v}_s\)</span>。<strong>分组查询注意力（GQA）</strong> [Ainslie et al., 2023] 是中间形态：把 <span class="math">\(H\)</span> 个 query 头分成 <span class="math">\(H_{kv}\)</span> 组，每组 <span class="math">\(g=H/H_{kv}\)</span> 个头共享一对 KV。记第 <span class="math">\(h\)</span> 个 query 头所属的组为</p>
+<div class="math">$$
+\pi(h)=\Big\lceil h/g\Big\rceil\in\{1,\dots,H_{kv}\},
+\tag{6.1}
+$$</div>
+<p>则</p>
+<div class="math">$$
+\mathbf{k}_{s,h}=\mathbf{W}^{K}_{\pi(h)}\mathbf{x}_s,\qquad
+\mathbf{v}_{s,h}=\mathbf{W}^{V}_{\pi(h)}\mathbf{x}_s,\qquad
+\ell_{t,s,h}=\frac{\mathbf{q}_{t,h}^\top\mathbf{k}_{s,\pi(h)}}{\sqrt{d_h}} .
+\tag{6.2}
+$$</div>
+<p>MHA 是 <span class="math">\(H_{kv}=H\)</span>，MQA 是 <span class="math">\(H_{kv}=1\)</span>。KV cache 按式 (2.5) 缩小为原来的 <span class="math">\(H_{kv}/H=1/g\)</span>；由式 (2.7)，decode 的算术强度提高到 <span class="math">\(2g/e\)</span>。GQA 已是开源模型的默认配置，例如 Llama-3-70B（<span class="math">\(H=64,H_{kv}=8\)</span>）、Llama-3.1-405B（<span class="math">\(H=128,H_{kv}=8\)</span>）、Qwen3-235B-A22B（<span class="math">\(H=64,H_{kv}=4\)</span>）、gpt-oss（<span class="math">\(H=64,H_{kv}=8\)</span>）。已训练好的 MHA 模型也可以把同组 KV 投影矩阵取平均得到 GQA 初始化，再少量继续训练（uptraining）。</p>
+<p>GQA 的代价是表达能力：组内 <span class="math">\(g\)</span> 个头只能对<strong>同一组 key</strong> 做不同的 query 查询，读到的是同一组 value 的不同加权组合。<span class="math">\(g\)</span> 太大时质量下降。</p>
+<h3>6.2 MLA：低秩联合 KV 压缩</h3>
+<p><strong>多头潜变量注意力（MLA）</strong> [DeepSeek-AI, 2024a; 2024b] 换了一种思路：不让头共享 KV，而是让所有头的 KV 都由<strong>一个低维潜变量</strong>生成，cache 只存这个潜变量。</p>
+<p><strong>KV 侧（不含位置）</strong>：</p>
+<div class="math">$$
+\mathbf{c}^{KV}_s=\mathbf{W}^{DKV}\mathbf{x}_s\in\mathbb{R}^{d_c},\qquad
+\mathbf{k}^{C}_{s,h}=\mathbf{W}^{UK}_{h}\mathbf{c}^{KV}_s\in\mathbb{R}^{d_h},\qquad
+\mathbf{v}_{s,h}=\mathbf{W}^{UV}_{h}\mathbf{c}^{KV}_s\in\mathbb{R}^{d_v},
+\tag{6.3}
+$$</div>
+<p>其中 <span class="math">\(\mathbf{W}^{DKV}\in\mathbb{R}^{d_c\times d}\)</span> 为下投影，<span class="math">\(\mathbf{W}^{UK}_h\in\mathbb{R}^{d_h\times d_c}\)</span>、<span class="math">\(\mathbf{W}^{UV}_h\in\mathbb{R}^{d_v\times d_c}\)</span> 为每个头的上投影。query 侧也做低秩分解以节省训练激活：<span class="math">\(\mathbf{c}^{Q}_t=\mathbf{W}^{DQ}\mathbf{x}_t\in\mathbb{R}^{d_q}\)</span>，<span class="math">\(\mathbf{q}^{C}_{t,h}=\mathbf{W}^{UQ}_h\mathbf{c}^{Q}_t\)</span>。DeepSeek-V3 中 <span class="math">\(d=7168,\ H=128,\ d_h=d_v=128,\ d_c=512,\ d_q=1536\)</span>（实现中 <span class="math">\(\mathbf{c}^{KV}\)</span>、<span class="math">\(\mathbf{c}^{Q}\)</span> 后各有一个 RMSNorm，下文略去）。</p>
+<h3>6.3 权重吸收：MLA 在 decode 时等价于宽 MQA</h3>
+<p>不考虑位置时，第 <span class="math">\(h\)</span> 个头的 logit 为</p>
+<div class="math">$$
+\mathbf{q}^{C\top}_{t,h}\mathbf{k}^{C}_{s,h}
+=\big(\mathbf{W}^{UQ}_h\mathbf{c}^{Q}_t\big)^\top\mathbf{W}^{UK}_h\mathbf{c}^{KV}_s
+=\underbrace{\big(\mathbf{W}^{UK\top}_h\mathbf{q}^{C}_{t,h}\big)^\top}_{\hat{\mathbf{q}}_{t,h}^\top\ \in\ \mathbb{R}^{1\times d_c}}\mathbf{c}^{KV}_s .
+\tag{6.4}
+$$</div>
+<p>输出端同理：</p>
+<div class="math">$$
+\mathbf{W}^{O}_h\mathbf{o}_{t,h}
+=\mathbf{W}^{O}_h\sum_{s}a_{t,s,h}\mathbf{W}^{UV}_h\mathbf{c}^{KV}_s
+=\underbrace{\big(\mathbf{W}^{O}_h\mathbf{W}^{UV}_h\big)}_{\in\ \mathbb{R}^{d\times d_c}}\ \underbrace{\sum_{s}a_{t,s,h}\mathbf{c}^{KV}_s}_{\hat{\mathbf{o}}_{t,h}\ \in\ \mathbb{R}^{d_c}} .
+\tag{6.5}
+$$</div>
+<p>因此 decode 时不需要把 <span class="math">\(\mathbf{c}^{KV}\)</span> 展开成每个头的 <span class="math">\(\mathbf{k},\mathbf{v}\)</span>：每个头先把 query 映射到潜空间得到 <span class="math">\(\hat{\mathbf{q}}_{t,h}\)</span>，直接与缓存的 <span class="math">\(\mathbf{c}^{KV}_s\)</span> 做内积并加权求和，最后再由吸收后的 <span class="math">\(\mathbf{W}^{O}_h\mathbf{W}^{UV}_h\)</span> 投影回 <span class="math">\(d\)</span> 维。这在数学上就是一个 <strong><span class="math">\(H\)</span> 个 query 头共享同一个 key/value（都等于 <span class="math">\(\mathbf{c}^{KV}_s\)</span>）的 MQA</strong>，只是 key/value 维度为 <span class="math">\(d_c\)</span>。</p>
+<p>训练与 prefill 时，计算量受 <span class="math">\(N^2\)</span> 主导，此时更省的做法是把 <span class="math">\(\mathbf{c}^{KV}\)</span> 展开成标准 MHA（每头 <span class="math">\(d_h+d_R=192\)</span> 维 qk、<span class="math">\(d_v=128\)</span> 维 v）；decode 时受带宽主导，使用式 (6.4)–(6.5) 的吸收形式。<strong>同一组权重，两种计算顺序</strong>，这是 MLA 工程实现的核心。</p>
+<h3>6.4 解耦 RoPE</h3>
+<p>RoPE 与权重吸收不兼容。若直接对 <span class="math">\(\mathbf{q}^{C}\)</span> 和 <span class="math">\(\mathbf{k}^{C}\)</span> 施加 RoPE，由式 (5.3)，</p>
+<div class="math">$$
+(\mathbf{R}_t\mathbf{W}^{UQ}_h\mathbf{c}^{Q}_t)^\top(\mathbf{R}_s\mathbf{W}^{UK}_h\mathbf{c}^{KV}_s)
+=\mathbf{c}^{Q\top}_t\,\mathbf{W}^{UQ\top}_h\,\mathbf{R}_{s-t}\,\mathbf{W}^{UK}_h\,\mathbf{c}^{KV}_s ,
+\tag{6.6}
+$$</div>
+<p>位置相关的 <span class="math">\(\mathbf{R}_{s-t}\)</span> 夹在两个投影矩阵之间，无法预先合并成一个与位置无关的矩阵。解决方法是<strong>解耦</strong>：额外开一条低维通道专门携带位置，所有头共享同一个 RoPE key：</p>
+<div class="math">$$
+\mathbf{k}^{R}_s=\mathbf{R}_s\mathbf{W}^{KR}\mathbf{x}_s\in\mathbb{R}^{d_R},\qquad
+\mathbf{q}^{R}_{t,h}=\mathbf{R}_t\mathbf{W}^{QR}_h\mathbf{c}^{Q}_t\in\mathbb{R}^{d_R},
+\tag{6.7}
+$$</div>
+<div class="math">$$
+\mathbf{q}_{t,h}=\big[\mathbf{q}^{C}_{t,h};\,\mathbf{q}^{R}_{t,h}\big],\qquad
+\mathbf{k}_{s,h}=\big[\mathbf{k}^{C}_{s,h};\,\mathbf{k}^{R}_{s}\big],\qquad
+\ell_{t,s,h}=\frac{\mathbf{q}^{C\top}_{t,h}\mathbf{k}^{C}_{s,h}+\mathbf{q}^{R\top}_{t,h}\mathbf{k}^{R}_{s}}{\sqrt{d_h+d_R}} .
+\tag{6.8}
+$$</div>
+<p>第一项用式 (6.4) 吸收，第二项是一个 <span class="math">\(d_R\)</span> 维的普通 MQA 内积。cache 中每个 token 每层只需存 <span class="math">\([\mathbf{c}^{KV}_s;\mathbf{k}^{R}_s]\)</span>，共 <span class="math">\(d_c+d_R=576\)</span> 个元素（DeepSeek-V3 中 <span class="math">\(d_R=64\)</span>）。</p>
+<p><img alt="图 7. MLA 的数据流。cache 中只存 \([\mathbf{c}^{KV};\mathbf{k}^{R}]\)（576 个元素）。(a) 训练 / prefill 时把潜变量展开成标准 MHA；(b) decode 时把 \(\mathbf{W}^{UK}\) 吸收进 query、把 \(\mathbf{W}^{UV}\) 吸收进输出投影，MLA 变成一个 key 为 576 维的 MQA（式 6.4–6.8）。" src="/figures/20261010_survey_attention__mla.svg"></p>
+<p><em>图 7. MLA 的数据流。cache 中只存 <span class="math">\([\mathbf{c}^{KV};\mathbf{k}^{R}]\)</span>（576 个元素）。(a) 训练 / prefill 时把潜变量展开成标准 MHA；(b) decode 时把 <span class="math">\(\mathbf{W}^{UK}\)</span> 吸收进 query、把 <span class="math">\(\mathbf{W}^{UV}\)</span> 吸收进输出投影，MLA 变成一个 key 为 576 维的 MQA（式 6.4–6.8）。</em></p>
+<h3>6.5 MLA 的代价分析</h3>
+<p><strong>KV cache.</strong> 每 token 每层元素数：</p>
+<div class="math">$$
+\underbrace{2Hd_h}_{\text{MHA}}=32768\quad\longrightarrow\quad
+\underbrace{2H_{kv}d_h}_{\text{GQA-8}}=2048\quad\longrightarrow\quad
+\underbrace{d_c+d_R}_{\text{MLA}}=576 .
+\tag{6.9}
+$$</div>
+<p>（按 DeepSeek-V3 的 <span class="math">\(H=128,d_h=128\)</span> 计算 MHA。）MLA 相对同头数 MHA 压缩约 57 倍，比 GQA-8 还小 3.6 倍。</p>
+<p><strong>表达能力.</strong> GQA 是 MLA 的一个特例：取 <span class="math">\(d_c=2H_{kv}d_h\)</span>，令 <span class="math">\(\mathbf{c}^{KV}_s=[\mathbf{k}_{s,1};\dots;\mathbf{k}_{s,H_{kv}};\mathbf{v}_{s,1};\dots;\mathbf{v}_{s,H_{kv}}]\)</span>，并让 <span class="math">\(\mathbf{W}^{UK}_h,\mathbf{W}^{UV}_h\)</span> 为选出第 <span class="math">\(\pi(h)\)</span> 组的 0/1 选择矩阵，式 (6.3) 就退化为式 (6.2)。因此在相同 cache 预算下，MLA 的函数类严格包含 GQA [Meng et al., 2025, TransMLA]。这也给出了把现有 GQA 模型转换为 MLA 的路径。</p>
+<p><strong>Decode 计算量.</strong> 吸收后每个头的 key 维度是 <span class="math">\(d_c+d_R\)</span>、value 维度是 <span class="math">\(d_c\)</span>，单层单步 decode 计算量为</p>
+<div class="math">$$
+\text{FLOPs}^{\text{MLA}}_{\text{dec}}\approx 2H\,(2d_c+d_R)\,N
+\qquad\text{vs.}\qquad
+\text{FLOPs}^{\text{GQA}}_{\text{dec}}\approx 2H\,(2d_h)\,N .
+\tag{6.10}
+$$</div>
+<p>DeepSeek-V3 的参数下，每个头的 decode 计算量是 GQA（<span class="math">\(d_h=128\)</span>）的 <span class="math">\(1088/256\approx 4.25\)</span> 倍。MLA 用计算换带宽，非常适合带宽受限的 decode，但当 batch 很大或使用投机解码（每步多个 query）时，decode 会从带宽受限转为计算受限。GLM-5 的 <strong>MLA-256</strong> 就是针对这一点：把每头维度从 192 增大到 256，同时把头数减少 <span class="math">\(1/3\)</span>，保持训练计算量和参数量不变，降低 decode 计算量。GLM-5 还发现 Muon 优化器对 <span class="math">\(\mathbf{W}^{UQ},\mathbf{W}^{UK},\mathbf{W}^{UV}\)</span> 做整体正交化会限制各头独立缩放，提出按头切分后分别正交化（<strong>Muon Split</strong>）。</p>
+<p><strong>采用情况.</strong> MLA 被 DeepSeek-V2/V3/R1/V3.2、Kimi K2/K2.5、GLM-5 采用，Kimi Linear 的全注意力层也是 MLA。</p>
+<h3>6.6 小结与遗留问题</h3>
+<p>方向 C 把每个 token 的 cache 缩小了一到两个数量级，但两件事没有改变：</p>
+<ol>
+<li>KV cache 仍然随 <span class="math">\(N\)</span> <strong>线性增长</strong>：DeepSeek-V3 在 1M 上下文时仍需约 69 GiB/序列（第 3.2 节的表）；</li>
+<li>prefill 计算仍是 <span class="math">\(O(N^2)\)</span>；MLA 的 decode 计算甚至比 GQA 更重。</li>
+</ol>
+<p>要降低随 <span class="math">\(N\)</span> 增长的部分，必须减少 query 读取的KV 条目数量 <span class="math">\(|\mathcal{J}_t|\)</span>（方向 D、E）或KV 条目总数（方向 F、G）。</p>
+<hr>
+<h2>7 方向 D：静态稀疏与局部-全局交错注意力</h2>
+<p>静态稀疏用一个<strong>与内容无关</strong>的固定模式定义可见集合 <span class="math">\(\mathcal{V}_t\)</span>（框架维度 ①）。它最简单，也是开源模型中最常见的长上下文手段之一。</p>
+<h3>7.1 滑动窗口注意力（SWA）</h3>
+<div class="math">$$
+\mathcal{V}^{\text{SWA}}_t=\{s:\ t-w&lt;s\le t\}.
+\tag{7.1}
+$$</div>
+<p>每个 query 只看最近 <span class="math">\(w\)</span> 个 token：prefill 计算量从 <span class="math">\(O(N^2)\)</span> 降为 <span class="math">\(O(Nw)\)</span>，KV cache 从 <span class="math">\(O(N)\)</span> 降为 <span class="math">\(O(w)\)</span>，可以用大小为 <span class="math">\(w\)</span> 的环形缓冲区实现（token <span class="math">\(s\)</span> 写入槽位 <span class="math">\(s\bmod w\)</span>）。</p>
+<p>信息仍然可以跨层传播到窗口之外：第 <span class="math">\(l\)</span> 层位置 <span class="math">\(t\)</span> 的表示依赖第 <span class="math">\(l-1\)</span> 层位置 <span class="math">\(t-w+1,\dots,t\)</span>，因此 <span class="math">\(L\)</span> 层 SWA 的理论感受野为 <span class="math">\(L(w-1)+1\)</span>。Mistral-7B（<span class="math">\(w=4096\)</span>，<span class="math">\(L=32\)</span>）的理论感受野约 131K。但远处信息要经过多次“接力”压缩进残差流，<strong>有效</strong>感受野远小于理论值，精确检索（如 needle-in-a-haystack）能力会明显下降。</p>
+<h3>7.2 Attention sink：StreamingLLM 与可学习 sink logit</h3>
+<p>第 3.5 节说明模型会把多余的注意力权重放在开头几个 token 上。纯 SWA 一旦把这些 token 移出窗口，困惑度就会急剧上升。<strong>StreamingLLM</strong> [Xiao et al., 2023] 的修复方法是永久保留前 <span class="math">\(n_0\)</span> 个 token（通常 <span class="math">\(n_0=4\)</span>）：</p>
+<div class="math">$$
+\mathcal{V}^{\text{stream}}_t=\{1,\dots,n_0\}\ \cup\ \{s:\ t-w&lt;s\le t\}.
+\tag{7.2}
+$$</div>
+<p>更直接的做法是给每个头加一个<strong>可学习 sink logit</strong> <span class="math">\(\varsigma_h\)</span>，即式 (2.9) 中的分母项，相当于加了一个 value 为 <span class="math">\(\mathbf{0}\)</span> 的虚拟 key。设普通 key 上的 log-sum-exp 为 <span class="math">\(\operatorname{LSE}_{t,h}=\ln\sum_{s\in\mathcal{V}_t}e^{\ell_{t,s,h}}\)</span>，原始 softmax 输出为 <span class="math">\(\mathbf{o}^{\text{std}}_{t,h}\)</span>。由 LSE 合并公式 (4.3)，带 sink 的输出为</p>
+<div class="math">$$
+\mathbf{o}_{t,h}
+=\frac{e^{\operatorname{LSE}_{t,h}}\,\mathbf{o}^{\text{std}}_{t,h}+e^{\varsigma_h}\cdot\mathbf{0}}{e^{\operatorname{LSE}_{t,h}}+e^{\varsigma_h}}
+=\sigma\!\big(\operatorname{LSE}_{t,h}-\varsigma_h\big)\,\mathbf{o}^{\text{std}}_{t,h},
+\qquad
+\sum_{s}a_{t,s,h}=\sigma\!\big(\operatorname{LSE}_{t,h}-\varsigma_h\big)&lt;1 .
+\tag{7.3}
+$$</div>
+<p>式 (7.3) 说明：<strong>可学习 sink 等价于一个由“匹配强度”<span class="math">\(\operatorname{LSE}\)</span> 决定的标量输出门</strong>。没有 key 匹配时（<span class="math">\(\operatorname{LSE}\ll\varsigma_h\)</span>），头的输出接近零，不再需要借用某个真实 token 当“垃圾桶”，SWA 的窗口可以任意滑动。gpt-oss、MiMo-V2-Flash、DeepSeek-V4（CSA/HCA）都使用可学习 sink。第 11.3 节的 output gate 可以看作把这个标量门推广为与输入相关的逐元素门。</p>
+<h3>7.3 Chunked attention</h3>
+<p>另一种静态模式是把序列切成长度为 <span class="math">\(B\)</span> 的不重叠块，每个 query 只看本块内、自己之前的 token：</p>
+<div class="math">$$
+\mathcal{V}^{\text{chunk}}_t=\Big\{s\le t:\ \Big\lfloor\tfrac{s-1}{B}\Big\rfloor=\Big\lfloor\tfrac{t-1}{B}\Big\rfloor\Big\}.
+\tag{7.4}
+$$</div>
+<p>它与 SWA 的区别是：块首 token 几乎看不到上下文，块尾 token 看到 <span class="math">\(B-1\)</span> 个；优点是块与块之间完全独立，prefill 易于并行，cache 在块边界可以直接清空。Llama 4 的局部层使用 <span class="math">\(B=8192\)</span> 的 chunked attention（第 5.6 节）。</p>
+<p><img alt="图 8. 六种注意力模式的可见集合 \(\mathcal{V}_t\)：完整因果、滑动窗口（式 7.1）、chunked（式 7.4）、sink + 窗口（式 7.2）、块级 top-k（MoBA/MSA，式 8.4、8.13）、token 级 top-k（DSA，式 8.11）。" src="/figures/20261010_survey_attention__masks.svg"></p>
+<p><em>图 8. 六种注意力模式的可见集合 <span class="math">\(\mathcal{V}_t\)</span>：完整因果、滑动窗口（式 7.1）、chunked（式 7.4）、sink + 窗口（式 7.2）、块级 top-k（MoBA/MSA，式 8.4、8.13）、token 级 top-k（DSA，式 8.11）。</em></p>
+<h3>7.4 局部-全局交错层</h3>
+<p>纯局部注意力无法做远程检索，于是开源模型普遍把局部层与少量全局层交错排列。设每 <span class="math">\(r\)</span> 个局部层配 1 个全局层，局部层窗口为 <span class="math">\(w\)</span>，每个KV 条目大小为 <span class="math">\(\varepsilon\)</span> 字节，则 KV cache 为</p>
+<div class="math">$$
+\mathrm{Mem}_{\text{KV}}=\frac{L}{r+1}\,N\,\varepsilon+\frac{rL}{r+1}\min(N,w)\,\varepsilon,
+\qquad
+\frac{\mathrm{Mem}_{\text{KV}}}{\mathrm{Mem}_{\text{KV}}^{\text{full}}}=\frac{1}{r+1}+\frac{r}{r+1}\cdot\frac{\min(N,w)}{N}.
+\tag{7.5}
+$$</div>
+<p><span class="math">\(N\gg w\)</span> 时比值趋近 <span class="math">\(1/(r+1)\)</span>。计算量同理。代表配置：</p>
+<table>
+<thead>
+<tr>
+<th>模型</th>
+<th>局部类型</th>
+<th>局部 : 全局</th>
+<th>窗口 <span class="math">\(w\)</span> / 块 <span class="math">\(B\)</span></th>
+<th>其他</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mistral-7B</td>
+<td>SWA</td>
+<td>全部 SWA</td>
+<td>4096</td>
+<td>无全局层</td>
+</tr>
+<tr>
+<td>Gemma 2</td>
+<td>SWA</td>
+<td>1 : 1</td>
+<td>4096</td>
+<td>logit soft-capping</td>
+</tr>
+<tr>
+<td>Gemma 3</td>
+<td>SWA</td>
+<td>5 : 1</td>
+<td>1024</td>
+<td>局部 base <span class="math">\(10^4\)</span>，全局 base <span class="math">\(10^6\)</span>；128K</td>
+</tr>
+<tr>
+<td>gpt-oss-120b/20b</td>
+<td>banded SWA</td>
+<td>1 : 1</td>
+<td>128</td>
+<td>可学习 sink；GQA-8</td>
+</tr>
+<tr>
+<td>Llama 4 Scout/Maverick</td>
+<td>chunked</td>
+<td>3 : 1</td>
+<td>8192</td>
+<td>全局层 NoPE + 温度（式 5.13）</td>
+</tr>
+<tr>
+<td>MiMo-V2-Flash</td>
+<td>SWA</td>
+<td>5 : 1</td>
+<td>128</td>
+<td>可学习 sink；KV cache 约减 6 倍</td>
+</tr>
+</tbody>
+</table>
+<p>以 Gemma 3 为例（4B/12B/27B 支持 128K，1B 为 32K），<span class="math">\(N=128\text{K}\)</span> 时由式 (7.5)，<span class="math">\(\tfrac16+\tfrac56\cdot\tfrac{1024}{131072}\approx 0.173\)</span>，KV cache 约为全注意力的 <span class="math">\(1/5.8\)</span>。Gemma 3 报告显示，把局部:全局从 1:1 提高到 5:1、窗口从 4096 缩到 1024，对困惑度的影响很小。</p>
+<h3>7.5 其他静态模式</h3>
+<p>早期的 Longformer、BigBird 在窗口之外加入膨胀（dilated）窗口、少量全局 token 和随机连接。LongLoRA 的 S²-Attn 在微调阶段把序列分组、一半头平移半组，用于低成本扩展上下文，推理时仍用全注意力。这些模式在当前主流开源 LLM 中已很少使用。</p>
+<h3>7.6 小结与遗留问题</h3>
+<p>静态稀疏把计算和 cache 都降到了 <span class="math">\(O(w)\)</span> 量级，但<strong>远程信息只能依靠少数全局层</strong>。全局层仍是 <span class="math">\(O(N^2)\)</span> 计算和 <span class="math">\(O(N)\)</span> cache，局部层对远程检索没有直接贡献。GLM-5 在 GLM-9B 上的消融（RULER@128K）很说明问题：</p>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>RULER@128K</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>全注意力</td>
+<td>75.28</td>
+</tr>
+<tr>
+<td>SWA 交错（规则排列）</td>
+<td>44.93</td>
+</tr>
+<tr>
+<td>SWA 模式（搜索得到的层排列）</td>
+<td>69.59</td>
+</tr>
+<tr>
+<td>GDN 混合</td>
+<td>64.00</td>
+</tr>
+<tr>
+<td>DSA（动态稀疏）</td>
+<td>≈ 75</td>
+</tr>
+</tbody>
+</table>
+<p>固定模式无法知道“针”在哪里。要在稀疏的同时保留任意位置的检索能力，可见集合 <span class="math">\(\mathcal{J}_t\)</span> 必须<strong>依赖内容</strong>，这就是方向 E。</p>
+<hr>
+<h2>8 方向 E：内容相关的动态稀疏注意力</h2>
+<p>动态稀疏的出发点是一个经验事实：长上下文中，softmax 注意力高度集中，每个 query 的绝大部分权重落在少数 key 上。如果能以较低成本<strong>预测</strong>这些 key 的位置，就可以只对它们做精确的 softmax。所有动态稀疏方法都是<strong>两阶段</strong>结构：</p>
+<div class="math">$$
+\underbrace{\mathcal{J}_t=\operatorname{TopK}_{j}\big(I_{t,j},\,k_{\text{top}}\big)\cup\mathcal{J}^{\text{fixed}}_t}_{\text{阶段 1：廉价打分与选择}}
+\qquad\Longrightarrow\qquad
+\underbrace{\mathbf{o}_{t,h}=\operatorname{softmax}\text{-}\operatorname{Attn}\big(\mathbf{q}_{t,h},\{\tilde{\mathbf{k}}_j,\tilde{\mathbf{v}}_j\}_{j\in\mathcal{J}_t}\big)}_{\text{阶段 2：在选中集合上做精确注意力}}
+\tag{8.1}
+$$</div>
+<p>其中 <span class="math">\(I_{t,j}\)</span> 是索引分数，<span class="math">\(\mathcal{J}^{\text{fixed}}_t\)</span> 是总被保留的条目（当前块、局部窗口、sink 等）。各方法的差别在于：选择粒度（token 还是块）、打分函数 <span class="math">\(I_{t,j}\)</span> 怎么算、选择在哪个层级共享（每头、每 GQA 组、全部头），以及如何训练不可导的 TopK。</p>
+<p>在稀疏注意力内部，softmax 只在 <span class="math">\(\mathcal{J}_t\)</span> 上归一化。设被丢弃的条目集合为 <span class="math">\(\bar{\mathcal{J}}_t\)</span>，由式 (4.3)，稀疏输出与稠密输出的误差满足</p>
+<div class="math">$$
+\big\|\mathbf{o}^{\text{dense}}_{t}-\mathbf{o}^{\text{sparse}}_{t}\big\|
+=\Big(\textstyle\sum_{s\in\bar{\mathcal{J}}_t}a_{t,s}\Big)\cdot\big\|\mathbf{o}^{\bar{\mathcal{J}}}_t-\mathbf{o}^{\mathcal{J}}_t\big\|
+\ \le\ 2\,\varepsilon_t\max_s\|\mathbf{v}_s\|,
+\qquad
+\varepsilon_t=\sum_{s\in\bar{\mathcal{J}}_t}a^{\text{dense}}_{t,s},
+\tag{8.2}
+$$</div>
+<p>其中 <span class="math">\(a^{\text{dense}}\)</span> 为稠密注意力权重，<span class="math">\(\mathbf{o}^{\mathcal{J}},\mathbf{o}^{\bar{\mathcal{J}}}\)</span> 分别为只在 <span class="math">\(\mathcal{J}_t\)</span>、<span class="math">\(\bar{\mathcal{J}}_t\)</span> 上归一化的局部输出。也就是说，<strong>误差由被丢弃的注意力质量 <span class="math">\(\varepsilon_t\)</span> 控制</strong>。好的索引器应使选中集合覆盖尽可能多的注意力质量，这正是后文 KL 训练目标的来源。</p>
+<h3>8.1 块稀疏注意力：MoBA</h3>
+<p><strong>MoBA</strong>（Mixture of Block Attention）[Lu et al., 2025, Moonshot AI] 把 MoE 的路由思想用于 KV 块。把序列按块长 <span class="math">\(B\)</span> 切块 <span class="math">\(\mathcal{G}_j=\{(j-1)B+1,\dots,jB\}\)</span>，块的代表 key 取均值：</p>
+<div class="math">$$
+\bar{\mathbf{k}}_{j,h}=\frac{1}{B}\sum_{s\in\mathcal{G}_j}\mathbf{k}_{s,h},\qquad
+I_{t,j,h}=\mathbf{q}_{t,h}^\top\bar{\mathbf{k}}_{j,h}.
+\tag{8.3}
+$$</div>
+<p>设 query <span class="math">\(t\)</span> 所在块为 <span class="math">\(j_t=\lceil t/B\rceil\)</span>。每个头在<strong>已完整结束的历史块</strong>中选 top-<span class="math">\(k_{\text{top}}\)</span>，再强制加入当前块（当前块内用因果掩码）：</p>
+<div class="math">$$
+\mathcal{J}_{t,h}=\operatorname{TopK}_{j&lt;j_t}\big(I_{t,j,h},\,k_{\text{top}}\big)\cup\{j_t\},\qquad
+\mathcal{V}_{t,h}=\Big(\textstyle\bigcup_{j\in\mathcal{J}_{t,h}}\mathcal{G}_j\Big)\cap[t].
+\tag{8.4}
+$$</div>
+<p>每个 query 读取约 <span class="math">\((k_{\text{top}}+1)B\)</span> 个 token。MoBA 论文在 1M 上下文中取 <span class="math">\(B=4096\)</span>、共选 12 块（含当前块），稀疏度约 <span class="math">\(1-\tfrac{12\times4096}{2^{20}}\approx 95\%\)</span>。MoBA 无需新参数，可以和全注意力在层间或训练阶段之间切换；Kimi 用它支撑长上下文服务。缺点是均值池化的块表示比较粗糙，选择与主注意力共享同一组 <span class="math">\(\mathbf{q},\mathbf{k}\)</span>。</p>
+<h3>8.2 NSA：压缩、选择与窗口三分支</h3>
+<p><strong>NSA</strong>（Native Sparse Attention）[Yuan et al., 2025, DeepSeek] 把可见集合拆成三个互补分支，用输入相关的门融合：</p>
+<div class="math">$$
+\mathbf{o}_{t,h}=\sum_{c\in\{\text{cmp},\,\text{slc},\,\text{win}\}} g^{c}_{t,h}\cdot\operatorname{Attn}\big(\mathbf{q}_{t,h},\tilde{\mathbf{K}}^{c}_t,\tilde{\mathbf{V}}^{c}_t\big),\qquad
+g^{c}_{t,h}=\sigma\big(\text{MLP}^c_h(\mathbf{x}_t)\big)\in(0,1).
+\tag{8.5}
+$$</div>
+<p><strong>① 压缩分支（cmp）.</strong> 以块长 <span class="math">\(l\)</span>、步长 <span class="math">\(\delta\)</span>（<span class="math">\(\delta\le l\)</span>，允许重叠）滑动，用带块内位置编码的可学习映射 <span class="math">\(\varphi\)</span> 把每段 key/value 压成一个条目：</p>
+<div class="math">$$
+\tilde{\mathbf{k}}^{\text{cmp}}_{i}=\varphi_K\big(\mathbf{k}_{i\delta+1},\dots,\mathbf{k}_{i\delta+l}\big),\qquad
+\tilde{\mathbf{v}}^{\text{cmp}}_{i}=\varphi_V\big(\mathbf{v}_{i\delta+1},\dots,\mathbf{v}_{i\delta+l}\big),\qquad
+0\le i\le\Big\lfloor\tfrac{t-l}{\delta}\Big\rfloor .
+\tag{8.6}
+$$</div>
+<p>query 对全部约 <span class="math">\(t/\delta\)</span> 个压缩条目做稠密注意力，获得粗粒度的全局视野。</p>
+<p><strong>② 选择分支（slc）.</strong> 选择块的打分<strong>直接复用压缩分支的注意力权重</strong>，不需要额外的索引器。设 <span class="math">\(\mathbf{p}^{\text{cmp}}_{t,h}=\operatorname{softmax}\big(\mathbf{q}_{t,h}^\top\tilde{\mathbf{K}}^{\text{cmp}}_t/\sqrt{d_h}\big)\)</span>。选择块长为 <span class="math">\(l'\)</span>（<span class="math">\(l'\)</span> 是 <span class="math">\(\delta\)</span> 的整数倍），选择块 <span class="math">\(j\)</span> 的分数是与它重叠的所有压缩条目的权重之和；再在同一 GQA 组内求和，使组内所有头共享同一个选择：</p>
+<div class="math">$$
+I_{t,j,\pi}=\sum_{h:\,\pi(h)=\pi}\ \sum_{i:\ \text{压缩段 } i \text{ 与选择块 } j \text{ 重叠}} p^{\text{cmp}}_{t,h}[i],\qquad
+\mathcal{J}^{\text{slc}}_{t,\pi}=\operatorname{TopK}_j\big(I_{t,j,\pi},\,n\big).
+\tag{8.7}
+$$</div>
+<p>被选中块内的<strong>原始</strong> token 参与精确注意力。</p>
+<p><strong>③ 窗口分支（win）.</strong> 最近 <span class="math">\(w\)</span> 个 token 的原始 KV，即式 (7.1)。窗口分支单独处理局部模式，防止局部信号主导前两个分支的学习。</p>
+<p>NSA 论文的配置为 <span class="math">\(l=32,\ \delta=16,\ l'=64,\ n=16\)</span>（其中包含 1 个初始块和 2 个局部块），<span class="math">\(w=512\)</span>。每个 query 读取的条目数约为</p>
+<div class="math">$$
+|\mathcal{J}_t|\approx\frac{t}{\delta}+n\,l'+w .
+\tag{8.8}
+$$</div>
+<p>压缩分支仍然随 <span class="math">\(t\)</span> 线性增长，只是常数缩小了 <span class="math">\(\delta\)</span> 倍。NSA 的两个关键工程设计影响了后续所有方法：(i) <strong>组内共享选择</strong>——同一 GQA 组的 <span class="math">\(g\)</span> 个头加载同一组 KV 块，一次读入 SRAM 服务所有头，否则每个头不同的选择会让 IO 节省消失；(ii) <strong>原生可训练</strong>——压缩分支可导，选择分支的打分来自压缩分支，模型从预训练开始就使用稀疏注意力，而不是推理时才加上。</p>
+<p><img alt="图 9. NSA（第 8.2 节）：对重叠块的压缩分支、块分数来自压缩分支注意力权重的选择分支，以及滑动窗口分支，三者由输入相关的门融合（式 8.5）。" src="/figures/20261010_survey_attention__nsa.svg"></p>
+<p><em>图 9. NSA（第 8.2 节）：对重叠块的压缩分支、块分数来自压缩分支注意力权重的选择分支，以及滑动窗口分支，三者由输入相关的门融合（式 8.5）。</em></p>
+<h3>8.3 DSA：Lightning Indexer 与 token 级选择</h3>
+<p><strong>DSA</strong>（DeepSeek Sparse Attention）[DeepSeek-AI, 2025, V3.2] 把选择粒度从块降到单个 token，并用一个独立的轻量索引器打分。</p>
+<p><strong>Lightning Indexer.</strong> 索引器有 <span class="math">\(H_I\)</span> 个 query 头和<strong>一个</strong>所有头共享的 key 头（MQA 风格）：</p>
+<div class="math">$$
+\mathbf{q}^{I}_{t,j}=\mathbf{W}^{IUQ}_{j}\mathbf{c}^{Q}_t\in\mathbb{R}^{d_I},\qquad
+\mathbf{k}^{I}_{s}=\operatorname{LN}\big(\mathbf{W}^{IK}\mathbf{x}_s\big)\in\mathbb{R}^{d_I},\qquad
+w^{I}_{t,j}=\frac{1}{\sqrt{H_I}}\big[\mathbf{W}^{Iw}\mathbf{x}_t\big]_j,
+\tag{8.9}
+$$</div>
+<div class="math">$$
+I_{t,s}=\sum_{j=1}^{H_I}w^{I}_{t,j}\cdot\operatorname{ReLU}\big(\mathbf{q}^{I\top}_{t,j}\,\mathbf{k}^{I}_{s}\big).
+\tag{8.10}
+$$</div>
+<p>其中 <span class="math">\(\mathbf{c}^Q_t\)</span> 是 MLA 的 query 潜变量（与主注意力共享，见第 6.2 节）。<span class="math">\(\mathbf{q}^I,\mathbf{k}^I\)</span> 的一半维度施加 RoPE，经 Hadamard 旋转后量化为 FP8。DeepSeek-V3.2 中 <span class="math">\(H_I=64,\ d_I=128,\ k_{\text{top}}=2048\)</span>。几个设计的理由：</p>
+<ul>
+<li><strong>ReLU 而非 softmax</strong>：分数只用于排序，不需要归一化；ReLU 截掉负相关，逐元素计算，便于融合进 FP8 kernel。</li>
+<li><strong>输入相关的头权重 <span class="math">\(w^I_{t,j}\)</span></strong>：让不同索引头的重要性随 query 变化。</li>
+<li><strong>单 key 头 + FP8</strong>：索引器 cache 每 token 只有 <span class="math">\(d_I=128\)</span> 字节，是 MLA cache（576 个 BF16 元素，1152 字节）的约 11%。</li>
+<li><strong>Hadamard 旋转</strong>：把离群通道的能量分散到所有维度，降低 FP8 量化误差。</li>
+</ul>
+<p><strong>主注意力.</strong> 选出的集合 <span class="math">\(\mathcal{S}_t=\operatorname{TopK}_s(I_{t,s},k_{\text{top}})\)</span> 在<strong>所有头之间共享</strong>，主注意力用 MLA 的吸收形式（MQA 模式，第 6.3 节）在 <span class="math">\(\mathcal{S}_t\)</span> 上计算：</p>
+<div class="math">$$
+\mathbf{o}_{t,h}=\sum_{s\in\mathcal{S}_t}\operatorname{softmax}_{s\in\mathcal{S}_t}\!\big(\ell_{t,s,h}\big)\,\mathbf{c}^{KV}_s,\qquad \mathcal{S}_t\subseteq[t],\ |\mathcal{S}_t|=\min(t,k_{\text{top}}).
+\tag{8.11}
+$$</div>
+<p>由于 MLA 在 decode 时所有头共享同一份 KV，token 级选择不会带来 NSA 担心的“每头加载不同块”问题，这是 DSA 能用 token 粒度的结构性原因。</p>
+<p><strong>复杂度.</strong> 主注意力从 <span class="math">\(O(N^2)\)</span> 降为 <span class="math">\(O(Nk_{\text{top}})\)</span>；索引器仍是 <span class="math">\(O(N^2)\)</span>，但每个 key 的代价约为 <span class="math">\(H_Id_I=8192\)</span> 次 FP8 乘加，而 MLA 在 MQA 模式下约为 <span class="math">\(H(2d_c+d_R)\approx 1.4\times10^5\)</span> 次 BF16 乘加（约 17 倍），加上 FP8 的吞吐优势，索引器约便宜一个数量级以上。decode 每步的 HBM 读取量为</p>
+<div class="math">$$
+\text{Bytes}^{\text{DSA}}_{\text{dec}}\approx\underbrace{N\,d_I\cdot 1}_{\text{索引器 key (FP8)}}+\underbrace{k_{\text{top}}(d_c+d_R)\cdot 2}_{\text{选中的 MLA cache}}
+\qquad\text{vs.}\qquad
+\text{Bytes}^{\text{MLA}}_{\text{dec}}\approx N(d_c+d_R)\cdot 2 ,
+\tag{8.12}
+$$</div>
+<p><span class="math">\(N\gg k_{\text{top}}\)</span> 时读取量约为原来的 <span class="math">\(128/1152\approx 1/9\)</span>。但 <strong>KV cache 的存储量没有减少</strong>：所有 token 的 MLA cache 都要保留，以备未来被选中。</p>
+<h3>8.4 MSA：基于 GQA 的块稀疏注意力</h3>
+<p><strong>MSA</strong>（MiniMax Sparse Attention）[Lai et al., 2026] 是 MiniMax-M3 的注意力，设计原则是“只保留必要组件”，以便直接复用 GQA 的软硬件栈。它在 GQA（第 6.1 节）上加一个极轻的索引分支：</p>
+<ul>
+<li><strong>索引分支</strong>：每个 GQA 组 <span class="math">\(\pi\)</span> 一个索引 query <span class="math">\(\mathbf{q}^{I}_{t,\pi}\)</span>，所有组共享<strong>一个</strong>索引 key 头 <span class="math">\(\mathbf{k}^{I}_s\)</span>。token 级分数经<strong>块内最大池化</strong>得到块级分数，每个 GQA 组独立选 top-<span class="math">\(k_{\text{top}}\)</span> 个块，并强制保留最近的局部块：</li>
+</ul>
+<div class="math">$$
+I_{t,j,\pi}=\max_{s\in\mathcal{G}_j,\ s\le t}\ \mathbf{q}^{I\top}_{t,\pi}\,\mathbf{k}^{I}_{s},\qquad
+\mathcal{J}_{t,\pi}=\operatorname{TopK}_{j}\big(I_{t,j,\pi},\,k_{\text{top}}\big)\cup\{j_t\}.
+\tag{8.13}
+$$</div>
+<ul>
+<li><strong>主分支</strong>：组 <span class="math">\(\pi\)</span> 内的 <span class="math">\(g\)</span> 个 query 头在<strong>原始</strong> GQA key/value 的选中块上做精确的块稀疏 softmax 注意力。</li>
+</ul>
+<p>与 DSA 相比，MSA 选择<strong>块</strong>而非 token（适合 GQA 的块状访存与 tensor core），每个 <strong>GQA 组</strong>独立选择（比全部头共享更灵活），并用 max 池化（只要块中有一个 token 强匹配就选中，适合“找针”）。与 NSA 相比，MSA 去掉了压缩分支、窗口分支和门控，只保留“选择 + 局部块”。工程上，max 池化后的 top-k 不需要先做 softmax（exp-free Top-k），主分支按“KV 块在外层循环、收集所有选中该块的 query”的顺序组织，以提高 tensor core 利用率。论文报告：在 109B 参数的多模态模型上，MSA 与 GQA 性能相当，1M 上下文下每 token 注意力计算减少 28.4 倍，H800 上 prefill 与 decode 的实测加速分别为 14.2 倍与 7.6 倍。</p>
+<p>MiniMax 的路线变化本身很有代表性：MiniMax-01/M1 使用 Lightning Attention（线性）与 softmax 的 7:1 混合；M2 回到全注意力，官方解释是高效注意力在多跳推理等复杂任务上还“不够生产可用”；M3 再转向 MSA。这说明在工业规模上，<strong>保留精确 softmax、只做稀疏选择</strong>的路线目前更受信任。</p>
+<p><img alt="图 10. 两阶段动态稀疏注意力。(a) DSA 用廉价的 FP8 Lightning Indexer 给每个 token 打分，选出所有头共享的 top-k token；(b) MSA 把 token 分数按块做 max 池化，每个 GQA 组选出 top-k 块并加上局部块。" src="/figures/20261010_survey_attention__dsa_msa.svg"></p>
+<p><em>图 10. 两阶段动态稀疏注意力。(a) DSA 用廉价的 FP8 Lightning Indexer 给每个 token 打分，选出所有头共享的 top-k token；(b) MSA 把 token 分数按块做 max 池化，每个 GQA 组选出 top-k 块并加上局部块。</em></p>
+<h3>8.5 三种设计的对比</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>MoBA</th>
+<th>NSA</th>
+<th>DSA</th>
+<th>MSA</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>KV 底座</td>
+<td>MHA/GQA</td>
+<td>GQA</td>
+<td>MLA</td>
+<td>GQA</td>
+</tr>
+<tr>
+<td>选择粒度</td>
+<td>块</td>
+<td>块</td>
+<td>token</td>
+<td>块</td>
+</tr>
+<tr>
+<td>打分来源</td>
+<td>主 <span class="math">\(\mathbf{q}\)</span> 与块均值 key</td>
+<td>压缩分支的注意力权重</td>
+<td>独立 Lightning Indexer</td>
+<td>独立索引分支 + 块内 max</td>
+</tr>
+<tr>
+<td>选择共享范围</td>
+<td>每头</td>
+<td>每 GQA 组</td>
+<td>全部头</td>
+<td>每 GQA 组</td>
+</tr>
+<tr>
+<td>固定保留</td>
+<td>当前块</td>
+<td>初始块 + 局部块 + 窗口</td>
+<td>无（V3.2）</td>
+<td>局部块</td>
+</tr>
+<tr>
+<td>额外分支</td>
+<td>无</td>
+<td>压缩 + 窗口 + 门控</td>
+<td>无</td>
+<td>无</td>
+</tr>
+<tr>
+<td>选择器训练</td>
+<td>无参数</td>
+<td>端到端</td>
+<td>KL 蒸馏 + 梯度分离</td>
+<td>KL 蒸馏 + 梯度分离</td>
+</tr>
+<tr>
+<td>代表模型</td>
+<td>Kimi 服务</td>
+<td>（研究）</td>
+<td>DeepSeek-V3.2，GLM-5</td>
+<td>MiniMax-M3</td>
+</tr>
+</tbody>
+</table>
+<h3>8.6 训练不可导的选择器</h3>
+<p>TopK 对分数不可导，主注意力的语言模型损失无法直接训练索引器。DSA 与 MSA 都用<strong>注意力蒸馏</strong>来训练选择器。</p>
+<p><strong>目标分布.</strong> 把主注意力在所有头（DSA）或组内所有头（MSA）上的权重平均，得到目标分布：</p>
+<div class="math">$$
+p_{t,s}=\frac{1}{|\mathcal{H}|}\sum_{h\in\mathcal{H}}a_{t,s,h},\qquad \sum_s p_{t,s}=1 .
+\tag{8.14}
+$$</div>
+<p><strong>阶段一：稠密 warmup.</strong> 冻结主模型，主注意力仍是稠密的，只训练索引器：</p>
+<div class="math">$$
+\mathcal{L}_I=\sum_t\operatorname{KL}\Big(\mathbf{p}_{t,:}\ \Big\|\ \operatorname{softmax}\big(\mathbf{I}_{t,:}\big)\Big),\qquad
+\frac{\partial\mathcal{L}_I}{\partial I_{t,s}}=\operatorname{softmax}(\mathbf{I}_{t,:})_s-p_{t,s}.
+\tag{8.15}
+$$</div>
+<p>梯度形式说明：索引器的分数分布被推向主注意力的分布。由式 (8.2)，这等价于让 top-k 覆盖尽可能多的注意力质量。DeepSeek-V3.2 的 warmup 为 1000 步、约 2.1B tokens，学习率 <span class="math">\(10^{-3}\)</span>；GLM-5 也是 1000 步，序列长度约 200K。</p>
+<p><strong>阶段二：稀疏训练.</strong> 主注意力切换为稀疏模式，KL 只在选中集合 <span class="math">\(\mathcal{S}_t\)</span> 上计算（<span class="math">\(\mathbf{p}\)</span> 在 <span class="math">\(\mathcal{S}_t\)</span> 上重新归一化）：</p>
+<div class="math">$$
+\mathcal{L}_I=\sum_t\operatorname{KL}\Big(\mathbf{p}_{t,\mathcal{S}_t}\ \Big\|\ \operatorname{softmax}\big(\mathbf{I}_{t,\mathcal{S}_t}\big)\Big).
+\tag{8.16}
+$$</div>
+<p>此时索引器的输入被 <strong>detach</strong>：索引器只接收 <span class="math">\(\mathcal{L}_I\)</span> 的梯度，主模型只接收语言模型损失的梯度，避免索引器的学习信号干扰主模型。DeepSeek-V3.2 的稀疏训练约 944B tokens；GLM-5 只用了约 20B tokens，说明 DSA 可以较低成本地加到已有的 MLA 模型上。</p>
+<p><strong>RL 中的一致性.</strong> GLM-5 报告了两个实践要点：(i) 非确定性的 CUDA top-k 会使训练与推理选出不同集合，几步之内就导致性能骤降和熵崩溃，必须使用确定性 top-k；(ii) RL 阶段冻结索引器参数。这与 MoE 中的 routing replay 是同一类问题，但 <span class="math">\(k_{\text{top}}=2048\)</span> 远大于 MoE 的专家数，无法像 MoE 一样直接存储并重放选择结果。</p>
+<h3>8.7 小结与遗留问题</h3>
+<p>动态稀疏在 128K–200K 量级上做到了近乎无损（GLM-5 的 RULER 消融），但还有两个不足：</p>
+<ol>
+<li><strong>存储不减</strong>：DSA/MSA 只减少每步<strong>读取</strong>的 KV，KV cache 仍是 <span class="math">\(O(N)\)</span>。1M 上下文时，DeepSeek-V3.2 每条序列需要约 69 GiB（MLA）加约 7.6 GiB（索引器）的 cache。</li>
+<li><strong>索引器是 <span class="math">\(O(N^2)\)</span></strong>：它便宜，但在 1M 量级上仍不可忽略，而且索引器本身也需要 <span class="math">\(O(N)\)</span> 的 cache。</li>
+</ol>
+<p>如果要同时降低存储、索引成本和注意力计算，就需要<strong>减少KV 条目的总数</strong>，也就是沿序列维度压缩，这是方向 F。</p>
+<hr>
+<h2>9 方向 F：序列维 KV 压缩——DeepSeek-V4 的 CSA 与 HCA</h2>
+<p>方向 C 压缩每个KV 条目的<strong>宽度</strong>，方向 F 压缩KV 条目的<strong>数量</strong>（框架维度 ③）：每 <span class="math">\(m\)</span> 个连续 token 压成 1 个条目，cache 与所有对 cache 的计算都缩小到 <span class="math">\(1/m\)</span>。NSA 的压缩分支（式 8.6）是这一思想的雏形，DeepSeek-V4 [DeepSeek-AI, 2026] 把它变成了主要的注意力形式。V4 包括 V4-Pro（1.6T 总参数 / 49B 激活）与 V4-Flash（284B / 13B），原生上下文 1M。</p>
+<p>本节符号与 V4 原文的对应：原文的压缩率 <span class="math">\(m\)</span>（CSA）与 <span class="math">\(m'\)</span>（HCA）沿用；原文的KV 条目维度 <span class="math">\(c\)</span> 记为 <span class="math">\(d_e\)</span>；原文的 top-k 记为 <span class="math">\(k_{\text{top}}\)</span>；原文的输出投影组数 <span class="math">\(G\)</span> 记为 <span class="math">\(n_{\text{grp}}\)</span>。V4-Pro 的配置为</p>
+<div class="math">$$
+d=7168,\ L=61,\ H=128,\ d_e=512,\ d_q=1536,\ H_I=64,\ d_I=128,\ m=4,\ m'=128,\ k_{\text{top}}=1024,\ w=128 .
+$$</div>
+<p>V4-Flash 中 <span class="math">\(d=4096,\ L=43,\ H=64,\ d_q=1024,\ k_{\text{top}}=512\)</span>。</p>
+<h3>9.1 共享 key-value 的 KV 条目</h3>
+<p>V4 的每个KV 条目是一个 <span class="math">\(d_e\)</span> 维向量 <span class="math">\(\mathbf{e}_u\)</span>，<strong>同时充当 key 和 value</strong>（shared-KV MQA）：</p>
+<div class="math">$$
+\mathbf{o}_{t,h}=\sum_{u\in\mathcal{J}_t}a_{t,u,h}\,\mathbf{e}_u,\qquad
+a_{t,u,h}=\frac{\exp\big(\mathbf{q}_{t,h}^\top\mathbf{e}_u/\sqrt{d_e}\big)}{\sum_{u'\in\mathcal{J}_t}\exp\big(\mathbf{q}_{t,h}^\top\mathbf{e}_{u'}/\sqrt{d_e}\big)+\exp(\varsigma_h)} .
+\tag{9.1}
+$$</div>
+<p>与 MLA 吸收后的形式（式 6.4–6.5，key 与 value 都是 <span class="math">\(\mathbf{c}^{KV}_s\)</span>）相比，这里把“共享”做成了显式设计，cache 中每个条目只存一份 <span class="math">\(\mathbf{e}_u\)</span>。query 由低秩路径生成：<span class="math">\(\mathbf{c}^Q_t=\mathbf{W}^{DQ}\mathbf{x}_t\in\mathbb{R}^{d_q}\)</span>，<span class="math">\(\mathbf{q}_{t,h}=\mathbf{W}^{UQ}_h\mathbf{c}^Q_t\in\mathbb{R}^{d_e}\)</span>；<span class="math">\(\mathbf{c}^Q_t\)</span> 同时供索引器使用。<span class="math">\(\mathbf{q}_{t,h}\)</span> 与 <span class="math">\(\mathbf{e}_u\)</span> 在进入注意力之前都经过 RMSNorm，防止 logit 爆炸（第 12 节）。</p>
+<h3>9.2 CSA：重叠压缩（overlapped compression）+ 稀疏选择</h3>
+<p><strong>重叠压缩.</strong> 每个 token 产生两组候选向量和两组压缩打分（<span class="math">\(\mathbf{W}\in\mathbb{R}^{d_e\times d}\)</span>）：</p>
+<div class="math">$$
+\mathbf{c}^{a}_s=\mathbf{W}^{aKV}\mathbf{x}_s,\quad
+\mathbf{c}^{b}_s=\mathbf{W}^{bKV}\mathbf{x}_s,\quad
+\mathbf{z}^{a}_s=\mathbf{W}^{aZ}\mathbf{x}_s,\quad
+\mathbf{z}^{b}_s=\mathbf{W}^{bZ}\mathbf{x}_s\ \in\mathbb{R}^{d_e}.
+\tag{9.2}
+$$</div>
+<p>令第 <span class="math">\(j\)</span> 个块为 <span class="math">\(\mathcal{G}_j=\{(j-1)m+1,\dots,jm\}\)</span>，记 <span class="math">\(\operatorname{pos}(s)\in\{1,\dots,m\}\)</span> 为 token <span class="math">\(s\)</span> 在块内的位置。第 <span class="math">\(j\)</span> 个压缩条目由<strong>当前块</strong>（用 <span class="math">\(a\)</span> 组）和<strong>前一块</strong>（用 <span class="math">\(b\)</span> 组）共 <span class="math">\(2m\)</span> 个 token 生成。对每个通道 <span class="math">\(r=1,\dots,d_e\)</span>，在这 <span class="math">\(2m\)</span> 个 token 上做 softmax：</p>
+<div class="math">$$
+\big[\omega^{a}_{s,r}\big]_{s\in\mathcal{G}_j}\cup\big[\omega^{b}_{s,r}\big]_{s\in\mathcal{G}_{j-1}}
+=\operatorname{softmax}_{2m}\Big(\big[z^{a}_{s,r}+B^{a}_{\operatorname{pos}(s),r}\big]_{s\in\mathcal{G}_j}\cup\big[z^{b}_{s,r}+B^{b}_{\operatorname{pos}(s),r}\big]_{s\in\mathcal{G}_{j-1}}\Big),
+\tag{9.3}
+$$</div>
+<div class="math">$$
+\tilde{\mathbf{e}}_j=\sum_{s\in\mathcal{G}_j}\boldsymbol{\omega}^{a}_s\odot\mathbf{c}^{a}_s+\sum_{s\in\mathcal{G}_{j-1}}\boldsymbol{\omega}^{b}_s\odot\mathbf{c}^{b}_s\ \in\mathbb{R}^{d_e},
+\tag{9.4}
+$$</div>
+<p>其中 <span class="math">\(\mathbf{B}^a,\mathbf{B}^b\in\mathbb{R}^{m\times d_e}\)</span> 是可学习的块内位置偏置；<span class="math">\(j=1\)</span> 时前一块的打分填 <span class="math">\(-\infty\)</span>、向量填 <span class="math">\(\mathbf{0}\)</span>。几点说明：</p>
+<ul>
+<li><strong>逐通道加权</strong>：<span class="math">\(\odot\)</span> 意味着每个通道独立决定哪个 token 贡献最大，比标量加权表达力强。这是一种“通道级 softmax 池化”，介于均值池化（MoBA）和 MLP（NSA）之间。</li>
+<li><strong>重叠</strong>：每个 token 通过 <span class="math">\(a\)</span> 组“主导”自己所在块的条目，又通过 <span class="math">\(b\)</span> 组“辅助”下一个块的条目。相邻条目共享边界信息，避免硬切分导致的语义断裂；但条目总数仍为 <span class="math">\(\lceil t/m\rceil\)</span>，压缩率仍是 <span class="math">\(1/m\)</span>。</li>
+<li><strong>因果性</strong>：<span class="math">\(\tilde{\mathbf{e}}_j\)</span> 融合了块 <span class="math">\(j\)</span> 内全部 token，因此只有当整个块都在 query 之前时才可用：</li>
+</ul>
+<div class="math">$$
+\mathcal{U}^{\text{cmp}}_t=\big\{\,j:\ jm\le t\,\big\}=\big\{1,\dots,\lfloor t/m\rfloor\big\}.
+\tag{9.5}
+$$</div>
+<p><strong>稀疏选择.</strong> 索引器 key 用同样的重叠压缩得到 <span class="math">\(\tilde{\mathbf{k}}^{I}_j\in\mathbb{R}^{d_I}\)</span>，打分沿用 Lightning Indexer 的形式（式 8.10），只是对象从 token 换成了压缩条目：</p>
+<div class="math">$$
+\mathbf{q}^{I}_{t,i}=\mathbf{W}^{IUQ}_i\mathbf{c}^Q_t,\qquad
+w^{I}_{t,i}=\big[\mathbf{W}^{Iw}\mathbf{x}_t\big]_i,\qquad
+I_{t,j}=\sum_{i=1}^{H_I}w^{I}_{t,i}\operatorname{ReLU}\big(\mathbf{q}^{I\top}_{t,i}\tilde{\mathbf{k}}^{I}_j\big),\qquad j\in\mathcal{U}^{\text{cmp}}_t,
+\tag{9.6}
+$$</div>
+<div class="math">$$
+\mathcal{J}^{\text{CSA}}_t=\operatorname{TopK}_{j\in\mathcal{U}^{\text{cmp}}_t}\big(I_{t,j},\,k_{\text{top}}\big).
+\tag{9.7}
+$$</div>
+<p><strong>滑动窗口分支.</strong> 压缩路径有两个缺口：(i) 由式 (9.5)，query 所在的未完成块（最多 <span class="math">\(m-1\)</span> 个 token）完全不可达；(ii) 最近的局部上下文需要逐 token 的精确表示。因此每层还保留最近 <span class="math">\(w\)</span> 个 token 的<strong>未压缩</strong>条目 <span class="math">\(\mathbf{e}^{\text{win}}_s=\mathbf{W}^{KV}\mathbf{x}_s\in\mathbb{R}^{d_e}\)</span>。它们与压缩条目维度相同，放进同一个 softmax（式 4.3 的直接应用）。CSA 的最终可读集合为</p>
+<div class="math">$$
+\mathcal{J}_t=\big\{\tilde{\mathbf{e}}_j:\ j\in\mathcal{J}^{\text{CSA}}_t\big\}\ \cup\ \big\{\mathbf{e}^{\text{win}}_s:\ t-w&lt;s\le t\big\},\qquad
+|\mathcal{J}_t|\le k_{\text{top}}+w ,
+\tag{9.8}
+$$</div>
+<p>再加上式 (9.1) 中的 sink。V4-Pro 中 <span class="math">\(|\mathcal{J}_t|\le1024+128=1152\)</span>，V4-Flash 中 <span class="math">\(\le512+128=640\)</span>。</p>
+<h3>9.3 HCA：重度压缩 + 稠密注意力</h3>
+<p>HCA 使用大得多的压缩率 <span class="math">\(m'=128\)</span>、<strong>不重叠</strong>的单组压缩：</p>
+<div class="math">$$
+\big[\omega_{s,r}\big]_{s\in\mathcal{G}'_j}=\operatorname{softmax}_{m'}\Big(\big[z_{s,r}+B_{\operatorname{pos}(s),r}\big]_{s\in\mathcal{G}'_j}\Big),\qquad
+\tilde{\mathbf{e}}'_j=\sum_{s\in\mathcal{G}'_j}\boldsymbol{\omega}_s\odot\mathbf{c}_s ,
+\tag{9.9}
+$$</div>
+<p>其中 <span class="math">\(\mathcal{G}'_j\)</span> 是长度为 <span class="math">\(m'\)</span> 的块。压缩后的条目很少（1M 上下文约 <span class="math">\(2^{20}/128=8192\)</span> 个），因此 HCA <strong>不做选择</strong>，直接对所有已完成的压缩条目做稠密注意力，同样加上窗口分支与 sink：</p>
+<div class="math">$$
+\mathcal{J}^{\text{HCA}}_t=\big\{\tilde{\mathbf{e}}'_j:\ jm'\le t\big\}\cup\big\{\mathbf{e}^{\text{win}}_s:\ t-w&lt;s\le t\big\}.
+\tag{9.10}
+$$</div>
+<p>CSA 保留较细的粒度并用稀疏选择找到相关位置，HCA 用极粗的粒度保证对全局的稠密覆盖，两者互补。V4-Pro 的前 2 层为 HCA，之后 CSA 与 HCA 逐层交替；V4-Flash 的前 2 层为纯滑动窗口注意力。</p>
+<p><img alt="图 11. DeepSeek-V4 的 CSA 与 HCA（第 9 节）。CSA 用重叠的逐通道 softmax 池化把每 \(m=4\) 个 token 压成一个条目，用索引器选出 top-k 条目，与未压缩的窗口和 sink 一起放进同一个 softmax；HCA 把每 \(m'=128\) 个 token 不重叠地压缩，并做稠密注意力。" src="/figures/20261010_survey_attention__csa_hca.svg"></p>
+<p><em>图 11. DeepSeek-V4 的 CSA 与 HCA（第 9 节）。CSA 用重叠的逐通道 softmax 池化把每 <span class="math">\(m=4\)</span> 个 token 压成一个条目，用索引器选出 top-k 条目，与未压缩的窗口和 sink 一起放进同一个 softmax；HCA 把每 <span class="math">\(m'=128\)</span> 个 token 不重叠地压缩，并做稠密注意力。</em></p>
+<h3>9.4 共享 key-value 条目下的 RoPE：输出端反向旋转</h3>
+<p>V4 只对 query 和KV 条目的最后 <span class="math">\(d_R=64\)</span> 维施加 RoPE。由于 <span class="math">\(\mathbf{e}_u\)</span> 同时是 value，注意力输出中的这 64 维会带上<strong>绝对</strong>位置。设条目 <span class="math">\(u\)</span> 的位置为 <span class="math">\(p_u\)</span>，把这部分写成 <span class="math">\(\mathbf{R}_{p_u}\mathbf{e}^{R}_u\)</span>，则</p>
+<div class="math">$$
+\mathbf{o}^{R}_{t,h}=\sum_{u}a_{t,u,h}\,\mathbf{R}_{p_u}\mathbf{e}^{R}_u .
+\tag{9.11}
+$$</div>
+<p>V4 对输出的这 64 维再施加一次位置为 <span class="math">\(-t\)</span> 的旋转：</p>
+<div class="math">$$
+\mathbf{R}_{-t}\,\mathbf{o}^{R}_{t,h}=\sum_{u}a_{t,u,h}\,\mathbf{R}_{p_u-t}\,\mathbf{e}^{R}_u ,
+\tag{9.12}
+$$</div>
+<p>于是输出只依赖相对位置 <span class="math">\(p_u-t\)</span>。这里用到了 <span class="math">\(\mathbf{R}_{-t}\mathbf{R}_{p}=\mathbf{R}_{p-t}\)</span> 和旋转的线性性。式 (9.12) 是“key 与 value 共享”这一设计带来的特有问题和解决方法，在 MLA 中不出现（MLA 的 value 不带 RoPE 分量）。</p>
+<h3>9.5 分组输出投影</h3>
+<p><span class="math">\(H=128\)</span>、<span class="math">\(d_e=512\)</span> 时，直接把 <span class="math">\([\mathbf{o}_{t,1};\dots;\mathbf{o}_{t,H}]\in\mathbb{R}^{Hd_e}\)</span> 投影回 <span class="math">\(d\)</span> 维需要 <span class="math">\(Hd_ed\approx 4.7\times10^8\)</span> 个参数（每层）。V4 把 <span class="math">\(H\)</span> 个头分成 <span class="math">\(n_{\text{grp}}\)</span> 组，先组内投影到 <span class="math">\(d_G\)</span> 维，再整体投影：</p>
+<div class="math">$$
+\mathbf{o}^{(\gamma)}_t=\mathbf{W}^{O,1}_{\gamma}\big[\mathbf{o}_{t,h}\big]_{h\in\text{组 }\gamma}\in\mathbb{R}^{d_G},\qquad
+\mathbf{y}_t=\mathbf{W}^{O,2}\big[\mathbf{o}^{(1)}_t;\dots;\mathbf{o}^{(n_{\text{grp}})}_t\big]\in\mathbb{R}^{d}.
+\tag{9.13}
+$$</div>
+<p>V4-Pro 中 <span class="math">\(n_{\text{grp}}=16,\ d_G=1024\)</span>，参数量为 <span class="math">\(Hd_ed_G+n_{\text{grp}}d_Gd\approx 6.7\times10^7+1.17\times10^8=1.84\times10^8\)</span>，约为直接投影的 39%。</p>
+<h3>9.6 代价分析</h3>
+<p>以 <span class="math">\(N=1\text{M}\)</span> 为例，每层每个 query 的读取量与每 token 的 cache：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>主注意力读取条目数</th>
+<th>索引器打分对象数</th>
+<th>每 token 每层 cache（元素）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>V3.2（MLA + DSA）</td>
+<td><span class="math">\(k_{\text{top}}=2048\)</span></td>
+<td><span class="math">\(N\approx 10^6\)</span></td>
+<td><span class="math">\(576+128\)</span>（索引器）</td>
+</tr>
+<tr>
+<td>V4 CSA（<span class="math">\(m=4\)</span>）</td>
+<td><span class="math">\(k_{\text{top}}+w=1152\)</span></td>
+<td><span class="math">\(N/m\approx 2.6\times10^5\)</span></td>
+<td><span class="math">\(d_e/m+d_I/m=128+32\)</span></td>
+</tr>
+<tr>
+<td>V4 HCA（<span class="math">\(m'=128\)</span>）</td>
+<td><span class="math">\(N/m'+w\approx 8320\)</span></td>
+<td>无</td>
+<td><span class="math">\(d_e/m'=4\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>上表 cache 列忽略了滑动窗口的固定 <span class="math">\(w\,d_e\)</span> 部分（与 <span class="math">\(N\)</span> 无关）。按 CSA/HCA 各占一半粗略估算，V4 每 token 每层平均约 <span class="math">\((160+4)/2=82\)</span> 个元素，约为 V3.2 的 <span class="math">\(82/704\approx 12\%\)</span>；再考虑 V4 对非 RoPE 维度使用 FP8 存储，与技术报告给出的“1M 上下文下 KV cache 约为 V3.2 的 10%（Pro）/7%（Flash），单 token 推理 FLOPs 约为 27%（Pro）/10%（Flash）”一致（这是我们的估算，不是报告中的分解）。V4 的索引器 QK 计算使用 FP4。</p>
+<h3>9.7 小结与遗留问题</h3>
+<p>CSA/HCA 是目前开源模型中把 softmax 注意力推到 1M 的最激进方案：</p>
+<div class="math">$$
+N\ \xrightarrow{\ \text{序列压缩 }\div m\ }\ \frac{N}{m}\ \xrightarrow{\ \text{稀疏选择}\ }\ k_{\text{top}}+w ,
+\tag{9.14}
+$$</div>
+<p>总读取比例在 V4-Pro CSA 层约为 <span class="math">\(1152/2^{20}\approx 0.11\%\)</span>。但它仍然保留了一个随 <span class="math">\(N\)</span> 增长的 cache（只是常数缩小了 <span class="math">\(m\)</span> 或 <span class="math">\(m'\)</span> 倍），HCA 层的稠密注意力与 CSA 的索引器仍然随 <span class="math">\(N\)</span> 增长。如果要求每层记忆<strong>完全不随 <span class="math">\(N\)</span> 增长</strong>，就必须放弃“为每个（或每组）token 保留一个条目”，改为把全部历史写入一个固定大小的状态，这就是方向 G。</p>
+<hr>
+<h2>10 方向 G：线性注意力与固定大小记忆</h2>
+<h3>10.1 从 softmax 到核：线性注意力</h3>
+<p>把式 (2.2) 中的 <span class="math">\(\exp(\mathbf{q}^\top\mathbf{k}/\sqrt{d_h})\)</span> 换成一个可分解的核 <span class="math">\(\kappa(\mathbf{q},\mathbf{k})=\phi(\mathbf{q})^\top\phi(\mathbf{k})\)</span> [Katharopoulos et al., 2020]。为简化记号，下文把特征映射 <span class="math">\(\phi\)</span> 吸收进 query/key 的生成过程，仍记作 <span class="math">\(\mathbf{q}_t,\mathbf{k}_s\in\mathbb{R}^{d_k}\)</span>（<span class="math">\(d_k=d_h\)</span>），并省略头下标 <span class="math">\(h\)</span>：</p>
+<div class="math">$$
+\mathbf{o}_t=\frac{\sum_{s\le t}(\mathbf{q}_t^\top\mathbf{k}_s)\,\mathbf{v}_s}{\sum_{s\le t}\mathbf{q}_t^\top\mathbf{k}_s}
+=\frac{\big(\sum_{s\le t}\mathbf{k}_s\mathbf{v}_s^\top\big)^{\!\top}\mathbf{q}_t}{\big(\sum_{s\le t}\mathbf{k}_s\big)^{\!\top}\mathbf{q}_t}
+=\frac{\mathbf{S}_t^\top\mathbf{q}_t}{\mathbf{z}_t^\top\mathbf{q}_t},
+\tag{10.1}
+$$</div>
+<div class="math">$$
+\mathbf{S}_t=\mathbf{S}_{t-1}+\mathbf{k}_t\mathbf{v}_t^\top\in\mathbb{R}^{d_k\times d_v},\qquad
+\mathbf{z}_t=\mathbf{z}_{t-1}+\mathbf{k}_t\in\mathbb{R}^{d_k}.
+\tag{10.2}
+$$</div>
+<p>第一个等号到第二个等号只是把与 <span class="math">\(s\)</span> 无关的 <span class="math">\(\mathbf{q}_t\)</span> 移出求和，这在 softmax 下做不到，因为 softmax 的逐行归一化不是双线性的。由此得到：</p>
+<ul>
+<li><strong>训练</strong>：总计算量 <span class="math">\(O(Nd_kd_v)\)</span>，关于 <span class="math">\(N\)</span> 线性；</li>
+<li><strong>推理</strong>：每步只更新并读取 <span class="math">\(\mathbf{S}_t,\mathbf{z}_t\)</span>，单步计算 <span class="math">\(O(d_kd_v)\)</span>、状态 <span class="math">\(O(d_kd_v)\)</span>，<strong>都与 <span class="math">\(N\)</span> 无关</strong>。</li>
+</ul>
+<p>用第 2.4 节的框架看，线性注意力的“记忆”就是一个 <span class="math">\(d_k\times d_v\)</span> 的<strong>关联矩阵</strong>：<span class="math">\(\mathbf{k}_t\)</span> 是写地址，<span class="math">\(\mathbf{v}_t\)</span> 是写内容，<span class="math">\(\mathbf{q}_t\)</span> 是读地址。现代变体通常去掉分母 <span class="math">\(\mathbf{z}_t^\top\mathbf{q}_t\)</span>（数值不稳定），改为对输出做 RMSNorm 或 GroupNorm；下文统一写作</p>
+<div class="math">$$
+\mathbf{o}_t=\mathbf{S}_t^\top\mathbf{q}_t .
+\tag{10.3}
+$$</div>
+<h3>10.2 固定记忆的根本限制：容量与串扰</h3>
+<p>设历史上写入了 <span class="math">\(n\)</span> 对 <span class="math">\((\mathbf{k}_s,\mathbf{v}_s)\)</span>，用第 <span class="math">\(j\)</span> 个 key 作为 query 检索（<span class="math">\(\mathbf{q}=\mathbf{k}_j\)</span>）：</p>
+<div class="math">$$
+\mathbf{S}^\top\mathbf{k}_j=\sum_{s}(\mathbf{k}_s^\top\mathbf{k}_j)\,\mathbf{v}_s
+=\underbrace{\|\mathbf{k}_j\|^2\,\mathbf{v}_j}_{\text{信号}}+\underbrace{\sum_{s\ne j}(\mathbf{k}_s^\top\mathbf{k}_j)\,\mathbf{v}_s}_{\text{串扰}} .
+\tag{10.4}
+$$</div>
+<p>若所有 key 两两正交，串扰为零，但 <span class="math">\(\mathbb{R}^{d_k}\)</span> 中最多只有 <span class="math">\(d_k\)</span> 个正交向量。若 key 是随机单位向量，<span class="math">\(\mathbf{k}_s^\top\mathbf{k}_j\)</span> 的方差约为 <span class="math">\(1/d_k\)</span>，串扰项的方差约为 <span class="math">\((n-1)\,\mathbb{E}\|\mathbf{v}\|^2/d_k\)</span>，信噪比</p>
+<div class="math">$$
+\mathrm{SNR}\approx\frac{d_k}{n-1}.
+\tag{10.5}
+$$</div>
+<p>因此 <span class="math">\(n\gg d_k\)</span> 时无法精确检索。这是所有固定状态模型的共同上限：<strong>一个 <span class="math">\(d_k\times d_v\)</span> 的状态，最多可靠地存储 <span class="math">\(O(d_k)\)</span> 条关联</strong>。而 softmax 注意力的 KV cache 随 <span class="math">\(n\)</span> 增长，加上 <span class="math">\(\exp\)</span> 对最大匹配的放大作用（式 3.4），可以从任意多条记录中检索出一条。</p>
+<p>式 (10.4)–(10.5) 给出了后续演进的两条线索：</p>
+<ol>
+<li>纯累加的 <span class="math">\(\mathbf{S}_t\)</span> 会被过时信息塞满，需要<strong>遗忘</strong>（10.3 节）；</li>
+<li>同一个 key 反复写入会叠加而不是覆盖，需要<strong>按地址修正</strong>（10.4 节）。</li>
+</ol>
+<h3>10.3 遗忘门：从固定衰减到数据相关衰减</h3>
+<p>在写入前给旧状态乘上一个衰减：</p>
+<div class="math">$$
+\mathbf{S}_t=\mathbf{A}_t\,\mathbf{S}_{t-1}+\mathbf{k}_t\mathbf{v}_t^\top .
+\tag{10.6}
+$$</div>
+<p><span class="math">\(\mathbf{A}_t\)</span> 的不同选择对应不同模型：</p>
+<table>
+<thead>
+<tr>
+<th>模型</th>
+<th><span class="math">\(\mathbf{A}_t\)</span></th>
+<th>衰减粒度</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>线性注意力</td>
+<td><span class="math">\(\mathbf{I}\)</span></td>
+<td>无遗忘</td>
+</tr>
+<tr>
+<td>RetNet / Lightning Attention（MiniMax-01）</td>
+<td><span class="math">\(\gamma\,\mathbf{I}\)</span>，<span class="math">\(\gamma\)</span> 为每头固定常数</td>
+<td>头级、与数据无关</td>
+</tr>
+<tr>
+<td>Mamba-2</td>
+<td><span class="math">\(\alpha_t\mathbf{I}\)</span>，<span class="math">\(\alpha_t\in(0,1]\)</span> 由输入生成</td>
+<td>头级、数据相关</td>
+</tr>
+<tr>
+<td>GLA</td>
+<td><span class="math">\(\operatorname{Diag}(\boldsymbol{\alpha}_t)\)</span>，<span class="math">\(\boldsymbol{\alpha}_t\in(0,1]^{d_k}\)</span></td>
+<td>通道级、数据相关</td>
+</tr>
+</tbody>
+</table>
+<p><strong>并行形式与衰减掩码.</strong> 对标量衰减，定义累积衰减 <span class="math">\(\gamma_t=\prod_{r\le t}\alpha_r\)</span>。展开式 (10.6) 得</p>
+<div class="math">$$
+\mathbf{o}_t=\sum_{s\le t}\frac{\gamma_t}{\gamma_s}\,(\mathbf{q}_t^\top\mathbf{k}_s)\,\mathbf{v}_s
+\quad\Longleftrightarrow\quad
+\mathbf{O}=\big((\mathbf{Q}\mathbf{K}^\top)\odot\mathbf{D}\big)\mathbf{V},\qquad
+D_{t,s}=\begin{cases}\gamma_t/\gamma_s,&amp;s\le t\\0,&amp;s&gt;t\end{cases}.
+\tag{10.7}
+$$</div>
+<p>这就是 Mamba-2 的“状态空间对偶”（SSD）[Dao &amp; Gu, 2024]：同一个模型既可以写成线性递推（推理用），也可以写成带衰减掩码的“注意力”（训练用）。<span class="math">\(\mathbf{D}\)</span> 起到了与 RoPE 类似的<strong>近因偏置</strong>作用，这也是 Kimi Linear 敢于让全局 MLA 层使用 NoPE 的原因。</p>
+<p>对通道级衰减，记 <span class="math">\(\mathbf{b}_t=\prod_{r\le t}\boldsymbol{\alpha}_r\in\mathbb{R}^{d_k}\)</span>（逐元素累乘），有</p>
+<div class="math">$$
+\mathbf{o}_t=\sum_{s\le t}\big(\mathbf{q}_t\odot\mathbf{b}_t\big)^\top\big(\mathbf{k}_s\oslash\mathbf{b}_s\big)\,\mathbf{v}_s ,
+\tag{10.8}
+$$</div>
+<p>其中 <span class="math">\(\oslash\)</span> 为逐元素除法。实际 kernel 在块内计算相对累乘（或在对数空间计算），以避免 <span class="math">\(\mathbf{b}_s\)</span> 下溢。</p>
+<p>遗忘门解决了“状态被塞满”的问题，但它是<strong>无差别</strong>的：要清除一条过时的关联，只能把所有关联一起衰减。</p>
+<h3>10.4 Delta 规则：按地址覆盖</h3>
+<p><strong>DeltaNet</strong> [Schlag et al., 2021; Yang et al., 2024b] 的思路是：写入前先读出当前 key 上已有的值 <span class="math">\(\hat{\mathbf{v}}_t=\mathbf{S}_{t-1}^\top\mathbf{k}_t\)</span>，只写入“误差”<span class="math">\(\mathbf{v}_t-\hat{\mathbf{v}}_t\)</span>：</p>
+<div class="math">$$
+\mathbf{S}_t=\mathbf{S}_{t-1}+\beta_t\,\mathbf{k}_t\big(\mathbf{v}_t-\mathbf{S}_{t-1}^\top\mathbf{k}_t\big)^\top
+=\big(\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^\top\big)\mathbf{S}_{t-1}+\beta_t\,\mathbf{k}_t\mathbf{v}_t^\top,
+\qquad\beta_t\in(0,1).
+\tag{10.9}
+$$</div>
+<p><strong>在线回归解释.</strong> 对当前样本定义重建损失 <span class="math">\(\mathcal{L}_t(\mathbf{S})=\tfrac12\|\mathbf{S}^\top\mathbf{k}_t-\mathbf{v}_t\|^2\)</span>，其梯度为 <span class="math">\(\nabla_{\mathbf{S}}\mathcal{L}_t=\mathbf{k}_t(\mathbf{S}^\top\mathbf{k}_t-\mathbf{v}_t)^\top\)</span>。式 (10.9) 正是从 <span class="math">\(\mathbf{S}_{t-1}\)</span> 出发、学习率为 <span class="math">\(\beta_t\)</span> 的一步梯度下降：</p>
+<div class="math">$$
+\mathbf{S}_t=\mathbf{S}_{t-1}-\beta_t\,\nabla_{\mathbf{S}}\mathcal{L}_t(\mathbf{S}_{t-1}).
+\tag{10.10}
+$$</div>
+<p>相比之下，纯累加 <span class="math">\(\mathbf{S}_t=\mathbf{S}_{t-1}+\mathbf{k}_t\mathbf{v}_t^\top\)</span> 对应的是线性损失 <span class="math">\(-\mathbf{v}_t^\top\mathbf{S}^\top\mathbf{k}_t\)</span> 的梯度步，它没有“已经存好就不再写”的饱和机制。因此<strong>线性注意力族可以统一看作在推理时对状态 <span class="math">\(\mathbf{S}\)</span> 做在线学习</strong>，不同模型对应不同的损失与正则（Titans、TTT 等“测试时训练”模型把这个视角推广到 MLP 状态）。</p>
+<p><strong>覆盖性质.</strong> 设 <span class="math">\(\|\mathbf{k}_t\|_2=1\)</span>（实现中对 key 做 L2 归一化），写入后在同一 key 上的读出为</p>
+<div class="math">$$
+\mathbf{S}_t^\top\mathbf{k}_t=(1-\beta_t)\,\hat{\mathbf{v}}_t+\beta_t\,\mathbf{v}_t ,
+\tag{10.11}
+$$</div>
+<p><span class="math">\(\beta_t\to1\)</span> 时精确覆盖。对任意其他读地址 <span class="math">\(\mathbf{q}\)</span>，变化量为 <span class="math">\(\beta_t(\mathbf{k}_t^\top\mathbf{q})(\mathbf{v}_t-\hat{\mathbf{v}}_t)\)</span>，与 <span class="math">\(\mathbf{k}_t\)</span> 正交的方向不受影响。转移矩阵 <span class="math">\(\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^\top\)</span> 是广义 Householder 矩阵，特征值为 <span class="math">\(1\)</span>（<span class="math">\(d_k-1\)</span> 重，对应与 <span class="math">\(\mathbf{k}_t\)</span> 正交的子空间）和 <span class="math">\(1-\beta_t\)</span>（对应 <span class="math">\(\mathbf{k}_t\)</span> 方向）。</p>
+<p>DeltaNet 只修改当前 key 方向；<strong>长期不再被访问的旧方向不会被清理</strong>，仍占用容量。</p>
+<h3>10.5 Gated DeltaNet：全局遗忘 + 定向修正</h3>
+<p><strong>Gated DeltaNet（GDN）</strong> [Yang et al., 2025] 把 Mamba-2 的标量门与 Delta 规则结合：先衰减，再在衰减后的状态上做 Delta 修正。</p>
+<div class="math">$$
+\mathbf{S}_t=\alpha_t\big(\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^\top\big)\mathbf{S}_{t-1}+\beta_t\,\mathbf{k}_t\mathbf{v}_t^\top .
+\tag{10.12}
+$$</div>
+<p>推导：令 <span class="math">\(\bar{\mathbf{S}}=\alpha_t\mathbf{S}_{t-1}\)</span>，对 <span class="math">\(\bar{\mathbf{S}}\)</span> 应用式 (10.9) 即得式 (10.12)。注意 <span class="math">\(\alpha_t\)</span> 只乘在旧状态上，不乘新写入项。对任意读地址 <span class="math">\(\mathbf{q}\)</span>，</p>
+<div class="math">$$
+\mathbf{S}_t^\top\mathbf{q}=\underbrace{\alpha_t\mathbf{S}_{t-1}^\top\mathbf{q}}_{\text{全局保留}}+\underbrace{\beta_t(\mathbf{k}_t^\top\mathbf{q})\big(\mathbf{v}_t-\alpha_t\mathbf{S}_{t-1}^\top\mathbf{k}_t\big)}_{\text{按地址修正}} .
+\tag{10.13}
+$$</div>
+<p><span class="math">\(\alpha_t\)</span> 很小时可以在上下文切换处快速清空整头记忆；<span class="math">\(\beta_t\)</span> 负责精确编辑单条关联。Qwen3-Next 与 Qwen3.5 采用 GDN，参数化方式与 Mamba 类似：</p>
+<div class="math">$$
+\alpha_t=\exp\!\Big(-e^{A}\cdot\operatorname{softplus}\big(\mathbf{w}_{\alpha}^\top\mathbf{x}_t+b_{\Delta}\big)\Big),\qquad
+\beta_t=\sigma\big(\mathbf{w}_{\beta}^\top\mathbf{x}_t\big),
+\tag{10.14}
+$$</div>
+<p>其中 <span class="math">\(A\)</span>、<span class="math">\(b_{\Delta}\)</span> 是每头的可学习标量（具体形式以各模型的开源实现为准）。</p>
+<h3>10.6 Kimi Delta Attention（KDA）：通道级遗忘</h3>
+<p>GDN 的 <span class="math">\(\alpha_t\)</span> 是头级标量，一个头内所有 key 通道只能以同一速率遗忘。<strong>KDA</strong> [Kimi Team, 2025] 把它换成通道级向量门 <span class="math">\(\boldsymbol{\alpha}_t\in(0,1]^{d_k}\)</span>，并把对角门放在 Householder 矩阵<strong>右侧</strong>：</p>
+<div class="math">$$
+\mathbf{S}_t=\big(\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^\top\big)\operatorname{Diag}(\boldsymbol{\alpha}_t)\,\mathbf{S}_{t-1}+\beta_t\,\mathbf{k}_t\mathbf{v}_t^\top,
+\qquad
+\mathbf{o}_t=\mathbf{S}_t^\top\mathbf{q}_t .
+\tag{10.15}
+$$</div>
+<p>这可以分三步理解：(1) <strong>选择性遗忘</strong> <span class="math">\(\tilde{\mathbf{S}}=\operatorname{Diag}(\boldsymbol{\alpha}_t)\mathbf{S}_{t-1}\)</span>，第 <span class="math">\(i\)</span> 行（第 <span class="math">\(i\)</span> 个 key 通道）乘以 <span class="math">\(\alpha_{t,i}\)</span>，不同通道拥有不同的时间尺度；(2) <strong>擦除</strong> 当前 key 方向的旧关联，<span class="math">\(\tilde{\mathbf{S}}-\beta_t\mathbf{k}_t(\tilde{\mathbf{S}}^\top\mathbf{k}_t)^\top\)</span>；(3) <strong>写入</strong> <span class="math">\(\beta_t\mathbf{k}_t\mathbf{v}_t^\top\)</span>。由于一般有 <span class="math">\((\mathbf{I}-\beta\mathbf{k}\mathbf{k}^\top)\operatorname{Diag}(\boldsymbol{\alpha})\ne\operatorname{Diag}(\boldsymbol{\alpha})(\mathbf{I}-\beta\mathbf{k}\mathbf{k}^\top)\)</span>，门的位置会影响模型，KDA 的 chunkwise 算法是围绕式 (10.15) 的顺序设计的。</p>
+<p><strong>神经参数化（Kimi Linear）.</strong> 对每个头：</p>
+<div class="math">$$
+\begin{aligned}
+\mathbf{q}_t&amp;=\operatorname{L2Norm}\big(\operatorname{Swish}(\operatorname{ShortConv}(\mathbf{W}^Q\mathbf{x}_t))\big),\qquad
+\mathbf{k}_t=\operatorname{L2Norm}\big(\operatorname{Swish}(\operatorname{ShortConv}(\mathbf{W}^K\mathbf{x}_t))\big),\\
+\mathbf{v}_t&amp;=\operatorname{Swish}\big(\operatorname{ShortConv}(\mathbf{W}^V\mathbf{x}_t)\big),\qquad
+\boldsymbol{\alpha}_t=f\big(\mathbf{W}^{\alpha}_{\uparrow}\mathbf{W}^{\alpha}_{\downarrow}\mathbf{x}_t\big),\qquad
+\beta_t=\sigma\big(\mathbf{w}^{\beta\top}\mathbf{x}_t\big),
+\end{aligned}
+\tag{10.16}
+$$</div>
+<p>其中 ShortConv 是核长很短（如 4）的因果深度卷积，给 q/k/v 提供廉价的局部 token 混合（例如 induction head 需要的“前一个 token”信息）；<span class="math">\(\mathbf{W}^{\alpha}_{\downarrow},\mathbf{W}^{\alpha}_{\uparrow}\)</span> 是低秩瓶颈；<span class="math">\(f\)</span> 是把输出映射到 <span class="math">\((0,1]\)</span> 的函数（与式 10.14 同类的 softplus–exp 形式）。q/k 的 L2 归一化保证 <span class="math">\(\|\mathbf{k}_t\|=1\)</span>，使式 (10.11) 成立并保证转移矩阵谱半径不超过 1。多头输出经逐头 RMSNorm 与输出门：</p>
+<div class="math">$$
+\mathbf{y}_t=\mathbf{W}^{O}\Big[\sigma\big(\mathbf{W}^{G}_{\uparrow}\mathbf{W}^{G}_{\downarrow}\mathbf{x}_t\big)\odot\operatorname{RMSNorm}\big([\mathbf{o}_{t,1};\dots;\mathbf{o}_{t,H}]\big)\Big].
+\tag{10.17}
+$$</div>
+<h3>10.7 Chunkwise 并行训练</h3>
+<p>逐 token 递推适合推理，但训练时无法利用 tensor core。标准做法是把序列切成长度为 <span class="math">\(C\)</span> 的块：<strong>块间</strong>递推传递状态，<strong>块内</strong>用矩阵乘法并行计算。</p>
+<p><strong>(a) 线性注意力.</strong> 记块 <span class="math">\([c]\)</span> 内按行堆叠的矩阵为 <span class="math">\(\mathbf{Q}_{[c]},\mathbf{K}_{[c]}\in\mathbb{R}^{C\times d_k}\)</span>、<span class="math">\(\mathbf{V}_{[c]}\in\mathbb{R}^{C\times d_v}\)</span>，块开始前的状态为 <span class="math">\(\mathbf{S}_{[c]}\)</span>。由式 (10.3) 的行形式 <span class="math">\(\mathbf{o}_t^\top=\mathbf{q}_t^\top\mathbf{S}_t\)</span>：</p>
+<div class="math">$$
+\mathbf{O}_{[c]}=\underbrace{\mathbf{Q}_{[c]}\mathbf{S}_{[c]}}_{\text{块间（历史状态）}}+\underbrace{\big(\mathbf{Q}_{[c]}\mathbf{K}_{[c]}^\top\odot\mathbf{M}_C\big)\mathbf{V}_{[c]}}_{\text{块内（因果注意力）}},\qquad
+\mathbf{S}_{[c+1]}=\mathbf{S}_{[c]}+\mathbf{K}_{[c]}^\top\mathbf{V}_{[c]},
+\tag{10.18}
+$$</div>
+<p>其中 <span class="math">\(\mathbf{M}_C\)</span> 是 <span class="math">\(C\times C\)</span> 的下三角全 1 矩阵（含对角线）。总计算量为 <span class="math">\(O(NCd_k+Nd_kd_v)\)</span>。<span class="math">\(C=1\)</span> 退化为递推，<span class="math">\(C=N\)</span> 退化为式 (10.7) 的并行形式，<span class="math">\(C\)</span> 取 64–256 时最适合 GPU。MiniMax-01 的 Lightning Attention 就是带固定衰减的式 (10.18)。带标量衰减时，块内乘上式 (10.7) 的 <span class="math">\(\mathbf{D}\)</span>，块间项乘上块内累积衰减。</p>
+<p><strong>(b) Delta 规则：WY 表示与 UT 变换</strong> [Yang et al., 2024b]. 在块内（下标 <span class="math">\(i=1,\dots,C\)</span> 为块内位置，<span class="math">\(\mathbf{S}_0=\mathbf{S}_{[c]}\)</span>），展开式 (10.9)：</p>
+<div class="math">$$
+\mathbf{S}_i=\mathbf{P}_i\mathbf{S}_0+\mathbf{H}_i,\qquad
+\mathbf{P}_i=\prod_{r=i}^{1}\big(\mathbf{I}-\beta_r\mathbf{k}_r\mathbf{k}_r^\top\big),\qquad
+\mathbf{H}_i=\big(\mathbf{I}-\beta_i\mathbf{k}_i\mathbf{k}_i^\top\big)\mathbf{H}_{i-1}+\beta_i\mathbf{k}_i\mathbf{v}_i^\top .
+\tag{10.19}
+$$</div>
+<p>用归纳法可以证明，连续 Householder 型矩阵的乘积和 <span class="math">\(\mathbf{H}_i\)</span> 都有紧凑的<strong>WY 表示</strong>：</p>
+<div class="math">$$
+\mathbf{P}_i=\mathbf{I}-\sum_{r\le i}\mathbf{k}_r\mathbf{w}_r^\top,\qquad
+\mathbf{H}_i=\sum_{r\le i}\mathbf{k}_r\mathbf{u}_r^\top,
+\tag{10.20}
+$$</div>
+<div class="math">$$
+\mathbf{w}_i=\beta_i\Big(\mathbf{k}_i-\sum_{r&lt;i}(\mathbf{k}_r^\top\mathbf{k}_i)\,\mathbf{w}_r\Big),\qquad
+\mathbf{u}_i=\beta_i\Big(\mathbf{v}_i-\sum_{r&lt;i}(\mathbf{k}_r^\top\mathbf{k}_i)\,\mathbf{u}_r\Big).
+\tag{10.21}
+$$</div>
+<p>（证明：<span class="math">\(\mathbf{P}_i=\mathbf{P}_{i-1}-\beta_i\mathbf{k}_i(\mathbf{P}_{i-1}^\top\mathbf{k}_i)^\top\)</span>，代入归纳假设即得 <span class="math">\(\mathbf{w}_i=\beta_i\mathbf{P}_{i-1}^\top\mathbf{k}_i\)</span>；<span class="math">\(\mathbf{u}_i\)</span> 同理。）式 (10.21) 是下三角线性方程组。按行堆叠 <span class="math">\(\mathbf{W},\mathbf{U}\)</span>，记 <span class="math">\(\boldsymbol{\beta}=\operatorname{diag}(\beta_1,\dots,\beta_C)\)</span>，则</p>
+<div class="math">$$
+\mathbf{W}=\mathbf{T}\,\boldsymbol{\beta}\mathbf{K}_{[c]},\qquad
+\mathbf{U}=\mathbf{T}\,\boldsymbol{\beta}\mathbf{V}_{[c]},\qquad
+\mathbf{T}=\Big(\mathbf{I}+\operatorname{tril}_{-1}\big(\boldsymbol{\beta}\mathbf{K}_{[c]}\mathbf{K}_{[c]}^\top\big)\Big)^{-1},
+\tag{10.22}
+$$</div>
+<p>其中 <span class="math">\(\operatorname{tril}_{-1}\)</span> 取严格下三角部分。这就是 <strong>UT 变换</strong>：一次 <span class="math">\(C\times C\)</span> 的三角求逆，把 <span class="math">\(C\)</span> 个串行的秩一更新变成矩阵乘法。把式 (10.20) 代入 <span class="math">\(\mathbf{S}_i\)</span> 与 <span class="math">\(\mathbf{o}_i^\top=\mathbf{q}_i^\top\mathbf{S}_i\)</span>，得到与式 (10.18) 同构的块形式：</p>
+<div class="math">$$
+\mathbf{O}_{[c]}=\mathbf{Q}_{[c]}\mathbf{S}_{[c]}+\big(\mathbf{Q}_{[c]}\mathbf{K}_{[c]}^\top\odot\mathbf{M}_C\big)\big(\mathbf{U}-\mathbf{W}\mathbf{S}_{[c]}\big),\qquad
+\mathbf{S}_{[c+1]}=\mathbf{S}_{[c]}+\mathbf{K}_{[c]}^\top\big(\mathbf{U}-\mathbf{W}\mathbf{S}_{[c]}\big).
+\tag{10.23}
+$$</div>
+<p>与式 (10.18) 相比，只是把 <span class="math">\(\mathbf{V}_{[c]}\)</span> 换成了“扣除旧状态预测后的有效 value”<span class="math">\(\mathbf{U}-\mathbf{W}\mathbf{S}_{[c]}\)</span>。</p>
+<p><strong>(c) 加入门控.</strong> 对 GDN（式 10.12），令块内累积衰减 <span class="math">\(\gamma_i=\prod_{r\le i}\alpha_r\)</span>，并做变量替换 <span class="math">\(\mathbf{S}_i=\gamma_i\mathbf{S}'_i\)</span>，代入得</p>
+<div class="math">$$
+\mathbf{S}'_i=\big(\mathbf{I}-\beta_i\mathbf{k}_i\mathbf{k}_i^\top\big)\mathbf{S}'_{i-1}+\beta_i\,\mathbf{k}_i\big(\mathbf{v}_i/\gamma_i\big)^\top,\qquad
+\mathbf{o}_i=\gamma_i\,\mathbf{S}'^{\top}_i\mathbf{q}_i ,
+\tag{10.24}
+$$</div>
+<p>即把 <span class="math">\(\mathbf{v}_i\)</span> 换成 <span class="math">\(\mathbf{v}_i/\gamma_i\)</span> 的普通 DeltaNet，因此可以直接套用式 (10.20)–(10.23)（实际 kernel 会把 <span class="math">\(\gamma\)</span> 吸收进 <span class="math">\(\mathbf{T}\)</span> 与块内掩码，以避免除以很小的数）。对 KDA（式 10.15），令 <span class="math">\(\mathbf{b}_i=\prod_{r\le i}\boldsymbol{\alpha}_r\)</span>、<span class="math">\(\boldsymbol{\Gamma}_i=\operatorname{Diag}(\mathbf{b}_i)\)</span>，做替换 <span class="math">\(\mathbf{S}_i=\boldsymbol{\Gamma}_i\mathbf{S}'_i\)</span>：</p>
+<div class="math">$$
+\mathbf{S}'_i=\Big(\mathbf{I}-\beta_i\,\check{\mathbf{k}}_i\hat{\mathbf{k}}_i^\top\Big)\mathbf{S}'_{i-1}+\beta_i\,\check{\mathbf{k}}_i\mathbf{v}_i^\top,\qquad
+\check{\mathbf{k}}_i=\mathbf{k}_i\oslash\mathbf{b}_i,\quad
+\hat{\mathbf{k}}_i=\mathbf{k}_i\odot\mathbf{b}_i,\qquad
+\mathbf{o}_i=\mathbf{S}'^{\top}_i\big(\mathbf{q}_i\odot\mathbf{b}_i\big).
+\tag{10.25}
+$$</div>
+<p>推导中用到 <span class="math">\(\boldsymbol{\Gamma}_i^{-1}(\mathbf{I}-\beta\mathbf{k}\mathbf{k}^\top)\boldsymbol{\Gamma}_i=\mathbf{I}-\beta(\boldsymbol{\Gamma}_i^{-1}\mathbf{k})(\boldsymbol{\Gamma}_i\mathbf{k})^\top\)</span>。式 (10.25) 是一个“写地址”<span class="math">\(\check{\mathbf{k}}\)</span> 与“擦除读地址”<span class="math">\(\hat{\mathbf{k}}\)</span> 不同的 Delta 规则，WY 递推相应改为 <span class="math">\(\mathbf{w}_i=\beta_i\big(\hat{\mathbf{k}}_i-\sum_{r&lt;i}(\check{\mathbf{k}}_r^\top\hat{\mathbf{k}}_i)\mathbf{w}_r\big)\)</span>。这说明 KDA 是<strong>对角加低秩（DPLR）转移矩阵</strong>的一个受约束特例：一般 DPLR 的转移为 <span class="math">\(\operatorname{Diag}(\boldsymbol{\alpha}_t)-\mathbf{a}_t\mathbf{b}_t^\top\)</span>，KDA 把 <span class="math">\(\mathbf{a}_t,\mathbf{b}_t\)</span> 都绑定到 <span class="math">\(\mathbf{k}_t\)</span>，从而减少计算量并提高数值稳定性。</p>
+<p><img alt="图 12. 线性注意力族在固定大小 \(d_k\times d_v\) 状态上的“遗忘、擦除、写入”操作（式 10.26），以及 chunkwise 训练方式（式 10.18、10.23）。" src="/figures/20261010_survey_attention__linear_family.svg"></p>
+<p><em>图 12. 线性注意力族在固定大小 <span class="math">\(d_k\times d_v\)</span> 状态上的“遗忘、擦除、写入”操作（式 10.26），以及 chunkwise 训练方式（式 10.18、10.23）。</em></p>
+<h3>10.8 线性注意力族小结</h3>
+<div class="math">$$
+\begin{aligned}
+\text{线性注意力：}\quad&amp;\mathbf{S}_t=\mathbf{S}_{t-1}+\mathbf{k}_t\mathbf{v}_t^\top\\
+\text{Lightning / RetNet：}\quad&amp;\mathbf{S}_t=\gamma\,\mathbf{S}_{t-1}+\mathbf{k}_t\mathbf{v}_t^\top\\
+\text{Mamba-2：}\quad&amp;\mathbf{S}_t=\alpha_t\mathbf{S}_{t-1}+\mathbf{k}_t\mathbf{v}_t^\top\\
+\text{GLA：}\quad&amp;\mathbf{S}_t=\operatorname{Diag}(\boldsymbol{\alpha}_t)\mathbf{S}_{t-1}+\mathbf{k}_t\mathbf{v}_t^\top\\
+\text{DeltaNet：}\quad&amp;\mathbf{S}_t=(\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^\top)\mathbf{S}_{t-1}+\beta_t\mathbf{k}_t\mathbf{v}_t^\top\\
+\text{Gated DeltaNet：}\quad&amp;\mathbf{S}_t=\alpha_t(\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^\top)\mathbf{S}_{t-1}+\beta_t\mathbf{k}_t\mathbf{v}_t^\top\\
+\text{KDA：}\quad&amp;\mathbf{S}_t=(\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^\top)\operatorname{Diag}(\boldsymbol{\alpha}_t)\mathbf{S}_{t-1}+\beta_t\mathbf{k}_t\mathbf{v}_t^\top
+\end{aligned}
+\tag{10.26}
+$$</div>
+<p>所有模型都是 <span class="math">\(\mathbf{S}_t=\mathbf{A}_t\mathbf{S}_{t-1}+\mathbf{B}_t\)</span> 的形式，转移矩阵从 <span class="math">\(\mathbf{I}\)</span> 演进到“对角 × Householder”，表达力逐步提高，同时都保留 chunkwise 并行算法。但式 (10.5) 的容量上限对所有模型都成立：门控和 Delta 规则改善的是<strong>如何利用</strong>有限容量，而不是<strong>提高</strong>容量。在需要从大量记录中精确检索的任务上（多键 needle、长程多跳推理），纯线性模型仍不如 softmax 注意力。这引出了方向 H。</p>
+<hr>
+<h2>11 方向 H：混合架构</h2>
+<h3>11.1 为什么要混合</h3>
+<p>各方向各有短板：线性层的记忆有损（式 10.5），全注意力层昂贵，局部层看不远。混合架构让大多数层承担低成本的序列建模，少数层负责精确的全局检索。设每 <span class="math">\(r\)</span> 个“高效层”配 1 个全注意力层，高效层为固定状态的线性层（每层状态 <span class="math">\(\Sigma\)</span> 字节，与 <span class="math">\(N\)</span> 无关），全注意力层每 token 每层 cache 为 <span class="math">\(\varepsilon\)</span> 字节，则</p>
+<div class="math">$$
+\mathrm{Mem}=\frac{L}{r+1}\,N\varepsilon+\frac{rL}{r+1}\,\Sigma,\qquad
+\text{FLOPs}_{\text{prefill}}^{\text{attn}}\approx\frac{1}{r+1}\cdot 2LHd_hN^2+\frac{r}{r+1}\cdot O(LNd_kd_v).
+\tag{11.1}
+$$</div>
+<p>与式 (7.5) 比较：SWA 混合中高效层的 cache 是 <span class="math">\(w\varepsilon\)</span>，线性混合中是固定状态 <span class="math">\(\Sigma\)</span>，二者都与 <span class="math">\(N\)</span> 无关。<span class="math">\(N\)</span> 很大时，cache 和二次计算都约为全注意力模型的 <span class="math">\(1/(r+1)\)</span>。注意这只是常数倍的改善：<strong>全注意力层仍保留 <span class="math">\(O(N^2)\)</span> 与 <span class="math">\(O(N)\)</span></strong>，因此混合架构也可以与 C、E、F 方向叠加（如 Kimi Linear 的全注意力层使用 MLA）。</p>
+<p>理论上，有工作证明了“线性层 + 少量全注意力层”的表达能力层级严格介于纯线性与纯全注意力之间 [arXiv:2602.01763]；实践中，3:1 左右的配比在多数基准上接近全注意力。</p>
+<h3>11.2 代表模型</h3>
+<table>
+<thead>
+<tr>
+<th>模型</th>
+<th>高效层</th>
+<th>全局层</th>
+<th>比例</th>
+<th>上下文</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MiniMax-01 / M1</td>
+<td>Lightning Attention</td>
+<td>softmax（GQA）</td>
+<td>7 : 1</td>
+<td>1M 训练，推理 4M</td>
+</tr>
+<tr>
+<td>Qwen3-Next / Qwen3.5</td>
+<td>Gated DeltaNet</td>
+<td>Gated Attention（GQA）</td>
+<td>3 : 1</td>
+<td>262K 原生，可扩展到约 1M</td>
+</tr>
+<tr>
+<td>Kimi Linear</td>
+<td>KDA</td>
+<td>MLA（NoPE）</td>
+<td>3 : 1</td>
+<td>1M</td>
+</tr>
+<tr>
+<td>Jamba</td>
+<td>Mamba</td>
+<td>GQA</td>
+<td>7 : 1</td>
+<td>256K</td>
+</tr>
+<tr>
+<td>Gemma 3</td>
+<td>SWA（<span class="math">\(w=1024\)</span>）</td>
+<td>全注意力</td>
+<td>5 : 1</td>
+<td>128K</td>
+</tr>
+<tr>
+<td>MiMo-V2-Flash</td>
+<td>SWA（<span class="math">\(w=128\)</span>）+ sink</td>
+<td>全注意力</td>
+<td>5 : 1</td>
+<td>256K</td>
+</tr>
+<tr>
+<td>gpt-oss</td>
+<td>SWA（<span class="math">\(w=128\)</span>）+ sink</td>
+<td>全注意力</td>
+<td>1 : 1</td>
+<td>128K</td>
+</tr>
+<tr>
+<td>Llama 4</td>
+<td>chunked（<span class="math">\(B=8192\)</span>）RoPE</td>
+<td>NoPE 全注意力</td>
+<td>3 : 1</td>
+<td>最高 10M（Scout）</td>
+</tr>
+<tr>
+<td>DeepSeek-V4</td>
+<td>CSA</td>
+<td>HCA</td>
+<td>逐层交替</td>
+<td>1M</td>
+</tr>
+</tbody>
+</table>
+<p>可以看到，“混合”已经不是线性注意力专属的设计：SWA/全局交错、CSA/HCA 交错本质上也是混合。混合的轴有三种：<strong>层间</strong>（上表大部分）、<strong>层内头间</strong>（如 Hymba、Falcon-H1 在同一层并行放置注意力头和 SSM 头）、<strong>分支间</strong>（NSA 三分支、V4 的压缩 + 窗口）。</p>
+<p>Kimi Linear 报告了一个有意义的结果：在相同训练配方下，KDA:MLA = 3:1 的混合模型在短上下文、长上下文和 RL 任务上都超过全 MLA 基线，同时 1M 上下文的 KV cache 减少约 75%、decode 吞吐提升最多约 6 倍。这说明在合适的配比下，线性层带来的近因偏置不仅是“省钱”，也可能是有益的归纳偏置。</p>
+<p><img alt="图 13. 长上下文开源模型的层排布（前 16 层）：局部-全局交错、线性-全注意力混合，以及稀疏 / 压缩注意力（第 7.4、11.2、14.2 节）。DeepSeek-V4-Pro 前两层为 HCA，之后 CSA 与 HCA 交替。排布为示意，MiniMax-M3 按每层都是 MSA 绘制。" src="/figures/20261010_survey_attention__hybrid_layouts.svg"></p>
+<p><em>图 13. 长上下文开源模型的层排布（前 16 层）：局部-全局交错、线性-全注意力混合，以及稀疏 / 压缩注意力（第 7.4、11.2、14.2 节）。DeepSeek-V4-Pro 前两层为 HCA，之后 CSA 与 HCA 交替。排布为示意，MiniMax-M3 按每层都是 MSA 绘制。</em></p>
+<h3>11.3 门控注意力（Gated Attention）</h3>
+<p>Qwen3-Next/Qwen3.5 的全注意力层不是标准 softmax，而是在注意力输出后加一个逐头、逐元素的 sigmoid 门 [Qiu et al., 2025]：</p>
+<div class="math">$$
+\mathbf{y}_t=\sum_{h=1}^{H}\mathbf{W}^{O}_h\Big(\sigma\big(\mathbf{W}^{G}_h\mathbf{x}_t\big)\odot\mathbf{o}_{t,h}\Big).
+\tag{11.2}
+$$</div>
+<p>它带来三个效果：</p>
+<ol>
+<li><strong>打破低秩瓶颈</strong>：没有门时，<span class="math">\(\mathbf{W}^{O}_h\mathbf{o}_{t,h}=\sum_s a_{t,s,h}\mathbf{W}^{O}_h\mathbf{W}^{V}_h\mathbf{x}_s\)</span>，<span class="math">\(\mathbf{W}^{O}_h\mathbf{W}^{V}_h\)</span> 是秩不超过 <span class="math">\(d_v\)</span> 的线性映射；门在两者之间插入了一个依赖 query 的非线性。</li>
+<li><strong>稀疏化输出</strong>：训练后门值大多接近 0，头可以按 query 关闭。</li>
+<li><strong>消除 attention sink</strong>：与式 (7.3) 比较，</li>
+</ol>
+<div class="math">$$
+\underbrace{\mathbf{o}_{t,h}=\sigma\big(\operatorname{LSE}_{t,h}-\varsigma_h\big)\cdot\mathbf{o}^{\text{std}}_{t,h}}_{\text{可学习 sink：标量门，只依赖匹配强度}}
+\qquad\text{vs.}\qquad
+\underbrace{\sigma\big(\mathbf{W}^{G}_h\mathbf{x}_t\big)\odot\mathbf{o}^{\text{std}}_{t,h}}_{\text{output gate：逐元素门，依赖 query 内容}} .
+\tag{11.3}
+$$</div>
+<p>两者都让头可以“不输出”，因此模型不再需要在首 token 上堆积注意力。Qiu et al. 报告门控后首 token 的注意力占比从约 46.7% 降到约 4.8%，massive activation 消失，训练对大学习率更稳定，长度外推也更好。KDA 的输出门（式 10.17）是同一思想在线性层中的应用。</p>
+<h3>11.4 MiniMax 的经验：混合的工程风险</h3>
+<p>MiniMax-M2 在 M1 的 7:1 线性混合之后<strong>回到了全注意力</strong>。MiniMax 官方博客给出的理由主要是工程与评估层面的：(i) 在更大规模上，混合模型在多跳推理等复杂任务上出现退化，而公开基准不容易发现这些问题，需要专门构造代理指标；(ii) 推理栈（前缀缓存、投机解码、低精度 kernel）对线性注意力的支持还不成熟。之后的 M3 选择了<strong>保留精确 softmax</strong> 的块稀疏 MSA（第 8.4 节）。这与 GLM-5 的消融结论（DSA 近乎无损，GDN 混合在 RULER@128K 上掉约 11 分）一致：截至 2026 年，<strong>稀疏 softmax</strong> 与 <strong>线性混合</strong> 两条路线并存，前者在精确检索与工程兼容性上更占优，后者在固定状态与吞吐上更占优。</p>
+<h3>11.5 从已有模型转换</h3>
+<p>由于从头预训练成本很高，另一条实用路线是把训练好的 Transformer 转换为高效架构：GQA → MLA（TransMLA，利用第 6.5 节的包含关系）、MLA → MLA + DSA（GLM-5 只用约 20B tokens）、全注意力 → 线性混合（用原注意力层初始化线性层，再经蒸馏与长上下文继续训练）。这类方法的共同点是先对齐新旧模块的输出（注意力蒸馏、逐层 MSE 或 KL），再端到端微调。</p>
+<hr>
+<h2>12 数值稳定性与训练技术</h2>
+<p>长上下文同时放大了两类数值问题：logit 尺度（<span class="math">\(N\)</span> 越大，越需要更大的 logit 间隔，式 3.4）与低精度误差（FP8/FP4 的 cache、索引器和 kernel）。开源模型常用的技巧如下。</p>
+<p><strong>QK-Norm.</strong> 对 query 和 key 分别做 RMSNorm 再求内积：<span class="math">\(\ell_{t,s}=\operatorname{RMSNorm}(\mathbf{q}_t)^\top\operatorname{RMSNorm}(\mathbf{k}_s)/\sqrt{d_h}\)</span>，把 logit 限制在 <span class="math">\(|\ell|\le\sqrt{d_h}\,\|\mathbf{g}_q\odot\mathbf{g}_k\|_\infty\)</span> 量级（<span class="math">\(\mathbf{g}\)</span> 为 RMSNorm 的增益），防止 logit 增长失控。Qwen3、Gemma 3 等使用 QK-Norm；DeepSeek-V4 对 query 与KV 条目 <span class="math">\(\mathbf{e}_u\)</span> 做 RMSNorm 是同一思想。MLA 的 key 由缓存的潜变量生成，直接加 QK-Norm 会破坏权重吸收，因此 MLA 模型通常采用下面的 QK-Clip。</p>
+<p><strong>QK-Clip（Kimi K2 的 MuonClip）.</strong> 每次参数更新后，检查每个头在当前批次上的最大 logit <span class="math">\(\ell^{\max}_h\)</span>。若超过阈值 <span class="math">\(\tau\)</span>（K2 中 <span class="math">\(\tau=100\)</span>），就把该头的 query/key 投影按比例缩小：</p>
+<div class="math">$$
+\eta_h=\min\!\Big(1,\frac{\tau}{\ell^{\max}_h}\Big),\qquad
+\mathbf{W}^{Q}_h\leftarrow\sqrt{\eta_h}\,\mathbf{W}^{Q}_h,\qquad
+\mathbf{W}^{K}_h\leftarrow\sqrt{\eta_h}\,\mathbf{W}^{K}_h .
+\tag{12.1}
+$$</div>
+<p>对 MLA，只缩放每个头独有的部分（<span class="math">\(\mathbf{W}^{UQ}_h,\mathbf{W}^{UK}_h\)</span> 各乘 <span class="math">\(\sqrt{\eta_h}\)</span>，<span class="math">\(\mathbf{W}^{QR}_h\)</span> 乘 <span class="math">\(\eta_h\)</span>），所有头共享的 <span class="math">\(\mathbf{W}^{KR}\)</span> 不动。它不改变前向计算形式，只在 logit 失控的头上生效。GLM-5 的 Muon Split（第 6.5 节）从优化器侧达到了类似效果。</p>
+<p><strong>Logit soft-capping（Gemma 2）.</strong> <span class="math">\(\ell\mapsto c\tanh(\ell/c)\)</span>（注意力中 <span class="math">\(c=50\)</span>），把 logit 平滑地限制在 <span class="math">\((-c,c)\)</span>。它与 FlashAttention 的融合不如 QK-Norm 方便，Gemma 3 改用了 QK-Norm。</p>
+<p><strong>Attention sink 与输出门.</strong> 见式 (7.3) 与式 (11.3)。它们让头可以“不输出”，从根源上消除首 token 处的权重堆积和 massive activation，对 FP8 训练与长度外推都有帮助。</p>
+<p><strong>线性层的 L2 归一化与门的取值范围.</strong> 对 Delta 规则，<span class="math">\(\|\mathbf{k}_t\|=1\)</span> 且 <span class="math">\(\beta_t\in(0,1)\)</span> 保证转移矩阵 <span class="math">\(\mathbf{I}-\beta_t\mathbf{k}_t\mathbf{k}_t^\top\)</span> 的特征值落在 <span class="math">\([0,1]\)</span>，再乘以 <span class="math">\(\alpha_t\in(0,1]\)</span> 后状态范数不会增长：<span class="math">\(\|\mathbf{S}_t\|_2\le\|\mathbf{S}_{t-1}\|_2+\beta_t\|\mathbf{v}_t\|\)</span>。若允许 <span class="math">\(\beta_t\in(0,2)\)</span>，转移矩阵出现负特征值，可以增强状态追踪（如奇偶性）能力，但需要更小心的数值处理。</p>
+<p><strong>低精度索引与 cache.</strong> DeepSeek-V3.2 在 FP8 量化前对索引器 q/k 做 Hadamard 旋转 <span class="math">\(\mathbf{x}\mapsto\mathbf{H}\mathbf{x}\)</span>（<span class="math">\(\mathbf{H}\)</span> 为正交 Hadamard 矩阵），由于 <span class="math">\((\mathbf{H}\mathbf{q})^\top(\mathbf{H}\mathbf{k})=\mathbf{q}^\top\mathbf{k}\)</span>，内积不变，但离群通道的能量被均匀分散，量化误差显著降低。DeepSeek-V4 进一步把索引器 QK 计算降到 FP4，并对 KV 条目的 RoPE 维度保留 BF16、其余维度用 FP8。</p>
+<p><strong>确定性选择.</strong> 稀疏注意力的 top-k 在 RL 中必须确定（第 8.6 节），否则训练与推理的“策略”不一致，等价于引入了额外的 off-policy 噪声。</p>
+<hr>
+<h2>13 长上下文训练配方</h2>
+<p>几乎所有开源模型都采用“<strong>短上下文预训练 → 分阶段扩展长度 → 长上下文后训练</strong>”的配方，原因有三：长序列训练按式 (3.2) 平方增长；高质量长文档稀少；短上下文能力需要大量 token 才能学好，没必要在长序列上学。</p>
+<table>
+<thead>
+<tr>
+<th>模型</th>
+<th>预训练长度</th>
+<th>扩展方式</th>
+<th>目标长度</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Llama 3.1</td>
+<td>8K</td>
+<td>6 个阶段逐步扩展，约 800B tokens；RoPE base <span class="math">\(5\times10^5\)</span> + 式 (5.12)</td>
+<td>128K</td>
+</tr>
+<tr>
+<td>Qwen2.5 / Qwen3</td>
+<td>4K（主阶段）</td>
+<td>长上下文阶段 32K，RoPE base <span class="math">\(10^4\to10^6\)</span>（ABF）；推理时 YaRN（+DCA）到 128K</td>
+<td>128K</td>
+</tr>
+<tr>
+<td>Qwen2.5-1M</td>
+<td>4K</td>
+<td>逐步扩展到 256K，base 增大到 <span class="math">\(10^7\)</span>；推理用 DCA + YaRN 外推</td>
+<td>1M</td>
+</tr>
+<tr>
+<td>DeepSeek-V3</td>
+<td>4K</td>
+<td>YaRN 两阶段：32K（1000 步）→ 128K（1000 步）</td>
+<td>128K</td>
+</tr>
+<tr>
+<td>DeepSeek-V3.2</td>
+<td>由 V3.1（128K）继续训练</td>
+<td>稠密 warmup（索引器，约 2.1B tokens）→ 稀疏训练（约 944B tokens）</td>
+<td>128K</td>
+</tr>
+<tr>
+<td>DeepSeek-V4</td>
+<td>4K（稠密）</td>
+<td>前约 1T tokens 稠密；16K→64K 时引入稀疏（先短暂 warmup 索引器）；最后扩展到 1M</td>
+<td>1M</td>
+</tr>
+<tr>
+<td>Kimi K2</td>
+<td>4K</td>
+<td>32K 退火阶段，再用 YaRN 扩展</td>
+<td>128K</td>
+</tr>
+<tr>
+<td>GLM-5</td>
+<td>—</td>
+<td>mid-training：32K（1T）→ 128K（500B）→ 200K（50B）；DSA 由 MLA 基座经 1000 步 warmup + 20B tokens 引入</td>
+<td>200K</td>
+</tr>
+<tr>
+<td>Gemma 3</td>
+<td>32K</td>
+<td>预训练末期把全局层 RoPE 缩放 8 倍</td>
+<td>128K</td>
+</tr>
+<tr>
+<td>MiMo-V2-Flash</td>
+<td>32K</td>
+<td>扩展到 256K</td>
+<td>256K</td>
+</tr>
+</tbody>
+</table>
+<p>除了长度调度，以下做法在多份技术报告中反复出现：</p>
+<ul>
+<li><strong>文档内注意力掩码</strong>：把多篇文档拼接成长序列时，只允许每个 token 关注同一文档内的 token，避免无关文档之间的干扰；长上下文阶段再使用真正的长文档。</li>
+<li><strong>数据配比</strong>：长上下文阶段上采样书籍、代码仓库、论文等天然长文档，并混入一定比例的短数据，以保持短上下文能力；GLM-5 额外加入约 10M 个 issue–PR 对作为仓库级数据。</li>
+<li><strong>合成长程任务</strong>：多文档问答、长代码补全、检索与聚合类任务，用于训练模型实际使用远处的信息。</li>
+<li><strong>上下文并行</strong>：长于单卡容量的序列用 Ring Attention / Context Parallel（式 4.3）训练。</li>
+<li><strong>新注意力的“热启动”</strong>：稀疏/压缩/线性模块通常先在稠密模型上蒸馏对齐（式 8.15），再端到端训练，而不是从零开始。</li>
+<li><strong>推理期的上下文管理</strong>：在 agent 场景中，模型还需要配合上下文管理策略（例如 GLM-5 在 BrowseComp 上使用“保留最近 <span class="math">\(k\)</span> 轮工具结果”和“超过阈值后全部丢弃”的组合），这是注意力之外的另一种长上下文手段。</li>
+</ul>
+<hr>
+<h2>14 对比</h2>
+<h3>14.1 复杂度</h3>
+<p>下表给出<strong>单层</strong>的主导项（<span class="math">\(N\)</span> 为上下文长度；常数和与 <span class="math">\(N\)</span> 无关的投影计算省略）。“读取”指 decode 每步需要从 HBM 读取的 KV 量。</p>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>Prefill 计算</th>
+<th>Decode 每步计算</th>
+<th>Decode 每步读取</th>
+<th>KV cache</th>
+<th>精确远程检索</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MHA</td>
+<td><span class="math">\(N^2Hd_h\)</span></td>
+<td><span class="math">\(NHd_h\)</span></td>
+<td><span class="math">\(NHd_h\)</span></td>
+<td><span class="math">\(NHd_h\)</span></td>
+<td>✔</td>
+</tr>
+<tr>
+<td>GQA</td>
+<td><span class="math">\(N^2Hd_h\)</span></td>
+<td><span class="math">\(NHd_h\)</span></td>
+<td><span class="math">\(NH_{kv}d_h\)</span></td>
+<td><span class="math">\(NH_{kv}d_h\)</span></td>
+<td>✔</td>
+</tr>
+<tr>
+<td>MLA</td>
+<td><span class="math">\(N^2H(d_h+d_R)\)</span></td>
+<td><span class="math">\(NH(2d_c+d_R)\)</span></td>
+<td><span class="math">\(N(d_c+d_R)\)</span></td>
+<td><span class="math">\(N(d_c+d_R)\)</span></td>
+<td>✔</td>
+</tr>
+<tr>
+<td>SWA</td>
+<td><span class="math">\(NwHd_h\)</span></td>
+<td><span class="math">\(wHd_h\)</span></td>
+<td><span class="math">\(wH_{kv}d_h\)</span></td>
+<td><span class="math">\(wH_{kv}d_h\)</span></td>
+<td>✘（窗口外）</td>
+</tr>
+<tr>
+<td>MoBA / MSA</td>
+<td>索引 <span class="math">\(N^2d_I\)</span> + 主 <span class="math">\(Nk_{\text{top}}BHd_h\)</span></td>
+<td>同左除以 <span class="math">\(N\)</span></td>
+<td><span class="math">\(Nd_I+k_{\text{top}}BH_{kv}d_h\)</span></td>
+<td><span class="math">\(N(H_{kv}d_h+d_I)\)</span></td>
+<td>✔（取决于选择）</td>
+</tr>
+<tr>
+<td>NSA</td>
+<td><span class="math">\(N^2Hd_h/\delta+N(nl'+w)Hd_h\)</span></td>
+<td>同左除以 <span class="math">\(N\)</span></td>
+<td><span class="math">\(NH_{kv}d_h/\delta+(nl'+w)H_{kv}d_h\)</span></td>
+<td><span class="math">\(NH_{kv}d_h(1+1/\delta)\)</span></td>
+<td>✔（取决于选择）</td>
+</tr>
+<tr>
+<td>DSA</td>
+<td>索引 <span class="math">\(N^2H_Id_I\)</span> + 主 <span class="math">\(Nk_{\text{top}}H(d_h+d_R)\)</span></td>
+<td>索引 <span class="math">\(NH_Id_I\)</span> + 主 <span class="math">\(k_{\text{top}}H(2d_c+d_R)\)</span></td>
+<td><span class="math">\(Nd_I+k_{\text{top}}(d_c+d_R)\)</span></td>
+<td><span class="math">\(N(d_c+d_R+d_I)\)</span></td>
+<td>✔（取决于选择）</td>
+</tr>
+<tr>
+<td>CSA</td>
+<td>索引 <span class="math">\(N^2H_Id_I/m\)</span> + 主 <span class="math">\(N(k_{\text{top}}+w)Hd_e\)</span></td>
+<td>同左除以 <span class="math">\(N\)</span></td>
+<td><span class="math">\(Nd_I/m+(k_{\text{top}}+w)d_e\)</span></td>
+<td><span class="math">\(N(d_e+d_I)/m\)</span></td>
+<td>✔（<span class="math">\(m\)</span> 粒度）</td>
+</tr>
+<tr>
+<td>HCA</td>
+<td><span class="math">\(N^2Hd_e/m'\)</span></td>
+<td><span class="math">\(NHd_e/m'\)</span></td>
+<td><span class="math">\(Nd_e/m'\)</span></td>
+<td><span class="math">\(Nd_e/m'\)</span></td>
+<td>部分（<span class="math">\(m'\)</span> 粒度）</td>
+</tr>
+<tr>
+<td>线性 / GDN / KDA</td>
+<td><span class="math">\(NCHd_k+NHd_kd_v\)</span></td>
+<td><span class="math">\(Hd_kd_v\)</span></td>
+<td><span class="math">\(Hd_kd_v\)</span></td>
+<td><span class="math">\(Hd_kd_v\)</span>（常数）</td>
+<td>✘（容量 <span class="math">\(O(d_k)\)</span>）</td>
+</tr>
+</tbody>
+</table>
+<h3>14.2 开源模型的注意力配置</h3>
+<table>
+<thead>
+<tr>
+<th>模型</th>
+<th>注意力</th>
+<th>KV 形式</th>
+<th>位置编码</th>
+<th>上下文</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Llama 3.1 405B</td>
+<td>全注意力</td>
+<td>GQA（128 q / 8 kv）</td>
+<td>RoPE <span class="math">\(5\times10^5\)</span> + Llama3 缩放</td>
+<td>128K</td>
+</tr>
+<tr>
+<td>Llama 4 Scout / Maverick</td>
+<td>chunked : 全局 = 3 : 1</td>
+<td>GQA</td>
+<td>局部 RoPE，全局 NoPE + 温度</td>
+<td>10M / 1M</td>
+</tr>
+<tr>
+<td>Qwen3-235B-A22B</td>
+<td>全注意力</td>
+<td>GQA（64 q / 4 kv），QK-Norm</td>
+<td>RoPE <span class="math">\(10^6\)</span> + YaRN</td>
+<td>32K 原生 / 128K</td>
+</tr>
+<tr>
+<td>Qwen3-Next / Qwen3.5</td>
+<td>GDN : Gated Attention = 3 : 1</td>
+<td>线性状态 + GQA</td>
+<td>全注意力层部分 RoPE</td>
+<td>262K 原生，可扩展到约 1M</td>
+</tr>
+<tr>
+<td>DeepSeek-V3 / R1</td>
+<td>全注意力</td>
+<td>MLA（<span class="math">\(d_c=512,d_R=64\)</span>）</td>
+<td>解耦 RoPE + YaRN</td>
+<td>128K</td>
+</tr>
+<tr>
+<td>DeepSeek-V3.2</td>
+<td>DSA（<span class="math">\(k_{\text{top}}=2048\)</span>）</td>
+<td>MLA + FP8 索引器 key</td>
+<td>解耦 RoPE</td>
+<td>128K</td>
+</tr>
+<tr>
+<td>DeepSeek-V4 Pro / Flash</td>
+<td>CSA / HCA 交替 + 窗口 + sink</td>
+<td>共享 KV，<span class="math">\(m=4\)</span>、<span class="math">\(m'=128\)</span></td>
+<td>部分 RoPE + 输出反向旋转</td>
+<td>1M</td>
+</tr>
+<tr>
+<td>Kimi K2 / K2.5</td>
+<td>全注意力</td>
+<td>MLA，QK-Clip</td>
+<td>解耦 RoPE + YaRN</td>
+<td>128K–256K</td>
+</tr>
+<tr>
+<td>Kimi Linear</td>
+<td>KDA : MLA = 3 : 1</td>
+<td>线性状态 + MLA</td>
+<td>MLA 层 NoPE</td>
+<td>1M</td>
+</tr>
+<tr>
+<td>GLM-5</td>
+<td>DSA（<span class="math">\(k_{\text{top}}=2048\)</span>）</td>
+<td>MLA-256</td>
+<td>解耦 RoPE</td>
+<td>200K</td>
+</tr>
+<tr>
+<td>MiniMax-01 / M1</td>
+<td>Lightning : softmax = 7 : 1</td>
+<td>线性状态 + GQA</td>
+<td>RoPE</td>
+<td>1M</td>
+</tr>
+<tr>
+<td>MiniMax-M2 / M2.5</td>
+<td>全注意力</td>
+<td>GQA</td>
+<td>RoPE</td>
+<td>约 200K</td>
+</tr>
+<tr>
+<td>MiniMax-M3</td>
+<td>MSA（块稀疏）</td>
+<td>GQA + 单头索引 key</td>
+<td>RoPE</td>
+<td>1M</td>
+</tr>
+<tr>
+<td>Gemma 3</td>
+<td>SWA : 全局 = 5 : 1，<span class="math">\(w=1024\)</span></td>
+<td>GQA，QK-Norm</td>
+<td>局部 <span class="math">\(10^4\)</span> / 全局 <span class="math">\(10^6\)</span></td>
+<td>128K</td>
+</tr>
+<tr>
+<td>gpt-oss-120b / 20b</td>
+<td>SWA : 全局 = 1 : 1，<span class="math">\(w=128\)</span></td>
+<td>GQA-8 + 可学习 sink</td>
+<td>RoPE + YaRN</td>
+<td>128K</td>
+</tr>
+<tr>
+<td>MiMo-V2-Flash</td>
+<td>SWA : 全局 = 5 : 1，<span class="math">\(w=128\)</span></td>
+<td>GQA + 可学习 sink</td>
+<td>RoPE</td>
+<td>256K</td>
+</tr>
+</tbody>
+</table>
+<h3>14.3 演进时间线</h3>
+<p>把第 2.4 节的四个维度与时间线放在一起，可以看到三次明显的转向：</p>
+<ol>
+<li><strong>2023–2024：从“能读多长”到“读得起多长”。</strong> 位置外推（PI → YaRN → ABF）先解决“看不懂”，GQA 与 MLA 再解决“存不下”。这一阶段可见集合仍是 <span class="math">\([t]\)</span>。</li>
+<li><strong>2025：从固定模式到内容相关。</strong> 静态稀疏（SWA 交错）在 RULER 等检索任务上掉点明显，NSA/MoBA/DSA 让 <span class="math">\(\mathcal{J}_t\)</span> 依赖内容，在 128K–200K 上近乎无损；线性模型从固定衰减（Lightning）走到 Delta 规则与通道门控（GDN、KDA），并以 3:1 混合进入旗舰模型。</li>
+<li><strong>2026：从“少读”到“少存”。</strong> 1M 上下文让“只减少读取量”的稀疏注意力不够用，DeepSeek-V4 用序列维压缩同时减少存储、索引与计算；MiniMax 则选择了在 GQA 上做最简单的块稀疏，以换取工程兼容性。</li>
+</ol>
+<hr>
+<h2>15 讨论与展望</h2>
+<p><strong>分层记忆的趋同.</strong> 把最新的几种设计放在一起看：</p>
+<div class="math">$$
+\underbrace{\text{滑动窗口}}_{\text{工作记忆：精确、最近}}\ \cup\ \underbrace{\text{top-}k\text{ 选择}}_{\text{检索：精确、稀疏}}\ \cup\ \underbrace{\text{压缩条目}}_{\text{摘要：有损、全覆盖}}\ \cup\ \underbrace{\text{线性状态}}_{\text{要点：有损、常数大小}}\ \cup\ \underbrace{\text{sink / 门}}_{\text{“不读”}} .
+\tag{15.1}
+$$</div>
+<p>NSA 用了前三项，DeepSeek-V4 用了前三项加 sink，Kimi Linear 与 Qwen3.5 用了第四项加全注意力，Gemma 3 与 gpt-oss 用了第一项加全注意力与 sink。各方法的差别越来越像是在同一个分层记忆框架中<strong>选择哪些层级、每个层级分配多少预算</strong>。一个自然的方向是让模型按层、按头、甚至按 token 自适应地分配这些预算。</p>
+<p><strong>选择器的训练.</strong> 目前 DSA/MSA 的索引器靠 KL 蒸馏训练，且与主模型梯度隔离，本质上是在模仿稠密注意力。它的上限由稠密注意力决定，也很难在训练长度之外学到更好的选择。可导的软选择、直接以语言模型损失训练选择器、在 RL 中稳定地更新选择器，都还是开放问题。</p>
+<p><strong>线性记忆的容量.</strong> 式 (10.5) 给出的 <span class="math">\(O(d_k)\)</span> 上限是线性模型的根本限制。更大的状态（更多头、更大的 <span class="math">\(d_k\)</span>）、非线性状态（MLP 作为记忆，即测试时训练）、以及 Delta 规则的多步或高阶变体，都是在提高或更好地利用容量。如何在不破坏 chunkwise 并行的前提下突破这个上限，决定了线性模型能否在精确检索上追上 softmax。</p>
+<p><strong>软硬件协同.</strong> MLA 与 DSA 在带宽受限场景很高效，但对推理框架的改动大；MSA 选择 GQA 是为了复用现有栈；V4 把索引器降到 FP4。注意力的设计越来越受 kernel、精度格式与推理系统（分页、前缀缓存、投机解码、PD 分离）的约束。一种注意力能否被广泛采用，往往取决于它能否在主流推理框架中高效实现。</p>
+<p><strong>评估.</strong> needle-in-a-haystack 已基本饱和，RULER、LongBench v2、MRCR 等更难的基准，以及长时程的 agent 任务（SWE、BrowseComp、终端任务）更能区分不同方案。MiniMax 的经验说明，混合或稀疏架构的退化往往出现在多跳推理等公开基准覆盖不足的地方，需要专门构造评估。另外，长上下文能力与上下文管理策略（压缩、丢弃、摘要）高度耦合，二者需要一起评估。</p>
+<p><strong>多模态.</strong> 长视频与长音频把上下文推向更高的量级（Qwen3.5-Omni 支持 10 小时以上的音频输入，MiniMax-M3 的 1M 上下文也面向长视频），而视觉 token 的冗余度远高于文本，序列压缩（方向 F）和动态稀疏（方向 E）在多模态中可能更有优势。</p>
+<hr>
+<h2>16 参考文献</h2>
+<p><strong>基础与系统</strong>
+- Vaswani et al. <em>Attention Is All You Need.</em> NeurIPS 2017.
+- Dao et al. <em>FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness.</em> NeurIPS 2022；Dao. <em>FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning.</em> 2023；Shah et al. <em>FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision.</em> 2024.
+- Liu, Zaharia, Abbeel. <em>Ring Attention with Blockwise Transformers for Near-Infinite Context.</em> 2023.
+- Kwon et al. <em>Efficient Memory Management for Large Language Model Serving with PagedAttention.</em> SOSP 2023.</p>
+<p><strong>位置编码与外推</strong>
+- Su et al. <em>RoFormer: Enhanced Transformer with Rotary Position Embedding.</em> 2021.
+- Chen et al. <em>Extending Context Window of Large Language Models via Positional Interpolation.</em> 2023.
+- Peng et al. <em>YaRN: Efficient Context Window Extension of Large Language Models.</em> 2023.
+- Xiong et al. <em>Effective Long-Context Scaling of Foundation Models.</em> 2023.
+- An et al. <em>Training-Free Long-Context Scaling of Large Language Models (Dual Chunk Attention).</em> 2024.
+- Nakanishi. <em>Scalable-Softmax Is Superior for Attention.</em> 2025.
+- Liu et al. <em>Lost in the Middle: How Language Models Use Long Contexts.</em> 2023.</p>
+<p><strong>KV 共享与压缩</strong>
+- Shazeer. <em>Fast Transformer Decoding: One Write-Head is All You Need (MQA).</em> 2019.
+- Ainslie et al. <em>GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints.</em> 2023.
+- DeepSeek-AI. <em>DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model</em> (2024a)；<em>DeepSeek-V3 Technical Report</em> (2024b).
+- Meng et al. <em>TransMLA: Multi-Head Latent Attention Is All You Need.</em> 2025.</p>
+<p><strong>静态稀疏与 sink</strong>
+- Jiang et al. <em>Mistral 7B.</em> 2023.
+- Xiao et al. <em>Efficient Streaming Language Models with Attention Sinks (StreamingLLM).</em> 2023.
+- Sun et al. <em>Massive Activations in Large Language Models.</em> 2024.
+- Gemma Team. <em>Gemma 2: Improving Open Language Models at a Practical Size</em> (2024)；<em>Gemma 3 Technical Report</em> (2025).
+- OpenAI. <em>gpt-oss-120b &amp; gpt-oss-20b Model Card.</em> 2025.
+- Meta. <em>The Llama 3 Herd of Models</em> (2024)；<em>Llama 4</em> 发布说明 (2025).
+- Xiaomi. <em>MiMo-V2-Flash Technical Report.</em> arXiv:2601.02780, 2026.</p>
+<p><strong>动态稀疏与序列压缩</strong>
+- Lu et al. <em>MoBA: Mixture of Block Attention for Long-Context LLMs.</em> 2025.
+- Yuan et al. <em>Native Sparse Attention: Hardware-Aligned and Natively Trainable Sparse Attention.</em> ACL 2025.
+- DeepSeek-AI. <em>DeepSeek-V3.2: DeepSeek Sparse Attention.</em> 2025.
+- DeepSeek-AI. <em>DeepSeek-V4 Technical Report.</em> 2026.
+- Lai et al. <em>MiniMax Sparse Attention.</em> arXiv:2606.13392, 2026.
+- Zhipu AI. <em>GLM-5: From Vibe Coding to Agentic Engineering.</em> arXiv:2602.15763, 2026.</p>
+<p><strong>线性注意力与混合架构</strong>
+- Katharopoulos et al. <em>Transformers are RNNs: Fast Autoregressive Transformers with Linear Attention.</em> ICML 2020.
+- Schlag, Irie, Schmidhuber. <em>Linear Transformers Are Secretly Fast Weight Programmers.</em> ICML 2021.
+- Sun et al. <em>Retentive Network: A Successor to Transformer for Large Language Models (RetNet).</em> 2023.
+- Yang et al. <em>Gated Linear Attention Transformers with Hardware-Efficient Training (GLA).</em> ICML 2024a.
+- Yang et al. <em>Parallelizing Linear Transformers with the Delta Rule over Sequence Length.</em> NeurIPS 2024b.
+- Dao &amp; Gu. <em>Transformers are SSMs: Generalized Models and Efficient Algorithms through Structured State Space Duality (Mamba-2).</em> ICML 2024.
+- Yang, Kautz, Hatamizadeh. <em>Gated Delta Networks: Improving Mamba2 with Delta Rule.</em> ICLR 2025.
+- Kimi Team. <em>Kimi Linear: An Expressive, Efficient Attention Architecture.</em> arXiv:2510.26692, 2025.
+- MiniMax. <em>MiniMax-01: Scaling Foundation Models with Lightning Attention.</em> 2025；<em>MiniMax-M1: Scaling Test-Time Compute Efficiently with Lightning Attention.</em> 2025；<em>Why Did MiniMax M2 End Up as a Full Attention Model?</em> 2025.
+- Qwen Team. <em>Qwen3 Technical Report</em> (2025)；<em>Qwen2.5-1M Technical Report</em> (2025)；Qwen3-Next / Qwen3.5 发布说明 (2025–2026).
+- Qiu et al. <em>Gated Attention for Large Language Models: Non-linearity, Sparsity, and Attention-Sink-Free.</em> NeurIPS 2025.
+- Lieber et al. <em>Jamba: A Hybrid Transformer-Mamba Language Model.</em> 2024.
+- <em>A Provable Expressiveness Hierarchy in Hybrid Linear-Full Attention.</em> arXiv:2602.01763, 2026.</p>
+<p><strong>稳定性与优化</strong>
+- Kimi Team. <em>Kimi K2: Open Agentic Intelligence (MuonClip / QK-Clip).</em> 2025.</p>
+<p><strong>博客笔记（本文的主要起点）</strong>
+- Huiming Song. <a href="https://songhuiming.github.io/pages/2025/03/20/deepseek-v3-multi-head-latent-attention-mla/">DeepSeek V3 Multi-head Latent Attention (MLA)</a>；<a href="https://songhuiming.github.io/pages/2025/08/01/mhahe-mlade-kv-cachebi-jiao/">MHA 和 MLA 的 KV cache 比较</a>；<a href="https://songhuiming.github.io/pages/2026/02/18/deepseek-v32-lightning-indexer/">DeepSeek-V3.2 Lightning Indexer</a>；<a href="https://songhuiming.github.io/pages/2026/06/19/deepseek-v4-1mm-token-context/">DeepSeek-V4: 1MM Token Context</a>；<a href="https://songhuiming.github.io/pages/2026/06/30/glm-5-from-vibe-coding-to-agentic-engineering/">GLM-5: From Vibe Coding to Agentic Engineering</a>；<a href="https://songhuiming.github.io/pages/2026/08/01/kda-cong-xian-xing-zhu-yi-li-dao-kimi-delta-attention/">KDA - 从线性注意力到 Kimi Delta Attention</a>.</p>
+<script type="text/javascript">if (!document.getElementById('mathjaxscript_pelican_#%@#$@#')) {
+    var align = "center",
+        indent = "0em",
+        linebreak = "false";
+
+    if (false) {
+        align = (screen.width < 768) ? "left" : align;
+        indent = (screen.width < 768) ? "0em" : indent;
+        linebreak = (screen.width < 768) ? 'true' : linebreak;
+    }
+
+    var mathjaxscript = document.createElement('script');
+    mathjaxscript.id = 'mathjaxscript_pelican_#%@#$@#';
+    mathjaxscript.type = 'text/javascript';
+    mathjaxscript.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/latest.js?config=TeX-AMS-MML_HTMLorMML';
+
+    var configscript = document.createElement('script');
+    configscript.type = 'text/x-mathjax-config';
+    configscript[(window.opera ? "innerHTML" : "text")] =
+        "MathJax.Hub.Config({" +
+        "    config: ['MMLorHTML.js']," +
+        "    TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js','color.js'], equationNumbers: { autoNumber: 'none' } }," +
+        "    jax: ['input/TeX','input/MathML','output/HTML-CSS']," +
+        "    extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']," +
+        "    displayAlign: '"+ align +"'," +
+        "    displayIndent: '"+ indent +"'," +
+        "    showMathMenu: true," +
+        "    messageStyle: 'normal'," +
+        "    tex2jax: { " +
+        "        inlineMath: [ ['\\\\(','\\\\)'] ], " +
+        "        displayMath: [ ['$$','$$'] ]," +
+        "        processEscapes: true," +
+        "        preview: 'TeX'," +
+        "    }, " +
+        "    'HTML-CSS': { " +
+        "        availableFonts: ['STIX', 'TeX']," +
+        "        preferredFont: 'STIX'," +
+        "        styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: 'inherit ! important'} }," +
+        "        linebreaks: { automatic: "+ linebreak +", width: '90% container' }," +
+        "    }, " +
+        "}); " +
+        "if ('default' !== 'default') {" +
+            "MathJax.Hub.Register.StartupHook('HTML-CSS Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax['HTML-CSS'].FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+            "MathJax.Hub.Register.StartupHook('SVG Jax Ready',function () {" +
+                "var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;" +
+                "VARIANT['normal'].fonts.unshift('MathJax_default');" +
+                "VARIANT['bold'].fonts.unshift('MathJax_default-bold');" +
+                "VARIANT['italic'].fonts.unshift('MathJax_default-italic');" +
+                "VARIANT['-tex-mathit'].fonts.unshift('MathJax_default-italic');" +
+            "});" +
+        "}";
+
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(configscript);
+    (document.body || document.getElementsByTagName('head')[0]).appendChild(mathjaxscript);
+}
+</script></div>
+    <footer>
+<p class="meta">
+  <span class="byline author vcard">
+    Posted by <span class="fn">
+        <a href="/author/huiming-song.html">Huiming Song</a>
+    </span>
+  </span>
+<time datetime="2026-10-10T00:00:00-05:00" pubdate>Sat 10 October 2026</time>  <span class="categories">
+    <a class='category' href='/category/python.html'>python</a>
+  </span>
+  <span class="categories">
+    <a class="category" href="/tag/python.html">python</a>,    <a class="category" href="/tag/ai.html">AI</a>,    <a class="category" href="/tag/llm.html">LLM</a>,    <a class="category" href="/tag/aigc.html">AIGC</a>,    <a class="category" href="/tag/deepseek.html">DeepSeek</a>  </span>
+</p><div class="sharing">
+</div>    </footer>
+  </article>
+
+</div>
+<aside class="sidebar">
+  <section>
+    <h1>Recent Posts</h1>
+    <ul id="recent_posts">
+      <li class="post">
+          <a href="/pages/2026/10/10/kai-yuan-da-yu-yan-mo-xing-de-chang-shang-xia-wen-zhu-yi-li-ji-zhi-zong-shu-cong-softmax-attention-dao-xi-shu-ya-suo-yu-xian-xing-ji-yi/">开源大语言模型的长上下文注意力机制综述：从 Softmax Attention 到稀疏、压缩与线性记忆</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2026/08/01/kda-cong-xian-xing-zhu-yi-li-dao-kimi-delta-attention/">KDA - 从线性注意力到 Kimi Delta Attention</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2026/06/30/glm-5-from-vibe-coding-to-agentic-engineering/">GLM-5: From Vibe Coding to Agentic Engineering</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2026/06/19/deepseek-v4-1mm-token-context/">DeepSeek-V4: 1MM Token Context</a>
+      </li>
+      <li class="post">
+          <a href="/pages/2026/02/18/deepseek-v32-lightning-indexer/">DeepSeek-V3.2 Lightning Indexer</a>
+      </li>
+    </ul>
+  </section>
+  <section>
+      
+    <h1>Categories</h1>
+    <ul id="recent_posts">
+        <li><a href="/category/career-growth.html">career growth</a></li>
+        <li><a href="/category/linux.html">Linux</a></li>
+        <li><a href="/category/python.html">python</a></li>
+        <li><a href="/category/rthers.html">Rthers</a></li>
+    </ul>
+  </section>
+ 
+
+  <section>
+  <h1>Tags</h1>
+    <a href="/tag/python.html">python</a>,    <a href="/tag/ai.html">AI</a>,    <a href="/tag/llm.html">LLM</a>,    <a href="/tag/aigc.html">AIGC</a>,    <a href="/tag/deepseek.html">DeepSeek</a>,    <a href="/tag/glm.html">GLM</a>,    <a href="/tag/agi.html">AGI</a>,    <a href="/tag/aig.html">AIG</a>,    <a href="/tag/gpt.html">GPT</a>,    <a href="/tag/data-mining.html">data mining</a>,    <a href="/tag/sklearn.html">sklearn</a>,    <a href="/tag/pytorch.html">pytorch</a>,    <a href="/tag/career-growth.html">career growth</a>,    <a href="/tag/linux.html">linux</a>,    <a href="/tag/deep-learning.html">deep learning</a>,    <a href="/tag/leetcode.html">leetcode</a>,    <a href="/tag/dynamic-programming.html">dynamic programming</a>,    <a href="/tag/flask.html">flask</a>,    <a href="/tag/highcharts.html">highcharts</a>,    <a href="/tag/sql.html">sql</a>,    <a href="/tag/webcrawl.html">webCrawl</a>,    <a href="/tag/random-walk.html">random walk</a>,    <a href="/tag/multiprocessing.html">multiprocessing</a>,    <a href="/tag/data-visualization.html">data visualization</a>,    <a href="/tag/numpy.html">numpy</a>,    <a href="/tag/tensorflow.html">tensorflow</a>,    <a href="/tag/quant.html">quant</a>,    <a href="/tag/statsmodels.html">statsmodels</a>,    <a href="/tag/pandas.html">pandas</a>,    <a href="/tag/docker.html">docker</a>,    <a href="/tag/matplotlib.html">matplotlib</a>,    <a href="/tag/data-minging.html">data minging</a>,    <a href="/tag/remote-access.html">remote access</a>,    <a href="/tag/mysql.html">mysql</a>,    <a href="/tag/base.html">base</a>,    <a href="/tag/tweepy.html">tweepy</a>,    <a href="/tag/bokeh.html">bokeh</a>,    <a href="/tag/sentiment-analysis.html">sentiment analysis</a>,    <a href="/tag/map.html">map</a>,    <a href="/tag/apply.html">apply</a>,    <a href="/tag/apply_async.html">apply_async</a>,    <a href="/tag/git.html">git</a>,    <a href="/tag/pyqt.html">PyQt</a>,    <a href="/tag/cx_freeze.html">cx_freeze</a>,    <a href="/tag/tkinter.html">tkinter</a>,    <a href="/tag/pelican.html">pelican</a>,    <a href="/tag/spyre.html">spyre</a>,    <a href="/tag/shiny.html">shiny</a>,    <a href="/tag/r.html">R</a>,    <a href="/tag/re.html">re</a>  </section>
+
+
+    <section>
+        <h1>Social</h1>
+        <ul>
+            <li><a href="https://www.linkedin.com/pub/huiming-song/24/735/349" target="_blank">Linkedin</a></li>
+        </ul>
+    </section>
+    <section>
+        <h1>Blogroll</h1>
+        <ul>
+            <li><a href="http://easysas.blogspot.com/" target="_blank">my old SAS blog</a></li>
+        </ul>
+    </section>
+
+</aside>    </div>
+  </div>
+  <footer role="contentinfo"><p>
+    Copyright &copy;  2015&ndash;2026  shm &mdash;
+  <span class="credit">Powered by <a href="http://getpelican.com">Pelican</a></span>
+</p></footer>
+  <script src="/theme/js/modernizr-2.0.js"></script>
+  <script src="/theme/js/ender.js"></script>
+  <script src="/theme/js/octopress.js" type="text/javascript"></script>
+    <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-65938411-1']);
+    _gaq.push(['_trackPageview']);
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-65938411-1');
+    ga('send', 'pageview');
+</script>
+  <script type="text/javascript">
+    var disqus_shortname = 'songhuiming';
+    var disqus_identifier = '/pages/2026/10/10/kai-yuan-da-yu-yan-mo-xing-de-chang-shang-xia-wen-zhu-yi-li-ji-zhi-zong-shu-cong-softmax-attention-dao-xi-shu-ya-suo-yu-xian-xing-ji-yi/';
+    var disqus_url = '/pages/2026/10/10/kai-yuan-da-yu-yan-mo-xing-de-chang-shang-xia-wen-zhu-yi-li-ji-zhi-zong-shu-cong-softmax-attention-dao-xi-shu-ya-suo-yu-xian-xing-ji-yi/';
+    var disqus_title = '开源大语言模型的长上下文注意力机制综述：从 Softmax Attention 到稀疏、压缩与线性记忆';
+    (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = "//" + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+     })();
+  </script>
+</body>
+</html>
